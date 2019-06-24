@@ -12,3 +12,5 @@ Open settings.json
   // It is MANDATORY to fill everything else in otherwise the script won't work
 
   // After logging in on the browser, go to www.onlyfans.com, then check the examples folder on how to get app-token, sess and user-agent
+
+  ![Test Image 1](Exmaples/1.png)

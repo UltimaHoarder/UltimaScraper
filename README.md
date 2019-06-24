@@ -13,4 +13,4 @@ Open settings.json
 
   // After logging in on the browser, go to www.onlyfans.com, then check the examples folder on how to get app-token, sess and user-agent
 
-  ![Test Image 1](Exmaples/1.png)
+  ![app-token](Examples/1.png)

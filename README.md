@@ -1,5 +1,8 @@
-MANDATORY
+OnlyFans DataScraper
 =============
+
+MANDATORY
+-------------
 
 > run pip install -r requirements.txt
 
@@ -7,13 +10,13 @@ MANDATORY
 
 > It is MANDATORY to fill everything else in otherwise the script won't work
 
-> After logging in on the browser, go to www.onlyfans.com, then check the image below on how to get app-token, sess and user-agent
+> Go to www.onlyfans.com and login, then check the image below on how to get app-token, sess and user-agent
 
 > ![app-token](Examples/1.png)
 
   
 OPTIONAL
-=============
+-------------
 
 > Open and edit settings.json
 

@@ -1,15 +1,14 @@
+import os
+import json
+from itertools import product
+import multiprocessing
+from multiprocessing import current_process, Pool
+from multiprocessing.dummy import Pool as ThreadPool
 import requests
 from bs4 import BeautifulSoup
 from urllib.request import urlretrieve
-import os
-from multiprocessing.dummy import Pool as ThreadPool
-from multiprocessing import current_process, Pool
-import multiprocessing
-from itertools import product
-import re
-import json
 
-# You MUST fill all of this in for the script to work :D
+# Open settings.json and fill in mandatory information for the script to work
 json_data = json.load(open('settings.json'))
 j_directory = json_data['directory']+"/Users/"
 app_token = json_data['app-token']

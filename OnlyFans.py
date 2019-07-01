@@ -35,15 +35,21 @@ def link_check(link):
     r = session.get(link)
     raw_html = r.content
     html = BeautifulSoup(raw_html, 'html.parser')
-    temp_user_id = html.find("div", {"class": "b-users"}).select('a[data-user]')
+    user_list = html.find("div", {"class": "b-users"})
+    temp_user_id = user_list.select('a[data-user]')
+    temp_sub_user = user_list.select('a[data-toggle]')
     temp_user_id2 = dict()
     if temp_user_id:
         temp_user_id2[0] = True
         temp_user_id2[1] = temp_user_id[0]["data-user"]
         return temp_user_id2
+    if temp_sub_user:
+        temp_user_id2[0] = False
+        temp_user_id2[1] = "You're not subscribed to the user"
+        return temp_user_id2
     else:
         temp_user_id2[0] = False
-        temp_user_id2[1] = "User not found, or you're not subscribed to the user"
+        temp_user_id2[1] = "No users found"
         return temp_user_id2
 
 

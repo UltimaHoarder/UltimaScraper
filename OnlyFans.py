@@ -35,10 +35,16 @@ def link_check(link):
     r = session.get(link)
     raw_html = r.content
     html = BeautifulSoup(raw_html, 'html.parser')
-    temp_user_id = html.find("div", {"class": "b-users"}).find("a", attrs={"data-user", True})
+    temp_user_id = html.find("div", {"class": "b-users"}).select('a[data-user]')
+    temp_user_id2 = dict()
     if temp_user_id:
-        return temp_user_id["data-user"]
-    return False
+        temp_user_id2[0] = True
+        temp_user_id2[1] = temp_user_id[0]["data-user"]
+        return temp_user_id2
+    else:
+        temp_user_id2[0] = False
+        temp_user_id2[1] = "User not found, or you're not subscribed to the user"
+        return temp_user_id2
 
 
 def scrape_choice():
@@ -107,9 +113,10 @@ while True:
     username = input_link.rsplit('/', 1)[-1]
     input_link = 'https://onlyfans.com/search/users/'+username
     user_id = link_check(input_link)
-    if not user_id:
-        print("User Not Found")
+    if not user_id[0]:
+        print(user_id[1])
         print("First time? Did you forget to edit your settings.json file?")
         continue
+    user_id = user_id[1]
     scrape_choice()
     print('Finished')

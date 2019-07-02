@@ -1,12 +1,13 @@
-import os
 import json
-from itertools import product
 import multiprocessing
-from multiprocessing import current_process, Pool
+import os
+from itertools import product
+from multiprocessing import Pool, current_process
 from multiprocessing.dummy import Pool as ThreadPool
+from urllib.request import urlretrieve
+
 import requests
 from bs4 import BeautifulSoup
-from urllib.request import urlretrieve
 
 # Open settings.json and fill in mandatory information for the script to work
 json_data = json.load(open('settings.json'))
@@ -86,10 +87,11 @@ def media_scraper(link, location, directory):
     media_count = 0
     for media_api in y:
         for media in media_api["media"]:
-            file = media["source"]["source"]
-            media_set[media_count] = {}
-            media_set[media_count]["link"] = file
-            media_count += 1
+            if "source" in media:
+                file = media["source"]["source"]
+                media_set[media_count] = {}
+                media_set[media_count]["link"] = file
+                media_count += 1
 
     if "/Users/" == directory:
         directory = os.path.dirname(os.path.realpath(__file__))+"/Users/"+username+location

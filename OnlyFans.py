@@ -1,13 +1,12 @@
-import json
-import multiprocessing
 import os
+import json
 from itertools import product
-from multiprocessing import Pool, current_process
+import multiprocessing
+from multiprocessing import current_process, Pool
 from multiprocessing.dummy import Pool as ThreadPool
-from urllib.request import urlretrieve
-
 import requests
 from bs4 import BeautifulSoup
+from urllib.request import urlretrieve
 
 # Open settings.json and fill in mandatory information for the script to work
 json_data = json.load(open('settings.json'))

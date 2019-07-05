@@ -55,30 +55,38 @@ def link_check(link):
 
 def scrape_choice():
     print('Scrape: a = Everything | b = Images | c = Videos')
-    input_choice = input()
+    print('Optional Arguments: -l = Only scrape links -()- Example: "a -l"')
+    input_choice = input().strip()
     image_api = "https://onlyfans.com/api2/v2/users/"+user_id+"/posts/photos?limit=1000&offset=0&order=publish_date_" \
                                                               "desc&app-token="+app_token+""
     video_api = "https://onlyfans.com/api2/v2/users/"+user_id+"/posts/videos?limit=1000&offset=0&order=publish_date_" \
                                                               "desc&app-token="+app_token+""
+    # ARGUMENTS
+    only_links = False
+    if "-l" in input_choice:
+        only_links = True
+        input_choice = input_choice.replace(" -l", "")
+
+    print(input_choice)
     if input_choice == "a":
         location = "/Images/"
-        media_scraper(image_api, location, j_directory)
+        media_scraper(image_api, location, j_directory, only_links)
         print("Photos Finished")
         location = "/Videos/"
-        media_scraper(video_api, location, j_directory)
+        media_scraper(video_api, location, j_directory, only_links)
         print("Videos Finished")
         return
     if input_choice == "b":
         location = "/Images/"
-        media_scraper(image_api, location, j_directory)
+        media_scraper(image_api, location, j_directory, only_links)
         return
     if input_choice == "c":
         location = "/Videos/"
-        media_scraper(video_api, location, j_directory)
+        media_scraper(video_api, location, j_directory, only_links)
         return
 
 
-def media_scraper(link, location, directory):
+def media_scraper(link, location, directory, only_links):
     r = session.get(link)
     y = json.loads(r.text)
 
@@ -101,9 +109,12 @@ def media_scraper(link, location, directory):
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    max_threads = multiprocessing.cpu_count()
-    pool = ThreadPool(max_threads)
-    pool.starmap(download_media, product(media_set.items(), [directory]))
+    with open(directory+'links.json', 'w') as outfile:
+        json.dump(media_set, outfile)
+    if not only_links:
+        max_threads = multiprocessing.cpu_count()
+        pool = ThreadPool(max_threads)
+        pool.starmap(download_media, product(media_set.items(), [directory]))
 
 
 def download_media(media, directory):

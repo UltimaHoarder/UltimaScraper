@@ -23,3 +23,8 @@ OPTIONAL
 > Directory - Leave directory empty if you want files to be downloaded in the script folder
 
 > Directory - If you're going to fill, please remember to use forward ("/") slashes only
+
+OPTIONAL ARGUMENTS
+-------------
+
+> " -l" will only scrape and export links to a json file without downloading the media types

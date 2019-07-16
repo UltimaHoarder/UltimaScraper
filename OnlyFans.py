@@ -15,7 +15,6 @@ app_token = json_data['app-token']
 sess = json_data['sess']
 user_agent = json_data['user-agent']
 
-# You don't have to fill anything else in below this line :)
 auth_cookie = {
     'domain': '.onlyfans.com',
     'expires': None,
@@ -57,9 +56,9 @@ def scrape_choice():
     print('Scrape: a = Everything | b = Images | c = Videos')
     print('Optional Arguments: -l = Only scrape links -()- Example: "a -l"')
     input_choice = input().strip()
-    image_api = "https://onlyfans.com/api2/v2/users/"+user_id+"/posts/photos?limit=1000&offset=0&order=publish_date_" \
+    image_api = "https://onlyfans.com/api2/v2/users/"+user_id+"/posts/photos?limit=100&offset=0&order=publish_date_" \
                                                               "desc&app-token="+app_token+""
-    video_api = "https://onlyfans.com/api2/v2/users/"+user_id+"/posts/videos?limit=1000&offset=0&order=publish_date_" \
+    video_api = "https://onlyfans.com/api2/v2/users/"+user_id+"/posts/videos?limit=100&offset=0&order=publish_date_" \
                                                               "desc&app-token="+app_token+""
     # ARGUMENTS
     only_links = False
@@ -79,26 +78,36 @@ def scrape_choice():
     if input_choice == "b":
         location = "/Images/"
         media_scraper(image_api, location, j_directory, only_links)
+        print("Photos Finished")
         return
     if input_choice == "c":
         location = "/Videos/"
         media_scraper(video_api, location, j_directory, only_links)
+        print("Videos Finished")
         return
 
 
 def media_scraper(link, location, directory, only_links):
-    r = session.get(link)
-    y = json.loads(r.text)
-
+    next_page = True
+    next_offset = 0
     media_set = dict([])
     media_count = 0
-    for media_api in y:
-        for media in media_api["media"]:
-            if "source" in media:
-                file = media["source"]["source"]
-                media_set[media_count] = {}
-                media_set[media_count]["link"] = file
-                media_count += 1
+    while next_page:
+        offset = next_offset
+        r = session.get(link)
+        y = json.loads(r.text)
+        if not y:
+            break
+
+        for media_api in y:
+            for media in media_api["media"]:
+                if "source" in media:
+                    file = media["source"]["source"]
+                    media_set[media_count] = {}
+                    media_set[media_count]["link"] = file
+                    media_count += 1
+        next_offset = offset + 100
+        link = link.replace("offset="+str(offset), "offset="+str(next_offset))
 
     if "/Users/" == directory:
         directory = os.path.dirname(os.path.realpath(__file__))+"/Users/"+username+location

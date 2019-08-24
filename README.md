@@ -1,4 +1,4 @@
-OnlyFans DataScraper
+OnlyFans DataScraper (Python 3.7)
 =============
 
 MANDATORY

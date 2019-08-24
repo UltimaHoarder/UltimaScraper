@@ -30,25 +30,26 @@ session.headers = {
     'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
 
 
-def link_check(link):
+def link_check():
+    link = 'https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=1&offset=0&query=' + username + \
+           '&app-token=' + app_token
     r = session.get(link)
-    raw_html = r.content
-    html = BeautifulSoup(raw_html, 'html.parser')
-    user_list = html.find("div", {"class": "b-users"})
-    temp_user_id = user_list.select('a[data-user]')
-    temp_sub_user = user_list.select('a[data-toggle]')
+    y = json.loads(r.text)
     temp_user_id2 = dict()
-    if temp_user_id:
-        temp_user_id2[0] = True
-        temp_user_id2[1] = temp_user_id[0]["data-user"]
+    if not y:
+        temp_user_id2[0] = False
+        temp_user_id2[1] = "No users found"
         return temp_user_id2
-    if temp_sub_user:
+    y = y[0]["user"]
+
+    subbed = y["subscribedBy"]
+    if not subbed:
         temp_user_id2[0] = False
         temp_user_id2[1] = "You're not subscribed to the user"
         return temp_user_id2
     else:
-        temp_user_id2[0] = False
-        temp_user_id2[1] = "No users found"
+        temp_user_id2[0] = True
+        temp_user_id2[1] = y["id"]
         return temp_user_id2
 
 
@@ -103,6 +104,8 @@ def media_scraper(link, location, directory, only_links):
             for media in media_api["media"]:
                 if "source" in media:
                     file = media["source"]["source"]
+                    if "ca2.convert" in file:
+                        file = media["preview"]
                     media_set[media_count] = {}
                     media_set[media_count]["link"] = file
                     media_count += 1
@@ -138,12 +141,12 @@ while True:
     print('Input a username or profile link')
     input_link = input().strip()
     username = input_link.rsplit('/', 1)[-1]
-    input_link = 'https://onlyfans.com/search/users/'+username
-    user_id = link_check(input_link)
+
+    user_id = link_check()
     if not user_id[0]:
         print(user_id[1])
         print("First time? Did you forget to edit your settings.json file?")
         continue
-    user_id = user_id[1]
+    user_id = str(user_id[1])
     scrape_choice()
     print('Finished')

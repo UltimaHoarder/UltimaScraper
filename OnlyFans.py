@@ -36,6 +36,10 @@ def link_check():
     r = session.get(link)
     y = json.loads(r.text)
     temp_user_id2 = dict()
+    if "error" in y:
+        temp_user_id2[0] = False
+        temp_user_id2[1] = y["error"]["message"]
+        return temp_user_id2
     if not y:
         temp_user_id2[0] = False
         temp_user_id2[1] = "No users found"

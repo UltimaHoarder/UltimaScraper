@@ -7,6 +7,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 import requests
 from bs4 import BeautifulSoup
 from urllib.request import urlretrieve
+from datetime import datetime
 
 # Open settings.json and fill in mandatory information for the script to work
 json_data = json.load(open('settings.json'))
@@ -14,6 +15,7 @@ j_directory = json_data['directory']+"/Users/"
 app_token = json_data['app-token']
 sess = json_data['sess']
 user_agent = json_data['user-agent']
+format_path = json_data['file_name_format']
 
 auth_cookie = {
     'domain': '.onlyfans.com',
@@ -53,7 +55,7 @@ def link_check():
         return temp_user_id2
     else:
         temp_user_id2[0] = True
-        temp_user_id2[1] = y["id"]
+        temp_user_id2[1] = str(y["id"])
         return temp_user_id2
 
 
@@ -71,25 +73,33 @@ def scrape_choice():
         only_links = True
         input_choice = input_choice.replace(" -l", "")
 
-    print(input_choice)
     if input_choice == "a":
-        location = "/Images/"
+        location = "Images"
         media_scraper(image_api, location, j_directory, only_links)
         print("Photos Finished")
-        location = "/Videos/"
+        location = "Videos"
         media_scraper(video_api, location, j_directory, only_links)
         print("Videos Finished")
         return
     if input_choice == "b":
-        location = "/Images/"
+        location = "Images"
         media_scraper(image_api, location, j_directory, only_links)
         print("Photos Finished")
         return
     if input_choice == "c":
-        location = "/Videos/"
+        location = "Videos"
         media_scraper(video_api, location, j_directory, only_links)
         print("Videos Finished")
         return
+
+
+def reformat(directory2, file_name2, ext, date):
+    path = format_path.replace("{username}", username)
+    path = path.replace("{date}", date)
+    path = path.replace("{file_name}", file_name2)
+    path = path.replace("{ext}", ext)
+    directory2 += path
+    return directory2
 
 
 def media_scraper(link, location, directory, only_links):
@@ -103,7 +113,6 @@ def media_scraper(link, location, directory, only_links):
         y = json.loads(r.text)
         if not y:
             break
-
         for media_api in y:
             for media in media_api["media"]:
                 if "source" in media:
@@ -112,14 +121,17 @@ def media_scraper(link, location, directory, only_links):
                         file = media["preview"]
                     media_set[media_count] = {}
                     media_set[media_count]["link"] = file
+                    dt = datetime.fromisoformat(media_api["postedAt"]).replace(tzinfo=None).strftime('%d-%m-%Y')
+                    media_set[media_count]["text"] = media_api["text"]
+                    media_set[media_count]["postedAt"] = dt
                     media_count += 1
         next_offset = offset + 100
         link = link.replace("offset="+str(offset), "offset="+str(next_offset))
-
+    # path = reformat(media_set)
     if "/Users/" == directory:
-        directory = os.path.dirname(os.path.realpath(__file__))+"/Users/"+username+location
+        directory = os.path.dirname(os.path.realpath(__file__))+"/Users/"+username+"/"+location+"/"
     else:
-        directory = directory+username+location
+        directory = directory+username+"/"+location+"/"
 
     print("DIRECTORY - " + directory)
     if not os.path.exists(directory):
@@ -136,7 +148,10 @@ def media_scraper(link, location, directory, only_links):
 def download_media(media, directory):
     link = media[1]["link"]
     file_name = link.rsplit('/', 1)[-1]
-    urlretrieve(link, directory + file_name)
+    file_name, ext = os.path.splitext(file_name)
+    ext = ext.replace(".", "")
+    directory = reformat(directory, file_name, ext, media[1]["postedAt"])
+    urlretrieve(link, directory)
     print(link)
     return
 
@@ -151,6 +166,6 @@ while True:
         print(user_id[1])
         print("First time? Did you forget to edit your settings.json file?")
         continue
-    user_id = str(user_id[1])
+    user_id = user_id[1]
     scrape_choice()
-    print('Finished')
+    print('Everything Finished')

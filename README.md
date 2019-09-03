@@ -29,14 +29,30 @@ Open:
 
 `settings.json`
 
-Directory:
+directory:
 
-`Leave directory empty if you want files to be downloaded in the script folder`
+    Leave directory empty if you want files to be downloaded in the script folder
 
-`If you're going to fill, please remember to use forward ("/") slashes only`
+    If you're going to fill, please remember to use forward ("/") slashes only
+
+file_name_format:
+
+    {username} = The account's username
+
+    {text} = The post's text
+
+    {date} = The post's date
+
+    {file_name} = The media's file name
+
+    {ext} = The media's file extension
+
+    Example: {date}/{text}-{file_name}.{ext}
+    Warning: It's important to keep a unique identifier next to .{ext}. By default it's {file_name}, but it can be {date}-{text}.ext
+
 
 # OPTIONAL ARGUMENTS
 
--l 
+`-l `
 
-`This will only scrape and export links to a json file without downloading the media types`
+    This will only scrape and export links to a json file without downloading the media types

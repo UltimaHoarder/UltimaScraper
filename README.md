@@ -1,30 +1,42 @@
 OnlyFans DataScraper (Python 3.7)
 =============
 
-MANDATORY
--------------
+# Mandatory
 
-> run pip install -r requirements.txt
+From the project folder run this command in your terminal:
 
-> Open and edit settings.json
+```pip install -r requirements.txt```
 
-> It is MANDATORY to fill everything else in otherwise the script won't work
+Open:
+
+```settings.json```
+
+Fill in the following:
+
+* {"app-token":"your_token"}
+* {"sess":"your_sess"}
+* {"user-agent":"your_user-agent"}
+
 
 > Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get app-token, sess and user-agent
 
 > ![app-token](Examples/1.png)
 
   
-OPTIONAL
--------------
+# OPTIONAL
 
-> Open and edit settings.json
+Open:
 
-> Directory - Leave directory empty if you want files to be downloaded in the script folder
+```settings.json```
 
-> Directory - If you're going to fill, please remember to use forward ("/") slashes only
+Directory:
 
-OPTIONAL ARGUMENTS
--------------
+`Leave directory empty if you want files to be downloaded in the script folder`
 
-> " -l" will only scrape and export links to a json file without downloading the media types
+``If you're going to fill, please remember to use forward ("/") slashes only``
+
+# OPTIONAL ARGUMENTS
+
+-l 
+
+```This will only scrape and export links to a json file without downloading the media types```

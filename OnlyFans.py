@@ -191,7 +191,7 @@ def download_media(media_set, directory):
         try:
             urlretrieve(link, directory)
             print(link)
-        except TimeoutError as e:
+        except Exception as e:
             exception_name = type(e).__name__
             logger = logging.getLogger(exception_name+" in Function ("+function_name+")")
             m = re.search('ip=(.+?)/', link)

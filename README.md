@@ -53,6 +53,6 @@ file_name_format:
 
 # OPTIONAL ARGUMENTS
 
-`-l `
+-l
 
     This will only scrape and export links to a json file without downloading the media types

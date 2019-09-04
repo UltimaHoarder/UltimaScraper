@@ -177,6 +177,9 @@ def download_media(media_set, directory):
         function_name = inspect.stack()[0][3]
         media = media_set[1]
         link = media["link"]
+        r = session.head(link)
+        if r.status_code != 200:
+            return
         file_name = link.rsplit('/', 1)[-1]
         result = file_name.split("_", 1)
         if len(result) > 1:
@@ -189,24 +192,11 @@ def download_media(media_set, directory):
         directory = reformat(directory, file_name, media["text"], ext, media["postedAt"])
         if not overwrite_files:
             if os.path.isfile(directory):
-                break
-        try:
-            urlretrieve(link, directory)
-            print(link)
-        except Exception as e:
-            exception_name = type(e).__name__
-            logger = logging.getLogger(exception_name+" in Function ("+function_name+")")
-            m = re.search('ip=(.+?)/', link)
-            if m:
-                found = m.group(1)
-                link = link.replace(found, "REDACTED")
-            logger.error("Link: "+link)
-            print("Error downloading from link. Check errors.log for more details.")
-            print("I will retry the link again, but I may end up in an infinite loop.")
-            time.sleep(10)
-            continue
-        break
-    return
+                return
+        urlretrieve(link, directory)
+        print(link)
+        time.sleep(10)
+        return
 
 
 while True:

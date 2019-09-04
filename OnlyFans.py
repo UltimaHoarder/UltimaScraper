@@ -15,11 +15,17 @@ import time
 
 # Open settings.json and fill in mandatory information for the script to work
 json_data = json.load(open('settings.json'))
-j_directory = json_data['directory']+"/Users/"
-app_token = json_data['app-token']
-sess = json_data['sess']
-user_agent = json_data['user-agent']
-format_path = json_data['file_name_format']
+
+json_settings = json_data["settings"]
+j_directory = json_settings['directory']+"/Users/"
+format_path = json_settings['file_name_format']
+auto_choice = json_settings["auto_choice"]
+overwrite_files = json_settings["overwrite_files"]
+
+json_auth = json_data["auth"]
+app_token = json_auth['app-token']
+sess = json_auth['sess']
+user_agent = json_auth['user-agent']
 
 auth_cookie = {
     'domain': '.onlyfans.com',
@@ -65,8 +71,8 @@ def link_check():
 
 
 def scrape_choice():
-    if json_data["auto_choice"]:
-        input_choice = json_data["auto_choice"]
+    if auto_choice:
+        input_choice = auto_choice
     else:
         print('Scrape: a = Everything | b = Images | c = Videos')
         print('Optional Arguments: -l = Only scrape links -()- Example: "a -l"')
@@ -180,7 +186,7 @@ def download_media(media_set, directory):
         file_name, ext = os.path.splitext(file_name)
         ext = ext.replace(".", "")
         directory = reformat(directory, file_name, media["text"], ext, media["postedAt"])
-        if not json_data["overwrite_files"]:
+        if not overwrite_files:
             if os.path.isfile(directory):
                 break
         try:

@@ -123,6 +123,7 @@ def media_scraper(link, location, directory, only_links):
     next_offset = 0
     media_set = dict([])
     media_count = 0
+    master_date = "00-00-0000"
     while next_page:
         offset = next_offset
         r = session.get(link)
@@ -137,16 +138,10 @@ def media_scraper(link, location, directory, only_links):
                         file = media["preview"]
                     media_set[media_count] = {}
                     media_set[media_count]["link"] = file
-                    try:
+                    if media_api["postedAt"] == "-001-11-30T00:00:00+00:00":
+                        dt = master_date
+                    else:
                         dt = datetime.fromisoformat(media_api["postedAt"]).replace(tzinfo=None).strftime('%d-%m-%Y')
-                    except ValueError:
-                        if media["type"] == "video":
-                            m = re.search('files/(.+?)/', file)
-                            if m:
-                                found = m.group(1)
-                                dt = datetime.strptime(found.replace("_", "-"), '%Y-%m-%d').strftime('%d-%m-%Y')
-                        else:
-                            dt = "00-00-0000"
                     media_set[media_count]["text"] = media_api["text"]
                     media_set[media_count]["postedAt"] = dt
                     media_count += 1

@@ -21,6 +21,7 @@ j_directory = json_settings['directory']+"/Users/"
 format_path = json_settings['file_name_format']
 auto_choice = json_settings["auto_choice"]
 overwrite_files = json_settings["overwrite_files"]
+date_format = json_settings["date_format"]
 
 json_auth = json_data["auth"]
 app_token = json_auth['app-token']
@@ -147,7 +148,7 @@ def media_scraper(link, location, directory, only_links):
                     if media_api["postedAt"] == "-001-11-30T00:00:00+00:00":
                         dt = master_date
                     else:
-                        dt = datetime.fromisoformat(media_api["postedAt"]).replace(tzinfo=None).strftime('%d-%m-%Y')
+                        dt = datetime.fromisoformat(media_api["postedAt"]).replace(tzinfo=None).strftime(date_format)
                     media_set[media_count]["text"] = media_api["text"]
                     media_set[media_count]["postedAt"] = dt
                     media_count += 1

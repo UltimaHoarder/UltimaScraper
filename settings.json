@@ -3,7 +3,8 @@
     "directory": "",
     "file_name_format": "{file_name}.{ext}",
     "auto_choice": "",
-    "overwrite_files": true
+    "overwrite_files": true,
+    "date_format": "%d-%m-%Y"
   },
   "auth": {
       "app-token": "",

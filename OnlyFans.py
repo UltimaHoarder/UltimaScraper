@@ -149,6 +149,7 @@ def media_scraper(link, location, directory, only_links):
                         dt = master_date
                     else:
                         dt = datetime.fromisoformat(media_api["postedAt"]).replace(tzinfo=None).strftime(date_format)
+                        master_date = dt
                     media_set[media_count]["text"] = media_api["text"]
                     media_set[media_count]["postedAt"] = dt
                     media_count += 1

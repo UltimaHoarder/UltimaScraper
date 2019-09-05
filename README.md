@@ -1,4 +1,5 @@
-OnlyFans DataScraper (Python 3.7)
+# OnlyFans DataScraper (Python 3.7)
+![app-token](Examples/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 =============
 
 # Mandatory

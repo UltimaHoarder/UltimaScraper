@@ -12,6 +12,7 @@ import re
 import logging
 import inspect
 import time
+from win32_setctime import setctime
 
 # Open settings.json and fill in mandatory information for the script to work
 json_data = json.load(open('settings.json'))
@@ -118,6 +119,7 @@ def reformat(directory2, file_name2, text, ext, date):
     text = BeautifulSoup(text, 'html.parser').get_text().replace("\n", " ").strip()
     filtered_text = re.sub(r'[\\/*?:"<>|]', '', text)
     path = path.replace("{text}", filtered_text)
+    date = date.strftime(date_format)
     path = path.replace("{date}", date)
     path = path.replace("{file_name}", file_name2)
     path = path.replace("{ext}", ext)
@@ -148,7 +150,8 @@ def media_scraper(link, location, directory, only_links):
                     if media_api["postedAt"] == "-001-11-30T00:00:00+00:00":
                         dt = master_date
                     else:
-                        dt = datetime.fromisoformat(media_api["postedAt"]).replace(tzinfo=None).strftime(date_format)
+                        dt = datetime.fromisoformat(media_api["postedAt"]).replace(tzinfo=None).strftime(
+                            "%d-%m-%Y %H:%M:%S")
                         master_date = dt
                     media_set[media_count]["text"] = media_api["text"]
                     media_set[media_count]["postedAt"] = dt
@@ -190,11 +193,14 @@ def download_media(media_set, directory):
 
         file_name, ext = os.path.splitext(file_name)
         ext = ext.replace(".", "")
-        directory = reformat(directory, file_name, media["text"], ext, media["postedAt"])
+        date_object = datetime.strptime(media["postedAt"], "%d-%m-%Y %H:%M:%S")
+        directory = reformat(directory, file_name, media["text"], ext, date_object)
+        timestamp = date_object.timestamp()
         if not overwrite_files:
             if os.path.isfile(directory):
                 return
         urlretrieve(link, directory)
+        setctime(directory, timestamp)
         print(link)
         time.sleep(10)
         return

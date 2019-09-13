@@ -10,7 +10,7 @@ From the project folder run this command in your terminal:
 
 Open:
 
-`settings.json`
+`config.json`
 
 Fill in the following:
 
@@ -28,7 +28,7 @@ Go to www.onlyfans.com and login, open the network debugger, then check the imag
 
 Open:
 
-`settings.json`
+`config.json`
 
 directory:
 

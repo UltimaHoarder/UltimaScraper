@@ -14,17 +14,17 @@ import inspect
 import time
 from win32_setctime import setctime
 
-# Open settings.json and fill in mandatory information for the script to work
-json_data = json.load(open('settings.json'))
+# Open config.json and fill in mandatory information for the script to work
+json_config = json.load(open('config.json'))
 
-json_settings = json_data["settings"]
+json_settings = json_config["settings"]
 j_directory = json_settings['directory']+"/Users/"
 format_path = json_settings['file_name_format']
 auto_choice = json_settings["auto_choice"]
 overwrite_files = json_settings["overwrite_files"]
 date_format = json_settings["date_format"]
 
-json_auth = json_data["auth"]
+json_auth = json_config["auth"]
 app_token = json_auth['app-token']
 sess = json_auth['sess']
 user_agent = json_auth['user-agent']
@@ -214,7 +214,7 @@ while True:
     user_id = link_check()
     if not user_id[0]:
         print(user_id[1])
-        print("First time? Did you forget to edit your settings.json file?")
+        print("First time? Did you forget to edit your config.json file?")
         continue
     user_id = user_id[1]
     scrape_choice()

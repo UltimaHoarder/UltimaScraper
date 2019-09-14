@@ -1,18 +1,22 @@
-import os
-import json
-from itertools import product
-import multiprocessing
-from multiprocessing import current_process, Pool
-from multiprocessing.dummy import Pool as ThreadPool
 import requests
 from bs4 import BeautifulSoup
 from urllib.request import urlretrieve
+from win32_setctime import setctime
+
+import os
+import json
+from itertools import product
+from itertools import chain
+import multiprocessing
+from multiprocessing import current_process, Pool
+from multiprocessing.dummy import Pool as ThreadPool
 from datetime import datetime
 import re
 import logging
 import inspect
 import time
-from win32_setctime import setctime
+import math
+
 
 # Open config.json and fill in mandatory information for the script to work
 json_config = json.load(open('config.json'))
@@ -42,7 +46,7 @@ session = requests.Session()
 session.cookies.set(**auth_cookie)
 session.headers = {
     'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
-logging.basicConfig(filename='errors.log', level=logging.DEBUG,
+logging.basicConfig(filename='errors.log', level=logging.ERROR,
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 
 
@@ -69,6 +73,7 @@ def link_check():
     else:
         temp_user_id2[0] = True
         temp_user_id2[1] = str(y["id"])
+        temp_user_id2[2] = y["postsCount"]
         return temp_user_id2
 
 
@@ -127,38 +132,48 @@ def reformat(directory2, file_name2, text, ext, date):
     return directory2
 
 
-def media_scraper(link, location, directory, only_links):
-    next_page = True
-    next_offset = 0
-    media_set = dict([])
-    media_count = 0
+def scrape_array(link):
+    media_set = []
     master_date = "00-00-0000"
-    while next_page:
-        offset = next_offset
-        r = session.get(link)
-        y = json.loads(r.text)
-        if not y:
-            break
-        for media_api in y:
-            for media in media_api["media"]:
-                if "source" in media:
-                    file = media["source"]["source"]
-                    if "ca2.convert" in file:
-                        file = media["preview"]
-                    media_set[media_count] = {}
-                    media_set[media_count]["link"] = file
-                    if media_api["postedAt"] == "-001-11-30T00:00:00+00:00":
-                        dt = master_date
-                    else:
-                        dt = datetime.fromisoformat(media_api["postedAt"]).replace(tzinfo=None).strftime(
-                            "%d-%m-%Y %H:%M:%S")
-                        master_date = dt
-                    media_set[media_count]["text"] = media_api["text"]
-                    media_set[media_count]["postedAt"] = dt
-                    media_count += 1
-        next_offset = offset + 100
-        link = link.replace("offset="+str(offset), "offset="+str(next_offset))
-    # path = reformat(media_set)
+    r = session.get(link)
+    y = json.loads(r.text)
+    if not y:
+        return
+    for media_api in y:
+        for media in media_api["media"]:
+            if "source" in media:
+                file = media["source"]["source"]
+                if "ca2.convert" in file:
+                    file = media["preview"]
+                new_dict = dict()
+                new_dict["post_id"] = media_api["id"]
+                new_dict["link"] = file
+                if media_api["postedAt"] == "-001-11-30T00:00:00+00:00":
+                    dt = master_date
+                else:
+                    dt = datetime.fromisoformat(media_api["postedAt"]).replace(tzinfo=None).strftime(
+                        "%d-%m-%Y %H:%M:%S")
+                    master_date = dt
+                new_dict["text"] = media_api["text"]
+                new_dict["postedAt"] = dt
+                media_set.append(new_dict)
+    return media_set
+
+
+def media_scraper(link, location, directory, only_links):
+    max_threads = multiprocessing.cpu_count()
+    pool = ThreadPool(max_threads)
+    floor = math.floor(post_count / 100)
+    if floor == 0:
+        floor = 1
+    a = list(range(floor))
+    offset_array = []
+    for b in a:
+        b = b * 100
+        offset_array.append(link.replace("offset=0", "offset=" + str(b)))
+    media_set = pool.starmap(scrape_array, product(offset_array))
+    media_set = [x for x in media_set if x is not None]
+    media_set = list(chain.from_iterable(media_set))
     if "/Users/" == directory:
         directory = os.path.dirname(os.path.realpath(__file__))+"/Users/"+username+"/"+location+"/"
     else:
@@ -171,15 +186,11 @@ def media_scraper(link, location, directory, only_links):
     with open(directory+'links.json', 'w') as outfile:
         json.dump(media_set, outfile)
     if not only_links:
-        max_threads = multiprocessing.cpu_count()
-        pool = ThreadPool(max_threads)
-        pool.starmap(download_media, product(media_set.items(), [directory]))
+        pool.starmap(download_media, product(media_set, [directory]))
 
 
-def download_media(media_set, directory):
+def download_media(media, directory):
     while True:
-        function_name = inspect.stack()[0][3]
-        media = media_set[1]
         link = media["link"]
         r = session.head(link)
         if r.status_code != 200:
@@ -202,7 +213,6 @@ def download_media(media_set, directory):
         urlretrieve(link, directory)
         setctime(directory, timestamp)
         print(link)
-        time.sleep(10)
         return
 
 
@@ -216,6 +226,8 @@ while True:
         print(user_id[1])
         print("First time? Did you forget to edit your config.json file?")
         continue
+
+    post_count = user_id[2]
     user_id = user_id[1]
     scrape_choice()
     print('Task Completed!')

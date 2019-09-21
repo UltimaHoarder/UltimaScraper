@@ -17,40 +17,49 @@ import inspect
 import time
 import math
 
-
-# Open config.json and fill in mandatory information for the script to work
+# Open config.json and fill in OPTIONAL information
 json_config = json.load(open('config.json'))
-
 json_settings = json_config["settings"]
-j_directory = json_settings['directory']+"/Users/"
+j_directory = json_settings['directory'] + "/Users/"
 format_path = json_settings['file_name_format']
 auto_choice = json_settings["auto_choice"]
 overwrite_files = json_settings["overwrite_files"]
 date_format = json_settings["date_format"]
 
-json_auth = json_config["auth"]
-app_token = json_auth['app-token']
-sess = json_auth['sess']
-user_agent = json_auth['user-agent']
-
-auth_cookie = {
-    'domain': '.onlyfans.com',
-    'expires': None,
-    'name': 'sess',
-    'path': '/',
-    'value': sess,
-    'version': 0
-}
-
 session = requests.Session()
-session.cookies.set(**auth_cookie)
-session.headers = {
-    'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
-logging.basicConfig(filename='errors.log', level=logging.ERROR,
-                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
+username = ''
 
 
-def link_check():
+def start_datascraper(app_token, user_agent, sess, username2):
+    auth_cookie = {
+        'domain': '.onlyfans.com',
+        'expires': None,
+        'name': 'sess',
+        'path': '/',
+        'value': sess,
+        'version': 0
+    }
+    session.cookies.set(**auth_cookie)
+    session.headers = {
+        'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
+    logging.basicConfig(filename='errors.log', level=logging.ERROR,
+                        format='%(asctime)s %(levelname)s %(name)s %(message)s')
+
+    global username
+    username = username2
+    user_id = link_check(app_token)
+    if not user_id[0]:
+        print(user_id[1])
+        print("First time? Did you forget to edit your config.json file?")
+        return
+
+    post_count = user_id[2]
+    user_id = user_id[1]
+    scrape_choice(user_id, app_token, post_count)
+    print('Task Completed!')
+
+
+def link_check(app_token):
     link = 'https://onlyfans.com/api2/v2/users/' + username + \
            '&app-token=' + app_token
     r = session.get(link)
@@ -77,7 +86,7 @@ def link_check():
         return temp_user_id2
 
 
-def scrape_choice():
+def scrape_choice(user_id, app_token, post_count):
     if auto_choice:
         input_choice = auto_choice
     else:
@@ -93,27 +102,27 @@ def scrape_choice():
     if "-l" in input_choice:
         only_links = True
         input_choice = input_choice.replace(" -l", "")
-
+    mandatory = [j_directory, only_links, post_count]
+    i_array = ["You have chosen to scrape images", [image_api, 'Images', *mandatory], 'Images Completed']
+    v_array = ["You have chosen to scrape videos", [video_api, 'Videos', *mandatory], 'Videos Completed']
+    array = [i_array] + [v_array]
     if input_choice == "a":
-        print("You have chosen to scrape images and videos")
-        location = "Images"
-        media_scraper(image_api, location, j_directory, only_links)
-        print("Photos Completed")
-        location = "Videos"
-        media_scraper(video_api, location, j_directory, only_links)
-        print("Videos Completed")
+        for item in array:
+            print(item[0])
+            media_scraper(*item[1])
+            print(item[2])
         return
     if input_choice == "b":
-        print("You have chosen to scrape images")
-        location = "Images"
-        media_scraper(image_api, location, j_directory, only_links)
-        print("Photos Completed")
+        item = array[0]
+        print(item[0])
+        media_scraper(*item[1])
+        print(item[2])
         return
     if input_choice == "c":
-        print("You have chosen to scrape videos")
-        location = "Videos"
-        media_scraper(video_api, location, j_directory, only_links)
-        print("Videos Completed")
+        item = array[1]
+        print(item[0])
+        media_scraper(*item[1])
+        print(item[2])
         return
     print("Invalid Choice")
     return
@@ -165,7 +174,7 @@ def scrape_array(link):
     return media_set
 
 
-def media_scraper(link, location, directory, only_links):
+def media_scraper(link, location, directory, only_links, post_count):
     max_threads = multiprocessing.cpu_count()
     pool = ThreadPool(max_threads)
     floor = math.floor(post_count / 100)
@@ -180,7 +189,7 @@ def media_scraper(link, location, directory, only_links):
     media_set = [x for x in media_set if x is not None]
     media_set = list(chain.from_iterable(media_set))
     if "/Users/" == directory:
-        directory = os.path.dirname(os.path.realpath(__file__))+"/Users/"+username+"/"+location+"/"
+        directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+"/Users/"+username+"/"+location+"/"
     else:
         directory = directory+username+"/"+location+"/"
 
@@ -219,20 +228,3 @@ def download_media(media, directory):
         setctime(directory, timestamp)
         print(link)
         return
-
-
-while True:
-    print('Input a username or profile link')
-    input_link = input().strip()
-    username = input_link.rsplit('/', 1)[-1]
-
-    user_id = link_check()
-    if not user_id[0]:
-        print(user_id[1])
-        print("First time? Did you forget to edit your config.json file?")
-        continue
-
-    post_count = user_id[2]
-    user_id = user_id[1]
-    scrape_choice()
-    print('Task Completed!')

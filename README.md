@@ -21,7 +21,7 @@ Fill in the following:
 
 Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get app-token, sess and user-agent
 
-![app-token](Examples/1.png)
+![app-token](examples/1.png)
 
   
 # OPTIONAL

@@ -20,7 +20,7 @@ import math
 # Open config.json and fill in OPTIONAL information
 json_config = json.load(open('config.json'))
 json_settings = json_config["settings"]
-j_directory = json_settings['directory'] + "/Users/"
+j_directory = json_settings['directory'] + "/users/"
 format_path = json_settings['file_name_format']
 auto_choice = json_settings["auto_choice"]
 overwrite_files = json_settings["overwrite_files"]

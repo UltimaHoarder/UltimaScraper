@@ -188,7 +188,7 @@ def media_scraper(link, location, directory, only_links, post_count):
     media_set = pool.starmap(scrape_array, product(offset_array))
     media_set = [x for x in media_set if x is not None]
     media_set = list(chain.from_iterable(media_set))
-    if "/Users/" == directory:
+    if "/users/" == directory:
         directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+"/Users/"+username+"/"+location+"/"
     else:
         directory = directory+username+"/"+location+"/"

@@ -64,8 +64,8 @@ def start_datascraper(app_token, user_agent, sess, username):
             pool = ThreadPool(max_threads)
             pool.starmap(download_media, product(media_set, [directory], [username]))
     print('Task Completed!')
-    # When profile is done scraping, this function will return links.json and True
-    return [media_set, True]
+    # When profile is done scraping, this function will return True
+    return [True]
 
 
 def link_check(app_token, username):

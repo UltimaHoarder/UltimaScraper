@@ -80,9 +80,9 @@ date_format:
 
     Default = "%d-%m-%Y"
 
-    If you live in the USA and you want to use the incorrect format, do the following:
+    If you live in the USA and you want to use the incorrect format, use the following:
 
-    "date_format": "%m-%d-%Y"
+    "%m-%d-%Y"
 
 multithreading:
 

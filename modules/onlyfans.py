@@ -1,6 +1,5 @@
 import requests
 from bs4 import BeautifulSoup
-from urllib.request import urlretrieve
 from win32_setctime import setctime
 
 import os
@@ -14,7 +13,6 @@ from datetime import datetime
 import re
 import logging
 import inspect
-import time
 import math
 
 # Open config.json and fill in OPTIONAL information
@@ -25,29 +23,19 @@ format_path = json_settings['file_name_format']
 auto_choice = json_settings["auto_choice"]
 overwrite_files = json_settings["overwrite_files"]
 date_format = json_settings["date_format"]
+multithreading = json_settings["multithreading"]
 
-session = requests.Session()
+max_threads = multiprocessing.cpu_count()
 
 
-def start_datascraper(app_token, user_agent, sess, username):
-    auth_cookie = {
-        'domain': '.onlyfans.com',
-        'expires': None,
-        'name': 'sess',
-        'path': '/',
-        'value': sess,
-        'version': 0
-    }
-    session.cookies.set(**auth_cookie)
-    session.headers = {
-        'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
+def start_datascraper(session, app_token, username):
     logging.basicConfig(filename='errors.log', level=logging.ERROR,
                         format='%(asctime)s %(levelname)s %(name)s %(message)s')
-    user_id = link_check(app_token, username)
+    user_id = link_check(session, app_token, username)
     if not user_id[0]:
         print(user_id[1])
         print("First time? Did you forget to edit your config.json file?")
-        return
+        return [False]
 
     post_count = user_id[2]
     user_id = user_id[1]
@@ -56,19 +44,21 @@ def start_datascraper(app_token, user_agent, sess, username):
         item[1].append(username)
         only_links = item[1][3]
         item[1].pop(3)
-        response = media_scraper(*item[1])
+        response = media_scraper(session, *item[1])
         if not only_links:
             media_set = response[0]
             directory = response[1]
-            max_threads = multiprocessing.cpu_count()
-            pool = ThreadPool(max_threads)
-            pool.starmap(download_media, product(media_set, [directory], [username]))
-    print('Task Completed!')
+            if multithreading:
+                pool = ThreadPool(max_threads)
+            else:
+                pool = ThreadPool(1)
+            pool.starmap(download_media, product(media_set, [session], [directory], [username]))
+
     # When profile is done scraping, this function will return True
     return [True]
 
 
-def link_check(app_token, username):
+def link_check(session, app_token, username):
     link = 'https://onlyfans.com/api2/v2/users/' + username + \
            '&app-token=' + app_token
     r = session.get(link)
@@ -131,7 +121,7 @@ def scrape_choice(user_id, app_token, post_count):
     return False
 
 
-def scrape_array(link):
+def scrape_array(link, session):
     media_set = []
     master_date = "00-00-0000"
     r = session.get(link)
@@ -159,8 +149,8 @@ def scrape_array(link):
     return media_set
 
 
-def media_scraper(link, location, directory, post_count, username):
-    max_threads = multiprocessing.cpu_count()
+def media_scraper(session, link, location, directory, post_count, username):
+    print("Scraping "+location+". Should take less than a minute.")
     pool = ThreadPool(max_threads)
     floor = math.floor(post_count / 100)
     if floor == 0:
@@ -170,7 +160,7 @@ def media_scraper(link, location, directory, post_count, username):
     for b in a:
         b = b * 100
         offset_array.append(link.replace("offset=0", "offset=" + str(b)))
-    media_set = pool.starmap(scrape_array, product(offset_array))
+    media_set = pool.starmap(scrape_array, product(offset_array, [session]))
     media_set = [x for x in media_set if x is not None]
     media_set = list(chain.from_iterable(media_set))
     if "/users/" == directory:
@@ -187,7 +177,7 @@ def media_scraper(link, location, directory, post_count, username):
     return [media_set, directory]
 
 
-def download_media(media, directory, username):
+def download_media(media, session, directory, username):
     while True:
         link = media["link"]
         r = session.head(link)
@@ -208,10 +198,14 @@ def download_media(media, directory, username):
         if not overwrite_files:
             if os.path.isfile(directory):
                 return
-        urlretrieve(link, directory)
+        r = session.get(link, stream=True)
+        with open(directory, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024):
+                if chunk:  # filter out keep-alive new chunks
+                    f.write(chunk)
         setctime(directory, timestamp)
         print(link)
-        return
+        return True
 
 
 def reformat(directory2, file_name2, text, ext, date, username):
@@ -230,3 +224,39 @@ def reformat(directory2, file_name2, text, ext, date, username):
         directory2 = directory2.replace(text, text[:-num_sum])
 
     return directory2
+
+
+def show_error(error):
+    print(error["error"]["message"])
+    return
+
+
+def create_session(user_agent, auth_id, auth_hash, app_token):
+    session = requests.Session()
+    session.headers = {
+        'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
+    auth_cookies = [
+        {'name': 'auth_id', 'value': auth_id},
+        {'name': 'auth_hash', 'value': auth_hash},
+        {'name': 'sess', 'value': 'None'}
+    ]
+    for auth_cookie in auth_cookies:
+        session.cookies.set(**auth_cookie)
+    session.head("https://onlyfans.com")
+    response = json.loads(session.get("https://onlyfans.com/api2/v2/users/me?app-token="+app_token).text)
+    if 'error' in response:
+        show_error(response)
+        return False
+    else:
+        print("Welcome "+response["name"])
+    return session
+
+
+def get_subscriptions(session, app_token):
+    response = json.loads(session.get("https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=100&offset=0&type="
+                                      "active&app-token="+app_token).text)
+    if 'error' in response:
+        print("Invalid App Token")
+        return False
+    else:
+        return response

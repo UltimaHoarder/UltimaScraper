@@ -1,4 +1,5 @@
 from modules.onlyfans import start_datascraper, create_session, json
+import timeit
 # Open config.json and fill in MANDATORY information for the script to work
 json_config = json.load(open('config.json'))
 

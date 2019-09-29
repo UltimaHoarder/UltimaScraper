@@ -219,9 +219,9 @@ def reformat(directory2, file_name2, text, ext, date, username):
     path = path.replace("{ext}", ext)
     directory2 += path
     count_string = len(directory2)
-    if count_string > 260:
-        num_sum = count_string - 260
-        directory2 = directory2.replace(text, text[:-num_sum])
+    if count_string > 259:
+        num_sum = count_string - 259
+        directory2 = directory2.replace(filtered_text, filtered_text[:-num_sum])
 
     return directory2
 

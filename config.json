@@ -1,8 +1,13 @@
 {
-  "auth": {
+  "authOF": {
     "app-token": "",
     "auth_id": "",
     "auth_hash": "",
+    "user-agent": ""
+  },
+  "authJFF": {
+    "PHPSESSID": "",
+    "UserHash2": "",
     "user-agent": ""
   },
   "settings": {

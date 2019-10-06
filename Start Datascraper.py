@@ -1,4 +1,5 @@
 import modules.onlyfans as onlyfans
+import modules.justforfans as justforfans
 import timeit
 import json
 # Open config.json and fill in MANDATORY information for the script to work
@@ -30,24 +31,27 @@ while True:
         x = int(input())
         site_name = site_names[x]
     json_auth = json_sites[site_name]["auth"]
-    app_token = json_auth['app-token']
-    auth_id = json_auth['auth_id']
-    auth_hash = json_auth['auth_hash']
     session = ""
+    x = ""
+    app_token = ""
     if site_name == "onlyfans":
+        app_token = json_auth['app-token']
+        auth_id = json_auth['auth_id']
+        auth_hash = json_auth['auth_hash']
         x = onlyfans
+        session = x.create_session(user_agent, auth_id, auth_hash, app_token)
     elif site_name == "justforfans":
-        print("Not Ready Yet")
-        continue
-        x = onlyfans
+        auth_id = json_auth['phpsessid']
+        auth_hash = json_auth['user_hash2']
+        x = justforfans
+        session = x.create_session(user_agent, auth_id, auth_hash)
 
-    session = x.create_session(user_agent, auth_id, auth_hash, app_token)
     if not session:
         continue
     print('Input a '+site_name+' '+'username or profile link')
     input_link = input().strip()
     username = input_link.rsplit('/', 1)[-1]
     start_time = timeit.default_timer()
-    result = x.start_datascraper(session, app_token, username)
+    result = x.start_datascraper(session, username, app_token)
     stop_time = str(int(timeit.default_timer() - start_time) / 60)
     print('Task Completed in ' + stop_time + ' Minutes')

@@ -29,7 +29,7 @@ multithreading = json_settings["multithreading"]
 max_threads = multiprocessing.cpu_count()
 
 
-def start_datascraper(session, app_token, username):
+def start_datascraper(session, username, app_token):
     logging.basicConfig(filename='errors.log', level=logging.ERROR,
                         format='%(asctime)s %(levelname)s %(name)s %(message)s')
     user_id = link_check(session, app_token, username)
@@ -169,7 +169,8 @@ def media_scraper(session, link, location, directory, post_count, username):
     media_set = [x for x in media_set if x is not None]
     media_set = list(chain.from_iterable(media_set))
     if "/users/" == directory:
-        directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+"/users/"+username+"/"+location+"/"
+        directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+"/users/onlyfans/"+username+"/"\
+                    + location+"/"
     else:
         directory = directory+username+"/"+location+"/"
 

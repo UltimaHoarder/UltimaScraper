@@ -29,9 +29,11 @@ multithreading = json_settings["multithreading"]
 max_threads = multiprocessing.cpu_count()
 
 
-def start_datascraper(session, username):
-    logging.basicConfig(filename='errors.log', level=logging.ERROR,
-                        format='%(asctime)s %(levelname)s %(name)s %(message)s')
+def start_datascraper(session, username, app_token=None):
+    logging.basicConfig(
+        filename='errors.log',
+        level=logging.ERROR,
+        format='%(asctime)s %(levelname)s %(name)s %(message)s')
     user_id = link_check(session, username)
     if not user_id[0]:
         print(user_id[1])
@@ -54,7 +56,9 @@ def start_datascraper(session, username):
                 pool = ThreadPool(max_threads)
             else:
                 pool = ThreadPool(1)
-            pool.starmap(download_media, product(media_set, [session], [directory], [username]))
+            pool.starmap(
+                download_media,
+                product(media_set, [session], [directory], [username]))
 
     # When profile is done scraping, this function will return True
     return [True, link_array]
@@ -73,7 +77,8 @@ def link_check(session, username):
     else:
         temp_user_id2[0] = True
         temp_user_id2[1] = str(username)
-        temp_user_id2[2] = BeautifulSoup(r.text, 'html.parser').find("div", {"class": "profile-info-value"}).find("h3").get_text()
+        temp_user_id2[2] = BeautifulSoup(r.text, 'html.parser').find("div", {"class": "profile-info-value"}).find("h3")\
+            .get_text()
         return temp_user_id2
 
 
@@ -82,9 +87,10 @@ def scrape_choice(username, post_count):
         input_choice = auto_choice
     else:
         print('Scrape: a = Everything | b = Images | c = Videos')
-        print('Optional Arguments: -l = Only scrape links -()- Example: "a -l"')
+        print(
+            'Optional Arguments: -l = Only scrape links -()- Example: "a -l"')
         input_choice = input().strip()
-    image_api = "https://justfor.fans/" + username + "?tab=photos&PhotoTabPage=0&VideoTabPage=9999"
+    image_api = "https://justfor.fans/" + username + "?tab=photos&PhotoTabPage=0"
     video_api = "https://justfor.fans/" + username + "?tab=videos&PhotoTabPage=9999&VideoTabPage=0"
     # ARGUMENTS
     only_links = False
@@ -92,8 +98,14 @@ def scrape_choice(username, post_count):
         only_links = True
         input_choice = input_choice.replace(" -l", "")
     mandatory = [j_directory, only_links, post_count]
-    i_array = ["You have chosen to scrape images", [image_api, 'Images', *mandatory], 'Images Completed']
-    v_array = ["You have chosen to scrape videos", [video_api, 'Videos', *mandatory], 'Videos Completed']
+    i_array = [
+        "You have chosen to scrape images", [image_api, 'Images', *mandatory],
+        'Images Completed'
+    ]
+    v_array = [
+        "You have chosen to scrape videos", [video_api, 'Videos', *mandatory],
+        'Videos Completed'
+    ]
     array = [i_array] + [v_array]
     valid_input = False
     if input_choice == "a":
@@ -113,86 +125,124 @@ def scrape_choice(username, post_count):
 
 def scrape_array(link, session):
     media_set = []
-    UTC_OFFSET_TIMEDELTA = datetime.utcnow() - datetime.now()
+    utc_offset_timedelta = datetime.utcnow() - datetime.now()
+    print(utc_offset_timedelta)
     r = session.get(link)
-    itemsi = BeautifulSoup(r.text, 'html.parser').find("ul", {"class": "grid"}).findAll("li", {"class": None, "style": None})
-    itemsv = BeautifulSoup(r.text, 'html.parser').findAll("div", {"class": "variableVideoLI"})
-    for x in itemsi:
+    i_items = BeautifulSoup(r.text,
+                            'html.parser').find("ul", {
+                                "class": "grid"
+                            }).findAll("li", {
+                                "class": None,
+                                "style": None
+                            })
+    v_items = BeautifulSoup(r.text, 'html.parser').findAll(
+        "div", {"class": "variableVideoLI"})
+    for x in i_items:
         if x.find('figure').find('a') is not None:
-            imgsrc = x.find('figure').find('a').find('img')['src']
-            check = imgsrc[:5]
+            img_src = x.find('figure').find('a').find('img')['src']
+            check = img_src[:5]
             if check == u"media":
-                imgurl = "https://justfor.fans/" + imgsrc
+                img_url = "https://justfor.fans/" + img_src
             try:
-                datasrc = x.find('figure').find('a').find('img')['data-src']
-                check = datasrc[:5]
+                data_src = x.find('figure').find('a').find('img')['data-src']
+                check = data_src[:5]
                 if check == u"media":
-                    imgurl = "https://justfor.fans/" + datasrc
+                    img_url = "https://justfor.fans/" + data_src
             except KeyError:
                 pass
-            file = imgurl
+            file = img_url
             new_dict = dict()
-            new_dict["post_id"] = "https://justfor.fans/" + x.find('figure').find('a')['href']
+            new_dict["post_id"] = "https://justfor.fans/" + x.find(
+                'figure').find('a')['href']
             new_dict["link"] = file
-            postpage = session.get(new_dict["post_id"]).text
+            post_page = session.get(new_dict["post_id"]).text
             new_dict["post_id"] = new_dict["post_id"].rsplit('=')[-1]
-            postdate = BeautifulSoup(postpage, 'html.parser').find("div", {"class": "timeline-item-header"}).find('small').find('a').get_text().strip('\n')
+            postdate = BeautifulSoup(post_page, 'html.parser').find("div", {"class": "timeline-item-header"}).\
+                find('small').find('a').get_text().strip('\n')
             local_datetime = datetime.strptime(postdate, "%B %d, %Y, %I:%M %p")
-            result_utc_datetime = local_datetime + UTC_OFFSET_TIMEDELTA
+            result_utc_datetime = local_datetime + utc_offset_timedelta
             dt = result_utc_datetime.strftime("%d-%m-%Y %H:%M:%S")
-            posttext = BeautifulSoup(postpage, 'html.parser').find("div", {"class": "timeline-item-post"}).find("div", {"class": "fr-view"}).get_text()
-            new_dict["text"] = re.sub(r'(\t[ ]+)', '', posttext).replace('\n\t','')
+            post_text = BeautifulSoup(post_page, 'html.parser').find("div", {"class": "timeline-item-post"}).\
+                find("div", {"class": "fr-view"}).get_text()
+            new_dict["text"] = re.sub(r'(\t[ ]+)', '',
+                                      post_text).replace('\n\t', '')
             new_dict["postedAt"] = dt
             media_set.append(new_dict)
-    for x in itemsv:
+    for x in v_items:
         if x.findAll('div') is not None:
-            file = x.find('div', id=lambda y: y and y.startswith('videopage')).find('a')['href']
-            file = re.search(r"(https:\/\/autograph\.xvid\.com.+?)(?=')",file)[0].replace('&amp;','&')
+            file = x.find(
+                'div',
+                id=lambda y: y and y.startswith('videopage')).find('a')['href']
+            file = re.search(r"(https:\/\/autograph\.xvid\.com.+?)(?=')",
+                             file)[0].replace('&amp;', '&')
             new_dict = dict()
-            new_dict["post_id"] = "https://justfor.fans/" + x.findAll('a')[-1]['href']
+            new_dict["post_id"] = "https://justfor.fans/" + x.findAll(
+                'a')[-1]['href']
             new_dict["link"] = file
-            postpage = session.get(new_dict["post_id"]).text
+            post_page = session.get(new_dict["post_id"]).text
             new_dict["post_id"] = new_dict["post_id"].rsplit('=')[-1]
-            postdate = BeautifulSoup(postpage, 'html.parser').find("div", {"class": "timeline-item-header"}).find('small').find('a').get_text().strip('\n')
+            postdate = BeautifulSoup(post_page, 'html.parser').find("div", {"class": "timeline-item-header"}).\
+                find('small').find('a').get_text().strip('\n')
             local_datetime = datetime.strptime(postdate, "%B %d, %Y, %I:%M %p")
-            result_utc_datetime = local_datetime + UTC_OFFSET_TIMEDELTA
+            result_utc_datetime = local_datetime + utc_offset_timedelta
             dt = result_utc_datetime.strftime("%d-%m-%Y %H:%M:%S")
-            posttext = BeautifulSoup(postpage, 'html.parser').find("div", {"class": "timeline-item-post"}).find("div", {"class": "fr-view"}).get_text()
-            new_dict["text"] = re.sub(r'(\t[ ]+)', '', posttext).replace('\n\t','')
+            post_text = BeautifulSoup(post_page, 'html.parser').find(
+                "div", {
+                    "class": "timeline-item-post"
+                }).find("div", {
+                    "class": "fr-view"
+                }).get_text()
+            new_dict["text"] = re.sub(r'(\t[ ]+)', '',
+                                      post_text).replace('\n\t', '')
             new_dict["postedAt"] = dt
             media_set.append(new_dict)
     return media_set
 
 
 def media_scraper(session, link, location, directory, post_count, username):
-    print("Scraping "+location+". May take a few minutes.")
+    print("Scraping " + location + ". May take a few minutes.")
     pool = ThreadPool(max_threads)
     i = 0
     offset_array = []
-    iterlink = link
-    page = session.get(iterlink)
-    items = BeautifulSoup(page.text, 'html.parser').find("ul", {"class": "grid"}).findAll("li", {"class": None, "style": None})
-    items = items + BeautifulSoup(page.text, 'html.parser').findAll("div", {"class": "variableVideoLI"})
+    iter_link = link
+    page = session.get(iter_link)
+    items = BeautifulSoup(page.text,
+                          'html.parser').find("ul", {
+                              "class": "grid"
+                          }).findAll("li", {
+                              "class": None,
+                              "style": None
+                          })
+    items = items + BeautifulSoup(page.text, 'html.parser').findAll(
+        "div", {"class": "variableVideoLI"})
     while len(items) > 0:
-        offset_array.append(iterlink)
+        offset_array.append(iter_link)
         i += 1
-        iterlink = link.replace("Page=0", "Page=" + str(i))
-        page = session.get(iterlink)
-        items = BeautifulSoup(page.text, 'html.parser').find("ul", {"class": "grid"}).findAll("li", {"class": None, "style": None})
-        items = items + BeautifulSoup(page.text, 'html.parser').findAll("div", {"class": "variableVideoLI"})
+        iter_link = link.replace("Page=0", "Page=" + str(i))
+        page = session.get(iter_link)
+        items = BeautifulSoup(page.text,
+                              'html.parser').find("ul", {
+                                  "class": "grid"
+                              }).findAll("li", {
+                                  "class": None,
+                                  "style": None
+                              })
+        items = items + BeautifulSoup(page.text, 'html.parser').findAll(
+            "div", {"class": "variableVideoLI"})
     media_set = pool.starmap(scrape_array, product(offset_array, [session]))
     media_set = [x for x in media_set if x is not None]
     media_set = list(chain.from_iterable(media_set))
     if "/users/" == directory:
-        directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+"/users/"+username+"/"+location+"/"
+        directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+"/users/justforfans/"+username+"/"\
+                    + location+"/"
     else:
-        directory = directory+username+"/"+location+"/"
+        directory = directory + username + "/" + location + "/"
 
     print("DIRECTORY - " + directory)
     if not os.path.exists(directory):
         os.makedirs(directory)
 
-    with open(directory+'links.json', 'w') as outfile:
+    with open(directory + 'links.json', 'w') as outfile:
         json.dump(media_set, outfile)
     return [media_set, directory]
 
@@ -214,7 +264,8 @@ def download_media(media, session, directory, username):
         file_name, ext = os.path.splitext(file_name)
         ext = ext.replace(".", "")
         date_object = datetime.strptime(media["postedAt"], "%d-%m-%Y %H:%M:%S")
-        directory = reformat(directory, file_name, media["text"], ext, date_object, username)
+        directory = reformat(directory, file_name, media["text"], ext,
+                             date_object, username)
         timestamp = date_object.timestamp()
         if not overwrite_files:
             if os.path.isfile(directory):
@@ -233,7 +284,8 @@ def download_media(media, session, directory, username):
 
 def reformat(directory2, file_name2, text, ext, date, username):
     path = format_path.replace("{username}", username)
-    text = BeautifulSoup(text, 'html.parser').get_text().replace("\n", " ").strip()
+    text = BeautifulSoup(text, 'html.parser').get_text().replace("\n",
+                                                                 " ").strip()
     filtered_text = re.sub(r'[\\/*?:"<>|]', '', text)
     path = path.replace("{text}", filtered_text)
     date = date.strftime(date_format)
@@ -244,26 +296,39 @@ def reformat(directory2, file_name2, text, ext, date, username):
     count_string = len(directory2)
     if count_string > 259:
         num_sum = count_string - 259
-        directory2 = directory2.replace(filtered_text, filtered_text[:-num_sum])
+        directory2 = directory2.replace(filtered_text,
+                                        filtered_text[:-num_sum])
 
     return directory2
 
-def create_session(user_agent, phpsessid, userhash2):
+
+def create_session(user_agent, phpsessid, user_hash2):
     session = requests.Session()
     session.headers = {
-        'User-Agent': user_agent, 'Referer': 'https://justfor.fans/'}
+        'User-Agent': user_agent,
+        'Referer': 'https://justfor.fans/'
+    }
     auth_cookies = [
-        {'name': 'PHPSESSID', 'value': phpsessid},
-        {'name': 'UserHash2', 'value': userhash2},
+        {
+            'name': 'PHPSESSID',
+            'value': phpsessid
+        },
+        {
+            'name': 'UserHash2',
+            'value': user_hash2
+        },
     ]
     for auth_cookie in auth_cookies:
         session.cookies.set(**auth_cookie)
     session.head("https://justfor.fans")
     response = session.get("https://justfor.fans/home.php").text
-    loginname = BeautifulSoup(response, 'html.parser').find("span", {"class": "user-name"}).get_text()
-    if type(loginname) == None:
+    login_name = BeautifulSoup(response,
+                               'html.parser').find("span", {
+                                   "class": "user-name"
+                               }).get_text()
+    if not login_name:
         print("Login Error")
         return False
     else:
-        print("Welcome "+ loginname)
+        print("Welcome " + login_name)
     return session

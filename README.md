@@ -59,6 +59,16 @@ file_name_format:
     Example: {date}/{text}-{file_name}.{ext}
     Warning: It's important to keep a unique identifier next to .{ext}. By default it's {file_name}, but it can be {date}-{text}.ext
     
+auto_site_choice:
+
+    Default = ""
+
+    When you start the script you will be presented with the following scraping choices:
+    onlyfans = onlyfans
+    justforfans = justforfans
+
+    You can automatically choose what you want to scrape if you add it in the config file.
+    
 auto_choice:
 
     Default = ""

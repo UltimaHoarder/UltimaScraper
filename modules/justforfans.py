@@ -90,7 +90,7 @@ def scrape_choice(username, post_count):
         print(
             'Optional Arguments: -l = Only scrape links -()- Example: "a -l"')
         input_choice = input().strip()
-    image_api = "https://justfor.fans/" + username + "?tab=photos&PhotoTabPage=0"
+    image_api = "https://justfor.fans/" + username + "?tab=photos&PhotoTabPage=0&VideoTabPage=9999"
     video_api = "https://justfor.fans/" + username + "?tab=videos&PhotoTabPage=9999&VideoTabPage=0"
     # ARGUMENTS
     only_links = False
@@ -126,7 +126,6 @@ def scrape_choice(username, post_count):
 def scrape_array(link, session):
     media_set = []
     utc_offset_timedelta = datetime.utcnow() - datetime.now()
-    print(utc_offset_timedelta)
     r = session.get(link)
     i_items = BeautifulSoup(r.text,
                             'html.parser').find("ul", {

@@ -1,16 +1,29 @@
 {
-  "auth": {
-    "app-token": "",
-    "auth_id": "",
-    "auth_hash": "",
-    "user-agent": ""
-  },
   "settings": {
     "directory": "",
     "file_name_format": "{file_name}.{ext}",
+    "auto_site_choice": "onlyfans",
     "auto_choice": "",
     "overwrite_files": true,
     "date_format": "%d-%m-%Y",
-    "multithreading": true
+    "multithreading": true,
+    "user-agent": ""
+  },
+  "supported": {
+    "onlyfans": {
+      "auth": {
+        "app-token": "",
+        "auth_id": "",
+        "auth_hash": ""
+      }
+    },
+    "justforfans": {
+      "auth": {
+        "app-token": "",
+        "auth_id": "",
+        "auth_hash": ""
+      }
+    }
+
   }
 }

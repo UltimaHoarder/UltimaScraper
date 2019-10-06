@@ -14,6 +14,7 @@ import re
 import logging
 import inspect
 import math
+import platform
 
 # Open config.json and fill in OPTIONAL information
 json_config = json.load(open('config.json'))
@@ -40,11 +41,13 @@ def start_datascraper(session, app_token, username):
     post_count = user_id[2]
     user_id = user_id[1]
     array = scrape_choice(user_id, app_token, post_count)
+    link_array = {}
     for item in array:
         item[1].append(username)
         only_links = item[1][3]
         item[1].pop(3)
         response = media_scraper(session, *item[1])
+        link_array[item[1][1].lower()] = response[0]
         if not only_links:
             media_set = response[0]
             directory = response[1]
@@ -55,7 +58,7 @@ def start_datascraper(session, app_token, username):
             pool.starmap(download_media, product(media_set, [session], [directory], [username]))
 
     # When profile is done scraping, this function will return True
-    return [True]
+    return [True, link_array]
 
 
 def link_check(session, app_token, username):
@@ -203,7 +206,9 @@ def download_media(media, session, directory, username):
             for chunk in r.iter_content(chunk_size=1024):
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
-        setctime(directory, timestamp)
+        os_name = platform.system()
+        if os_name != "macOS":
+            setctime(directory, timestamp)
         print(link)
         return True
 

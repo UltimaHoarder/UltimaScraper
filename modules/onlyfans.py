@@ -135,6 +135,8 @@ def scrape_array(link, session):
         for media in media_api["media"]:
             if "source" in media:
                 file = media["source"]["source"]
+                if not file:
+                    return
                 if "ca2.convert" in file:
                     file = media["preview"]
                 new_dict = dict()

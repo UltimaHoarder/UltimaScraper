@@ -204,6 +204,8 @@ def download_media(media, session, directory, username):
         if not overwrite_files:
             if os.path.isfile(directory):
                 return
+        if not os.path.exists(os.path.dirname(directory)):
+            os.makedirs(os.path.dirname(directory))
         r = session.get(link, stream=True)
         with open(directory, 'wb') as f:
             for chunk in r.iter_content(chunk_size=1024):

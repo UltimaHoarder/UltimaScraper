@@ -191,7 +191,7 @@ def scrape_array(link, session):
                 }).find("div", {
                     "class": "fr-view"
                 }).get_text()
-            new_dict["text"] = re.sub(r'(\t[ ]+)', '',
+            new_dict["text"] = re.sub(r'(\t[ ]*)', '',
                                       post_text).replace('\n\t', '')
             new_dict["postedAt"] = dt
             media_set.append(new_dict)
@@ -269,6 +269,8 @@ def download_media(media, session, directory, username):
         if not overwrite_files:
             if os.path.isfile(directory):
                 return
+        if not os.path.exists(os.path.dirname(directory)):
+            os.makedirs(os.path.dirname(directory))
         r = session.get(link, allow_redirects=True, stream=True)
         with open(directory, 'wb') as f:
             for chunk in r.iter_content(chunk_size=1024):
@@ -283,8 +285,7 @@ def download_media(media, session, directory, username):
 
 def reformat(directory2, file_name2, text, ext, date, username):
     path = format_path.replace("{username}", username)
-    text = BeautifulSoup(text, 'html.parser').get_text().replace("\n",
-                                                                 " ").strip()
+    text = BeautifulSoup(text, 'html.parser').get_text().replace("\n", " ").replace("\r", "").strip()
     filtered_text = re.sub(r'[\\/*?:"<>|]', '', text)
     path = path.replace("{text}", filtered_text)
     date = date.strftime(date_format)

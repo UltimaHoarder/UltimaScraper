@@ -1,4 +1,4 @@
-# OnlyFans DataScraper (Python 3.7)
+# OnlyFans DataScraper (Python 3.7.X)
 ![app-token](examples/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 =============
 

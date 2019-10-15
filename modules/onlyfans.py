@@ -18,18 +18,19 @@ import platform
 
 # Open config.json and fill in OPTIONAL information
 json_config = json.load(open('config.json'))
-json_settings = json_config["settings"]
-j_directory = json_settings['directory'] + "/users/"
+json_global_settings = json_config["settings"]
+auto_choice = json_global_settings["auto_choice"]
+multithreading = json_global_settings["multithreading"]
+json_settings = json_config["supported"]["onlyfans"]["settings"]
+j_directory = json_settings['directory'] + "/sites/"
 format_path = json_settings['file_name_format']
-auto_choice = json_settings["auto_choice"]
 overwrite_files = json_settings["overwrite_files"]
 date_format = json_settings["date_format"]
-multithreading = json_settings["multithreading"]
 
 max_threads = multiprocessing.cpu_count()
 
 
-def start_datascraper(session, username, app_token):
+def start_datascraper(session, username, site_name, app_token):
     logging.basicConfig(filename='errors.log', level=logging.ERROR,
                         format='%(asctime)s %(levelname)s %(name)s %(message)s')
     user_id = link_check(session, app_token, username)
@@ -46,7 +47,7 @@ def start_datascraper(session, username, app_token):
         item[1].append(username)
         only_links = item[1][3]
         item[1].pop(3)
-        response = media_scraper(session, *item[1])
+        response = media_scraper(session, site_name, *item[1])
         link_array[item[1][1].lower()] = response[0]
         if not only_links:
             media_set = response[0]
@@ -55,7 +56,8 @@ def start_datascraper(session, username, app_token):
                 pool = ThreadPool(max_threads)
             else:
                 pool = ThreadPool(1)
-            pool.starmap(download_media, product(media_set, [session], [directory], [username]))
+            pool.starmap(download_media, product(
+                media_set, [session], [directory], [username]))
 
     # When profile is done scraping, this function will return True
     return [True, link_array]
@@ -105,8 +107,10 @@ def scrape_choice(user_id, app_token, post_count):
         only_links = True
         input_choice = input_choice.replace(" -l", "")
     mandatory = [j_directory, only_links, post_count]
-    i_array = ["You have chosen to scrape images", [image_api, 'Images', *mandatory], 'Images Completed']
-    v_array = ["You have chosen to scrape videos", [video_api, 'Videos', *mandatory], 'Videos Completed']
+    i_array = ["You have chosen to scrape images", [
+        image_api, 'Images', *mandatory], 'Images Completed']
+    v_array = ["You have chosen to scrape videos", [
+        video_api, 'Videos', *mandatory], 'Videos Completed']
     array = [i_array] + [v_array]
     valid_input = False
     if input_choice == "a":
@@ -154,7 +158,7 @@ def scrape_array(link, session):
     return media_set
 
 
-def media_scraper(session, link, location, directory, post_count, username):
+def media_scraper(session, site_name, link, location, directory, post_count, username):
     print("Scraping "+location+". Should take less than a minute.")
     pool = ThreadPool(max_threads)
     floor = math.floor(post_count / 100)
@@ -168,11 +172,13 @@ def media_scraper(session, link, location, directory, post_count, username):
     media_set = pool.starmap(scrape_array, product(offset_array, [session]))
     media_set = [x for x in media_set if x is not None]
     media_set = list(chain.from_iterable(media_set))
-    if "/users/" == directory:
-        directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+"/users/onlyfans/"+username+"/"\
+    directory = j_directory
+    directory += "/"+site_name + "/"+username+"/"\
                     + location+"/"
+    if "/sites/" == j_directory:
+        directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + directory
     else:
-        directory = directory+username+"/"+location+"/"
+        directory = directory
 
     print("DIRECTORY - " + directory)
     if not os.path.exists(directory):
@@ -199,7 +205,8 @@ def download_media(media, session, directory, username):
         file_name, ext = os.path.splitext(file_name)
         ext = ext.replace(".", "")
         date_object = datetime.strptime(media["postedAt"], "%d-%m-%Y %H:%M:%S")
-        directory = reformat(directory, file_name, media["text"], ext, date_object, username)
+        directory = reformat(directory, file_name,
+                             media["text"], ext, date_object, username)
         timestamp = date_object.timestamp()
         if not overwrite_files:
             if os.path.isfile(directory):
@@ -220,7 +227,8 @@ def download_media(media, session, directory, username):
 
 def reformat(directory2, file_name2, text, ext, date, username):
     path = format_path.replace("{username}", username)
-    text = BeautifulSoup(text, 'html.parser').get_text().replace("\n", " ").strip()
+    text = BeautifulSoup(text, 'html.parser').get_text().replace(
+        "\n", " ").strip()
     filtered_text = re.sub(r'[\\/*?:"<>|]', '', text)
     path = path.replace("{text}", filtered_text)
     date = date.strftime(date_format)
@@ -231,7 +239,8 @@ def reformat(directory2, file_name2, text, ext, date, username):
     count_string = len(directory2)
     if count_string > 259:
         num_sum = count_string - 259
-        directory2 = directory2.replace(filtered_text, filtered_text[:-num_sum])
+        directory2 = directory2.replace(
+            filtered_text, filtered_text[:-num_sum])
 
     return directory2
 
@@ -253,13 +262,15 @@ def create_session(user_agent, auth_id, auth_hash, app_token):
     for auth_cookie in auth_cookies:
         session.cookies.set(**auth_cookie)
     session.head("https://onlyfans.com")
-    response = json.loads(session.get("https://onlyfans.com/api2/v2/users/me?app-token="+app_token).text)
+    response = json.loads(session.get(
+        "https://onlyfans.com/api2/v2/users/me?app-token="+app_token).text)
     if 'error' in response:
         show_error(response)
         return False
     else:
         print("Welcome "+response["name"])
-    return session
+    option_string = "username or profile link"
+    return [session, option_string]
 
 
 def get_subscriptions(session, app_token):

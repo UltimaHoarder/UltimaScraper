@@ -1,7 +1,10 @@
+import os
 import modules.onlyfans as onlyfans
 import modules.justforfans as justforfans
+import modules.four_chan as four_chan
 import timeit
 import json
+import modules.helpers as helpers
 # Open config.json and fill in MANDATORY information for the script to work
 json_config = json.load(open('config.json'))
 json_sites = json_config["supported"]
@@ -45,13 +48,17 @@ while True:
         auth_hash = json_auth['user_hash2']
         x = justforfans
         session = x.create_session(user_agent, auth_id, auth_hash)
+    elif site_name == "4chan":
+        x = four_chan
+        session = x.create_session()
 
-    if not session:
+    if not session[0]:
         continue
-    print('Input a '+site_name+' '+'username or profile link')
+    print('Input a '+site_name+' '+session[1])
     input_link = input().strip()
-    username = input_link.rsplit('/', 1)[-1]
+    username = helpers.parse_links(site_name, input_link)
     start_time = timeit.default_timer()
-    result = x.start_datascraper(session, username, app_token)
+    session = session[0]
+    result = x.start_datascraper(session, username, site_name, app_token)
     stop_time = str(int(timeit.default_timer() - start_time) / 60)
     print('Task Completed in ' + stop_time + ' Minutes')

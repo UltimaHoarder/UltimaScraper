@@ -1,11 +1,7 @@
 {
   "settings": {
-    "directory": "",
-    "file_name_format": "{file_name}.{ext}",
     "auto_site_choice": "",
-    "auto_choice": "",
-    "overwrite_files": true,
-    "date_format": "%d-%m-%Y",
+    "auto_choice": "a",
     "multithreading": true,
     "user-agent": ""
   },
@@ -15,12 +11,34 @@
         "app-token": "",
         "auth_id": "",
         "auth_hash": ""
+      },
+      "settings": {
+        "directory": "",
+        "file_name_format": "{file_name}.{ext}",
+        "overwrite_files": true,
+        "date_format": "%d-%m-%Y"
       }
     },
     "justforfans": {
       "auth": {
         "phpsessid": "",
         "user_hash2": ""
+      },
+      "settings": {
+        "directory": "",
+        "file_name_format": "{file_name}.{ext}",
+        "overwrite_files": true,
+        "date_format": "%d-%m-%Y"
+      }
+    },
+    "4chan": {
+      "auth": {},
+      "settings": {
+        "directory": "",
+        "file_name_format": "{file_name}.{ext}",
+        "overwrite_files": false,
+        "date_format": "%d-%m-%Y",
+        "ignore_thread_titles": [""]
       }
     }
 

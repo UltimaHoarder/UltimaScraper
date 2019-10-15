@@ -18,18 +18,19 @@ import platform
 
 # Open config.json and fill in OPTIONAL information
 json_config = json.load(open('config.json'))
-json_settings = json_config["settings"]
-j_directory = json_settings['directory'] + "/users/"
+json_global_settings = json_config["settings"]
+auto_choice = json_global_settings["auto_choice"]
+multithreading = json_global_settings["multithreading"]
+json_settings = json_config["supported"]["justforfans"]["settings"]
+j_directory = json_settings['directory'] + "/sites/"
 format_path = json_settings['file_name_format']
-auto_choice = json_settings["auto_choice"]
 overwrite_files = json_settings["overwrite_files"]
 date_format = json_settings["date_format"]
-multithreading = json_settings["multithreading"]
 
 max_threads = multiprocessing.cpu_count()
 
 
-def start_datascraper(session, username, app_token=None):
+def start_datascraper(session, username, site_name, app_token=None):
     logging.basicConfig(
         filename='errors.log',
         level=logging.ERROR,
@@ -47,7 +48,7 @@ def start_datascraper(session, username, app_token=None):
         item[1].append(username)
         only_links = item[1][3]
         item[1].pop(3)
-        response = media_scraper(session, *item[1])
+        response = media_scraper(session, site_name, *item[1])
         link_array[item[1][1].lower()] = response[0]
         if not only_links:
             media_set = response[0]
@@ -198,7 +199,7 @@ def scrape_array(link, session):
     return media_set
 
 
-def media_scraper(session, link, location, directory, post_count, username):
+def media_scraper(session, site_name, link, location, directory, post_count, username):
     print("Scraping " + location + ". May take a few minutes.")
     pool = ThreadPool(max_threads)
     i = 0
@@ -231,11 +232,13 @@ def media_scraper(session, link, location, directory, post_count, username):
     media_set = pool.starmap(scrape_array, product(offset_array, [session]))
     media_set = [x for x in media_set if x is not None]
     media_set = list(chain.from_iterable(media_set))
-    if "/users/" == directory:
-        directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__)))+"/users/justforfans/"+username+"/"\
+    directory = j_directory
+    directory += "/"+site_name + "/"+username+"/"\
                     + location+"/"
+    if "/sites/" == j_directory:
+        directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + directory
     else:
-        directory = directory + username + "/" + location + "/"
+        directory = directory
 
     print("DIRECTORY - " + directory)
     if not os.path.exists(directory):
@@ -331,4 +334,5 @@ def create_session(user_agent, phpsessid, user_hash2):
         return False
     else:
         print("Welcome " + login_name)
-    return session
+    option_string = "username or profile link"
+    return [session, option_string]

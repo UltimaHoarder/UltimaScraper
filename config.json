@@ -1,7 +1,7 @@
 {
   "settings": {
     "auto_site_choice": "",
-    "auto_choice": "a",
+    "auto_choice": "",
     "multithreading": true,
     "user-agent": ""
   },

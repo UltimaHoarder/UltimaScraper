@@ -59,6 +59,14 @@ file_name_format:
     Example: {date}/{text}-{file_name}.{ext}
     Warning: It's important to keep a unique identifier next to .{ext}. By default it's {file_name}, but it can be {date}-{text}.ext
     
+text_length:
+
+    Default = ""
+    Ideal = "50"
+    Max = "259"
+
+    When you use {text} in file_name_format, a limit of how many characters can be set by inputting a number.
+    
 auto_site_choice:
 
     Default = ""
@@ -100,6 +108,20 @@ multithreading:
 
     If set to false, you will download files 1 by 1. (If you don't have fast internet, may god help you.)
     I'd reccomend leaving it set to true.
+
+boards:
+
+    Default = []
+    Example = ["s", "gif"]
+
+    Input boards names that you want to automatically scrape.
+
+ignored_keywords:
+
+    Default = []
+    Example = ["ignore", "me"]
+
+    Any words you input, the script will ignore any content that contains these words.
 
 
 

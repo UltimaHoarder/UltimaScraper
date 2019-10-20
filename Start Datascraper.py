@@ -34,6 +34,7 @@ while True:
         x = int(input())
         site_name = site_names[x]
     json_auth = json_sites[site_name]["auth"]
+    json_site_settings = json_sites[site_name]["settings"]
     session = ""
     x = ""
     app_token = ""
@@ -43,22 +44,27 @@ while True:
         auth_hash = json_auth['auth_hash']
         x = onlyfans
         session = x.create_session(user_agent, auth_id, auth_hash, app_token)
+        array = []
     elif site_name == "justforfans":
         auth_id = json_auth['phpsessid']
         auth_hash = json_auth['user_hash2']
         x = justforfans
         session = x.create_session(user_agent, auth_id, auth_hash)
+        array = []
     elif site_name == "4chan":
         x = four_chan
         session = x.create_session()
+        array = json_site_settings["boards"]
 
     if not session[0]:
         continue
     print('Input a '+site_name+' '+session[1])
-    input_link = input().strip()
-    username = helpers.parse_links(site_name, input_link)
-    start_time = timeit.default_timer()
     session = session[0]
-    result = x.start_datascraper(session, username, site_name, app_token)
-    stop_time = str(int(timeit.default_timer() - start_time) / 60)
-    print('Task Completed in ' + stop_time + ' Minutes')
+    if not array:
+        array = [input().strip()]
+    for input_link in array:
+        username = helpers.parse_links(site_name, input_link)
+        start_time = timeit.default_timer()
+        result = x.start_datascraper(session, username, site_name, app_token)
+        stop_time = str(int(timeit.default_timer() - start_time) / 60)
+        print('Task Completed in ' + stop_time + ' Minutes')

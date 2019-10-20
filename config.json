@@ -15,8 +15,10 @@
       "settings": {
         "directory": "",
         "file_name_format": "{file_name}.{ext}",
+        "text_length": "",
         "overwrite_files": true,
-        "date_format": "%d-%m-%Y"
+        "date_format": "%d-%m-%Y",
+        "ignored_keywords": []
       }
     },
     "justforfans": {
@@ -27,8 +29,10 @@
       "settings": {
         "directory": "",
         "file_name_format": "{file_name}.{ext}",
+        "text_length": "",
         "overwrite_files": true,
-        "date_format": "%d-%m-%Y"
+        "date_format": "%d-%m-%Y",
+        "ignored_keywords": []
       }
     },
     "4chan": {
@@ -36,9 +40,11 @@
       "settings": {
         "directory": "",
         "file_name_format": "{file_name}.{ext}",
+        "text_length": "",
         "overwrite_files": false,
         "date_format": "%d-%m-%Y",
-        "ignore_thread_titles": [""]
+        "boards": [],
+        "ignored_keywords": []
       }
     }
 

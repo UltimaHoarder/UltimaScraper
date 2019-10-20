@@ -1,6 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
 from win32_setctime import setctime
+from modules.helpers import reformat
+from modules.helpers import format_media_set
 
 import os
 import json
@@ -26,13 +28,21 @@ j_directory = json_settings['directory'] + "/sites/"
 format_path = json_settings['file_name_format']
 overwrite_files = json_settings["overwrite_files"]
 date_format = json_settings["date_format"]
+ignored_keywords = json_settings["ignored_keywords"]
+maximum_length = 240
+text_length = int(json_settings["text_length"]
+                  ) if json_settings["text_length"] else maximum_length
+if text_length > maximum_length:
+    text_length = maximum_length
 
 max_threads = multiprocessing.cpu_count()
 
 
 def start_datascraper(session, username, site_name, app_token):
-    logging.basicConfig(filename='errors.log', level=logging.ERROR,
-                        format='%(asctime)s %(levelname)s %(name)s %(message)s')
+    logging.basicConfig(
+        filename='errors.log',
+        level=logging.ERROR,
+        format='%(asctime)s %(levelname)s %(name)s %(message)s')
     user_id = link_check(session, app_token, username)
     if not user_id[0]:
         print(user_id[1])
@@ -45,9 +55,9 @@ def start_datascraper(session, username, site_name, app_token):
     link_array = {}
     for item in array:
         item[1].append(username)
-        only_links = item[1][3]
+        only_links = item[1][4]
         item[1].pop(3)
-        response = media_scraper(session, site_name, *item[1])
+        response = media_scraper(session, site_name, only_links, *item[1])
         link_array[item[1][1].lower()] = response[0]
         if not only_links:
             media_set = response[0]
@@ -57,8 +67,7 @@ def start_datascraper(session, username, site_name, app_token):
             else:
                 pool = ThreadPool(1)
             pool.starmap(download_media, product(
-                media_set, [session], [directory], [username]))
-
+                media_set["valid"], [session], [directory], [username]))
     # When profile is done scraping, this function will return True
     return [True, link_array]
 
@@ -86,7 +95,8 @@ def link_check(session, app_token, username):
     else:
         temp_user_id2[0] = True
         temp_user_id2[1] = str(y["id"])
-        temp_user_id2[2] = y["postsCount"]
+        temp_user_id2[2] = [y["photosCount"],
+                            y["videosCount"], y["audiosCount"]]
         return temp_user_id2
 
 
@@ -94,24 +104,28 @@ def scrape_choice(user_id, app_token, post_count):
     if auto_choice:
         input_choice = auto_choice
     else:
-        print('Scrape: a = Everything | b = Images | c = Videos')
+        print('Scrape: a = Everything | b = Images | c = Videos | d = Audios')
         print('Optional Arguments: -l = Only scrape links -()- Example: "a -l"')
         input_choice = input().strip()
-    image_api = "https://onlyfans.com/api2/v2/users/"+user_id+"/posts/photos?limit=100&offset=0&order=publish_date_" \
-                                                              "desc&app-token="+app_token+""
-    video_api = "https://onlyfans.com/api2/v2/users/"+user_id+"/posts/videos?limit=100&offset=0&order=publish_date_" \
-                                                              "desc&app-token="+app_token+""
+    image_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
+        "/posts/photos?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
+    video_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
+        "/posts/videos?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
+    audio_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
+        "/posts/audios?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
     # ARGUMENTS
     only_links = False
     if "-l" in input_choice:
         only_links = True
         input_choice = input_choice.replace(" -l", "")
-    mandatory = [j_directory, only_links, post_count]
+    mandatory = [j_directory, only_links]
     i_array = ["You have chosen to scrape images", [
-        image_api, 'Images', *mandatory], 'Images Completed']
+        image_api, 'Images', "photo", *mandatory, post_count[0]], 'Images Completed']
     v_array = ["You have chosen to scrape videos", [
-        video_api, 'Videos', *mandatory], 'Videos Completed']
-    array = [i_array] + [v_array]
+        video_api, 'Videos', "video", *mandatory, post_count[1]], 'Videos Completed']
+    a_array = ["You have chosen to scrape audio", [
+        audio_api, 'Audios', "audio", *mandatory, post_count[2]], 'Audios Completed']
+    array = [i_array] + [v_array] + [a_array]
     valid_input = False
     if input_choice == "a":
         valid_input = True
@@ -121,6 +135,9 @@ def scrape_choice(user_id, app_token, post_count):
     if input_choice == "c":
         array = [array[1]]
         valid_input = True
+    if input_choice == "d":
+        array = [array[2]]
+        valid_input = True
     if valid_input:
         return array
     else:
@@ -128,19 +145,32 @@ def scrape_choice(user_id, app_token, post_count):
     return False
 
 
-def scrape_array(link, session):
-    media_set = []
+def scrape_array(link, session, media_type):
+    media_set = [[],[]]
     master_date = "00-00-0000"
-    r = session.get(link)
-    y = json.loads(r.text)
-    if not y:
-        return
+    count = 0
+    found = False
+    while count < 10:
+        r = session.get(link)
+        y = json.loads(r.text)
+        if not y:
+            count += 1
+            continue
+        found = True
+        break
+    if not found:
+        return media_set
+    x = 0
     for media_api in y:
         for media in media_api["media"]:
+            if media["type"] != media_type:
+                x += 1
+                continue
             if "source" in media:
-                file = media["source"]["source"]
+                source = media["source"]
+                file = source["source"]
                 if not file:
-                    return
+                    continue
                 if "ca2.convert" in file:
                     file = media["preview"]
                 new_dict = dict()
@@ -154,38 +184,45 @@ def scrape_array(link, session):
                     master_date = dt
                 new_dict["text"] = media_api["text"]
                 new_dict["postedAt"] = dt
-                media_set.append(new_dict)
+
+                if source["size"] == 0:
+                    media_set[1].append(new_dict)
+                    continue
+                media_set[0].append(new_dict)
     return media_set
 
 
-def media_scraper(session, site_name, link, location, directory, post_count, username):
+def media_scraper(session, site_name, only_links, link, location, media_type, directory, post_count, username):
     print("Scraping "+location+". Should take less than a minute.")
     pool = ThreadPool(max_threads)
-    floor = math.floor(post_count / 100)
-    if floor == 0:
-        floor = 1
-    a = list(range(floor))
+    ceil = math.ceil(post_count / 100)
+    a = list(range(ceil))
     offset_array = []
     for b in a:
         b = b * 100
         offset_array.append(link.replace("offset=0", "offset=" + str(b)))
-    media_set = pool.starmap(scrape_array, product(offset_array, [session]))
-    media_set = [x for x in media_set if x is not None]
-    media_set = list(chain.from_iterable(media_set))
+    media_set = format_media_set(pool.starmap(scrape_array, product(
+        offset_array, [session], [media_type])))
     directory = j_directory
-    directory += "/"+site_name + "/"+username+"/"\
-                    + location+"/"
-    if "/sites/" == j_directory:
-        directory = os.path.dirname(os.path.dirname(os.path.realpath(__file__))) + directory
-    else:
-        directory = directory
+    if post_count:
+        user_directory = directory+"/"+site_name + "/"+username+"/"
+        metadata_directory = user_directory+"/metadata/"
+        directory = user_directory + location+"/"
+        if "/sites/" == j_directory:
+            user_directory = os.path.dirname(os.path.dirname(
+                os.path.realpath(__file__))) + user_directory
+            metadata_directory = os.path.dirname(os.path.dirname(
+                os.path.realpath(__file__))) + metadata_directory
+            directory = os.path.dirname(os.path.dirname(
+                os.path.realpath(__file__))) + directory
 
-    print("DIRECTORY - " + directory)
-    if not os.path.exists(directory):
-        os.makedirs(directory)
+        if not only_links:
+            print("DIRECTORY - " + directory)
+            os.makedirs(directory, exist_ok=True)
+        os.makedirs(metadata_directory, exist_ok=True)
 
-    with open(directory+'links.json', 'w') as outfile:
-        json.dump(media_set, outfile)
+        with open(metadata_directory+location+".json", 'w') as outfile:
+            json.dump(media_set, outfile)
     return [media_set, directory]
 
 
@@ -193,8 +230,6 @@ def download_media(media, session, directory, username):
     while True:
         link = media["link"]
         r = session.head(link)
-        if r.status_code != 200:
-            return
         file_name = link.rsplit('/', 1)[-1]
         result = file_name.split("_", 1)
         if len(result) > 1:
@@ -206,7 +241,7 @@ def download_media(media, session, directory, username):
         ext = ext.replace(".", "")
         date_object = datetime.strptime(media["postedAt"], "%d-%m-%Y %H:%M:%S")
         directory = reformat(directory, file_name,
-                             media["text"], ext, date_object, username)
+                             media["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
         timestamp = date_object.timestamp()
         if not overwrite_files:
             if os.path.isfile(directory):
@@ -219,30 +254,10 @@ def download_media(media, session, directory, username):
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
         os_name = platform.system()
-        if os_name != "macOS":
+        if os_name == "Windows":
             setctime(directory, timestamp)
         print(link)
         return True
-
-
-def reformat(directory2, file_name2, text, ext, date, username):
-    path = format_path.replace("{username}", username)
-    text = BeautifulSoup(text, 'html.parser').get_text().replace(
-        "\n", " ").strip()
-    filtered_text = re.sub(r'[\\/*?:"<>|]', '', text)
-    path = path.replace("{text}", filtered_text)
-    date = date.strftime(date_format)
-    path = path.replace("{date}", date)
-    path = path.replace("{file_name}", file_name2)
-    path = path.replace("{ext}", ext)
-    directory2 += path
-    count_string = len(directory2)
-    if count_string > 259:
-        num_sum = count_string - 259
-        directory2 = directory2.replace(
-            filtered_text, filtered_text[:-num_sum])
-
-    return directory2
 
 
 def show_error(error):

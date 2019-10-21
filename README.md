@@ -87,6 +87,15 @@ auto_choice:
     c = Videos
 
     You can automatically choose what you want to scrape if you add it in the config file.
+    
+|**NEW**| export_type:
+
+    Default = "json"
+
+    a = "json"
+    b = "csv"
+
+    You can export an archive to different formats.
 
 overwrite_files:
 

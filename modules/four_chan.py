@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from modules.helpers import reformat
+from modules.helpers import *
 
 import os
 import json

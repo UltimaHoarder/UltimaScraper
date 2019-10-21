@@ -1,7 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from modules.helpers import reformat
-from modules.helpers import format_media_set
+from modules.helpers import *
 
 import os
 import json
@@ -238,9 +237,8 @@ def media_scraper(session, site_name, only_links, link, location, media_type, di
             print("DIRECTORY - " + directory)
             os.makedirs(directory, exist_ok=True)
         os.makedirs(metadata_directory, exist_ok=True)
-
-        with open(metadata_directory+location+".json", 'w') as outfile:
-            json.dump(media_set, outfile)
+        archive_directory = metadata_directory+location
+        export_archive(media_set, archive_directory)
     return [media_set, directory]
 
 

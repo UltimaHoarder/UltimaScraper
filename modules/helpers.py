@@ -2,8 +2,14 @@ import re
 import os
 from bs4 import BeautifulSoup
 import platform
+import csv
+import itertools
+import json
 
-
+# Open config.json and fill in OPTIONAL information
+json_config = json.load(open('config.json'))
+json_global_settings = json_config["settings"]
+export_type = json_global_settings["export_type"]
 def parse_links(site_name, input_link):
     if site_name in {"onlyfans", "justforfans"}:
         username = input_link.rsplit('/', 1)[-1]
@@ -65,9 +71,31 @@ def format_media_set(media_set):
         x["invalid"].extend(y[1])
     return x
 
+
 def format_image(directory, timestamp):
     os_name = platform.system()
     if os_name == "Windows":
         from win32_setctime import setctime
         setctime(directory, timestamp)
 
+
+def export_archive(data, archive_directory):
+    # Not Finished
+    if export_type == "json":
+        with open(archive_directory+".json", 'w') as outfile:
+            json.dump(data, outfile)
+    if export_type == "csv":
+        with open(archive_directory+'.csv', mode='w', newline='') as csv_file:
+            fieldnames = []
+            if data["valid"]:
+                fieldnames.extend(data["valid"][0].keys())
+            elif data["invalid"]:
+                fieldnames.extend(data["invalid"][0].keys())
+            header = [""]+fieldnames
+            if len(fieldnames) > 1:
+                writer = csv.DictWriter(csv_file, fieldnames=header)
+                writer.writeheader()
+                for item in data["valid"]:
+                    writer.writerow({**{"": "valid"}, **item})
+                for item in data["invalid"]:
+                    writer.writerow({**{"": "invalid"}, **item})

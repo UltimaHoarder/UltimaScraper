@@ -1,6 +1,5 @@
 import requests
 from bs4 import BeautifulSoup
-from win32_setctime import setctime
 from modules.helpers import reformat
 
 import os

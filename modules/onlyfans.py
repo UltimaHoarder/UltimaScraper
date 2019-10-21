@@ -1,8 +1,8 @@
 import requests
 from bs4 import BeautifulSoup
-from win32_setctime import setctime
 from modules.helpers import reformat
 from modules.helpers import format_media_set
+from modules.helpers import format_image
 
 import os
 import json
@@ -16,7 +16,6 @@ import re
 import logging
 import inspect
 import math
-import platform
 
 # Open config.json and fill in OPTIONAL information
 json_config = json.load(open('config.json'))
@@ -253,9 +252,7 @@ def download_media(media, session, directory, username):
             for chunk in r.iter_content(chunk_size=1024):
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
-        os_name = platform.system()
-        if os_name == "Windows":
-            setctime(directory, timestamp)
+        format_image(directory, timestamp)
         print(link)
         return True
 

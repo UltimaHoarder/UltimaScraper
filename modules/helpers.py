@@ -1,6 +1,7 @@
 import re
 import os
 from bs4 import BeautifulSoup
+import platform
 
 
 def parse_links(site_name, input_link):
@@ -63,3 +64,10 @@ def format_media_set(media_set):
         x["valid"].extend(y[0])
         x["invalid"].extend(y[1])
     return x
+
+def format_image(directory, timestamp):
+    os_name = platform.system()
+    if os_name == "Windows":
+        from win32_setctime import setctime
+        setctime(directory, timestamp)
+

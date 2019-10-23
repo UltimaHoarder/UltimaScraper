@@ -63,7 +63,7 @@ text_length:
 
     Default = ""
     Ideal = "50"
-    Max = "259"
+    Max = "240"
 
     When you use {text} in file_name_format, a limit of how many characters can be set by inputting a number.
     

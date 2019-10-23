@@ -1,4 +1,6 @@
 import os
+path = os.path.dirname(os.path.realpath(__file__))
+os.chdir(path)
 import modules.onlyfans as onlyfans
 import modules.justforfans as justforfans
 import modules.four_chan as four_chan

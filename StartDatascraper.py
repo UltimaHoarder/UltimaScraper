@@ -4,9 +4,20 @@ os.chdir(path)
 import modules.onlyfans as onlyfans
 import modules.justforfans as justforfans
 import modules.four_chan as four_chan
+import modules.helpers as helpers
 import timeit
 import json
-import modules.helpers as helpers
+import logging
+
+# Configure logging to the console and file system at INFO level and above
+logging.basicConfig(filename='application.log', level=logging.INFO,
+                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
+formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')
+console = logging.StreamHandler()
+console.setLevel(logging.DEBUG)
+console.setFormatter(formatter)
+logging.getLogger("").addHandler(console)
+
 # Open config.json and fill in MANDATORY information for the script to work
 json_config = json.load(open('config.json'))
 json_sites = json_config["supported"]

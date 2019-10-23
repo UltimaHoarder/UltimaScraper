@@ -16,6 +16,8 @@ import inspect
 import math
 import platform
 
+logger = logging.getLogger(__name__)
+
 # Open config.json and fill in OPTIONAL information
 json_config = json.load(open('config.json'))
 json_global_settings = json_config["settings"]
@@ -37,10 +39,6 @@ max_threads = multiprocessing.cpu_count()
 
 
 def start_datascraper(session, board_name, site_name, link_type=None):
-    logging.basicConfig(
-        filename='errors.log',
-        level=logging.ERROR,
-        format='%(asctime)s %(levelname)s %(name)s %(message)s')
     user_id = link_check(session, board_name)
     if not user_id[0]:
         print(user_id[1])
@@ -224,7 +222,8 @@ def download_media(thread, session, directory, board_name):
                         for chunk in r.iter_content(chunk_size=1024):
                             if chunk:  # filter out keep-alive new chunks
                                 f.write(chunk)
-                    print(download_path)
+                    logger.info("Link: {}".format(link))
+                    logger.info("Path: {}".format(download_path))
                     valid = True
         if valid:
             os.makedirs(directory, exist_ok=True)

@@ -15,6 +15,8 @@ import logging
 import inspect
 import math
 
+logger = logging.getLogger(__name__)
+
 # Open config.json and fill in OPTIONAL information
 json_config = json.load(open('config.json'))
 json_global_settings = json_config["settings"]
@@ -36,10 +38,6 @@ max_threads = multiprocessing.cpu_count()
 
 
 def start_datascraper(session, username, site_name, app_token=None):
-    logging.basicConfig(
-        filename='errors.log',
-        level=logging.ERROR,
-        format='%(asctime)s %(levelname)s %(name)s %(message)s')
     user_id = link_check(session, username)
     if not user_id[0]:
         print(user_id[1])
@@ -273,7 +271,8 @@ def download_media(media, session, directory, username):
                 if chunk:  # filter out keep-alive new chunks
                     f.write(chunk)
         format_image(directory, timestamp)
-        print(link)
+        logger.info("Link: {}".format(link))
+        logger.info("Path: {}".format(directory))
         return True
 
 

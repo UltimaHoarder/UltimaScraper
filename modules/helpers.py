@@ -99,3 +99,13 @@ def export_archive(data, archive_directory):
                     writer.writerow({**{"": "valid"}, **item})
                 for item in data["invalid"]:
                     writer.writerow({**{"": "invalid"}, **item})
+
+
+def get_directory(directory):
+    if directory:
+        os.makedirs(directory, exist_ok=True)
+        return directory+"/"
+    else:
+        return "/sites/"
+    print
+

@@ -24,7 +24,7 @@ json_global_settings = json_config["settings"]
 auto_choice = json_global_settings["auto_choice"]
 multithreading = json_global_settings["multithreading"]
 json_settings = json_config["supported"]["4chan"]["settings"]
-j_directory = json_settings['directory'] + "/sites/"
+j_directory = get_directory(json_settings['directory'])
 format_path = json_settings['file_name_format']
 overwrite_files = json_settings["overwrite_files"]
 date_format = json_settings["date_format"]
@@ -152,7 +152,6 @@ def thread_scraper(thread_id, board_name, session, directory):
         if "name" not in post:
             post["name"] = "Anonymous"
         if "filename" in post:
-            filename = str(post["tim"])
             ext = post["ext"].replace(".", "")
             filename = post["filename"]
             new_directory = directory+"/"+text+" - "+thread_id+"/"
@@ -177,25 +176,27 @@ def download_media(thread, session, directory, board_name):
     try:
         directory = thread["download_path"]+"/"
         valid = False
+        name_key = "filename"
         for post in thread["posts"]:
-            if "filename" in post:
-                post["filename"] = re.sub(
-                    r'[\\/*?:"<>|]', '', post["filename"])
+            if name_key in post:
+                post["tim"] = str(post["tim"])
+                post[name_key] = re.sub(
+                    r'[\\/*?:"<>|]', '', post[name_key])
                 ext = post["ext"].replace(".", "")
-                filename = str(post["tim"])+"."+ext
+                filename = post["tim"]+"."+ext
                 link = "http://i.4cdn.org/" + board_name + "/" + filename
-                filename = post["filename"]+"."+ext
+                filename = post[name_key]+"."+ext
                 download_path = directory+filename
                 count_string = len(download_path)
-                if count_string > 259:
-                    num_sum = count_string - 259
-                    post["filename"] = post["filename"][:50]
-                    download_path = directory+post["filename"]+"."+ext
+                if count_string > maximum_length:
+                    num_sum = count_string - maximum_length
+                    name_key = "tim"
+                    download_path = directory+post[name_key]+"."+ext
 
                 if not overwrite_files:
                     count = 1
                     found = False
-                    og_filename = post["filename"]
+                    og_filename = post[name_key]
                     while True:
                         if os.path.isfile(download_path):
                             remote_size = post["fsize"]

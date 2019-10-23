@@ -7,6 +7,7 @@ import json
 import logging
 import modules.helpers as helpers
 
+# Configure logging to the console and file system at INFO level and above
 logging.basicConfig(filename='application.log', level=logging.INFO,
                     format='%(asctime)s %(levelname)s %(name)s %(message)s')
 formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')

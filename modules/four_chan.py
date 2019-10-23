@@ -37,10 +37,6 @@ max_threads = multiprocessing.cpu_count()
 
 
 def start_datascraper(session, board_name, site_name, link_type=None):
-    logging.basicConfig(
-        filename='errors.log',
-        level=logging.ERROR,
-        format='%(asctime)s %(levelname)s %(name)s %(message)s')
     user_id = link_check(session, board_name)
     if not user_id[0]:
         print(user_id[1])

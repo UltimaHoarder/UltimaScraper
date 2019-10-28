@@ -1,7 +1,6 @@
 {
   "settings": {
     "auto_site_choice": "",
-    "auto_choice": "",
     "export_type": "json",
     "multithreading": true,
     "user-agent": ""
@@ -14,6 +13,7 @@
         "auth_hash": ""
       },
       "settings": {
+        "auto_choice": "",
         "directory": "",
         "file_name_format": "{file_name}.{ext}",
         "text_length": "",
@@ -28,6 +28,7 @@
         "user_hash2": ""
       },
       "settings": {
+        "auto_choice": "",
         "directory": "",
         "file_name_format": "{file_name}.{ext}",
         "text_length": "",
@@ -39,6 +40,7 @@
     "4chan": {
       "auth": {},
       "settings": {
+        "auto_choice": "",
         "directory": "",
         "file_name_format": "{file_name}.{ext}",
         "text_length": "",

@@ -85,7 +85,7 @@ def export_archive(data, archive_directory):
         with open(archive_directory+".json", 'w') as outfile:
             json.dump(data, outfile)
     if export_type == "csv":
-        with open(archive_directory+'.csv', mode='w', newline='') as csv_file:
+        with open(archive_directory+'.csv', mode='w',encoding='utf-8', newline='') as csv_file:
             fieldnames = []
             if data["valid"]:
                 fieldnames.extend(data["valid"][0].keys())
@@ -100,12 +100,25 @@ def export_archive(data, archive_directory):
                 for item in data["invalid"]:
                     writer.writerow({**{"": "invalid"}, **item})
 
-
 def get_directory(directory):
     if directory:
         os.makedirs(directory, exist_ok=True)
         return directory+"/"
     else:
         return "/sites/"
-    print
 
+
+def format_directory(j_directory, site_name, username, location):
+    directory = j_directory
+
+    user_directory = directory+"/"+site_name + "/"+username+"/"
+    metadata_directory = user_directory+"/metadata/"
+    directory = user_directory + location+"/"
+    if "/sites/" == j_directory:
+        user_directory = os.path.dirname(os.path.dirname(
+            os.path.realpath(__file__))) + user_directory
+        metadata_directory = os.path.dirname(os.path.dirname(
+            os.path.realpath(__file__))) + metadata_directory
+        directory = os.path.dirname(os.path.dirname(
+            os.path.realpath(__file__))) + directory
+    return [user_directory, metadata_directory, directory]

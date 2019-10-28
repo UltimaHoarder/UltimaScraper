@@ -20,9 +20,9 @@ logger = logging.getLogger(__name__)
 # Open config.json and fill in OPTIONAL information
 json_config = json.load(open('config.json'))
 json_global_settings = json_config["settings"]
-auto_choice = json_global_settings["auto_choice"]
 multithreading = json_global_settings["multithreading"]
 json_settings = json_config["supported"]["onlyfans"]["settings"]
+auto_choice = json_settings["auto_choice"]
 j_directory = get_directory(json_settings['directory'])
 format_path = json_settings['file_name_format']
 overwrite_files = json_settings["overwrite_files"]
@@ -49,6 +49,7 @@ def start_datascraper(session, username, site_name, app_token):
     array = scrape_choice(user_id, app_token, post_count)
     link_array = {}
     for item in array:
+        post_count = str(item[1][5])
         item[1].append(username)
         only_links = item[1][4]
         item[1].pop(3)
@@ -61,6 +62,8 @@ def start_datascraper(session, username, site_name, app_token):
                 pool = ThreadPool(max_threads)
             else:
                 pool = ThreadPool(1)
+            location = item[1][1]
+            print("Downloading "+post_count+" "+location)
             pool.starmap(download_media, product(
                 media_set["valid"], [session], [directory], [username]))
     # When profile is done scraping, this function will return True
@@ -140,12 +143,11 @@ def scrape_choice(user_id, app_token, post_count):
     return False
 
 
-def scrape_array(link, session, media_type):
-    media_set = [[],[]]
-    master_date = "00-00-0000"
+def scrape_array(link, session, media_type, directory, username):
+    media_set = [[], []]
     count = 0
     found = False
-    while count < 10:
+    while count < 11:
         r = session.get(link)
         y = json.loads(r.text)
         if not y:
@@ -156,6 +158,7 @@ def scrape_array(link, session, media_type):
     if not found:
         return media_set
     x = 0
+    master_date = "01-01-0001 00:00:00"
     for media_api in y:
         for media in media_api["media"]:
             if media["type"] != media_type:
@@ -163,23 +166,31 @@ def scrape_array(link, session, media_type):
                 continue
             if "source" in media:
                 source = media["source"]
-                file = source["source"]
-                if not file:
+                link = source["source"]
+                if not link:
                     continue
-                if "ca2.convert" in file:
-                    file = media["preview"]
+                if "ca2.convert" in link:
+                    link = media["preview"]
                 new_dict = dict()
                 new_dict["post_id"] = media_api["id"]
-                new_dict["link"] = file
+                new_dict["link"] = link
                 if media_api["postedAt"] == "-001-11-30T00:00:00+00:00":
-                    dt = master_date
+                    date_string = master_date
+                    date_object = datetime.strptime(master_date, "%d-%m-%Y  %H:%M:%S")
                 else:
-                    dt = datetime.fromisoformat(media_api["postedAt"]).replace(tzinfo=None).strftime(
+                    date_object = datetime.fromisoformat(media_api["postedAt"])
+                    date_string = date_object.replace(tzinfo=None).strftime(
                         "%d-%m-%Y %H:%M:%S")
-                    master_date = dt
+                    master_date = date_string
                 new_dict["text"] = media_api["text"]
-                new_dict["postedAt"] = dt
-
+                new_dict["postedAt"] = date_string
+                file_name = link.rsplit('/', 1)[-1]
+                file_name, ext = os.path.splitext(file_name)
+                ext = ext.replace(".", "")
+                file_path = reformat(directory, file_name,
+                                    new_dict["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
+                new_dict["directory"] = directory
+                new_dict["filename"] = file_path.rsplit('/', 1)[-1]
                 if source["size"] == 0:
                     media_set[1].append(new_dict)
                     continue
@@ -189,6 +200,11 @@ def scrape_array(link, session, media_type):
 
 def media_scraper(session, site_name, only_links, link, location, media_type, directory, post_count, username):
     print("Scraping "+location+". Should take less than a minute.")
+    array = format_directory(j_directory, site_name, username, location)
+    user_directory = array[0]
+    metadata_directory = array[1]
+    directory = array[2]
+
     pool = ThreadPool(max_threads)
     ceil = math.ceil(post_count / 100)
     a = list(range(ceil))
@@ -197,20 +213,8 @@ def media_scraper(session, site_name, only_links, link, location, media_type, di
         b = b * 100
         offset_array.append(link.replace("offset=0", "offset=" + str(b)))
     media_set = format_media_set(pool.starmap(scrape_array, product(
-        offset_array, [session], [media_type])))
-    directory = j_directory
+        offset_array, [session], [media_type], [directory], [username])))
     if post_count:
-        user_directory = directory+"/"+site_name + "/"+username+"/"
-        metadata_directory = user_directory+"/metadata/"
-        directory = user_directory + location+"/"
-        if "/sites/" == j_directory:
-            user_directory = os.path.dirname(os.path.dirname(
-                os.path.realpath(__file__))) + user_directory
-            metadata_directory = os.path.dirname(os.path.dirname(
-                os.path.realpath(__file__))) + metadata_directory
-            directory = os.path.dirname(os.path.dirname(
-                os.path.realpath(__file__))) + directory
-
         if not only_links:
             print("DIRECTORY - " + directory)
             os.makedirs(directory, exist_ok=True)
@@ -224,18 +228,9 @@ def download_media(media, session, directory, username):
     while True:
         link = media["link"]
         r = session.head(link)
-        file_name = link.rsplit('/', 1)[-1]
-        result = file_name.split("_", 1)
-        if len(result) > 1:
-            file_name = result[1]
-        else:
-            file_name = result[0]
 
-        file_name, ext = os.path.splitext(file_name)
-        ext = ext.replace(".", "")
         date_object = datetime.strptime(media["postedAt"], "%d-%m-%Y %H:%M:%S")
-        directory = reformat(directory, file_name,
-                             media["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
+        directory = media["directory"]+media["filename"]
         timestamp = date_object.timestamp()
         if not overwrite_files:
             if os.path.isfile(directory):
@@ -253,39 +248,69 @@ def download_media(media, session, directory, username):
         return True
 
 
-def show_error(error):
-    print(error["error"]["message"])
-    return
-
-
 def create_session(user_agent, auth_id, auth_hash, app_token):
-    session = requests.Session()
-    session.headers = {
-        'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
-    auth_cookies = [
-        {'name': 'auth_id', 'value': auth_id},
-        {'name': 'auth_hash', 'value': auth_hash},
-        {'name': 'sess', 'value': 'None'}
-    ]
-    for auth_cookie in auth_cookies:
-        session.cookies.set(**auth_cookie)
-    session.head("https://onlyfans.com")
-    response = json.loads(session.get(
-        "https://onlyfans.com/api2/v2/users/me?app-token="+app_token).text)
-    if 'error' in response:
-        show_error(response)
-        return False
-    else:
-        print("Welcome "+response["name"])
-    option_string = "username or profile link"
-    return [session, option_string]
+    response = []
+    count = 1
+    while count < 11:
+        print("Auth (V1) Attempt "+str(count)+"/"+"10")
+        session = requests.Session()
+        session.mount(
+            'https://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=16))
+        session.headers = {
+            'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
+        auth_cookies = [
+            {'name': 'auth_id', 'value': auth_id},
+            {'name': 'auth_hash', 'value': auth_hash},
+            {'name': 'sess', 'value': 'None'}
+        ]
+        for auth_cookie in auth_cookies:
+            session.cookies.set(**auth_cookie)
+        session.head("https://onlyfans.com")
+        try:
+            r = session.get(
+                "https://onlyfans.com/api2/v2/users/me?app-token="+app_token)
+            response = json.loads(r.text)
+        except Exception as e:
+            print(e, r)
+        if 'error' in response:
+            error_message = response["error"]["message"]
+            print(error_message)
+            if "token" in error_message:
+                count = 10
+            count += 1
+            continue
+        else:
+            print("Welcome "+response["name"])
+        option_string = "username or profile link"
+        return [session, option_string]
+    
+    return [False, response]
 
 
 def get_subscriptions(session, app_token):
-    response = json.loads(session.get("https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=100&offset=0&type="
-                                      "active&app-token="+app_token).text)
-    if 'error' in response:
+    array = json.loads(session.get(
+        "https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=100&offset=0&type=active&app-token="+app_token).text)
+    if 'error' in array:
         print("Invalid App Token")
         return False
     else:
-        return response
+        return array
+
+
+def format_options(array):
+    string = ""
+    names = []
+    array = [{"user": {"username": "All"}}]+array
+    name_count = len(array)
+    if name_count > 1:
+
+        count = 0
+        for x in array:
+            name = x["user"]["username"]
+            string += str(count)+" = "+name
+            names.append(name)
+            if count+1 != name_count:
+                string += " | "
+
+            count += 1
+    return [names, string]

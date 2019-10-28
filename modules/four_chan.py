@@ -21,13 +21,14 @@ logger = logging.getLogger(__name__)
 # Open config.json and fill in OPTIONAL information
 json_config = json.load(open('config.json'))
 json_global_settings = json_config["settings"]
-auto_choice = json_global_settings["auto_choice"]
 multithreading = json_global_settings["multithreading"]
 json_settings = json_config["supported"]["4chan"]["settings"]
+auto_choice = json_settings["auto_choice"]
 j_directory = get_directory(json_settings['directory'])
 format_path = json_settings['file_name_format']
 overwrite_files = json_settings["overwrite_files"]
 date_format = json_settings["date_format"]
+boards = json_settings["boards"]
 ignored_keywords = json_settings["ignored_keywords"]
 maximum_length = 240
 text_length = int(json_settings["text_length"]
@@ -239,6 +240,32 @@ def download_media(thread, session, directory, board_name):
 
 def create_session():
     session = requests.Session()
+    session.mount(
+        'http://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=16))
     print("Welcome Anon")
     option_string = "board or thread link"
     return [session, option_string]
+
+
+def get_subscriptions(session=[], app_token=""):
+    names = boards
+    return names
+
+
+def format_options(array):
+    string = ""
+    names = []
+    array = ["All"]+array
+    name_count = len(array)
+    if name_count > 1:
+
+        count = 0
+        for x in array:
+            name = x
+            string += str(count)+" = "+name
+            names.append(name)
+            if count+1 != name_count:
+                string += " | "
+
+            count += 1
+    return [names, string]

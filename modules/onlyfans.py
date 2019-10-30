@@ -217,7 +217,7 @@ def media_scraper(session, site_name, only_links, link, location, media_type, di
     if post_count:
         if not only_links:
             print("DIRECTORY - " + directory)
-            os.makedirs(directory, exist_ok=True)
+        os.makedirs(directory, exist_ok=True)
         os.makedirs(metadata_directory, exist_ok=True)
         archive_directory = metadata_directory+location
         export_archive(media_set, archive_directory)
@@ -282,19 +282,30 @@ def create_session(user_agent, auth_id, auth_hash, app_token):
         else:
             print("Welcome "+response["name"])
         option_string = "username or profile link"
-        return [session, option_string]
+        return [session, option_string, response["subscribesCount"]]
     
     return [False, response]
 
 
-def get_subscriptions(session, app_token):
-    array = json.loads(session.get(
-        "https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=100&offset=0&type=active&app-token="+app_token).text)
-    if 'error' in array:
+def get_subscriptions(session, app_token, subscriber_count):
+    link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=10&offset=0&type=active&app-token="+app_token
+    pool = ThreadPool(max_threads)
+    ceil = math.ceil(subscriber_count / 10)
+    a = list(range(ceil))
+    offset_array = []
+    for b in a:
+        b = b * 10
+        offset_array.append(link.replace("offset=0", "offset=" + str(b)))
+    def multi(link, session):
+        return json.loads(session.get(link).text)
+    results = pool.starmap(multi, product(
+        offset_array, [session]))
+    results = list(itertools.chain(*results))
+    if any("error" in result for result in results):
         print("Invalid App Token")
-        return False
+        return []
     else:
-        return array
+        return results
 
 
 def format_options(array):

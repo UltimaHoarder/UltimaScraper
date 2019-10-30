@@ -147,9 +147,9 @@ These functions will go through various changes, so each commit may break your c
 
 create_session(user_agent, auth_id, auth_hash, app_token)
     
-    This function will try to create and return a authenticated session.
+    This function will try to create and return a authenticated session along with your subscriber count.
     
-get_subscriptions(session, app_token)
+get_subscriptions(session, app_token, subscriber_count)
 
     This function will return an array of all the accounts you're subscribed too.
 
@@ -157,4 +157,4 @@ get_subscriptions(session, app_token)
 start_datascraper(session, app_token, username)
 
     This function will scrape the username/link you pass.
-    The function will return true if scrape finished and false if something went wrong.
+    The function will return true if scrape has finished and false if something went wrong.

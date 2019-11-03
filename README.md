@@ -85,7 +85,7 @@ auto_choice:
     Everything = "a"
     Images = "b"
     Videos = "c"
-    Videos = "d"
+    Audios = "d"
 
     You can automatically choose what you want to scrape if you add it in the config file.
     

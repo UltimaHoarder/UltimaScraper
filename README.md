@@ -158,3 +158,18 @@ start_datascraper(session, app_token, username)
 
     This function will scrape the username/link you pass.
     The function will return true if scrape has finished and false if something went wrong.
+
+# FAQ
+Before troubleshooting, make sure you're using Python 3.8.
+
+Error: Access Denied
+
+    Make sure your cookies are correct.
+
+AttributeError: type object 'datetime.datetime' has no attribute 'fromisoformat'
+
+    Only works with Python 3.7 and above.
+
+I'm getting authed into the wrong account
+
+    Enjoy the free content.

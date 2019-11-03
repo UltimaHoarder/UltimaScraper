@@ -42,7 +42,7 @@ def start_datascraper(session, username, site_name, app_token):
     if not user_id[0]:
         print(user_id[1])
         print("First time? Did you forget to edit your config.json file?")
-        return [False]
+        return [False, []]
 
     post_count = user_id[2]
     user_id = user_id[1]
@@ -176,7 +176,8 @@ def scrape_array(link, session, media_type, directory, username):
                 new_dict["link"] = link
                 if media_api["postedAt"] == "-001-11-30T00:00:00+00:00":
                     date_string = master_date
-                    date_object = datetime.strptime(master_date, "%d-%m-%Y  %H:%M:%S")
+                    date_object = datetime.strptime(
+                        master_date, "%d-%m-%Y  %H:%M:%S")
                 else:
                     date_object = datetime.fromisoformat(media_api["postedAt"])
                     date_string = date_object.replace(tzinfo=None).strftime(
@@ -188,7 +189,7 @@ def scrape_array(link, session, media_type, directory, username):
                 file_name, ext = os.path.splitext(file_name)
                 ext = ext.replace(".", "")
                 file_path = reformat(directory, file_name,
-                                    new_dict["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
+                                     new_dict["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
                 new_dict["directory"] = directory
                 new_dict["filename"] = file_path.rsplit('/', 1)[-1]
                 if source["size"] == 0:
@@ -283,7 +284,7 @@ def create_session(user_agent, auth_id, auth_hash, app_token):
             print("Welcome "+response["name"])
         option_string = "username or profile link"
         return [session, option_string, response["subscribesCount"]]
-    
+
     return [False, response]
 
 
@@ -296,6 +297,7 @@ def get_subscriptions(session, app_token, subscriber_count):
     for b in a:
         b = b * 10
         offset_array.append(link.replace("offset=0", "offset=" + str(b)))
+
     def multi(link, session):
         return json.loads(session.get(link).text)
     results = pool.starmap(multi, product(

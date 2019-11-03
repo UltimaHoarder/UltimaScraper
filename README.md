@@ -82,9 +82,10 @@ auto_choice:
     Default = ""
 
     When you start the script you will be presented with the following scraping choices:
-    a = Everything
-    b = Images
-    c = Videos
+    Everything = "a"
+    Images = "b"
+    Videos = "c"
+    Videos = "d"
 
     You can automatically choose what you want to scrape if you add it in the config file.
     

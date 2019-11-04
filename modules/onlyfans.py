@@ -297,12 +297,12 @@ def get_subscriptions(session, app_token, subscriber_count):
     for b in a:
         b = b * 10
         offset_array.append(link.replace("offset=0", "offset=" + str(b)))
-
     def multi(link, session):
         return json.loads(session.get(link).text)
     results = pool.starmap(multi, product(
         offset_array, [session]))
     results = list(itertools.chain(*results))
+    results = list(reversed(results))
     if any("error" in result for result in results):
         print("Invalid App Token")
         return []

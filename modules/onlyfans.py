@@ -14,6 +14,7 @@ import re
 import logging
 import inspect
 import math
+import time
 
 logger = logging.getLogger(__name__)
 
@@ -38,6 +39,8 @@ max_threads = multiprocessing.cpu_count()
 
 
 def start_datascraper(session, username, site_name, app_token):
+    print("Scrape Processing")
+    print("Name: "+username)
     user_id = link_check(session, app_token, username)
     if not user_id[0]:
         print(user_id[1])
@@ -48,6 +51,7 @@ def start_datascraper(session, username, site_name, app_token):
     user_id = user_id[1]
     array = scrape_choice(user_id, app_token, post_count)
     link_array = {}
+    prep_download = []
     for item in array:
         post_count = str(item[1][5])
         item[1].append(username)
@@ -57,17 +61,13 @@ def start_datascraper(session, username, site_name, app_token):
         link_array[item[1][1].lower()] = response[0]
         if not only_links:
             media_set = response[0]
+            if not media_set["valid"]:
+                continue
             directory = response[1]
-            if multithreading:
-                pool = ThreadPool(max_threads)
-            else:
-                pool = ThreadPool(1)
             location = item[1][1]
-            print("Downloading "+post_count+" "+location)
-            pool.starmap(download_media, product(
-                media_set["valid"], [session], [directory], [username]))
+            prep_download.append([media_set["valid"], session, directory, username, post_count, location])
     # When profile is done scraping, this function will return True
-    return [True, link_array]
+    return [True, prep_download]
 
 
 def link_check(session, app_token, username):
@@ -216,8 +216,6 @@ def media_scraper(session, site_name, only_links, link, location, media_type, di
     media_set = format_media_set(pool.starmap(scrape_array, product(
         offset_array, [session], [media_type], [directory], [username])))
     if post_count:
-        if not only_links:
-            print("DIRECTORY - " + directory)
         os.makedirs(directory, exist_ok=True)
         os.makedirs(metadata_directory, exist_ok=True)
         archive_directory = metadata_directory+location
@@ -225,29 +223,38 @@ def media_scraper(session, site_name, only_links, link, location, media_type, di
     return [media_set, directory]
 
 
-def download_media(media, session, directory, username):
-    while True:
-        link = media["link"]
-        r = session.head(link)
+def download_media(media_set, session, directory, username, post_count, location):
+    def download(media, session, directory, username):
+        while True:
+            link = media["link"]
+            r = session.head(link)
 
-        date_object = datetime.strptime(media["postedAt"], "%d-%m-%Y %H:%M:%S")
-        directory = media["directory"]+media["filename"]
-        timestamp = date_object.timestamp()
-        if not overwrite_files:
-            if os.path.isfile(directory):
-                return
-        if not os.path.exists(os.path.dirname(directory)):
-            os.makedirs(os.path.dirname(directory))
-        r = session.get(link, stream=True)
-        with open(directory, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024):
-                if chunk:  # filter out keep-alive new chunks
-                    f.write(chunk)
-        format_image(directory, timestamp)
-        logger.info("Link: {}".format(link))
-        logger.info("Path: {}".format(directory))
-        return True
-
+            date_object = datetime.strptime(media["postedAt"], "%d-%m-%Y %H:%M:%S")
+            directory = media["directory"]+media["filename"]
+            timestamp = date_object.timestamp()
+            if not overwrite_files:
+                if os.path.isfile(directory):
+                    return
+            if not os.path.exists(os.path.dirname(directory)):
+                os.makedirs(os.path.dirname(directory))
+            r = session.get(link, stream=True)
+            with open(directory, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=1024):
+                    if chunk:  # filter out keep-alive new chunks
+                        f.write(chunk)
+            format_image(directory, timestamp)
+            logger.info("Link: {}".format(link))
+            logger.info("Path: {}".format(directory))
+            return True
+    print("Download Processing")
+    print("Name: "+username)
+    print("Directory: " + directory)
+    print("Downloading "+post_count+" "+location)
+    if multithreading:
+        pool = ThreadPool(max_threads)
+    else:
+        pool = ThreadPool(1)
+    pool.starmap(download, product(media_set, [session], [directory], [username]))
 
 def create_session(user_agent, auth_id, auth_hash, app_token):
     response = []

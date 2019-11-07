@@ -40,6 +40,7 @@ max_threads = multiprocessing.cpu_count()
 
 
 def start_datascraper(session, board_name, site_name, link_type=None):
+    print("Scrape Processing")
     user_id = link_check(session, board_name)
     if not user_id[0]:
         print(user_id[1])
@@ -69,14 +70,14 @@ def start_datascraper(session, board_name, site_name, link_type=None):
     threads = pool.starmap(thread_scraper,
                            product(threads, [board_name], [session], [directory]))
     threads = [x for x in threads if x is not None]
-    print("Filtered Count: "+str(len(threads)))
+    post_count = len(threads)
+    print("Valid Count: "+str(post_count))
     print("Downloading Media")
-    results = pool.starmap(download_media,
-                           product(threads, [session], [directory], [board_name]))
     count_results = str(len([x for x in threads if x is None]))
-    print("Valid Count: "+count_results)
+    print("Invalid Count: "+count_results)
+    prep_download = [[threads, session, directory, board_name]]
     # When profile is done scraping, this function will return True
-    return [True, link_array]
+    return [True, prep_download]
 
 
 def link_check(session, username):
@@ -173,69 +174,79 @@ def thread_scraper(thread_id, board_name, session, directory):
     return thread
 
 
-def download_media(thread, session, directory, board_name):
-    try:
-        directory = thread["download_path"]+"/"
-        valid = False
-        name_key = "filename"
-        for post in thread["posts"]:
-            if name_key in post:
-                post["tim"] = str(post["tim"])
-                post[name_key] = re.sub(
-                    r'[\\/*?:"<>|]', '', post[name_key])
-                ext = post["ext"].replace(".", "")
-                filename = post["tim"]+"."+ext
-                link = "http://i.4cdn.org/" + board_name + "/" + filename
-                filename = post[name_key]+"."+ext
-                download_path = directory+filename
-                count_string = len(download_path)
-                if count_string > maximum_length:
-                    num_sum = count_string - maximum_length
-                    name_key = "tim"
-                    download_path = directory+post[name_key]+"."+ext
+def download_media(media_set, session, directory, board_name):
+    def download(thread, session, directory):
+        try:
+            directory = thread["download_path"]+"/"
+            valid = False
+            name_key = "filename"
+            for post in thread["posts"]:
+                if name_key in post:
+                    post["tim"] = str(post["tim"])
+                    post[name_key] = re.sub(
+                        r'[\\/*?:"<>|]', '', post[name_key])
+                    ext = post["ext"].replace(".", "")
+                    filename = post["tim"]+"."+ext
+                    link = "http://i.4cdn.org/" + board_name + "/" + filename
+                    filename = post[name_key]+"."+ext
+                    download_path = directory+filename
+                    count_string = len(download_path)
+                    if count_string > maximum_length:
+                        num_sum = count_string - maximum_length
+                        name_key = "tim"
+                        download_path = directory+post[name_key]+"."+ext
 
-                if not overwrite_files:
-                    count = 1
-                    found = False
-                    og_filename = post[name_key]
-                    while True:
-                        if os.path.isfile(download_path):
-                            remote_size = post["fsize"]
-                            local_size = os.path.getsize(download_path)
-                            if remote_size == local_size:
-                                found = True
-                                break
+                    if not overwrite_files:
+                        count = 1
+                        found = False
+                        og_filename = post[name_key]
+                        while True:
+                            if os.path.isfile(download_path):
+                                remote_size = post["fsize"]
+                                local_size = os.path.getsize(download_path)
+                                if remote_size == local_size:
+                                    found = True
+                                    break
+                                else:
+                                    download_path = directory+og_filename + \
+                                        " ("+str(count)+")."+ext
+                                    count += 1
+                                    continue
                             else:
-                                download_path = directory+og_filename + \
-                                    " ("+str(count)+")."+ext
-                                count += 1
-                                continue
-                        else:
-                            found = False
-                            break
-                    if found:
-                        continue
-                r = session.get(link, stream=True)
-                if r.status_code != 404:
-                    if not os.path.exists(os.path.dirname(download_path)):
-                        os.makedirs(os.path.dirname(download_path))
-                    with open(download_path, 'wb') as f:
-                        for chunk in r.iter_content(chunk_size=1024):
-                            if chunk:  # filter out keep-alive new chunks
-                                f.write(chunk)
-                    logger.info("Link: {}".format(link))
-                    logger.info("Path: {}".format(download_path))
-                    valid = True
-        if valid:
-            os.makedirs(directory, exist_ok=True)
-            with open(directory+'archive.json', 'w') as outfile:
-                json.dump(thread, outfile)
-            return thread
-        else:
+                                found = False
+                                break
+                        if found:
+                            continue
+                    r = session.get(link, stream=True)
+                    if r.status_code != 404:
+                        if not os.path.exists(os.path.dirname(download_path)):
+                            os.makedirs(os.path.dirname(download_path))
+                        with open(download_path, 'wb') as f:
+                            for chunk in r.iter_content(chunk_size=1024):
+                                if chunk:  # filter out keep-alive new chunks
+                                    f.write(chunk)
+                        logger.info("Link: {}".format(link))
+                        logger.info("Path: {}".format(download_path))
+                        valid = True
+            if valid:
+                os.makedirs(directory, exist_ok=True)
+                with open(directory+'archive.json', 'w') as outfile:
+                    json.dump(thread, outfile)
+                return thread
+            else:
+                return
+        except Exception as e:
+            print("ERROR", e, directory)
             return
-    except Exception as e:
-        print("ERROR", e, directory)
-        return
+    print("Download Processing")
+    print("Name: "+board_name)
+    print("Directory: " + directory)
+    # print("Downloading "+post_count+" "+location)
+    if multithreading:
+        pool = ThreadPool(max_threads)
+    else:
+        pool = ThreadPool(1)
+    pool.starmap(download, product(media_set, [session], [directory]))
 
 
 def create_session():

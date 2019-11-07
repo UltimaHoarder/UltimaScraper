@@ -38,6 +38,7 @@ max_threads = multiprocessing.cpu_count()
 
 
 def start_datascraper(session, username, site_name, app_token=None):
+    print("Scrape Processing")
     user_id = link_check(session, username)
     if not user_id[0]:
         print(user_id[1])
@@ -47,23 +48,23 @@ def start_datascraper(session, username, site_name, app_token=None):
     post_count = user_id[2]
     array = scrape_choice(username, post_count)
     link_array = {}
+    prep_download = []
     for item in array:
         item[1].append(username)
         only_links = item[1][4]
+        post_count = str(item[1][5])
         item[1].pop(3)
         response = media_scraper(session, site_name, only_links, *item[1])
         link_array[item[1][1].lower()] = response[0]
         if not only_links:
             media_set = response[0]
+            if not media_set["valid"]:
+                continue
             directory = response[1]
-            if multithreading:
-                pool = ThreadPool(max_threads)
-            else:
-                pool = ThreadPool(1)
-            pool.starmap(download_media, product(
-                media_set["valid"], [session], [directory], [username]))
+            location = item[1][1]
+            prep_download.append([media_set["valid"], session, directory, username, post_count, location])
     # When profile is done scraping, this function will return True
-    return [True, link_array]
+    return [True, prep_download]
 
 
 def link_check(session, username):
@@ -259,28 +260,38 @@ def media_scraper(session, site_name, only_links, link, location, media_type, di
     return [media_set, directory]
 
 
-def download_media(media, session, directory, username):
-    while True:
-        link = media["link"]
-        r = session.head(link)
+def download_media(media_set, session, directory, username, post_count, location):
+    def download(media, session, directory, username):
+        while True:
+            link = media["link"]
+            r = session.head(link)
 
-        date_object = datetime.strptime(media["postedAt"], "%d-%m-%Y %H:%M:%S")
-        directory = media["directory"]+media["filename"]
-        timestamp = date_object.timestamp()
-        if not overwrite_files:
-            if os.path.isfile(directory):
-                return
-        if not os.path.exists(os.path.dirname(directory)):
-            os.makedirs(os.path.dirname(directory))
-        r = session.get(link, allow_redirects=True, stream=True)
-        with open(directory, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024):
-                if chunk:  # filter out keep-alive new chunks
-                    f.write(chunk)
-        format_image(directory, timestamp)
-        logger.info("Link: {}".format(link))
-        logger.info("Path: {}".format(directory))
-        return True
+            date_object = datetime.strptime(media["postedAt"], "%d-%m-%Y %H:%M:%S")
+            directory = media["directory"]+media["filename"]
+            timestamp = date_object.timestamp()
+            if not overwrite_files:
+                if os.path.isfile(directory):
+                    return
+            if not os.path.exists(os.path.dirname(directory)):
+                os.makedirs(os.path.dirname(directory))
+            r = session.get(link, allow_redirects=True, stream=True)
+            with open(directory, 'wb') as f:
+                for chunk in r.iter_content(chunk_size=1024):
+                    if chunk:  # filter out keep-alive new chunks
+                        f.write(chunk)
+            format_image(directory, timestamp)
+            logger.info("Link: {}".format(link))
+            logger.info("Path: {}".format(directory))
+            return True
+    print("Download Processing")
+    print("Name: "+username)
+    print("Directory: " + directory)
+    print("Downloading "+post_count+" "+location)
+    if multithreading:
+        pool = ThreadPool(max_threads)
+    else:
+        pool = ThreadPool(1)
+    pool.starmap(download, product(media_set, [session], [directory], [username]))
 
 
 def create_session(user_agent, phpsessid, user_hash2):

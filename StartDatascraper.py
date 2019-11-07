@@ -8,6 +8,7 @@ import modules.helpers as helpers
 import timeit
 import json
 import logging
+import time
 
 # Configure logging to the console and file system at INFO level and above
 logging.basicConfig(handlers=[logging.FileHandler('application.log', 'w', 'utf-8')], level=logging.INFO,
@@ -48,6 +49,8 @@ try:
             site_name = site_names[x]
         json_auth = json_sites[site_name]["auth"]
         json_site_settings = json_sites[site_name]["settings"]
+        auto_scrape_all = json_site_settings["auto_scrape_all"]
+        only_links = json_site_settings["auto_scrape_all"]
         session = ""
         x = ""
         app_token = ""
@@ -77,7 +80,10 @@ try:
         names = array[0]
         if names:
             print("Names: "+array[1])
-            value = int(input().strip())
+            if not scrape_all:
+                value = int(input().strip())
+            else:
+                value = 0
             if value:
                 names = [names[value]]
             else:
@@ -85,12 +91,18 @@ try:
         else:
             print('Input a '+site_name+' '+session[1])
             names = [input().strip()]
+        start_time = timeit.default_timer()
+        download_list = []
         for name in names:
             username = helpers.parse_links(site_name, name)
-            start_time = timeit.default_timer()
             result = x.start_datascraper(
                 session[0], username, site_name, app_token)
-            stop_time = str(int(timeit.default_timer() - start_time) / 60)
-            print('Task Completed in ' + stop_time + ' Minutes')
+            download_list.append(result)
+        for y in download_list:
+            for arg in y[1]:
+                x.download_media(*arg)
+        stop_time = str(int(timeit.default_timer() - start_time) / 60)
+        print('Task Completed in ' + stop_time + ' Minutes')
+        time.sleep(5)
 except KeyboardInterrupt as e:
     print("Exiting Script")

@@ -89,7 +89,13 @@ auto_choice:
 
     You can automatically choose what you want to scrape if you add it in the config file.
     
-|**NEW**| export_type:
+|**NEW**| auto_scrape_all:
+
+    Default = false
+
+    If set to true, the script will scrape all the names.
+    
+export_type:
 
     Default = "json"
 

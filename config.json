@@ -14,6 +14,7 @@
       },
       "settings": {
         "auto_choice": "",
+        "auto_scrape_all": false,
         "directory": "",
         "file_name_format": "{file_name}.{ext}",
         "text_length": "",
@@ -29,6 +30,7 @@
       },
       "settings": {
         "auto_choice": "",
+        "auto_scrape_all": false,
         "directory": "",
         "file_name_format": "{file_name}.{ext}",
         "text_length": "",
@@ -41,6 +43,7 @@
       "auth": {},
       "settings": {
         "auto_choice": "",
+        "auto_scrape_all": false,
         "directory": "",
         "file_name_format": "{file_name}.{ext}",
         "text_length": "",

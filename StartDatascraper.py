@@ -50,7 +50,6 @@ try:
         json_auth = json_sites[site_name]["auth"]
         json_site_settings = json_sites[site_name]["settings"]
         auto_scrape_all = json_site_settings["auto_scrape_all"]
-        only_links = json_site_settings["auto_scrape_all"]
         session = ""
         x = ""
         app_token = ""
@@ -80,7 +79,7 @@ try:
         names = array[0]
         if names:
             print("Names: "+array[1])
-            if not scrape_all:
+            if not auto_scrape_all:
                 value = int(input().strip())
             else:
                 value = 0
@@ -103,6 +102,6 @@ try:
                 x.download_media(*arg)
         stop_time = str(int(timeit.default_timer() - start_time) / 60)
         print('Task Completed in ' + stop_time + ' Minutes')
-        time.sleep(5)
+        time.sleep(6)
 except KeyboardInterrupt as e:
     print("Exiting Script")

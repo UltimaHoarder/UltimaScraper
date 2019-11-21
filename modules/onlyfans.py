@@ -232,7 +232,7 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
             b = b * 100
             offset_array.append(link.replace("offset=0", "offset=" + str(b)))
         results = format_media_set(location[0], pool.starmap(scrape_array, product(
-            offset_array[:1], [session], [directories], [username])))
+            offset_array, [session], [directories], [username])))
         if post_count:
             os.makedirs(directory, exist_ok=True)
             os.makedirs(location_directory, exist_ok=True)
@@ -268,7 +268,7 @@ def download_media(media_set, session, directory, username, post_count, location
             return True
     print("Download Processing")
     print("Name: "+username+" | Directory: " + directory)
-    print("Downloading "+post_count+" "+location+"\n")
+    print("Downloading "+str(len(media_set))+" "+location+"\n")
     if multithreading:
         pool = ThreadPool(max_threads)
     else:
@@ -297,6 +297,9 @@ def create_session(user_agent, auth_id, auth_hash, app_token):
         session.head("https://onlyfans.com")
         r = session.get(
             "https://onlyfans.com/api2/v2/users/me?app-token="+app_token)
+        count += 1
+        if r.status_code != 200:
+            continue
         response = json.loads(r.text)
         if 'error' in response:
             error_message = response["error"]["message"]

@@ -220,6 +220,7 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
               "]. Should take less than a minute.")
         array = format_directory(j_directory, site_name, username, location[0])
         user_directory = array[0]
+        location_directory = user_directory+location[0]
         metadata_directory = array[1]
         directories = array[2]+[location[1]]
 
@@ -234,6 +235,7 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
             offset_array[:1], [session], [directories], [username])))
         if post_count:
             os.makedirs(directory, exist_ok=True)
+            os.makedirs(location_directory, exist_ok=True)
             os.makedirs(metadata_directory, exist_ok=True)
             archive_directory = metadata_directory+location[0]
             export_archive(results, archive_directory)
@@ -255,8 +257,6 @@ def download_media(media_set, session, directory, username, post_count, location
             if not overwrite_files:
                 if os.path.isfile(directory):
                     return
-            if not os.path.exists(os.path.dirname(directory)):
-                os.makedirs(os.path.dirname(directory))
             r = session.get(link, stream=True)
             with open(directory, 'wb') as f:
                 for chunk in r.iter_content(chunk_size=1024):

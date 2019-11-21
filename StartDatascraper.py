@@ -1,14 +1,16 @@
+import inspect
+import traceback
+import logging
+import json
+import timeit
+import modules.helpers as helpers
+import modules.bbwchan as bbwchan
+import modules.four_chan as four_chan
+import modules.justforfans as justforfans
+import modules.onlyfans as onlyfans
 import os
 path = os.path.dirname(os.path.realpath(__file__))
 os.chdir(path)
-import modules.onlyfans as onlyfans
-import modules.justforfans as justforfans
-import modules.four_chan as four_chan
-import modules.helpers as helpers
-import timeit
-import json
-import logging
-import time
 
 # Configure logging to the console and file system at INFO level and above
 logging.basicConfig(handlers=[logging.FileHandler('application.log', 'w', 'utf-8')], level=logging.INFO,
@@ -40,7 +42,6 @@ if not domain:
         count += 1
 try:
     while True:
-
         if domain:
             site_name = domain
         else:
@@ -50,9 +51,10 @@ try:
         json_auth = json_sites[site_name]["auth"]
         json_site_settings = json_sites[site_name]["settings"]
         auto_scrape_all = json_site_settings["auto_scrape_all"]
-        session = ""
-        x = ""
+        session: list = []
+        x = onlyfans
         app_token = ""
+        array = []
         if site_name == "onlyfans":
             app_token = json_auth['app-token']
             auth_id = json_auth['auth_id']
@@ -73,6 +75,11 @@ try:
             array = x.get_subscriptions()
         elif site_name == "4chan":
             x = four_chan
+            session = x.create_session()
+            array = x.get_subscriptions()
+            array = x.format_options(array)
+        elif site_name == "bbwchan":
+            x = bbwchan
             session = x.create_session()
             array = x.get_subscriptions()
             array = x.format_options(array)
@@ -102,6 +109,10 @@ try:
                 x.download_media(*arg)
         stop_time = str(int(timeit.default_timer() - start_time) / 60)
         print('Task Completed in ' + stop_time + ' Minutes')
-        time.sleep(6)
-except KeyboardInterrupt as e:
-    print("Exiting Script")
+except Exception as e:
+    tb = traceback.format_exc()
+    print(tb+"\n")
+    v1 = inspect.trace()[-1][0].f_locals
+    if "s" in v1:
+        print(v1["s"])
+    input()

@@ -1,5 +1,4 @@
 import requests
-from bs4 import BeautifulSoup
 from modules.helpers import *
 
 import os
@@ -22,7 +21,7 @@ logger = logging.getLogger(__name__)
 json_config = json.load(open('config.json'))
 json_global_settings = json_config["settings"]
 multithreading = json_global_settings["multithreading"]
-json_settings = json_config["supported"]["4chan"]["settings"]
+json_settings = json_config["supported"]["bbwchan"]["settings"]
 auto_choice = json_settings["auto_choice"]
 j_directory = get_directory(json_settings['directory'])
 format_path = json_settings['file_name_format']
@@ -54,7 +53,7 @@ def start_datascraper(session, board_name, site_name, link_type=None):
     else:
         pool = ThreadPool(1)
     threads = board_scraper(session, array[0], "")
-    archive_threads = board_scraper(session, array[1], "archive")
+    archive_threads = []
     threads = threads + archive_threads
     print("Original Count: "+str(len(threads)))
     directory = j_directory
@@ -81,7 +80,7 @@ def start_datascraper(session, board_name, site_name, link_type=None):
 
 
 def link_check(session, username):
-    link = "http://a.4cdn.org/" + username + "/catalog.json"
+    link = "https://bbw-chan.nl/" + username + "/catalog.json"
     r = session.head(link)
     temp_user_id2 = dict()
     if r.status_code == 404:
@@ -95,9 +94,8 @@ def link_check(session, username):
 
 
 def scrape_choice(username):
-    catalog = "http://a.4cdn.org/" + username + "/catalog.json"
-    archive = catalog.replace("catalog", "archive")
-    return [catalog, archive]
+    catalog = "https://bbw-chan.nl/" + username + "/catalog.json"
+    return [catalog]
 
 
 def board_scraper(session, link, category):
@@ -105,9 +103,8 @@ def board_scraper(session, link, category):
     y = json.loads(r.text)
     threads = []
     if "archive" not in category:
-        for page in y:
-            for thread in page["threads"]:
-                threads.append(thread["no"])
+        for thread in y:
+            threads.append(thread["threadId"])
     else:
         threads = y
     return threads
@@ -115,58 +112,62 @@ def board_scraper(session, link, category):
 
 def thread_scraper(thread_id, board_name, session, directory):
     thread_id = str(thread_id)
-    link = "http://a.4cdn.org/" + board_name + "/thread/" + thread_id + ".json"
+    link = "https://bbw-chan.nl/" + board_name + "/res/" + thread_id + ".json"
     r = session.get(link)
     if r.status_code == 404:
         return
     thread = json.loads(r.text)
-    thread_master = thread["posts"][0]
+    thread_master = thread
     if "archived" in thread_master:
         location = "Archive"
     else:
         location = "Catalog"
-
-    if "sub" in thread_master:
-        title = thread_master["sub"].lower()
-        if any(ignored_keyword in title for ignored_keyword in ignored_keywords):
-            print("Removed From "+location+": ", title)
-            return
-
-    if "com" in thread_master:
-        title = thread_master["com"].lower()
-        if any(ignored_keyword in title for ignored_keyword in ignored_keywords):
-            print("Removed From "+location+": ", title)
-            return
     text = ""
-    if "sub" in thread_master:
-        text = thread_master["sub"][:text_length]
-    else:
-        text = thread_master["com"][:text_length]
+    if thread_master["subject"]:
+        title = thread_master["subject"].lower()
+        if any(ignored_keyword in title for ignored_keyword in ignored_keywords):
+            print("Removed From "+location+": ", title)
+            return
+        else:
+            text = thread_master["subject"][:text_length]
+
+    if thread_master["message"]:
+        title = thread_master["message"].lower()
+        if any(ignored_keyword in title for ignored_keyword in ignored_keywords):
+            print("Removed From "+location+": ", title)
+            return
+        else:
+            if not text:
+                text = thread_master["message"][:text_length]
     text = BeautifulSoup(text, 'html.parser').get_text().replace(
-        "\n", " ").strip()
+        "\n", " ").replace(
+        "\r", " ").strip()
     text = re.sub(r'[\\/*?:"<>|]', '', text)
+    text = re.sub(' {2,}', ' ', text)
+    thread_master2 = thread_master.copy()
+    for key in thread_master2:
+        if "posts" != key:
+            del thread_master[key]
+    del thread_master2["posts"]
     thread["download_path"] = ""
+    thread["posts"] = [thread_master2]+thread_master["posts"]
     for post in thread["posts"]:
-        if "name" not in post:
-            post["name"] = "Anonymous"
-        if "filename" in post:
-            ext = post["ext"].replace(".", "")
-            filename = post["filename"]
+        for media in post["files"]:
+            ext = media["mime"].split("/")[1]
+            media["ext"] = ext
+            filename = os.path.splitext(media["originalName"])[0]
+            media["alt_filename"] = media["path"].rsplit(
+                "a/")[1].rsplit("-")[0][:13]+"."+ext
             new_directory = directory+"/"+text+" - "+thread_id+"/"
             if not text:
                 new_directory = new_directory.replace(" - ", "")
-
-            date_object = datetime.fromtimestamp(post["time"])
-            og_filename = filename
+            date_object = datetime.strptime(
+                post["creation"], "%Y-%m-%dT%H:%M:%S.%fZ")
+            date_string = date_object.replace(tzinfo=None).strftime(
+                "%d-%m-%Y %H:%M:%S")
             download_path = os.path.dirname(reformat(
                 new_directory, filename, text, ext, date_object, post["name"], format_path, date_format, text_length, maximum_length))
-            size = len(download_path)
-            size2 = len(thread["download_path"])
-            if thread["download_path"]:
-                if len(download_path) < len(thread["download_path"]):
-                    thread["download_path"] = download_path
-            else:
-                thread["download_path"] = download_path
+            thread["download_path"] = download_path
     return thread
 
 
@@ -174,44 +175,29 @@ def download_media(media_set, session, directory, board_name):
     def download(thread, session, directory):
         directory = thread["download_path"]+"/"
         valid = False
-        name_key = "filename"
         for post in thread["posts"]:
-            if name_key in post:
-                post["tim"] = str(post["tim"])
-                post[name_key] = re.sub(
-                    r'[\\/*?:"<>|]', '', post[name_key])
-                ext = post["ext"].replace(".", "")
-                filename = post["tim"]+"."+ext
-                link = "http://i.4cdn.org/" + board_name + "/" + filename
-                filename = post[name_key]+"."+ext
+            name_key = "originalName"
+            for media in post["files"]:
+                filename = re.sub(
+                    r'[\\/*?:"<>|]', '', media[name_key])
+                ext = media["ext"]
+                alt_name = media["alt_filename"]
+                link = "https://bbw-chan.nl" + media["path"]
                 download_path = directory+filename
                 count_string = len(download_path)
-                if count_string > maximum_length:
-                    num_sum = count_string - maximum_length
-                    name_key = "tim"
-                    download_path = directory+post[name_key]+"."+ext
+                lp = are_long_paths_enabled()
+                if not lp:
+                    if count_string > maximum_length:
+                        num_sum = count_string - maximum_length
+                        name_key = "alt_filename"
+                        download_path = directory+post[name_key]+"."+ext
 
-                if not overwrite_files:
-                    count = 1
-                    found = False
-                    og_filename = post[name_key]
-                    while True:
-                        if os.path.isfile(download_path):
-                            remote_size = post["fsize"]
-                            local_size = os.path.getsize(download_path)
-                            if remote_size == local_size:
-                                found = True
-                                break
-                            else:
-                                download_path = directory+og_filename + \
-                                    " ("+str(count)+")."+ext
-                                count += 1
-                                continue
-                        else:
-                            found = False
-                            break
-                    if found:
-                        continue
+                og_filename = os.path.splitext(filename)[0]
+                dp = check_for_dupe_file(
+                    overwrite_files, media, name_key, download_path, og_filename, directory)
+                if dp[0]:
+                    continue
+                download_path = dp[1]
                 r = session.get(link, stream=True)
                 if r.status_code != 404:
                     if not os.path.exists(os.path.dirname(download_path)):
@@ -223,6 +209,9 @@ def download_media(media_set, session, directory, board_name):
                     logger.info("Link: {}".format(link))
                     logger.info("Path: {}".format(download_path))
                     valid = True
+                else:
+                    logger.info("Fail (Link): {}".format(link))
+                    logger.info("Fail (Path): {}".format(download_path))
         if valid:
             os.makedirs(directory, exist_ok=True)
             with open(directory+'archive.json', 'w') as outfile:
@@ -234,17 +223,22 @@ def download_media(media_set, session, directory, board_name):
     print("Name: "+board_name)
     print("Directory: " + directory)
     # print("Downloading "+post_count+" "+location)
+    max_threads = len(media_set)
     if multithreading:
         pool = ThreadPool(max_threads)
     else:
         pool = ThreadPool(1)
+    session.mount(
+        'https://', requests.adapters.HTTPAdapter(pool_connections=4, pool_maxsize=max_threads))
     pool.starmap(download, product(media_set, [session], [directory]))
 
 
 def create_session():
     session = requests.Session()
     session.mount(
-        'http://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=16))
+        'http://', requests.adapters.HTTPAdapter(pool_connections=4, pool_maxsize=16))
+    session.mount(
+        'https://', requests.adapters.HTTPAdapter(pool_connections=4, pool_maxsize=16))
     print("Welcome Anon")
     option_string = "board or thread link"
     return [session, option_string]

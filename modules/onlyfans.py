@@ -1,5 +1,4 @@
 import requests
-from bs4 import BeautifulSoup
 from modules.helpers import *
 
 import os
@@ -7,10 +6,8 @@ import json
 from itertools import product
 from itertools import chain
 import multiprocessing
-from multiprocessing import current_process, Pool
 from multiprocessing.dummy import Pool as ThreadPool
 from datetime import datetime
-import re
 import logging
 import inspect
 import math
@@ -47,26 +44,27 @@ def start_datascraper(session, username, site_name, app_token):
         print("First time? Did you forget to edit your config.json file?")
         return [False, []]
 
-    post_count = user_id[2]
+    post_counts = user_id[2]
     user_id = user_id[1]
-    array = scrape_choice(user_id, app_token, post_count)
-    link_array = {}
+    array = scrape_choice(user_id, app_token, post_counts)
     prep_download = []
     for item in array:
-        post_count = str(item[1][5])
+        only_links = item[1][3]
+        post_count = str(item[1][4])
         item[1].append(username)
-        only_links = item[1][4]
         item[1].pop(3)
-        response = media_scraper(session, site_name, only_links, *item[1])
-        link_array[item[1][1].lower()] = response[0]
-        if not only_links:
-            media_set = response[0]
-            if not media_set["valid"]:
-                continue
-            directory = response[1]
-            location = item[1][1]
-            prep_download.append([media_set["valid"], session, directory, username, post_count, location])
+        results = media_scraper(session, site_name, only_links, *item[1])
+        for result in results[0]:
+            if not only_links:
+                media_set = result
+                if not media_set["valid"]:
+                    continue
+                directory = results[1]
+                location = result["type"]
+                prep_download.append(
+                    [media_set["valid"], session, directory, username, post_count, location])
     # When profile is done scraping, this function will return True
+    print("Scrape Completed"+"\n")
     return [True, prep_download]
 
 
@@ -93,60 +91,75 @@ def link_check(session, app_token, username):
     else:
         temp_user_id2[0] = True
         temp_user_id2[1] = str(y["id"])
-        temp_user_id2[2] = [y["photosCount"],
-                            y["videosCount"], y["audiosCount"]]
+        temp_user_id2[2] = [y["postsCount"], [y["photosCount"],
+                                              y["videosCount"], y["audiosCount"]]]
         return temp_user_id2
 
 
-def scrape_choice(user_id, app_token, post_count):
+def scrape_choice(user_id, app_token, post_counts):
+    post_count = post_counts[0]
+    media_counts = post_counts[1]
+    x = ["Images", "Videos", "Audios"]
+    x = dict(zip(x, media_counts))
+    x = [k for k, v in x.items() if v != 0]
     if auto_choice:
         input_choice = auto_choice
     else:
         print('Scrape: a = Everything | b = Images | c = Videos | d = Audios')
-        print('Optional Arguments: -l = Only scrape links -()- Example: "a -l"')
         input_choice = input().strip()
-    image_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
-        "/posts/photos?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
-    video_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
-        "/posts/videos?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
-    audio_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
-        "/posts/audios?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
+    post_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
+        "/posts?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
     # ARGUMENTS
     only_links = False
     if "-l" in input_choice:
         only_links = True
         input_choice = input_choice.replace(" -l", "")
     mandatory = [j_directory, only_links]
-    i_array = ["You have chosen to scrape images", [
-        image_api, 'Images', "photo", *mandatory, post_count[0]], 'Images Completed']
-    v_array = ["You have chosen to scrape videos", [
-        video_api, 'Videos', "video", *mandatory, post_count[1]], 'Videos Completed']
-    a_array = ["You have chosen to scrape audio", [
-        audio_api, 'Audios', "audio", *mandatory, post_count[2]], 'Audios Completed']
-    array = [i_array] + [v_array] + [a_array]
+    y = ["photo", "video", "stream", "gif", "audio"]
+    p_array = ["You have chosen to scrape {}", [
+        post_api, x, *mandatory, post_count]]
+    array = [p_array]
     valid_input = False
     if input_choice == "a":
         valid_input = True
+        array[0][0] = array[0][0].format("all")
+        a = []
+        for z in x:
+            if z == "Images":
+                a.append([z, [y[0]]])
+            if z == "Videos":
+                a.append([z, y[1:4]])
+            if z == "Audios":
+                a.append([z, [y[4]]])
+        array[0][1][1] = a
     if input_choice == "b":
-        array = [array[0]]
+        name = "Images"
+        array[0][0] = array[0][0].format(name)
+        array[0][1][1] = [[name, [y[0]]]]
         valid_input = True
     if input_choice == "c":
-        array = [array[1]]
+        name = "Videos"
+        array[0][0] = array[0][0].format(name)
+        array[0][1][1] = [[name, y[1:4]]]
         valid_input = True
     if input_choice == "d":
-        array = [array[2]]
+        name = "Audios"
+        array[0][0] = array[0][0].format(name)
+        array[0][1][1] = [[name, [y[4]]]]
         valid_input = True
     if valid_input:
         return array
     else:
         print("Invalid Choice")
-    return False
+    return []
 
 
-def scrape_array(link, session, media_type, directory, username):
+def scrape_array(link, session, directory, username):
     media_set = [[], []]
+    media_type = directory[1]
     count = 0
     found = False
+    y = []
     while count < 11:
         r = session.get(link)
         y = json.loads(r.text)
@@ -161,7 +174,7 @@ def scrape_array(link, session, media_type, directory, username):
     master_date = "01-01-0001 00:00:00"
     for media_api in y:
         for media in media_api["media"]:
-            if media["type"] != media_type:
+            if media["type"] not in media_type:
                 x += 1
                 continue
             if "source" in media:
@@ -177,7 +190,7 @@ def scrape_array(link, session, media_type, directory, username):
                 if media_api["postedAt"] == "-001-11-30T00:00:00+00:00":
                     date_string = master_date
                     date_object = datetime.strptime(
-                        master_date, "%d-%m-%Y  %H:%M:%S")
+                        master_date, "%d-%m-%Y %H:%M:%S")
                 else:
                     date_object = datetime.fromisoformat(media_api["postedAt"])
                     date_string = date_object.replace(tzinfo=None).strftime(
@@ -187,10 +200,10 @@ def scrape_array(link, session, media_type, directory, username):
                 new_dict["postedAt"] = date_string
                 file_name = link.rsplit('/', 1)[-1]
                 file_name, ext = os.path.splitext(file_name)
-                ext = ext.replace(".", "")
-                file_path = reformat(directory, file_name,
+                ext = ext.__str__().replace(".", "")
+                file_path = reformat(directory[0][1], file_name,
                                      new_dict["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
-                new_dict["directory"] = directory
+                new_dict["directory"] = directory[0][1]
                 new_dict["filename"] = file_path.rsplit('/', 1)[-1]
                 if source["size"] == 0:
                     media_set[1].append(new_dict)
@@ -199,27 +212,33 @@ def scrape_array(link, session, media_type, directory, username):
     return media_set
 
 
-def media_scraper(session, site_name, only_links, link, location, media_type, directory, post_count, username):
-    print("Scraping "+location+". Should take less than a minute.")
-    array = format_directory(j_directory, site_name, username, location)
-    user_directory = array[0]
-    metadata_directory = array[1]
-    directory = array[2]
+def media_scraper(session, site_name, only_links, link, locations, directory, post_count, username):
+    seperator = " | "
+    media_set = []
+    for location in locations:
+        print("Scraping ["+str(seperator.join(location[1])) +
+              "]. Should take less than a minute.")
+        array = format_directory(j_directory, site_name, username, location[0])
+        user_directory = array[0]
+        metadata_directory = array[1]
+        directories = array[2]+[location[1]]
 
-    pool = ThreadPool(max_threads)
-    ceil = math.ceil(post_count / 100)
-    a = list(range(ceil))
-    offset_array = []
-    for b in a:
-        b = b * 100
-        offset_array.append(link.replace("offset=0", "offset=" + str(b)))
-    media_set = format_media_set(pool.starmap(scrape_array, product(
-        offset_array, [session], [media_type], [directory], [username])))
-    if post_count:
-        os.makedirs(directory, exist_ok=True)
-        os.makedirs(metadata_directory, exist_ok=True)
-        archive_directory = metadata_directory+location
-        export_archive(media_set, archive_directory)
+        pool = ThreadPool(max_threads)
+        ceil = math.ceil(post_count / 100)
+        a = list(range(ceil))
+        offset_array = []
+        for b in a:
+            b = b * 100
+            offset_array.append(link.replace("offset=0", "offset=" + str(b)))
+        results = format_media_set(location[0], pool.starmap(scrape_array, product(
+            offset_array[:1], [session], [directories], [username])))
+        if post_count:
+            os.makedirs(directory, exist_ok=True)
+            os.makedirs(metadata_directory, exist_ok=True)
+            archive_directory = metadata_directory+location[0]
+            export_archive(results, archive_directory)
+        media_set.append(results)
+
     return [media_set, directory]
 
 
@@ -229,7 +248,8 @@ def download_media(media_set, session, directory, username, post_count, location
             link = media["link"]
             r = session.head(link)
 
-            date_object = datetime.strptime(media["postedAt"], "%d-%m-%Y %H:%M:%S")
+            date_object = datetime.strptime(
+                media["postedAt"], "%d-%m-%Y %H:%M:%S")
             directory = media["directory"]+media["filename"]
             timestamp = date_object.timestamp()
             if not overwrite_files:
@@ -247,14 +267,15 @@ def download_media(media_set, session, directory, username, post_count, location
             logger.info("Path: {}".format(directory))
             return True
     print("Download Processing")
-    print("Name: "+username)
-    print("Directory: " + directory)
-    print("Downloading "+post_count+" "+location)
+    print("Name: "+username+" | Directory: " + directory)
+    print("Downloading "+post_count+" "+location+"\n")
     if multithreading:
         pool = ThreadPool(max_threads)
     else:
         pool = ThreadPool(1)
-    pool.starmap(download, product(media_set, [session], [directory], [username]))
+    pool.starmap(download, product(
+        media_set, [session], [directory], [username]))
+
 
 def create_session(user_agent, auth_id, auth_hash, app_token):
     response = []
@@ -274,12 +295,9 @@ def create_session(user_agent, auth_id, auth_hash, app_token):
         for auth_cookie in auth_cookies:
             session.cookies.set(**auth_cookie)
         session.head("https://onlyfans.com")
-        try:
-            r = session.get(
-                "https://onlyfans.com/api2/v2/users/me?app-token="+app_token)
-            response = json.loads(r.text)
-        except Exception as e:
-            print(e, r)
+        r = session.get(
+            "https://onlyfans.com/api2/v2/users/me?app-token="+app_token)
+        response = json.loads(r.text)
         if 'error' in response:
             error_message = response["error"]["message"]
             print(error_message)
@@ -304,11 +322,12 @@ def get_subscriptions(session, app_token, subscriber_count):
     for b in a:
         b = b * 10
         offset_array.append(link.replace("offset=0", "offset=" + str(b)))
+
     def multi(link, session):
         return json.loads(session.get(link).text)
     results = pool.starmap(multi, product(
         offset_array, [session]))
-    results = list(itertools.chain(*results))
+    results = list(chain(*results))
     results = list(reversed(results))
     if any("error" in result for result in results):
         print("Invalid App Token")

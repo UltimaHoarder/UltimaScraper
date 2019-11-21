@@ -52,6 +52,20 @@
         "boards": [],
         "ignored_keywords": []
       }
+    },
+    "bbwchan": {
+      "auth": {},
+      "settings": {
+        "auto_choice": "",
+        "auto_scrape_all": false,
+        "directory": "",
+        "file_name_format": "{file_name}.{ext}",
+        "text_length": "",
+        "overwrite_files": false,
+        "date_format": "%d-%m-%Y",
+        "boards": [],
+        "ignored_keywords": []
+      }
     }
 
   }

@@ -254,13 +254,19 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
                 b = b * 100
                 offset_array.append(link.replace("offset=0", "offset=" + str(b)))
         if api_type == "Messages":
+            offset_count = 0
             while True:
                 r = session.get(link)
                 y = json.loads(r.text)
                 if "list" in y:
                     if y["list"]:
                         offset_array.append(link)
-                        if not y["hasMore"]:
+                        if y["hasMore"]:
+                            offset_count2 = offset_count+100
+                            offset_count = offset_count2-100
+                            link = link.replace("offset=" + str(offset_count), "offset=" + str(offset_count2))
+                            offset_count = offset_count2
+                        else:
                             break
                     else:
                         break

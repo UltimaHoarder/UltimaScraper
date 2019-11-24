@@ -10,7 +10,8 @@
       "auth": {
         "app-token": "",
         "auth_id": "",
-        "auth_hash": ""
+        "auth_hash": "",
+        "sess": ""
       },
       "settings": {
         "auto_choice": "",

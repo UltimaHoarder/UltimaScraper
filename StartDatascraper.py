@@ -59,9 +59,10 @@ try:
             app_token = json_auth['app-token']
             auth_id = json_auth['auth_id']
             auth_hash = json_auth['auth_hash']
+            sess = json_auth['sess'] if json_auth['sess'] else "None"
             x = onlyfans
             session = x.create_session(
-                user_agent, auth_id, auth_hash, app_token)
+                user_agent, auth_id, auth_hash, app_token, sess)
             if not session[0]:
                 continue
             print("Some OnlyFans' video links have SLOW download (Blame OF). I suggest importing the metadata json content to a Download Manager like IDM or JDownloader, or you could be waiting for 1HR+ for 300 videos to be finished.")
@@ -113,6 +114,7 @@ except Exception as e:
     tb = traceback.format_exc()
     print(tb+"\n")
     v1 = inspect.trace()[-1][0].f_locals
+    # print(v1)
     if "s" in v1:
         print(v1["s"])
     input()

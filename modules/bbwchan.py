@@ -194,7 +194,7 @@ def download_media(media_set, session, directory, board_name):
 
                 og_filename = os.path.splitext(filename)[0]
                 dp = check_for_dupe_file(
-                    overwrite_files, media, name_key, download_path, og_filename, directory)
+                    overwrite_files, media, download_path, og_filename, directory)
                 if dp[0]:
                     continue
                 download_path = dp[1]

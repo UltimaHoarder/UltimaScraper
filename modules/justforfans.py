@@ -7,7 +7,6 @@ import json
 from itertools import product
 from itertools import chain
 import multiprocessing
-from multiprocessing import current_process, Pool
 from multiprocessing.dummy import Pool as ThreadPool
 from datetime import datetime
 import re
@@ -34,8 +33,6 @@ text_length = int(json_settings["text_length"]
                   ) if json_settings["text_length"] else maximum_length
 if text_length > maximum_length:
     text_length = maximum_length
-
-max_threads = multiprocessing.cpu_count()
 
 
 def start_datascraper(session, username, site_name, app_token=None):
@@ -175,7 +172,7 @@ def scrape_array(link, session, media_type, directory, username):
                 ext = ext.replace(".", "")
                 file_path = reformat(directory[0][1], file_name,
                                      new_dict["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
-                new_dict["directory"] = directory
+                new_dict["directory"] = directory[0][1]
                 new_dict["filename"] = file_path.rsplit('/', 1)[-1]
                 media_set[0].append(new_dict)
     return media_set
@@ -225,12 +222,12 @@ def scrape_array(link, session, media_type, directory, username):
 
 def media_scraper(session, site_name, only_links, link, location, media_type, directory, post_count, username):
     print("Scraping " + location + ". May take a few minutes.")
-    array = format_directory(j_directory, site_name, username, location)
+    array = format_directory(j_directory, site_name, username, location, "Posts")
     user_directory = array[0]
     metadata_directory = array[1]
     directory = array[2]
 
-    pool = ThreadPool(max_threads)
+    pool = ThreadPool()
     ceil = math.ceil(post_count / 100)
     a = list(range(ceil))
     offset_array = []
@@ -290,7 +287,7 @@ def download_media(media_set, session, directory, username, post_count, location
     print("Directory: " + directory)
     print("Downloading "+post_count+" "+location)
     if multithreading:
-        pool = ThreadPool(max_threads)
+        pool = ThreadPool()
     else:
         pool = ThreadPool(1)
     pool.starmap(download, product(
@@ -298,9 +295,10 @@ def download_media(media_set, session, directory, username, post_count, location
 
 
 def create_session(user_agent, phpsessid, user_hash2):
+    max_threads = multiprocessing.cpu_count()
     session = requests.Session()
     session.mount(
-        'https://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=16))
+        'https://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=max_threads))
     session.headers = {
         'User-Agent': user_agent,
         'Referer': 'https://justfor.fans/'

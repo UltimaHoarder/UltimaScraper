@@ -1,16 +1,16 @@
+import modules.onlyfans as onlyfans
+import modules.justforfans as justforfans
+import modules.four_chan as four_chan
+import modules.bbwchan as bbwchan
+import modules.helpers as helpers
+import timeit
+import json
+import logging
+import traceback
+import inspect
 import os
 path = os.path.dirname(os.path.realpath(__file__))
 os.chdir(path)
-import inspect
-import traceback
-import logging
-import json
-import timeit
-import modules.helpers as helpers
-import modules.bbwchan as bbwchan
-import modules.four_chan as four_chan
-import modules.justforfans as justforfans
-import modules.onlyfans as onlyfans
 
 # Configure logging to the console and file system at INFO level and above
 logging.basicConfig(handlers=[logging.FileHandler('application.log', 'w', 'utf-8')], level=logging.INFO,
@@ -60,9 +60,10 @@ try:
             auth_id = json_auth['auth_id']
             auth_hash = json_auth['auth_hash']
             sess = json_auth['sess'] if json_auth['sess'] else "None"
+            fp = json_auth['fp'] if json_auth['fp'] else "None"
             x = onlyfans
             session = x.create_session(
-                user_agent, auth_id, auth_hash, app_token, sess)
+                user_agent, auth_id, auth_hash, app_token, sess, fp)
             if not session[0]:
                 continue
             print("Some OnlyFans' video links have SLOW download (Blame OF). I suggest importing the metadata json content to a Download Manager like IDM or JDownloader, or you could be waiting for 1HR+ for 300 videos to be finished.")

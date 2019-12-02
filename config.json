@@ -11,7 +11,8 @@
         "app-token": "",
         "auth_id": "",
         "auth_hash": "",
-        "sess": ""
+        "sess": "",
+        "fp": ""
       },
       "settings": {
         "auto_choice": "",
@@ -68,6 +69,5 @@
         "ignored_keywords": []
       }
     }
-
   }
 }

@@ -53,7 +53,8 @@ def start_datascraper(session, username, site_name, app_token):
         item[1].append(username)
         item[1].pop(3)
         api_type = item[2]
-        results = media_scraper(session, site_name, only_links, *item[1], api_type)
+        results = media_scraper(
+            session, site_name, only_links, *item[1], api_type)
         for result in results[0]:
             if not only_links:
                 media_set = result
@@ -109,6 +110,8 @@ def scrape_choice(user_id, app_token, post_counts):
         input_choice = input().strip()
     message_api = "https://onlyfans.com/api2/v2/chats/"+user_id + \
         "/messages?limit=100&offset=0&order=desc&app-token="+app_token+""
+    stories_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
+        "/stories?limit=100&offset=0&order=desc&app-token="+app_token+""
     post_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
         "/posts?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
     # ARGUMENTS
@@ -118,11 +121,13 @@ def scrape_choice(user_id, app_token, post_counts):
         input_choice = input_choice.replace(" -l", "")
     mandatory = [j_directory, only_links]
     y = ["photo", "video", "stream", "gif", "audio"]
+    s_array = ["You have chosen to scrape {}", [
+        stories_api, x, *mandatory, post_count], "Stories"]
     p_array = ["You have chosen to scrape {}", [
         post_api, x, *mandatory, post_count], "Posts"]
     m_array = ["You have chosen to scrape {}", [
         message_api, x, *mandatory, post_count], "Messages"]
-    array = [p_array,m_array]
+    array = [s_array,p_array,m_array]
     valid_input = False
     if input_choice == "a":
         valid_input = True
@@ -195,7 +200,7 @@ def scrape_array(link, session, directory, username, api_type):
                 source = media["source"]
                 link = source["source"]
                 size = source["size"]
-                date = media_api["postedAt"]
+                date = media_api["postedAt"] if "postedAt" in media_api else media_api["createdAt"]
             if "src" in media:
                 link = media["src"]
                 size = media["info"]["preview"]["size"]
@@ -216,13 +221,15 @@ def scrape_array(link, session, directory, username, api_type):
                 date_string = date_object.replace(tzinfo=None).strftime(
                     "%d-%m-%Y %H:%M:%S")
                 master_date = date_string
+            if "text" not in media_api:
+                media_api["text"] = ""
             new_dict["text"] = media_api["text"] if media_api["text"] else ""
             new_dict["postedAt"] = date_string
             file_name = link.rsplit('/', 1)[-1]
             file_name, ext = os.path.splitext(file_name)
             ext = ext.__str__().replace(".", "")
             file_path = reformat(directory[0][1], file_name,
-                                    new_dict["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
+                                 new_dict["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
             new_dict["directory"] = directory[0][1]
             new_dict["filename"] = file_path.rsplit('/', 1)[-1]
             new_dict["size"] = size
@@ -239,7 +246,8 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
     for location in locations:
         print("Scraping ["+str(seperator.join(location[1])) +
               "]. Should take less than a minute.")
-        array = format_directory(j_directory, site_name, username, location[0], api_type)
+        array = format_directory(
+            j_directory, site_name, username, location[0], api_type)
         user_directory = array[0]
         location_directory = array[2][0][1]
         metadata_directory = array[1]
@@ -252,7 +260,8 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
         if api_type == "Posts":
             for b in a:
                 b = b * 100
-                offset_array.append(link.replace("offset=0", "offset=" + str(b)))
+                offset_array.append(link.replace(
+                    "offset=0", "offset=" + str(b)))
         if api_type == "Messages":
             offset_count = 0
             while True:
@@ -264,7 +273,8 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
                         if y["hasMore"]:
                             offset_count2 = offset_count+100
                             offset_count = offset_count2-100
-                            link = link.replace("offset=" + str(offset_count), "offset=" + str(offset_count2))
+                            link = link.replace(
+                                "offset=" + str(offset_count), "offset=" + str(offset_count2))
                             offset_count = offset_count2
                         else:
                             break
@@ -272,6 +282,8 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
                         break
                 else:
                     break
+        if api_type == "Stories":
+            offset_array.append(link)
         results = format_media_set(location[0], pool.starmap(scrape_array, product(
             offset_array, [session], [directories], [username], [api_type])))
         if results["valid"]:
@@ -295,11 +307,12 @@ def download_media(media_set, session, directory, username, post_count, location
                 media["postedAt"], "%d-%m-%Y %H:%M:%S")
             og_filename = media["filename"]
             media["ext"] = os.path.splitext(og_filename)[1]
-            media["ext"] = media["ext"].replace(".","")
+            media["ext"] = media["ext"].replace(".", "")
             download_path = media["directory"]+media["filename"]
             timestamp = date_object.timestamp()
             if not overwrite_files:
                 if os.path.isfile(download_path):
+                    logger.info("Found Path: {}".format(download_path))
                     return
             r = json_request(session, link)
             if not r:

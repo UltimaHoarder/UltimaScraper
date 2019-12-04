@@ -48,14 +48,15 @@ try:
             print("Site: "+string)
             x = int(input())
             site_name = site_names[x]
-        json_auth = json_sites[site_name]["auth"]
-        json_site_settings = json_sites[site_name]["settings"]
+        site_name_lower = site_name.lower()
+        json_auth = json_sites[site_name_lower]["auth"]
+        json_site_settings = json_sites[site_name_lower]["settings"]
         auto_scrape_all = json_site_settings["auto_scrape_all"]
         session: list = []
         x = onlyfans
         app_token = ""
         array = []
-        if site_name == "onlyfans":
+        if site_name_lower == "onlyfans":
             app_token = json_auth['app-token']
             auth_id = json_auth['auth_id']
             auth_hash = json_auth['auth_hash']
@@ -96,12 +97,12 @@ try:
             else:
                 names.pop(0)
         else:
-            print('Input a '+site_name+' '+session[1])
-            names = [input().strip()]
+            print("You're not subscribed to any users.")
+            continue
         start_time = timeit.default_timer()
         download_list = []
         for name in names:
-            username = helpers.parse_links(site_name, name)
+            username = helpers.parse_links(site_name_lower, name)
             result = x.start_datascraper(
                 session[0], username, site_name, app_token)
             download_list.append(result)

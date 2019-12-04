@@ -312,7 +312,6 @@ def download_media(media_set, session, directory, username, post_count, location
             timestamp = date_object.timestamp()
             if not overwrite_files:
                 if os.path.isfile(download_path):
-                    logger.info("Found Path: {}".format(download_path))
                     return
             r = json_request(session, link)
             if not r:

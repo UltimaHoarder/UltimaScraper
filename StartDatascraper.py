@@ -25,6 +25,7 @@ logging.getLogger("").addHandler(console)
 json_config = json.load(open('config.json'))
 json_sites = json_config["supported"]
 json_settings = json_config["settings"]
+infinite_loop = json_settings['infinite_loop']
 user_agent = json_settings['user-agent']
 domain = json_settings["auto_site_choice"]
 
@@ -111,6 +112,9 @@ try:
                 x.download_media(*arg)
         stop_time = str(int(timeit.default_timer() - start_time) / 60)
         print('Task Completed in ' + stop_time + ' Minutes')
+        if not infinite_loop:
+            print("Input anything to continue")
+            input()
 except Exception as e:
     tb = traceback.format_exc()
     print(tb+"\n")

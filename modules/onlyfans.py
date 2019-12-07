@@ -127,7 +127,7 @@ def scrape_choice(user_id, app_token, post_counts):
         post_api, x, *mandatory, post_count], "Posts"]
     m_array = ["You have chosen to scrape {}", [
         message_api, x, *mandatory, post_count], "Messages"]
-    array = [s_array,p_array,m_array]
+    array = [s_array, p_array, m_array]
     valid_input = False
     if input_choice == "a":
         valid_input = True
@@ -203,7 +203,7 @@ def scrape_array(link, session, directory, username, api_type):
                 date = media_api["postedAt"] if "postedAt" in media_api else media_api["createdAt"]
             if "src" in media:
                 link = media["src"]
-                size = media["info"]["preview"]["size"]
+                size = media["info"]["preview"]["size"] if "info" in media_api else 1
                 date = media_api["createdAt"]
             if not link:
                 continue

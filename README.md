@@ -125,6 +125,12 @@ multithreading:
     If set to false, you will download files 1 by 1. (If you don't have fast internet, may god help you.)
     I'd reccomend leaving it set to true.
 
+infinite_loop:
+
+    Default = true
+
+    If set to false, the script will run once and ask you to input anything to continue.
+
 boards:
 
     Default = []

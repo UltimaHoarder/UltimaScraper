@@ -57,7 +57,7 @@ file_name_format:
     {ext} = The media's file extension
 
     Example: {date}/{text}-{file_name}.{ext}
-    Warning: It's important to keep a unique identifier next to .{ext}. By default it's {file_name}, but it can be {date}-{text}.ext
+    Warning: It's important to keep a unique identifier next to .{ext}. By default it's {file_name}.
     
 text_length:
 

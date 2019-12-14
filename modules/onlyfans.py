@@ -83,8 +83,13 @@ def link_check(session, app_token, username):
         temp_user_id2[0] = False
         temp_user_id2[1] = y["error"]["message"]
         return temp_user_id2
-
-    subbed = y["subscribedBy"]
+        
+    if y["subscribedBy"]:
+        subbed = True
+    elif y["subscribedOn"]:
+        subbed = True
+    else:
+        subbed = False
     if not subbed:
         temp_user_id2[0] = False
         temp_user_id2[1] = "You're not subscribed to the user"
@@ -357,7 +362,8 @@ def create_session(user_agent, auth_id, auth_hash, app_token, sess="None"):
         r = session.get(
             "https://onlyfans.com/api2/v2/users/me?app-token="+app_token)
         count += 1
-        if r.status_code != 200:
+        content_type = r.headers['Content-Type']
+        if r.status_code != 200 or "application/json" not in content_type:
             continue
         response = json.loads(r.text)
         if 'error' in response:
@@ -369,19 +375,19 @@ def create_session(user_agent, auth_id, auth_hash, app_token, sess="None"):
         else:
             print("Welcome "+response["name"])
         option_string = "username or profile link"
-        return [session, option_string, response["subscribesCount"]]
+        return [session, option_string, response["subscribesCount"], response]
 
     return [False, response]
 
 
 def get_subscriptions(session, app_token, subscriber_count):
-    link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=10&offset=0&type=active&app-token="+app_token
+    link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=99&offset=0&type=active&app-token="+app_token
     pool = ThreadPool()
-    ceil = math.ceil(subscriber_count / 10)
+    ceil = math.ceil(subscriber_count / 99)
     a = list(range(ceil))
     offset_array = []
     for b in a:
-        b = b * 10
+        b = b * 99
         offset_array.append(link.replace("offset=0", "offset=" + str(b)))
 
     def multi(link, session):

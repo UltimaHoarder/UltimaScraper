@@ -115,7 +115,7 @@ def export_archive(data, archive_directory):
 def get_directory(directory):
     if directory:
         os.makedirs(directory, exist_ok=True)
-        return directory+"/"
+        return directory
     else:
         return "/sites/"
 

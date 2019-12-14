@@ -67,8 +67,10 @@ try:
                 user_agent, auth_id, auth_hash, app_token, sess)
             if not session[0]:
                 continue
-            print("Some OnlyFans' video links have SLOW download (Blame OF). I suggest importing the metadata json content to a Download Manager like IDM or JDownloader, or you could be waiting for 1HR+ for 300 videos to be finished.")
+            me_api = session[3]
             array = x.get_subscriptions(session[0], app_token, session[2])
+            if me_api["isPerformer"]:
+                array = [{"user": {"username":me_api["username"]}}] + array
             array = x.format_options(array)
         elif site_name == "justforfans":
             auth_id = json_auth['phpsessid']

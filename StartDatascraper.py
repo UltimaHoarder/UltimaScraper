@@ -1,16 +1,16 @@
 import os
 path = os.path.dirname(os.path.realpath(__file__))
 os.chdir(path)
-import inspect
-import traceback
-import logging
-import json
-import timeit
-import modules.helpers as helpers
-import modules.bbwchan as bbwchan
-import modules.four_chan as four_chan
-import modules.justforfans as justforfans
 import modules.onlyfans as onlyfans
+import modules.justforfans as justforfans
+import modules.four_chan as four_chan
+import modules.bbwchan as bbwchan
+import modules.helpers as helpers
+import timeit
+import json
+import logging
+import traceback
+import inspect
 
 # Configure logging to the console and file system at INFO level and above
 logging.basicConfig(handlers=[logging.FileHandler('application.log', 'w', 'utf-8')], level=logging.INFO,
@@ -70,7 +70,7 @@ try:
             me_api = session[3]
             array = x.get_subscriptions(session[0], app_token, session[2])
             if me_api["isPerformer"]:
-                array = [{"user": {"username":me_api["username"]}}] + array
+                array = [{"username": me_api["username"]}] + array
             array = x.format_options(array)
         elif site_name == "justforfans":
             auth_id = json_auth['phpsessid']

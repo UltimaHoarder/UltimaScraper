@@ -7,7 +7,7 @@ from itertools import product
 from itertools import chain
 import multiprocessing
 from multiprocessing.dummy import Pool as ThreadPool
-from datetime import datetime
+from datetime import datetime, timezone
 import logging
 import inspect
 import math
@@ -83,10 +83,12 @@ def link_check(session, app_token, username):
         temp_user_id2[0] = False
         temp_user_id2[1] = y["error"]["message"]
         return temp_user_id2
-        
+
     if y["subscribedBy"]:
         subbed = True
     elif y["subscribedOn"]:
+        subbed = True
+    elif y["subscribedIsExpiredNow"] == False:
         subbed = True
     else:
         subbed = False
@@ -375,13 +377,17 @@ def create_session(user_agent, auth_id, auth_hash, app_token, sess="None"):
         else:
             print("Welcome "+response["name"])
         option_string = "username or profile link"
-        return [session, option_string, response["subscribesCount"], response]
+        r = session.get(
+            "https://onlyfans.com/api2/v2/subscriptions/count/all?app-token="+app_token)
+        r = json.loads(r.text)
+        subscriber_count = r["subscriptions"]["all"]
+        return [session, option_string, subscriber_count, response]
 
     return [False, response]
 
 
 def get_subscriptions(session, app_token, subscriber_count):
-    link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=99&offset=0&type=active&app-token="+app_token
+    link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=99&offset=0&app-token="+app_token
     pool = ThreadPool()
     ceil = math.ceil(subscriber_count / 99)
     a = list(range(ceil))
@@ -395,24 +401,32 @@ def get_subscriptions(session, app_token, subscriber_count):
     results = pool.starmap(multi, product(
         offset_array, [session]))
     results = list(chain(*results))
-    results = list(reversed(results))
+    results.sort(key=lambda x: x["subscribedByData"]['expiredAt'])
     if any("error" in result for result in results):
         print("Invalid App Token")
         return []
     else:
-        return results
+        results2 = []
+        for result in results:
+            now = datetime.utcnow()
+            result_date = result["subscribedByData"]["expiredAt"]
+            result_date = datetime.fromisoformat(
+                result_date).replace(tzinfo=None)
+            if result_date > now:
+                results2.append(result)
+        return results2
 
 
 def format_options(array):
     string = ""
     names = []
-    array = [{"user": {"username": "All"}}]+array
+    array = [{"username": "All"}]+array
     name_count = len(array)
     if name_count > 1:
 
         count = 0
         for x in array:
-            name = x["user"]["username"]
+            name = x["username"]
             string += str(count)+" = "+name
             names.append(name)
             if count+1 != name_count:

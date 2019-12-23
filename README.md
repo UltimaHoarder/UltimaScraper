@@ -177,9 +177,9 @@ start_datascraper(session, app_token, username)
 # FAQ
 Before troubleshooting, make sure you're using Python 3.8.
 
-Error: Access Denied
+Error: Access Denied /  Auth Loop
 
-    Make sure your cookies are correct.
+    Make sure your cookies and user-agent are correct.
 
 AttributeError: type object 'datetime.datetime' has no attribute 'fromisoformat'
 

@@ -20,6 +20,7 @@ Fill in the following:
 * `{"auth_id":"your_auth_id"}`
 * `{"auth_hash":"your_auth_hash"}`
 * `{"user-agent":"your_user-agent"}`
+
 Sess token is optional but does help with authing into your account.
 * `{"sess":"your_user-agent"}`
 

@@ -29,6 +29,12 @@ Go to www.onlyfans.com and login, open the network debugger, then check the imag
 
 ![app-token](examples/1.png)
 
+# USAGE
+
+`python StartDatascraper.py`
+
+Enter in inputs as prompted by console.
+
   
 # OPTIONAL
 
@@ -115,11 +121,7 @@ overwrite_files:
 
 date_format:
 
-    Default = "%d-%m-%Y"
-
-    If you live in the USA and you want to use the incorrect format, use the following:
-
-    "%m-%d-%Y"
+    Default = "%Y-%m-%d"
 
 multithreading:
 

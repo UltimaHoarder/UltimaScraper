@@ -21,7 +21,7 @@
         "file_name_format": "{file_name}.{ext}",
         "text_length": "",
         "overwrite_files": true,
-        "date_format": "%d-%m-%Y",
+        "date_format": "%Y-%m-%d",
         "ignored_keywords": []
       }
     },

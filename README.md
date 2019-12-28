@@ -121,7 +121,11 @@ overwrite_files:
 
 date_format:
 
-    Default = "%Y-%m-%d"
+    Default = "%d-%m-%Y"
+
+    If you live in the USA and you want to use the incorrect format, use the following:
+
+    "%m-%d-%Y"
 
 multithreading:
 

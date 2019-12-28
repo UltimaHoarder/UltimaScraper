@@ -29,6 +29,12 @@ Go to www.onlyfans.com and login, open the network debugger, then check the imag
 
 ![app-token](examples/1.png)
 
+# USAGE
+
+`python StartDatascraper.py`
+
+Enter in inputs as prompted by console.
+
   
 # OPTIONAL
 

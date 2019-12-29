@@ -210,3 +210,7 @@ AttributeError: type object 'datetime.datetime' has no attribute 'fromisoformat'
 I'm getting authed into the wrong account
 
     Enjoy the free content.
+
+I'm using Linux OS and somethings not working.
+
+    Script was built on Windows 10. If you're using Linux you can still submit an issue and I'll try my best to fix it. 

@@ -235,11 +235,11 @@ def scrape_array(link, session, directory, username, api_type):
             new_dict["postedAt"] = date_string
             file_name = link.rsplit('/', 1)[-1]
             file_name, ext = os.path.splitext(file_name)
-            ext = ext.__str__().replace(".", "")
+            ext = ext.__str__().replace(".", "").split('?')[0]
             file_path = reformat(directory[0][1], file_name,
                                  new_dict["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
             new_dict["directory"] = directory[0][1]
-            new_dict["filename"] = file_path.rsplit('/', 1)[-1].split("?")[0]
+            new_dict["filename"] = file_path.rsplit('/', 1)[-1]
             new_dict["size"] = size
             if size == 0:
                 media_set[1].append(new_dict)

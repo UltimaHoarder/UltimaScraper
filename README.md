@@ -4,6 +4,8 @@
 
 # Mandatory
 
+Read the FAQ before submitting issue.
+
 From the project folder run this command in your terminal:
 
 `pip install -r requirements.txt`

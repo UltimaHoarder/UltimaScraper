@@ -98,7 +98,7 @@ auto_choice:
 
     You can automatically choose what you want to scrape if you add it in the config file.
     
-|**NEW**| auto_scrape_all:
+auto_scrape_all:
 
     Default = false
 
@@ -153,6 +153,19 @@ ignored_keywords:
     Example = ["ignore", "me"]
 
     Any words you input, the script will ignore any content that contains these words.
+
+|**NEW**| ignore_unfollowed_accounts:
+
+    Default = ""
+    a = "all"
+    b = "paid"
+    c = "free"
+
+    This setting will not include any paid or free accounts that you've unfollowed in your subscription list.
+
+    "ignore_unfollowed_accounts": "paid"
+
+    This choice will not include any unfollowed accounts that you've paid for.
 
 
 

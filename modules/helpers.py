@@ -68,7 +68,7 @@ def reformat(directory, file_name, text, ext, date, username, format_path, date_
                 directory2 = directory
     filename = os.path.basename(directory2)
     if len(filename) > 240:
-        directory2 = directory2.replace(filename,filename[:240]+"."+ext)
+        directory2 = directory2.replace(filename, filename[:240]+"."+ext)
     return directory2
 
 
@@ -132,7 +132,8 @@ def format_directory(j_directory, site_name, username, location, api_type):
             os.path.realpath(__file__))) + user_directory
         metadata_directory = os.path.dirname(os.path.dirname(
             os.path.realpath(__file__))) + metadata_directory
-        directories.append([location,user_directory+api_type + "/" + location+"/"])
+        directories.append(
+            [location, user_directory+api_type + "/" + location+"/"])
     else:
         directories.append(
             [location, user_directory+api_type + "/" + location+"/"])

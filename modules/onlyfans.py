@@ -26,6 +26,7 @@ format_path = json_settings['file_name_format']
 overwrite_files = json_settings["overwrite_files"]
 date_format = json_settings["date_format"]
 ignored_keywords = json_settings["ignored_keywords"]
+ignore_unfollowed_accounts = json_settings["ignore_unfollowed_accounts"]
 maximum_length = 240
 text_length = int(json_settings["text_length"]
                   ) if json_settings["text_length"] else maximum_length
@@ -408,11 +409,23 @@ def get_subscriptions(session, app_token, subscriber_count):
     else:
         results2 = []
         for result in results:
+            username = result["username"]
             now = datetime.utcnow()
-            result_date = result["subscribedByData"]["expiredAt"]
+            subscribedBy = result["subscribedBy"]
+            subscribedByData = result["subscribedByData"]
+            result_date = subscribedByData["expiredAt"]
+            price = subscribedByData["price"]
+            subscribePrice = subscribedByData["subscribePrice"]
             result_date = datetime.fromisoformat(
                 result_date).replace(tzinfo=None)
             if result_date > now:
+                if not subscribedBy:
+                    if ignore_unfollowed_accounts in ["all", "paid"]:
+                        if price > 0:
+                            continue
+                    if ignore_unfollowed_accounts in ["all", "free"]:
+                        if subscribePrice == 0:
+                            continue
                 results2.append(result)
         return results2
 

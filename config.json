@@ -22,7 +22,8 @@
         "text_length": "",
         "overwrite_files": true,
         "date_format": "%d-%m-%Y",
-        "ignored_keywords": []
+        "ignored_keywords": [],
+        "ignore_unfollowed_accounts": ""
       }
     },
     "justforfans": {

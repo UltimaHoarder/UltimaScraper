@@ -4,7 +4,7 @@
 
 # Mandatory
 
-Read the FAQ before submitting issue.
+Read the [#FAQ](https://github.com/DIGITALCRIMINAL/OnlyFans/blob/master/README.md#faq) at the bottom of this page before submitting a issue.
 
 From the project folder run this command in your terminal:
 

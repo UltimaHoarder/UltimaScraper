@@ -165,7 +165,7 @@ ignored_keywords:
 
     This setting will not include any paid or free accounts that you've unfollowed in your subscription list.
 
-    "ignore_unfollowed_accounts": "paid"
+    Example: "ignore_unfollowed_accounts": "paid"
 
     This choice will not include any unfollowed accounts that you've paid for.
 

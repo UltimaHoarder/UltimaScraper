@@ -24,7 +24,7 @@ Fill in the following:
 * `{"user-agent":"your_user-agent"}`
 
 Sess token is optional but does help with authing into your account.
-* `{"sess":"your_user-agent"}`
+* `{"sess":"your_sess_token"}`
 
 
 Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get app-token, auth_id, auth_hash and user-agent
@@ -165,7 +165,7 @@ ignored_keywords:
 
     This setting will not include any paid or free accounts that you've unfollowed in your subscription list.
 
-    "ignore_unfollowed_accounts": "paid"
+    Example: "ignore_unfollowed_accounts": "paid"
 
     This choice will not include any unfollowed accounts that you've paid for.
 
@@ -211,6 +211,6 @@ I'm getting authed into the wrong account
 
     Enjoy the free content.
 
-I'm using Linux OS and somethings not working.
+I'm using Linux OS and something isn't working.
 
     Script was built on Windows 10. If you're using Linux you can still submit an issue and I'll try my best to fix it. 

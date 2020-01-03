@@ -5,13 +5,11 @@ from modules.helpers import *
 import os
 import json
 from itertools import product
-from itertools import chain
 import multiprocessing
 from multiprocessing.dummy import Pool as ThreadPool
 from datetime import datetime
 import re
 import logging
-import inspect
 import math
 import re
 

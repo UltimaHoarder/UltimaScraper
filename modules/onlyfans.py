@@ -7,7 +7,7 @@ from itertools import product
 from itertools import chain
 import multiprocessing
 from multiprocessing.dummy import Pool as ThreadPool
-from datetime import datetime, timezone
+from datetime import datetime
 import logging
 import math
 
@@ -82,12 +82,18 @@ def link_check(session, app_token, username):
         temp_user_id2[0] = False
         temp_user_id2[1] = y["error"]["message"]
         return temp_user_id2
-
+    now = datetime.utcnow().date()
+    subscribedByData = y["subscribedByData"]
+    expired_at = subscribedByData["expiredAt"]
+    result_date = datetime.fromisoformat(
+        expired_at).replace(tzinfo=None).date()
     if y["subscribedBy"]:
         subbed = True
     elif y["subscribedOn"]:
         subbed = True
     elif y["subscribedIsExpiredNow"] == False:
+        subbed = True
+    elif result_date >= now:
         subbed = True
     else:
         subbed = False
@@ -408,15 +414,15 @@ def get_subscriptions(session, app_token, subscriber_count):
         results2 = []
         for result in results:
             username = result["username"]
-            now = datetime.utcnow()
+            now = datetime.utcnow().date()
             subscribedBy = result["subscribedBy"]
             subscribedByData = result["subscribedByData"]
             result_date = subscribedByData["expiredAt"]
             price = subscribedByData["price"]
             subscribePrice = subscribedByData["subscribePrice"]
             result_date = datetime.fromisoformat(
-                result_date).replace(tzinfo=None)
-            if result_date > now:
+                result_date).replace(tzinfo=None).date()
+            if result_date >= now:
                 if not subscribedBy:
                     if ignore_unfollowed_accounts in ["all", "paid"]:
                         if price > 0:

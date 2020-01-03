@@ -1,12 +1,14 @@
 import re
-import os
 from bs4 import BeautifulSoup
 import platform
 import csv
 import itertools
 import json
 from PIL import Image
-
+import os
+from os.path import dirname as up
+path = up(up(os.path.realpath(__file__)))
+os.chdir(path)
 # Open config.json and fill in OPTIONAL information
 json_config = json.load(open('config.json'))
 json_global_settings = json_config["settings"]

@@ -155,7 +155,7 @@ def thread_scraper(thread_id, board_name, session, directory):
         for media in post["files"]:
             ext = media["mime"].split("/")[1]
             media["ext"] = ext
-            filename = os.path.splitext(media["originalName"])[0]
+            filename = os.path.splitext(media["originalName"])[0].strip()
             media["alt_filename"] = media["path"].rsplit(
                 "a/")[1].rsplit("-")[0][:13]+"."+ext
             new_directory = directory+"/"+text+" - "+thread_id+"/"

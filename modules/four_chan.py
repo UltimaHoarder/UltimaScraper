@@ -144,7 +144,7 @@ def thread_scraper(thread_id, board_name, session, directory):
         text = thread_master["com"][:text_length]
     text = BeautifulSoup(text, 'html.parser').get_text().replace(
         "\n", " ").strip()
-    text = re.sub(r'[\\/*?:"<>|]', '', text)
+    text = re.sub(r'[\\/*?:"<>|]', '', text).strip()
     thread["download_path"] = ""
     for post in thread["posts"]:
         if "name" not in post:

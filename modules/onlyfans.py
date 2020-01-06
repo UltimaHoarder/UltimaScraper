@@ -83,10 +83,12 @@ def link_check(session, app_token, username):
         temp_user_id2[1] = y["error"]["message"]
         return temp_user_id2
     now = datetime.utcnow().date()
-    subscribedByData = y["subscribedByData"]
-    expired_at = subscribedByData["expiredAt"]
-    result_date = datetime.fromisoformat(
-        expired_at).replace(tzinfo=None).date()
+    result_date = datetime.utcnow().date()
+    if "email" not in y:
+        subscribedByData = y["subscribedByData"]
+        expired_at = subscribedByData["expiredAt"]
+        result_date = datetime.fromisoformat(
+            expired_at).replace(tzinfo=None).date()
     if y["subscribedBy"]:
         subbed = True
     elif y["subscribedOn"]:
@@ -349,45 +351,55 @@ def download_media(media_set, session, directory, username, post_count, location
 
 def create_session(user_agent, auth_id, auth_hash, app_token, sess="None"):
     response = []
+    auth_count = 1
+    auth_version = "(V1)"
     count = 1
-    while count < 11:
-        print("Auth (V1) Attempt "+str(count)+"/"+"10")
-        max_threads = multiprocessing.cpu_count()
-        session = requests.Session()
-        session.mount(
-            'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
-        session.headers = {
-            'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
-        auth_cookies = [
-            {'name': 'auth_id', 'value': auth_id},
-            {'name': 'auth_hash', 'value': auth_hash},
-            {'name': 'sess', 'value': sess}
-        ]
-        for auth_cookie in auth_cookies:
-            session.cookies.set(**auth_cookie)
-        session.head("https://onlyfans.com")
-        r = session.get(
-            "https://onlyfans.com/api2/v2/users/me?app-token="+app_token)
-        count += 1
-        content_type = r.headers['Content-Type']
-        if r.status_code != 200 or "application/json" not in content_type:
-            continue
-        response = json.loads(r.text)
-        if 'error' in response:
-            error_message = response["error"]["message"]
-            print(error_message)
-            if "token" in error_message:
+    while auth_count < 3:
+        if auth_count == 2:
+            auth_version = "(V2)"
+            sess = "None"
+            count = 1
+        while count < 11:
+            print("Auth "+auth_version+" Attempt "+str(count)+"/"+"10")
+            max_threads = multiprocessing.cpu_count()
+            session = requests.Session()
+            session.mount(
+                'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+            session.headers = {
+                'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
+            auth_cookies = [
+                {'name': 'auth_id', 'value': auth_id},
+                {'name': 'auth_hash', 'value': auth_hash},
+                {'name': 'sess', 'value': sess}
+            ]
+            for auth_cookie in auth_cookies:
+                session.cookies.set(**auth_cookie)
+            session.head("https://onlyfans.com")
+            r = session.get(
+                "https://onlyfans.com/api2/v2/users/me?app-token="+app_token)
+            count += 1
+            content_type = r.headers['Content-Type']
+            if r.status_code != 200 or "application/json" not in content_type:
+                continue
+            response = json.loads(r.text)
+            if 'error' in response:
+                error_message = response["error"]["message"]
+                print(error_message)
+                if "token" in error_message:
+                    count = 10
+                continue
+            else:
+                print("Welcome "+response["name"])
+            option_string = "username or profile link"
+            r = session.get(
+                "https://onlyfans.com/api2/v2/subscriptions/count/all?app-token="+app_token)
+            r = json.loads(r.text)
+            if "subscriptions" not in r:
                 count = 10
-            continue
-        else:
-            print("Welcome "+response["name"])
-        option_string = "username or profile link"
-        r = session.get(
-            "https://onlyfans.com/api2/v2/subscriptions/count/all?app-token="+app_token)
-        r = json.loads(r.text)
-        subscriber_count = r["subscriptions"]["all"]
-        return [session, option_string, subscriber_count, response]
-
+                continue
+            subscriber_count = r["subscriptions"]["all"]
+            return [session, option_string, subscriber_count, response]
+        auth_count += 1
     return [False, response]
 
 
@@ -406,11 +418,11 @@ def get_subscriptions(session, app_token, subscriber_count):
     results = pool.starmap(multi, product(
         offset_array, [session]))
     results = list(chain(*results))
-    results.sort(key=lambda x: x["subscribedByData"]['expiredAt'])
     if any("error" in result for result in results):
         print("Invalid App Token")
         return []
     else:
+        results.sort(key=lambda x: x["subscribedByData"]['expiredAt'])
         results2 = []
         for result in results:
             username = result["username"]

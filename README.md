@@ -18,11 +18,11 @@ Open:
 
 Fill in the following:
 
-* `{"app-token":"your_token"}`
-* `{"auth_id":"your_auth_id"}`
-* `{"auth_hash":"your_auth_hash"}`
-* `{"user-agent":"your_user-agent"}`
 * `{"sess":"your_sess_token"}`
+* `{"user-agent":"your_user-agent"}`
+
+Optional change:
+* `{"app-token":"your_token"}`
 
 
 Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get app-token, auth_id, auth_hash and user-agent

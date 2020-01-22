@@ -349,7 +349,7 @@ def download_media(media_set, session, directory, username, post_count, location
         media_set, [session], [directory], [username]))
 
 
-def create_session(user_agent, auth_id, auth_hash, app_token, sess="None"):
+def create_session(user_agent, app_token, sess="None"):
     response = []
     auth_count = 1
     auth_version = "(V1)"
@@ -368,8 +368,6 @@ def create_session(user_agent, auth_id, auth_hash, app_token, sess="None"):
             session.headers = {
                 'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
             auth_cookies = [
-                {'name': 'auth_id', 'value': auth_id},
-                {'name': 'auth_hash', 'value': auth_hash},
                 {'name': 'sess', 'value': sess}
             ]
             for auth_cookie in auth_cookies:
@@ -400,6 +398,7 @@ def create_session(user_agent, auth_id, auth_hash, app_token, sess="None"):
             subscriber_count = r["subscriptions"]["all"]
             return [session, option_string, subscriber_count, response]
         auth_count += 1
+        break
     return [False, response]
 
 

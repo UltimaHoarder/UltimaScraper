@@ -56,12 +56,10 @@ try:
         array = []
         if site_name_lower == "onlyfans":
             app_token = json_auth['app-token']
-            auth_id = json_auth['auth_id']
-            auth_hash = json_auth['auth_hash']
             sess = json_auth['sess'] if json_auth['sess'] else "None"
             x = onlyfans
             session = x.create_session(
-                user_agent, auth_id, auth_hash, app_token, sess)
+                user_agent, app_token, sess)
             if not session[0]:
                 continue
             me_api = session[3]

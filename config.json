@@ -9,10 +9,8 @@
   "supported": {
     "onlyfans": {
       "auth": {
-        "app-token": "",
-        "auth_id": "",
-        "auth_hash": "",
-        "sess": ""
+        "sess": "",
+        "app-token": "33d57ade8c02dbc5a333db99ff9ae26a"
       },
       "settings": {
         "auto_choice": "",

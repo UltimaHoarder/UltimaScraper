@@ -25,7 +25,7 @@ Optional change:
 * `{"app-token":"your_token"}`
 
 
-Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get app-token, auth_id, auth_hash and user-agent
+Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get app-token, sess and user-agent
 
 ![app-token](examples/1.png)
 

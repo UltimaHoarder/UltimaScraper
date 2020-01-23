@@ -317,6 +317,8 @@ def download_media(media_set, session, directory, username, post_count, location
             link = media["link"]
             r = session.head(link)
 
+            header = r.headers
+            content_length = int(header["content-length"])
             date_object = datetime.strptime(
                 media["postedAt"], "%d-%m-%Y %H:%M:%S")
             og_filename = media["filename"]
@@ -326,7 +328,9 @@ def download_media(media_set, session, directory, username, post_count, location
             timestamp = date_object.timestamp()
             if not overwrite_files:
                 if os.path.isfile(download_path):
-                    return
+                    local_size = os.path.getsize(download_path)
+                    if local_size == content_length:
+                        return
             r = json_request(session, link)
             if not r:
                 break

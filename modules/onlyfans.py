@@ -315,7 +315,9 @@ def download_media(media_set, session, directory, username, post_count, location
     def download(media, session, directory, username):
         while True:
             link = media["link"]
-            r = session.head(link)
+            r = json_request(session, link, "HEAD")
+            if not r:
+                break
 
             header = r.headers
             content_length = int(header["content-length"])

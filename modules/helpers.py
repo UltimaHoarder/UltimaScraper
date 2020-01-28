@@ -201,3 +201,7 @@ def json_request(session, link, type="GET"):
             return r
         except ConnectionResetError:
             count += 1
+
+def update_config(json_config):
+    with open('config.json', 'w', encoding='utf-8') as f:
+        json.dump(json_config, f, ensure_ascii=False, indent=2)

@@ -57,8 +57,6 @@ file_name_format:
 
     {username} = The account's username
 
-    {text} = The post's text
-
     {date} = The post's date
 
     {file_name} = The media's file name

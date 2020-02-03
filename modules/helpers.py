@@ -39,7 +39,7 @@ def reformat(directory, file_name, text, ext, date, username, format_path, date_
     text = BeautifulSoup(text, 'html.parser').get_text().replace(
         "\n", " ").strip()
     filtered_text = re.sub(r'[\\/*?:"<>|]', '', text)
-    path = path.replace("{text}", filtered_text)
+    # path = path.replace("{text}", filtered_text)
     date = date.strftime(date_format)
     path = path.replace("{date}", date)
     path = path.replace("{file_name}", file_name)

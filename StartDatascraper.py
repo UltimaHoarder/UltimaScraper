@@ -1,3 +1,4 @@
+from modules.helpers import update_config
 import modules.onlyfans as onlyfans
 import modules.justforfans as justforfans
 import modules.four_chan as four_chan
@@ -56,7 +57,9 @@ try:
         array = []
         if site_name_lower == "onlyfans":
             app_token = json_auth['app-token']
-            sess = json_auth['sess'] if json_auth['sess'] else "None"
+            sess = json_auth['sess'] if json_auth['sess'] else input("Enter sess token \n").strip()
+            json_auth['sess'] = sess
+            update_config(json_config)
             x = onlyfans
             session = x.create_session(
                 user_agent, app_token, sess)

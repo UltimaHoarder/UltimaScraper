@@ -40,7 +40,7 @@ Enter in inputs as prompted by console.
 
 Open:
 
-`config.json`
+`config.json` (Open with a texteditor)
 
 [settings]
 

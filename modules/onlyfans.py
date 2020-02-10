@@ -205,9 +205,6 @@ def scrape_array(link, session, directory, username, api_type):
     master_date = "01-01-0001 00:00:00"
     for media_api in y:
         for media in media_api["media"]:
-            if media["type"] not in media_type:
-                x += 1
-                continue
             date = "-001-11-30T00:00:00+00:00"
             size = 0
             if "source" in media:
@@ -235,6 +232,10 @@ def scrape_array(link, session, directory, username, api_type):
                 date_string = date_object.replace(tzinfo=None).strftime(
                     "%d-%m-%Y %H:%M:%S")
                 master_date = date_string
+
+            if media["type"] not in media_type:
+                x += 1
+                continue
             if "text" not in media_api:
                 media_api["text"] = ""
             new_dict["text"] = media_api["text"] if media_api["text"] else ""

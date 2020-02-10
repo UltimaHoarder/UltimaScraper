@@ -86,9 +86,10 @@ def link_check(session, app_token, username):
     result_date = datetime.utcnow().date()
     if "email" not in y:
         subscribedByData = y["subscribedByData"]
-        expired_at = subscribedByData["expiredAt"]
-        result_date = datetime.fromisoformat(
-            expired_at).replace(tzinfo=None).date()
+        if subscribedByData:
+            expired_at = subscribedByData["expiredAt"]
+            result_date = datetime.fromisoformat(
+                expired_at).replace(tzinfo=None).date()
     if y["subscribedBy"]:
         subbed = True
     elif y["subscribedOn"]:

@@ -18,7 +18,7 @@
         "directory": "",
         "file_name_format": "{file_name}.{ext}",
         "text_length": "",
-        "overwrite_files": true,
+        "overwrite_files": false,
         "date_format": "%d-%m-%Y",
         "ignored_keywords": [],
         "ignore_unfollowed_accounts": ""

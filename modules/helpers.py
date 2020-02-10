@@ -6,6 +6,7 @@ import json
 from PIL import Image
 import os
 from os.path import dirname as up
+import requests
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
@@ -199,8 +200,9 @@ def json_request(session, link, type="GET"):
         try:
             r = session.get(link, stream=True)
             return r
-        except ConnectionResetError:
+        except (requests.exceptions.ConnectionError, ConnectionResetError):
             count += 1
+
 
 def update_config(json_config):
     with open('config.json', 'w', encoding='utf-8') as f:

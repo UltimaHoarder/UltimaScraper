@@ -12,7 +12,7 @@ path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
 
 # Open config.json and fill in OPTIONAL information
-json_config = json.load(open('config.json'))
+json_config = json.load(open('settings\\config.json'))
 json_global_settings = json_config["settings"]
 export_type = json_global_settings["export_type"]
 os_name = platform.system()
@@ -205,5 +205,5 @@ def json_request(session, link, type="GET"):
 
 
 def update_config(json_config):
-    with open('config.json', 'w', encoding='utf-8') as f:
+    with open('settings\\config.json', 'w', encoding='utf-8') as f:
         json.dump(json_config, f, ensure_ascii=False, indent=2)

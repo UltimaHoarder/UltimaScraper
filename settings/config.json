@@ -1,0 +1,79 @@
+{
+  "settings": {
+    "auto_site_choice": "",
+    "export_type": "json",
+    "multithreading": true,
+    "infinite_loop": true,
+    "global_user-agent": ""
+  },
+  "supported": {
+    "onlyfans": {
+      "auth": {
+        "username": "",
+        "sess": "",
+        "app-token": "33d57ade8c02dbc5a333db99ff9ae26a",
+        "user-agent": ""
+      },
+      "settings": {
+        "auto_choice": "",
+        "auto_scrape_all": false,
+        "directory": "",
+        "file_name_format": "{file_name}.{ext}",
+        "text_length": "",
+        "overwrite_files": false,
+        "date_format": "%d-%m-%Y",
+        "ignored_keywords": [],
+        "ignore_unfollowed_accounts": "",
+        "export_metadata": true
+      },
+      "extra_auth_settings": {
+        "extra_auth": false
+      }
+    },
+    "justforfans": {
+      "auth": {
+        "phpsessid": "",
+        "user_hash2": ""
+      },
+      "settings": {
+        "auto_choice": "",
+        "auto_scrape_all": false,
+        "directory": "",
+        "file_name_format": "{file_name}.{ext}",
+        "text_length": "",
+        "overwrite_files": true,
+        "date_format": "%d-%m-%Y",
+        "ignored_keywords": []
+      }
+    },
+    "4chan": {
+      "auth": {},
+      "settings": {
+        "auto_choice": "",
+        "auto_scrape_all": false,
+        "directory": "",
+        "file_name_format": "{file_name}.{ext}",
+        "text_length": "",
+        "overwrite_files": false,
+        "date_format": "%d-%m-%Y",
+        "boards": [],
+        "ignored_keywords": []
+      }
+    },
+    "bbwchan": {
+      "auth": {},
+      "settings": {
+        "auto_choice": "",
+        "auto_scrape_all": false,
+        "directory": "",
+        "file_name_format": "{file_name}.{ext}",
+        "text_length": "",
+        "overwrite_files": false,
+        "date_format": "%d-%m-%Y",
+        "boards": [],
+        "ignored_keywords": []
+      }
+    }
+
+  }
+}

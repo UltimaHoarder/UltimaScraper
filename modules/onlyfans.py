@@ -14,7 +14,7 @@ import math
 logger = logging.getLogger(__name__)
 
 # Open config.json and fill in OPTIONAL information
-json_config = json.load(open('config.json'))
+json_config = json.load(open('settings\\config.json'))
 json_global_settings = json_config["settings"]
 multithreading = json_global_settings["multithreading"]
 json_settings = json_config["supported"]["onlyfans"]["settings"]
@@ -410,7 +410,7 @@ def create_session(user_agent, app_token, sess="None"):
     return [False, response]
 
 
-def get_subscriptions(session, app_token, subscriber_count):
+def get_subscriptions(session, app_token, subscriber_count,auth_count=0):
     link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=99&offset=0&app-token="+app_token
     pool = ThreadPool()
     ceil = math.ceil(subscriber_count / 99)
@@ -432,6 +432,7 @@ def get_subscriptions(session, app_token, subscriber_count):
         results.sort(key=lambda x: x["subscribedByData"]['expiredAt'])
         results2 = []
         for result in results:
+            result["auth_count"] = auth_count
             username = result["username"]
             now = datetime.utcnow().date()
             subscribedBy = result["subscribedBy"]
@@ -456,7 +457,7 @@ def get_subscriptions(session, app_token, subscriber_count):
 def format_options(array):
     string = ""
     names = []
-    array = [{"username": "All"}]+array
+    array = [{"auth_count":-1,"username": "All"}]+array
     name_count = len(array)
     if name_count > 1:
 
@@ -464,7 +465,7 @@ def format_options(array):
         for x in array:
             name = x["username"]
             string += str(count)+" = "+name
-            names.append(name)
+            names.append([x["auth_count"],name])
             if count+1 != name_count:
                 string += " | "
 

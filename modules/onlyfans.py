@@ -374,7 +374,7 @@ def create_session(user_agent, app_token, sess="None"):
             session.mount(
                 'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
             session.headers = {
-                'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
+                'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/', "accept": "application/json, text/plain, */*"}
             auth_cookies = [
                 {'name': 'sess', 'value': sess}
             ]
@@ -382,7 +382,7 @@ def create_session(user_agent, app_token, sess="None"):
                 session.cookies.set(**auth_cookie)
             session.head("https://onlyfans.com")
             r = session.get(
-                "https://onlyfans.com/api2/v2/users/me?app-token="+app_token)
+                "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token)
             count += 1
             content_type = r.headers['Content-Type']
             if r.status_code != 200 or "application/json" not in content_type:
@@ -410,7 +410,7 @@ def create_session(user_agent, app_token, sess="None"):
     return [False, response]
 
 
-def get_subscriptions(session, app_token, subscriber_count,auth_count=0):
+def get_subscriptions(session, app_token, subscriber_count, auth_count=0):
     link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=99&offset=0&app-token="+app_token
     pool = ThreadPool()
     ceil = math.ceil(subscriber_count / 99)
@@ -457,7 +457,7 @@ def get_subscriptions(session, app_token, subscriber_count,auth_count=0):
 def format_options(array):
     string = ""
     names = []
-    array = [{"auth_count":-1,"username": "All"}]+array
+    array = [{"auth_count": -1, "username": "All"}]+array
     name_count = len(array)
     if name_count > 1:
 
@@ -465,10 +465,9 @@ def format_options(array):
         for x in array:
             name = x["username"]
             string += str(count)+" = "+name
-            names.append([x["auth_count"],name])
+            names.append([x["auth_count"], name])
             if count+1 != name_count:
                 string += " | "
 
             count += 1
     return [names, string]
-

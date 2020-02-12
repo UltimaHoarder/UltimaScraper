@@ -207,8 +207,7 @@ def json_request(session, link, type="GET"):
 
 def update_config(json_config):
     path = os.path.join('settings', 'config.json')
-    json_config = json.load(open(path))
-    with open(json_config, 'w', encoding='utf-8') as f:
+    with open(path, 'w', encoding='utf-8') as f:
         json.dump(json_config, f, ensure_ascii=False, indent=2)
 
 

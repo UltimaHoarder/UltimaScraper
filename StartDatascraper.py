@@ -9,6 +9,7 @@ import json
 import logging
 import traceback
 import inspect
+import os
 
 # Configure logging to the console and file system at INFO level and above
 logging.basicConfig(handlers=[logging.FileHandler('application.log', 'w', 'utf-8')], level=logging.INFO,
@@ -20,13 +21,15 @@ console.setFormatter(formatter)
 logging.getLogger("").addHandler(console)
 
 # Open config.json and fill in MANDATORY information for the script to work
-json_config = json.load(open('settings\\config.json'))
+path = os.path.join('settings', 'config.json')
+json_config = json.load(open(path))
 json_sites = json_config["supported"]
 json_settings = json_config["settings"]
 infinite_loop = json_settings['infinite_loop']
 global_user_agent = json_settings['global_user-agent']
 domain = json_settings["auto_site_choice"]
-extra_auth_config = json.load(open('settings\\extra_auth.json'))
+path = os.path.join('settings', 'extra_auth.json')
+extra_auth_config = json.load(open(path))
 
 string = ""
 site_names = []

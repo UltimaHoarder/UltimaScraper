@@ -19,7 +19,8 @@ import platform
 logger = logging.getLogger(__name__)
 
 # Open config.json and fill in OPTIONAL information
-json_config = json.load(open('settings\\config.json'))
+path = os.path.join('settings', 'config.json')
+json_config = json.load(open(path))
 json_global_settings = json_config["settings"]
 multithreading = json_global_settings["multithreading"]
 json_settings = json_config["supported"]["4chan"]["settings"]

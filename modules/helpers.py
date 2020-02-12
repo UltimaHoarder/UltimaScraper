@@ -207,3 +207,29 @@ def json_request(session, link, type="GET"):
 def update_config(json_config):
     with open('settings\\config.json', 'w', encoding='utf-8') as f:
         json.dump(json_config, f, ensure_ascii=False, indent=2)
+
+
+def choose_auth(array):
+    string = ""
+    names = []
+    array = [{"auth_count": -1, "username": "All"}]+array
+    name_count = len(array)
+    if name_count > 1:
+
+        count = 0
+        for x in array:
+            name = x["username"]
+            string += str(count)+" = "+name
+            names.append(x)
+            if count+1 != name_count:
+                string += " | "
+
+            count += 1
+
+    print("Auth Usernames: "+string)
+    value = int(input().strip())
+    if value:
+        names = [names[value]]
+    else:
+        names.pop(0)
+    return names

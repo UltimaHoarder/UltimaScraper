@@ -57,8 +57,12 @@ try:
         extra_auth_settings = json_sites[site_name_lower]["extra_auth_settings"] if "extra_auth_settings" in json_sites[site_name_lower] else {
             "extra_auth": False}
         extra_auth = extra_auth_settings["extra_auth"]
+        choose_auth = extra_auth_settings["choose_auth"]
+        merge_auth = extra_auth_settings["merge_auth"]
         if extra_auth:
             json_auth_array += extra_auth_config[site_name_lower]["extra_auth"]
+            if choose_auth:
+                json_auth_array = helpers.choose_auth(json_auth_array)
         session_array = []
         x = onlyfans
         app_token = ""

@@ -471,3 +471,4 @@ def format_options(array):
 
             count += 1
     return [names, string]
+

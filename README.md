@@ -31,6 +31,9 @@ Go to www.onlyfans.com and login, open the network debugger, then check the imag
 
 ![app-token](examples/1.png)
 
+Your auth config should look similar to this
+
+![app-token](examples/2.png)
 # USAGE
 
 `python StartDatascraper.py`

@@ -122,7 +122,7 @@ def get_directory(directory):
         os.makedirs(directory, exist_ok=True)
         return directory
     else:
-        return "/sites/"
+        return os.path.abspath("sites")
 
 
 def format_directory(j_directory, site_name, username, location, api_type):

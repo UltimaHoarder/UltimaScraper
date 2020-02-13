@@ -1,7 +1,9 @@
 {
     "onlyfans": {
         "extra_auth": [{
-            "username": "this_is_only_used_to_help_you_keep_track_of_accounts",
+            "username": "",
+            "auth_id": "",
+            "auth_hash": "",
             "sess": "",
             "app-token": "33d57ade8c02dbc5a333db99ff9ae26a",
             "user-agent": ""

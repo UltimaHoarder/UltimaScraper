@@ -10,6 +10,8 @@
     "onlyfans": {
       "auth": {
         "username": "",
+        "auth_id": "",
+        "auth_hash": "",
         "sess": "",
         "app-token": "33d57ade8c02dbc5a333db99ff9ae26a",
         "user-agent": ""

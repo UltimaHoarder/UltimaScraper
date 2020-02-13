@@ -79,13 +79,19 @@ try:
                 auth_count += 1
                 app_token = json_auth['app-token']
                 user_agent = global_user_agent if not json_auth['user-agent'] else json_auth['user-agent']
-                sess = json_auth['sess'] if json_auth['sess'] else input(
-                    "Enter sess token \n").strip()
-                json_auth['sess'] = sess
-                update_config(json_config)
+
+                auth_id = json_auth['auth_id']
+                auth_hash = json_auth['auth_hash']
+                sess = json_auth['sess']
+
+                auth_array = dict()
+                auth_array["auth_id"] = auth_id
+                auth_array["auth_hash"] = auth_hash
+                auth_array["sess"] = sess
+                # update_config(json_config)
                 x = onlyfans
                 session = x.create_session(
-                    user_agent, app_token, sess)
+                    user_agent, app_token, auth_array)
                 session_array.append(session)
                 if not session[0]:
                     continue

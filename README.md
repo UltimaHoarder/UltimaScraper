@@ -18,14 +18,16 @@ Open:
 
 Fill in the following:
 
-* `{"sess":"your_sess_token"}`
+* `{"auth_id":"your_auth_id"}`
+* `{"auth_hash":"your_auth_hash"}`
 * `{"user-agent":"your_user-agent"}`
 
 Optional change:
+* `{"sess":"your_sess_token"}`
 * `{"app-token":"your_token"}`
 
 
-Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get app-token, sess and user-agent
+Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get app-token, auth_id, auth_hash, sess and user-agent
 
 ![app-token](examples/1.png)
 

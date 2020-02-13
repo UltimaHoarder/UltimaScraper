@@ -358,30 +358,36 @@ def download_media(media_set, session, directory, username, post_count, location
         media_set, [session], [directory], [username]))
 
 
-def create_session(user_agent, app_token, sess="None"):
+def create_session(user_agent, app_token, auth_array):
     response = []
     auth_count = 1
     auth_version = "(V1)"
     count = 1
+    auth_cookies = [
+        {'name': 'auth_id', 'value': auth_array["auth_id"]},
+        {'name': 'auth_hash', 'value': auth_array["auth_hash"]}
+    ]
     while auth_count < 3:
         if auth_count == 2:
             auth_version = "(V2)"
-            sess = "None"
+            if auth_array["sess"]:
+                del auth_cookies[2]
             count = 1
         while count < 11:
+            session = requests.Session()
             print("Auth "+auth_version+" Attempt "+str(count)+"/"+"10")
             max_threads = multiprocessing.cpu_count()
-            session = requests.Session()
             session.mount(
                 'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
             session.headers = {
                 'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/', "accept": "application/json, text/plain, */*"}
-            auth_cookies = [
-                {'name': 'sess', 'value': sess}
-            ]
+            if auth_array["sess"]:
+                auth_cookies.append(
+                    {'name': 'sess', 'value': auth_array["sess"]})
             for auth_cookie in auth_cookies:
                 session.cookies.set(**auth_cookie)
-            session.head("https://onlyfans.com")
+            session.head(
+                "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token)
             r = session.get(
                 "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token)
             count += 1
@@ -407,7 +413,6 @@ def create_session(user_agent, app_token, sess="None"):
             subscriber_count = r["subscriptions"]["all"]
             return [session, option_string, subscriber_count, response]
         auth_count += 1
-        break
     return [False, response]
 
 

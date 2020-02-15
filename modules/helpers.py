@@ -38,12 +38,12 @@ def parse_links(site_name, input_link):
 
 def reformat(directory, file_name, text, ext, date, username, format_path, date_format, text_length, maximum_length):
     path = format_path.replace("{username}", username)
-    text = BeautifulSoup(text, 'html.parser').get_text().replace(
+    text = BeautifulSoup(text, 'lxml').get_text().replace(
         "\n", " ").strip()
     SAFE_PTN = '[^0-9a-zA-Z-_.()]+'
     # filtered_text = re.sub(r'[\\/*?:"<>|]', '', text)
     filtered_text = re.sub(SAFE_PTN, ' ',  text.strip()
-                           ).strip().replace(' ', '_')
+                           ).strip().replace(' ', '_')[:text_length]
     path = path.replace("{text}", filtered_text)
     date = date.strftime(date_format)
     path = path.replace("{date}", date)

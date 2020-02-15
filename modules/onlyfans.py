@@ -26,6 +26,7 @@ overwrite_files = json_settings["overwrite_files"]
 date_format = json_settings["date_format"]
 ignored_keywords = json_settings["ignored_keywords"]
 ignore_unfollowed_accounts = json_settings["ignore_unfollowed_accounts"]
+export_metadata = json_settings["export_metadata"]
 maximum_length = 240
 text_length = int(json_settings["text_length"]
                   ) if json_settings["text_length"] else maximum_length
@@ -306,9 +307,10 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
         if results["valid"]:
             os.makedirs(directory, exist_ok=True)
             os.makedirs(location_directory, exist_ok=True)
-            os.makedirs(metadata_directory, exist_ok=True)
-            archive_directory = metadata_directory+location[0]
-            export_archive(results, archive_directory)
+            if export_metadata:
+                os.makedirs(metadata_directory, exist_ok=True)
+                archive_directory = metadata_directory+location[0]
+                export_archive(results, archive_directory)
         media_set.append(results)
 
     return [media_set, directory]

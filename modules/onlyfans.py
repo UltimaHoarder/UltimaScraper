@@ -416,7 +416,7 @@ def create_session(user_agent, app_token, auth_array):
     return [False, response]
 
 
-def get_subscriptions(session, app_token, subscriber_count, auth_count=0):
+def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0):
     link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=99&offset=0&app-token="+app_token
     pool = ThreadPool()
     ceil = math.ceil(subscriber_count / 99)
@@ -424,10 +424,28 @@ def get_subscriptions(session, app_token, subscriber_count, auth_count=0):
     offset_array = []
     for b in a:
         b = b * 99
-        offset_array.append(link.replace("offset=0", "offset=" + str(b)))
+        offset_array.append(
+            [link.replace("offset=0", "offset=" + str(b)), False])
+    if me_api["isPerformer"]:
+        link = "https://onlyfans.com/api2/v2/users/" + \
+            str(me_api["id"])+"?app-token="+app_token
+        offset_array = [[link, True]] + offset_array
 
-    def multi(link, session):
-        return json.loads(session.get(link).text)
+    def multi(array, session):
+        link = array[0]
+        performer = array[1]
+        if performer:
+            session = requests.Session()
+            x = json.loads(session.get(link).text)
+            if not x["subscribedByData"]:
+                x["subscribedByData"] = dict()
+                x["subscribedByData"]["expiredAt"] = datetime.utcnow().isoformat()
+                x["subscribedByData"]["price"] = x["subscribePrice"]
+                x["subscribedByData"]["subscribePrice"] = 0
+            x = [x]
+        else:
+            x = json.loads(session.get(link).text)
+        return x
     results = pool.starmap(multi, product(
         offset_array, [session]))
     results = list(chain(*results))
@@ -439,11 +457,13 @@ def get_subscriptions(session, app_token, subscriber_count, auth_count=0):
         results2 = []
         for result in results:
             result["auth_count"] = auth_count
+            result["self"] = False
             username = result["username"]
             now = datetime.utcnow().date()
             subscribedBy = result["subscribedBy"]
             subscribedByData = result["subscribedByData"]
-            result_date = subscribedByData["expiredAt"]
+            result_date = subscribedByData["expiredAt"] if subscribedByData else datetime.utcnow(
+            ).isoformat()
             price = subscribedByData["price"]
             subscribePrice = subscribedByData["subscribePrice"]
             result_date = datetime.fromisoformat(

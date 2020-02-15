@@ -97,10 +97,7 @@ try:
                     continue
                 me_api = session[3]
                 array = x.get_subscriptions(
-                    session[0], app_token, session[2], auth_count)
-                if me_api["isPerformer"]:
-                    array = [{"auth_count": auth_count,
-                              "username": me_api["username"]}] + array
+                    session[0], app_token, session[2], me_api, auth_count)
                 subscription_array += array
             subscription_array = x.format_options(subscription_array)
         elif site_name == "justforfans":

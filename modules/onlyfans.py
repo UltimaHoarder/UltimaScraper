@@ -193,7 +193,7 @@ def scrape_array(link, session, directory, username, api_type):
     count = 0
     found = False
     y = json_request(session, link)
-    if not y:
+    if "error" in y:
         return media_set
     x = 0
     if api_type == "Highlights":
@@ -298,7 +298,7 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
             offset_array.append(link)
         if api_type == "Highlights":
             r = json_request(session, link)
-            if not r:
+            if "error" in r:
                 break
             for item in r:
                 link2 = "https://onlyfans.com/api2/v2/stories/highlights/" + \

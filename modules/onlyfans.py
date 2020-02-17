@@ -91,16 +91,18 @@ def link_check(session, app_token, username):
             expired_at = subscribedByData["expiredAt"]
             result_date = datetime.fromisoformat(
                 expired_at).replace(tzinfo=None).date()
-    if y["subscribedBy"]:
-        subbed = True
-    elif y["subscribedOn"]:
-        subbed = True
-    elif y["subscribedIsExpiredNow"] == False:
-        subbed = True
-    elif result_date >= now:
-        subbed = True
+        if y["subscribedBy"]:
+            subbed = True
+        elif y["subscribedOn"]:
+            subbed = True
+        elif y["subscribedIsExpiredNow"] == False:
+            subbed = True
+        elif result_date >= now:
+            subbed = True
+        else:
+            subbed = False
     else:
-        subbed = False
+        subbed = True
     if not subbed:
         temp_user_id2[0] = False
         temp_user_id2[1] = "You're not subscribed to the user"

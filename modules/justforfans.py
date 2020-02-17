@@ -221,7 +221,8 @@ def scrape_array(link, session, media_type, directory, username):
 
 def media_scraper(session, site_name, only_links, link, location, media_type, directory, post_count, username):
     print("Scraping " + location + ". May take a few minutes.")
-    array = format_directory(j_directory, site_name, username, location, "Posts")
+    array = format_directory(j_directory, site_name,
+                             username, location, "Posts")
     user_directory = array[0]
     metadata_directory = array[1]
     directory = array[2]

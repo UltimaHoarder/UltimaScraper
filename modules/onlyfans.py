@@ -365,7 +365,7 @@ def download_media(media_set, session, directory, username, post_count, location
 
 
 def create_session(user_agent, app_token, auth_array):
-    response = []
+    me_api = []
     auth_count = 1
     auth_version = "(V1)"
     count = 1
@@ -392,34 +392,32 @@ def create_session(user_agent, app_token, auth_array):
                     {'name': 'sess', 'value': auth_array["sess"]})
             for auth_cookie in auth_cookies:
                 session.cookies.set(**auth_cookie)
-            session.head(
-                "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token)
-            r = session.get(
-                "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token)
+
+            link = "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token
+
+            # r = json_request(session, link, "HEAD", True, False)
+            r = json_request(session, link, json_format=True)
             count += 1
-            content_type = r.headers['Content-Type']
-            if r.status_code != 200 or "application/json" not in content_type:
+            if not r:
                 continue
-            response = json.loads(r.text)
-            if 'error' in response:
-                error_message = response["error"]["message"]
+            me_api = r
+            if 'error' in r:
+                error_message = r["error"]["message"]
                 print(error_message)
                 if "token" in error_message:
-                    count = 10
+                    break
                 continue
             else:
-                print("Welcome "+response["name"])
+                print("Welcome "+r["name"])
             option_string = "username or profile link"
-            r = session.get(
-                "https://onlyfans.com/api2/v2/subscriptions/count/all?app-token="+app_token)
-            r = json.loads(r.text)
-            if "subscriptions" not in r:
-                count = 10
-                continue
+            link = "https://onlyfans.com/api2/v2/subscriptions/count/all?app-token="+app_token
+            r = json_request(session, link)
+            if not r:
+                break
             subscriber_count = r["subscriptions"]["all"]
-            return [session, option_string, subscriber_count, response]
+            return [session, option_string, subscriber_count, me_api]
         auth_count += 1
-    return [False, response]
+    return [False, me_api]
 
 
 def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0):

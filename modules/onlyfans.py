@@ -1,5 +1,5 @@
 import requests
-from modules.helpers import *
+from modules.helpers import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image
 
 import os
 import json
@@ -258,7 +258,9 @@ def scrape_array(link, session, directory, username, api_type):
 def media_scraper(session, site_name, only_links, link, locations, directory, post_count, username, api_type, app_token):
     seperator = " | "
     media_set = []
+    original_link = link
     for location in locations:
+        link = original_link
         print("Scraping ["+str(seperator.join(location[1])) +
               "]. Should take less than a minute.")
         array = format_directory(
@@ -422,7 +424,6 @@ def create_session(user_agent, app_token, auth_array):
 
 def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0):
     link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=99&offset=0&app-token="+app_token
-    pool = ThreadPool()
     ceil = math.ceil(subscriber_count / 99)
     a = list(range(ceil))
     offset_array = []
@@ -450,6 +451,8 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
         else:
             x = json_request(session, link)
         return x
+    link_count = len(offset_array) if len(offset_array) > 0 else 1
+    pool = ThreadPool(link_count)
     results = pool.starmap(multi, product(
         offset_array, [session]))
     results = list(chain(*results))

@@ -202,12 +202,14 @@ def json_request(session, link, method="GET", stream=False, json_format=True):
     count = 0
     while count < 11:
         try:
-            r = session.request(method,link ,stream=stream)
+            r = session.request(method, link, stream=stream)
             if json_format:
                 return json.loads(r.text)
             else:
                 return r
-        except (requests.exceptions.ConnectionError, ConnectionResetError):
+        except (ConnectionResetError):
+            count += 1
+        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError):
             count += 1
 
 

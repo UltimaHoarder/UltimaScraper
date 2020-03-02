@@ -203,7 +203,11 @@ def json_request(session, link, method="GET", stream=False, json_format=True):
     while count < 11:
         try:
             r = session.request(method, link, stream=stream)
+            content_type = r.headers['Content-Type']
             if json_format:
+                if "application/json;" not in content_type:
+                    count += 1
+                    continue
                 return json.loads(r.text)
             else:
                 return r

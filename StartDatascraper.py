@@ -1,4 +1,3 @@
-from modules.helpers import update_config
 import modules.onlyfans as onlyfans
 import modules.justforfans as justforfans
 import modules.four_chan as four_chan
@@ -88,7 +87,6 @@ try:
                 auth_array["auth_id"] = auth_id
                 auth_array["auth_hash"] = auth_hash
                 auth_array["sess"] = sess
-                # update_config(json_config)
                 x = onlyfans
                 session = x.create_session(
                     user_agent, app_token, auth_array)

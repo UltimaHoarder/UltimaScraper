@@ -34,17 +34,18 @@ if text_length > maximum_length:
     text_length = maximum_length
 
 
-def start_datascraper(session, username, site_name, app_token):
+def start_datascraper(session, identifier, site_name, app_token):
     print("Scrape Processing")
-    print("Name: "+username)
-    user_id = link_check(session, app_token, username)
-    if not user_id[0]:
-        print(user_id[1])
+    info = link_check(session, app_token, identifier)
+    if not info["subbed"]:
+        print(info["user"])
         print("First time? Did you forget to edit your config.json file?")
         return [False, []]
-
-    post_counts = user_id[2]
-    user_id = user_id[1]
+    user = info["user"]
+    post_counts = info["count"]
+    user_id = str(user["id"])
+    username = user["username"]
+    print("Name: "+username)
     array = scrape_choice(user_id, app_token, post_counts)
     prep_download = []
     for item in array:
@@ -70,18 +71,18 @@ def start_datascraper(session, username, site_name, app_token):
     return [True, prep_download]
 
 
-def link_check(session, app_token, username):
-    link = 'https://onlyfans.com/api2/v2/users/' + username + \
+def link_check(session, app_token, identifier):
+    link = 'https://onlyfans.com/api2/v2/users/' + str(identifier) + \
            '&app-token=' + app_token
     y = json_request(session, link)
     temp_user_id2 = dict()
     if not y:
-        temp_user_id2[0] = False
-        temp_user_id2[1] = "No users found"
+        temp_user_id2["subbed"] = False
+        temp_user_id2["user"] = "No users found"
         return temp_user_id2
     if "error" in y:
-        temp_user_id2[0] = False
-        temp_user_id2[1] = y["error"]["message"]
+        temp_user_id2["subbed"] = False
+        temp_user_id2["user"] = y["error"]["message"]
         return temp_user_id2
     now = datetime.utcnow().date()
     result_date = datetime.utcnow().date()
@@ -104,14 +105,14 @@ def link_check(session, app_token, username):
     else:
         subbed = True
     if not subbed:
-        temp_user_id2[0] = False
-        temp_user_id2[1] = "You're not subscribed to the user"
+        temp_user_id2["subbed"] = False
+        temp_user_id2["user"] = "You're not subscribed to the user"
         return temp_user_id2
     else:
-        temp_user_id2[0] = True
-        temp_user_id2[1] = str(y["id"])
-        temp_user_id2[2] = [y["postsCount"], [y["photosCount"],
-                                              y["videosCount"], y["audiosCount"]]]
+        temp_user_id2["subbed"] = True
+        temp_user_id2["user"] = y
+        temp_user_id2["count"] = [y["postsCount"], [y["photosCount"],
+                                                    y["videosCount"], y["audiosCount"]]]
         return temp_user_id2
 
 
@@ -308,8 +309,9 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
                 link2 = "https://onlyfans.com/api2/v2/stories/highlights/" + \
                     str(item["id"])+"?app-token="+app_token+""
                 offset_array.append(link2)
-        results = format_media_set(location[0], pool.starmap(scrape_array, product(
-            offset_array, [session], [directories], [username], [api_type])))
+        x = pool.starmap(scrape_array, product(
+            offset_array, [session], [directories], [username], [api_type]))
+        results = format_media_set(location[0], x)
         if results["valid"]:
             os.makedirs(directory, exist_ok=True)
             os.makedirs(location_directory, exist_ok=True)
@@ -324,11 +326,12 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
 
 def download_media(media_set, session, directory, username, post_count, location):
     def download(media, session, directory, username):
-        while True:
+        count = 0
+        while count < 11:
             link = media["link"]
             r = json_request(session, link, "HEAD", True, False)
             if not r:
-                break
+                return False
 
             header = r.headers
             content_length = int(header["content-length"])
@@ -346,11 +349,15 @@ def download_media(media_set, session, directory, username, post_count, location
                         return
             r = json_request(session, link, "GET", True, False)
             if not r:
-                break
-            with open(download_path, 'wb') as f:
-                for chunk in r.iter_content(chunk_size=1024):
-                    if chunk:  # filter out keep-alive new chunks
-                        f.write(chunk)
+                return False
+            try:
+                with open(download_path, 'wb') as f:
+                    for chunk in r.iter_content(chunk_size=1024):
+                        if chunk:  # filter out keep-alive new chunks
+                            f.write(chunk)
+            except (ConnectionResetError):
+                count += 1
+                continue
             format_image(download_path, timestamp)
             logger.info("Link: {}".format(link))
             logger.info("Path: {}".format(download_path))

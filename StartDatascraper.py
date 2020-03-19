@@ -9,6 +9,7 @@ import logging
 import traceback
 import inspect
 import os
+import time
 
 # Configure logging to the console and file system at INFO level and above
 logging.basicConfig(handlers=[logging.FileHandler('application.log', 'w', 'utf-8')], level=logging.INFO,
@@ -29,6 +30,8 @@ global_user_agent = json_settings['global_user-agent']
 domain = json_settings["auto_site_choice"]
 path = os.path.join('settings', 'extra_auth.json')
 extra_auth_config = json.load(open(path))
+exit_on_completion = json_settings['exit_on_completion']
+loop_timeout = json_settings['loop_timeout']
 
 string = ""
 site_names = []
@@ -150,9 +153,15 @@ try:
                 x.download_media(*arg)
         stop_time = str(int(timeit.default_timer() - start_time) / 60)
         print('Task Completed in ' + stop_time + ' Minutes')
-        if not infinite_loop:
+        if exit_on_completion:
+            print("Now exiting.")
+            exit(0)       
+        elif not infinite_loop:
             print("Input anything to continue")
             input()
+        elif loop_timeout:
+            print('Pausing scraper for ' + loop_timeout + ' seconds.')
+            time.sleep(int(loop_timeout))
 except Exception as e:
     tb = traceback.format_exc()
     print(tb+"\n")

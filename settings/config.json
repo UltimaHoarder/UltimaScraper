@@ -5,7 +5,7 @@
     "multithreading": true,
     "exit_on_completion": false,
     "infinite_loop": true,
-    "loop_timeout": "",
+    "loop_timeout": "0",
     "global_user-agent": ""
   },
   "supported": {

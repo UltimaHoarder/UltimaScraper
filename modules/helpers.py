@@ -202,6 +202,9 @@ def json_request(session, link, method="GET", stream=False, json_format=True):
     count = 0
     while count < 11:
         try:
+            headers = session.headers
+            if json_format:
+                headers["accept"] = "application/json, text/plain, */*"
             r = session.request(method, link, stream=stream)
             content_type = r.headers['Content-Type']
             if json_format:

@@ -378,54 +378,58 @@ def create_session(user_agent, app_token, auth_array):
     auth_count = 1
     auth_version = "(V1)"
     count = 1
-    auth_cookies = [
-        {'name': 'auth_id', 'value': auth_array["auth_id"]},
-        {'name': 'auth_hash', 'value': auth_array["auth_hash"]}
-    ]
-    while auth_count < 3:
-        if auth_count == 2:
-            auth_version = "(V2)"
-            if auth_array["sess"]:
-                del auth_cookies[2]
-            count = 1
-        while count < 11:
-            session = requests.Session()
-            print("Auth "+auth_version+" Attempt "+str(count)+"/"+"10")
-            max_threads = multiprocessing.cpu_count()
-            session.mount(
-                'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
-            session.headers = {
-                'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/', "accept": "application/json, text/plain, */*"}
-            if auth_array["sess"]:
-                auth_cookies.append(
-                    {'name': 'sess', 'value': auth_array["sess"]})
-            for auth_cookie in auth_cookies:
-                session.cookies.set(**auth_cookie)
+    try:
+        auth_cookies = [
+            {'name': 'auth_id', 'value': auth_array["auth_id"]},
+            {'name': 'auth_hash', 'value': auth_array["auth_hash"]}
+        ]
+        while auth_count < 3:
+            if auth_count == 2:
+                auth_version = "(V2)"
+                if auth_array["sess"]:
+                    del auth_cookies[2]
+                count = 1
+            while count < 11:
+                session = requests.Session()
+                print("Auth "+auth_version+" Attempt "+str(count)+"/"+"10")
+                max_threads = multiprocessing.cpu_count()
+                session.mount(
+                    'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+                session.headers = {
+                    'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
+                if auth_array["sess"]:
+                    auth_cookies.append(
+                        {'name': 'sess', 'value': auth_array["sess"]})
+                for auth_cookie in auth_cookies:
+                    session.cookies.set(**auth_cookie)
 
-            link = "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token
+                link = "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token
 
-            # r = json_request(session, link, "HEAD", True, False)
-            r = json_request(session, link, json_format=True)
-            count += 1
-            if not r:
-                continue
-            me_api = r
-            if 'error' in r:
-                error_message = r["error"]["message"]
-                print(error_message)
-                if "token" in error_message:
+                # r = json_request(session, link, "HEAD", True, False)
+                r = json_request(session, link)
+                count += 1
+                if not r:
+                    continue
+                me_api = r
+                if 'error' in r:
+                    error_message = r["error"]["message"]
+                    print(error_message)
+                    if "token" in error_message:
+                        break
+                    continue
+                else:
+                    print("Welcome "+r["name"])
+                option_string = "username or profile link"
+                link = "https://onlyfans.com/api2/v2/subscriptions/count/all?app-token="+app_token
+                r = json_request(session, link)
+                if not r:
                     break
-                continue
-            else:
-                print("Welcome "+r["name"])
-            option_string = "username or profile link"
-            link = "https://onlyfans.com/api2/v2/subscriptions/count/all?app-token="+app_token
-            r = json_request(session, link)
-            if not r:
-                break
-            subscriber_count = r["subscriptions"]["all"]
-            return [session, option_string, subscriber_count, me_api]
-        auth_count += 1
+                subscriber_count = r["subscriptions"]["all"]
+                return [session, option_string, subscriber_count, me_api]
+            auth_count += 1
+    except Exception as e:
+        print(e)
+        input()
     return [False, me_api]
 
 

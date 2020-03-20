@@ -1,5 +1,5 @@
 import requests
-from modules.helpers import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image
+from modules.helpers import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file
 
 import os
 import json
@@ -42,11 +42,12 @@ def start_datascraper(session, identifier, site_name, app_token):
         print("First time? Did you forget to edit your config.json file?")
         return [False, []]
     user = info["user"]
+    is_me = user["is_me"]
     post_counts = info["count"]
     user_id = str(user["id"])
     username = user["username"]
     print("Name: "+username)
-    array = scrape_choice(user_id, app_token, post_counts)
+    array = scrape_choice(user_id, app_token, post_counts, is_me)
     prep_download = []
     for item in array:
         print("Type: "+item[2])
@@ -76,6 +77,7 @@ def link_check(session, app_token, identifier):
            '&app-token=' + app_token
     y = json_request(session, link)
     temp_user_id2 = dict()
+    y["is_me"] = False
     if not y:
         temp_user_id2["subbed"] = False
         temp_user_id2["user"] = "No users found"
@@ -104,6 +106,7 @@ def link_check(session, app_token, identifier):
             subbed = False
     else:
         subbed = True
+        y["is_me"] = True
     if not subbed:
         temp_user_id2["subbed"] = False
         temp_user_id2["user"] = "You're not subscribed to the user"
@@ -116,7 +119,7 @@ def link_check(session, app_token, identifier):
         return temp_user_id2
 
 
-def scrape_choice(user_id, app_token, post_counts):
+def scrape_choice(user_id, app_token, post_counts, is_me):
     post_count = post_counts[0]
     media_counts = post_counts[1]
     x = ["Images", "Videos", "Audios"]
@@ -129,6 +132,7 @@ def scrape_choice(user_id, app_token, post_counts):
         input_choice = input().strip()
     message_api = "https://onlyfans.com/api2/v2/chats/"+user_id + \
         "/messages?limit=100&offset=0&order=desc&app-token="+app_token+""
+    mass_messages_api = "https://onlyfans.com/api2/v2/messages/queue/stats?offset=0&limit=30&app-token="+app_token+""
     stories_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
         "/stories?limit=100&offset=0&order=desc&app-token="+app_token+""
     hightlights_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
@@ -148,9 +152,13 @@ def scrape_choice(user_id, app_token, post_counts):
         hightlights_api, x, *mandatory, post_count], "Highlights"]
     p_array = ["You have chosen to scrape {}", [
         post_api, x, *mandatory, post_count], "Posts"]
+    mm_array = ["You have chosen to scrape {}", [
+        mass_messages_api, x, *mandatory, post_count], "Mass Messages"]
     m_array = ["You have chosen to scrape {}", [
         message_api, x, *mandatory, post_count], "Messages"]
-    array = [s_array, h_array, p_array, m_array]
+    array = [s_array, h_array, p_array, mm_array, m_array]
+    if not is_me:
+        del array[3]
     valid_input = False
     if input_choice == "a":
         valid_input = True
@@ -203,8 +211,15 @@ def scrape_array(link, session, directory, username, api_type):
         y = y["stories"]
     if api_type == "Messages":
         y = y["list"]
+    if api_type == "Mass Messages":
+        y = y["list"]
     master_date = "01-01-0001 00:00:00"
     for media_api in y:
+        if api_type == "Mass Messages":
+            media_user = media_api["fromUser"]
+            media_username = media_user["username"]
+            if media_username != username:
+                continue
         for media in media_api["media"]:
             date = "-001-11-30T00:00:00+00:00"
             size = 0
@@ -258,9 +273,11 @@ def scrape_array(link, session, directory, username, api_type):
 
 def media_scraper(session, site_name, only_links, link, locations, directory, post_count, username, api_type, app_token):
     seperator = " | "
+    master_set = []
     media_set = []
     original_link = link
     for location in locations:
+        pool = ThreadPool()
         link = original_link
         print("Scraping ["+str(seperator.join(location[1])) +
               "]. Should take less than a minute.")
@@ -270,48 +287,85 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
         location_directory = array[2][0][1]
         metadata_directory = array[1]
         directories = array[2]+[location[1]]
+        if not master_set:
 
-        pool = ThreadPool()
-        ceil = math.ceil(post_count / 100)
-        a = list(range(ceil))
-        offset_array = []
-        if api_type == "Posts":
-            for b in a:
-                b = b * 100
-                offset_array.append(link.replace(
-                    "offset=0", "offset=" + str(b)))
-        if api_type == "Messages":
-            offset_count = 0
-            while True:
-                y = json_request(session, link)
-                if "list" in y:
-                    if y["list"]:
-                        offset_array.append(link)
-                        if y["hasMore"]:
-                            offset_count2 = offset_count+100
-                            offset_count = offset_count2-100
-                            link = link.replace(
-                                "offset=" + str(offset_count), "offset=" + str(offset_count2))
-                            offset_count = offset_count2
+            ceil = math.ceil(post_count / 100)
+            a = list(range(ceil))
+            if api_type == "Posts":
+                for b in a:
+                    b = b * 100
+                    master_set.append(link.replace(
+                        "offset=0", "offset=" + str(b)))
+
+            def xmessages(link):
+                f_offset_count = 0
+                while True:
+                    y = json_request(session, link)
+                    if "list" in y:
+                        if y["list"]:
+                            master_set.append(link)
+                            if y["hasMore"]:
+                                f_offset_count2 = f_offset_count+100
+                                f_offset_count = f_offset_count2-100
+                                link = link.replace(
+                                    "offset=" + str(f_offset_count), "offset=" + str(f_offset_count2))
+                                f_offset_count = f_offset_count2
+                            else:
+                                break
                         else:
                             break
                     else:
                         break
-                else:
+
+            def process_chats(subscriber):
+                fool = subscriber["withUser"]
+                fool_id = str(fool["id"])
+                link_2 = "https://onlyfans.com/api2/v2/chats/"+fool_id + \
+                    "/messages?limit=100&offset=0&order=desc&app-token="+app_token+""
+                xmessages(link_2)
+
+            if api_type == "Messages":
+                xmessages(link)
+            if api_type == "Mass Messages":
+                offset_count = 0
+                while True:
+                    y = json_request(session, link)
+                    if y:
+                        for message in y:
+                            text = message["textCropped"].replace("&", "")
+                            link_2 = "https://onlyfans.com/api2/v2/chats?limit=10&offset=0&filter=&order=activity&query=" + \
+                                text+"&app-token="+app_token
+                            y = json_request(session, link_2)
+                            subscribers = y["list"]
+                            x = pool.starmap(process_chats, product(
+                                subscribers))
+                        offset_count2 = offset_count+30
+                        offset_count = offset_count2-30
+                        link = link.replace(
+                            "offset=" + str(offset_count), "offset=" + str(offset_count2))
+                        offset_count = offset_count2
+                    else:
+                        break
+            if api_type == "Stories":
+                master_set.append(link)
+            if api_type == "Highlights":
+                r = json_request(session, link)
+                if "error" in r:
                     break
-        if api_type == "Stories":
-            offset_array.append(link)
-        if api_type == "Highlights":
-            r = json_request(session, link)
-            if "error" in r:
-                break
-            for item in r:
-                link2 = "https://onlyfans.com/api2/v2/stories/highlights/" + \
-                    str(item["id"])+"?app-token="+app_token+""
-                offset_array.append(link2)
+                for item in r:
+                    link2 = "https://onlyfans.com/api2/v2/stories/highlights/" + \
+                        str(item["id"])+"?app-token="+app_token+""
+                    master_set.append(link2)
         x = pool.starmap(scrape_array, product(
-            offset_array, [session], [directories], [username], [api_type]))
+            master_set, [session], [directories], [username], [api_type]))
         results = format_media_set(location[0], x)
+        seen = set()
+        uniq = []
+        for x in results["valid"]:
+            if x["filename"] not in seen:
+                uniq.append(x)
+                seen.add(x["filename"])
+        results["valid"] = uniq
         if results["valid"]:
             os.makedirs(directory, exist_ok=True)
             os.makedirs(location_directory, exist_ok=True)
@@ -343,10 +397,8 @@ def download_media(media_set, session, directory, username, post_count, location
             download_path = media["directory"]+media["filename"]
             timestamp = date_object.timestamp()
             if not overwrite_files:
-                if os.path.isfile(download_path):
-                    local_size = os.path.getsize(download_path)
-                    if local_size == content_length:
-                        return
+                if check_for_dupe_file(download_path, content_length):
+                    return
             r = json_request(session, link, "GET", True, False)
             if not r:
                 return False

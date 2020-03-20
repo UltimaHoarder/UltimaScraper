@@ -3,7 +3,6 @@ from bs4 import BeautifulSoup
 import platform
 import csv
 import json
-from PIL import Image
 import os
 from os.path import dirname as up
 import requests
@@ -164,38 +163,13 @@ def are_long_paths_enabled():
             return False
 
 
-def check_for_dupe_file(overwrite_files, media, download_path, og_filename, directory):
-    count = 1
+def check_for_dupe_file(download_path, content_length):
     found = False
-    ext = media["ext"]
-    if not overwrite_files:
-        while True:
-            if os.path.isfile(download_path):
-                remote_size = media["size"]
-                local_size = os.path.getsize(download_path)
-                if remote_size == local_size:
-                    found = True
-                    break
-                else:
-                    try:
-                        im = Image.open(download_path)
-                        im.verify()  # I perform also verify, don't know if he sees other types o defects
-                        im.close()  # reload is necessary in my case
-                        im = Image.open(download_path)
-                        im.transpose(Image.FLIP_LEFT_RIGHT)
-                        im.close()
-                    except Exception as e:
-                        print(e)
-                        os.remove(download_path)
-                        continue
-                    download_path = directory+og_filename + \
-                        " ("+str(count)+")."+ext
-                    count += 1
-                    continue
-            else:
-                found = False
-                break
-    return [found, download_path]
+    if os.path.isfile(download_path):
+        local_size = os.path.getsize(download_path)
+        if local_size == content_length:
+            found = True
+    return found
 
 
 def json_request(session, link, method="GET", stream=False, json_format=True):
@@ -250,3 +224,10 @@ def choose_auth(array):
     else:
         names.pop(0)
     return names
+
+
+def is_me(user_api):
+    if "email" in user_api:
+        return True
+    else:
+        return False

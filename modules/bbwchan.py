@@ -189,11 +189,7 @@ def download_media(media_set, session, directory, board_name):
                         download_path = directory+post[name_key]+"."+ext
 
                 og_filename = os.path.splitext(filename)[0]
-                dp = check_for_dupe_file(
-                    overwrite_files, media, download_path, og_filename, directory)
-                if dp[0]:
-                    continue
-                download_path = dp[1]
+                # Check for dupe here
                 r = session.get(link, stream=True)
                 if r.status_code != 404:
                     if not os.path.exists(os.path.dirname(download_path)):

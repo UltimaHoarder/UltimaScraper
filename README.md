@@ -137,11 +137,24 @@ multithreading:
     If set to false, you will download files 1 by 1. (If you don't have fast internet, may god help you.)
     I'd reccomend leaving it set to true.
 
+exit_on_completion:
+
+    Default = false
+
+    If set to true the scraper run once and exit upon completion, otherwise the scraper will give the option to run again. This is useful if the scraper is being executed by a cron job or another script.
+
 infinite_loop:
 
     Default = true
 
     If set to false, the script will run once and ask you to input anything to continue.
+
+loop_timeout:
+
+    Default = 0
+
+    When infinite_loop is set to true this will set the time in seconds to pause the loop in between runs. 
+
 
 boards:
 

@@ -3,13 +3,14 @@ from modules.helpers import get_directory, json_request, reformat, format_direct
 
 import os
 import json
-from itertools import product
+from itertools import count, product
 from itertools import chain
 import multiprocessing
 from multiprocessing.dummy import Pool as ThreadPool
 from datetime import datetime
 import logging
 import math
+from random import randrange
 
 logger = logging.getLogger(__name__)
 
@@ -132,7 +133,7 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
         input_choice = input().strip()
     message_api = "https://onlyfans.com/api2/v2/chats/"+user_id + \
         "/messages?limit=100&offset=0&order=desc&app-token="+app_token+""
-    mass_messages_api = "https://onlyfans.com/api2/v2/messages/queue/stats?offset=0&limit=30&app-token="+app_token+""
+    mass_messages_api = "https://onlyfans.com/api2/v2/messages/queue/stats?offset=0&limit=99&app-token="+app_token+""
     stories_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
         "/stories?limit=100&offset=0&order=desc&app-token="+app_token+""
     hightlights_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
@@ -157,6 +158,7 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     m_array = ["You have chosen to scrape {}", [
         message_api, x, *mandatory, post_count], "Messages"]
     array = [s_array, h_array, p_array, mm_array, m_array]
+    # array = [mm_array]
     if not is_me:
         del array[3]
     valid_input = False
@@ -226,7 +228,7 @@ def scrape_array(link, session, directory, username, api_type):
             if "source" in media:
                 source = media["source"]
                 link = source["source"]
-                size = source["size"]
+                size = media["info"]["preview"]["size"] if "info" in media_api else 1
                 date = media_api["postedAt"] if "postedAt" in media_api else media_api["createdAt"]
             if "src" in media:
                 link = media["src"]
@@ -327,25 +329,40 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
             if api_type == "Messages":
                 xmessages(link)
             if api_type == "Mass Messages":
+                messages = []
                 offset_count = 0
                 while True:
                     y = json_request(session, link)
                     if y:
-                        for message in y:
-                            text = message["textCropped"].replace("&", "")
-                            link_2 = "https://onlyfans.com/api2/v2/chats?limit=10&offset=0&filter=&order=activity&query=" + \
-                                text+"&app-token="+app_token
-                            y = json_request(session, link_2)
-                            subscribers = y["list"]
-                            x = pool.starmap(process_chats, product(
-                                subscribers))
-                        offset_count2 = offset_count+30
-                        offset_count = offset_count2-30
+                        messages.append(y)
+                        offset_count2 = offset_count+99
+                        offset_count = offset_count2-99
                         link = link.replace(
                             "offset=" + str(offset_count), "offset=" + str(offset_count2))
                         offset_count = offset_count2
                     else:
                         break
+                messages = list(chain(*messages))
+                message_count = 0
+
+                def process_mass_messages(message, limit):
+                    text = message["textCropped"].replace("&", "")
+                    link_2 = "https://onlyfans.com/api2/v2/chats?limit="+limit+"&offset=0&filter=&order=activity&query=" + \
+                        text+"&app-token="+app_token
+                    y = json_request(session, link_2)
+                    return y
+                limit = "10"
+                if len(messages) > 99:
+                    limit = "2"
+                subscribers = pool.starmap(process_mass_messages, product(
+                    messages, [limit]))
+                subscribers = [
+                    item for sublist in subscribers for item in sublist["list"]]
+                seen = set()
+                subscribers = [x for x in subscribers if x["withUser"]
+                               ["id"] not in seen and not seen.add(x["withUser"]["id"])]
+                x = pool.starmap(process_chats, product(
+                    subscribers))
             if api_type == "Stories":
                 master_set.append(link)
             if api_type == "Highlights":
@@ -360,12 +377,8 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
             master_set, [session], [directories], [username], [api_type]))
         results = format_media_set(location[0], x)
         seen = set()
-        uniq = []
-        for x in results["valid"]:
-            if x["filename"] not in seen:
-                uniq.append(x)
-                seen.add(x["filename"])
-        results["valid"] = uniq
+        results["valid"] = [x for x in results["valid"]
+                            if x["filename"] not in seen and not seen.add(x["filename"])]
         if results["valid"]:
             os.makedirs(directory, exist_ok=True)
             os.makedirs(location_directory, exist_ok=True)

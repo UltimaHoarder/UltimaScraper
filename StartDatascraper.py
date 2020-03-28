@@ -1,3 +1,4 @@
+#!/usr/bin/env python
 import modules.onlyfans as onlyfans
 import modules.justforfans as justforfans
 import modules.four_chan as four_chan

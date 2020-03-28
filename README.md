@@ -64,6 +64,8 @@ file_name_format:
 
     {date} = The post's date
 
+    {id} = The media's ID (onlyfans-specific)
+
     {file_name} = The media's file name
 
     {ext} = The media's file extension

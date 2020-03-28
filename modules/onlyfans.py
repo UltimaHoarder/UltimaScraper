@@ -258,10 +258,12 @@ def scrape_array(link, session, directory, username, api_type):
                 media_api["text"] = ""
             new_dict["text"] = media_api["text"] if media_api["text"] else ""
             new_dict["postedAt"] = date_string
+            media_id = media["id"] if "id" in media else None
+            media_id = media_id if isinstance(media_id, int) else None
             file_name = link.rsplit('/', 1)[-1]
             file_name, ext = os.path.splitext(file_name)
             ext = ext.__str__().replace(".", "").split('?')[0]
-            file_path = reformat(directory[0][1], file_name,
+            file_path = reformat(directory[0][1], media_id, file_name,
                                  new_dict["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
             new_dict["directory"] = directory[0][1]
             new_dict["filename"] = file_path.rsplit('/', 1)[-1]

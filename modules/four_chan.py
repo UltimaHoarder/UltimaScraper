@@ -160,7 +160,7 @@ def thread_scraper(thread_id, board_name, session, directory):
             date_object = datetime.fromtimestamp(post["time"])
             og_filename = filename
             download_path = os.path.dirname(reformat(
-                new_directory, filename, text, ext, date_object, post["name"], format_path, date_format, text_length, maximum_length))
+                new_directory, None, filename, text, ext, date_object, post["name"], format_path, date_format, text_length, maximum_length))
             size = len(download_path)
             size2 = len(thread["download_path"])
             if thread["download_path"]:

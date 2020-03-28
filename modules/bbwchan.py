@@ -162,7 +162,7 @@ def thread_scraper(thread_id, board_name, session, directory):
             date_string = date_object.replace(tzinfo=None).strftime(
                 "%d-%m-%Y %H:%M:%S")
             download_path = os.path.dirname(reformat(
-                new_directory, filename, text, ext, date_object, post["name"], format_path, date_format, text_length, maximum_length))
+                new_directory, None, filename, text, ext, date_object, post["name"], format_path, date_format, text_length, maximum_length))
             thread["download_path"] = download_path
     return thread
 

@@ -35,7 +35,8 @@ def parse_links(site_name, input_link):
             return input_link
 
 
-def reformat(directory, file_name, text, ext, date, username, format_path, date_format, text_length, maximum_length):
+def reformat(directory, media_id, file_name, text, ext, date, username, format_path, date_format, text_length, maximum_length):
+    media_id = "" if media_id is None else str(media_id)
     path = format_path.replace("{username}", username)
     text = BeautifulSoup(text, 'lxml').get_text().replace(
         "\n", " ").strip()
@@ -46,6 +47,7 @@ def reformat(directory, file_name, text, ext, date, username, format_path, date_
     path = path.replace("{text}", filtered_text)
     date = date.strftime(date_format)
     path = path.replace("{date}", date)
+    path = path.replace("{id}", media_id)
     path = path.replace("{file_name}", file_name)
     path = path.replace("{ext}", ext)
     directory2 = directory + path

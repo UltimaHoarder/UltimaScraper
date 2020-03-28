@@ -149,18 +149,18 @@ def format_directory(j_directory, site_name, username, location, api_type):
 
 
 def are_long_paths_enabled():
-    if os_name == "Windows":
-        from ctypes import WinDLL, c_ubyte
-        ntdll = WinDLL('ntdll')
+    if os_name != "Windows":
+        return True
 
-        if hasattr(ntdll, 'RtlAreLongPathsEnabled'):
+    from ctypes import WinDLL, c_ubyte
+    ntdll = WinDLL('ntdll')
 
-            ntdll.RtlAreLongPathsEnabled.restype = c_ubyte
-            ntdll.RtlAreLongPathsEnabled.argtypes = ()
-            return bool(ntdll.RtlAreLongPathsEnabled())
+    if not hasattr(ntdll, 'RtlAreLongPathsEnabled'):
+        return False
 
-        else:
-            return False
+    ntdll.RtlAreLongPathsEnabled.restype = c_ubyte
+    ntdll.RtlAreLongPathsEnabled.argtypes = ()
+    return bool(ntdll.RtlAreLongPathsEnabled())
 
 
 def check_for_dupe_file(download_path, content_length):

@@ -757,19 +757,18 @@ def find_model_directory(username, directories) -> Tuple[str, bool]:
 
 
 def are_long_paths_enabled():
-    if os_name == "Windows":
-        from ctypes import WinDLL, c_ubyte
+    if os_name != "Windows":
+        return True
 
-        ntdll = WinDLL("ntdll")
+    from ctypes import WinDLL, c_ubyte
+    ntdll = WinDLL("ntdll")
 
-        if hasattr(ntdll, "RtlAreLongPathsEnabled"):
+    if not hasattr(ntdll, "RtlAreLongPathsEnabled"):
+        return False
 
-            ntdll.RtlAreLongPathsEnabled.restype = c_ubyte
-            ntdll.RtlAreLongPathsEnabled.argtypes = ()
-            return bool(ntdll.RtlAreLongPathsEnabled())
-
-        else:
-            return False
+    ntdll.RtlAreLongPathsEnabled.restype = c_ubyte
+    ntdll.RtlAreLongPathsEnabled.argtypes = ()
+    return bool(ntdll.RtlAreLongPathsEnabled())
 
 
 def check_for_dupe_file(download_path, content_length):

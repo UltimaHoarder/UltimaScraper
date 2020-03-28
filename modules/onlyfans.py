@@ -398,6 +398,12 @@ def download_media(media_set, session, directory, username, post_count, location
         count = 0
         while count < 11:
             link = media["link"]
+            r = json_request(session, link, "HEAD", True, False)
+            if not r:
+                return False
+
+            header = r.headers
+            content_length = int(header["content-length"])
             date_object = datetime.strptime(
                 media["postedAt"], "%d-%m-%Y %H:%M:%S")
             og_filename = media["filename"]
@@ -406,7 +412,7 @@ def download_media(media_set, session, directory, username, post_count, location
             download_path = media["directory"]+media["filename"]
             timestamp = date_object.timestamp()
             if not overwrite_files:
-                if check_for_dupe_file(download_path):
+                if check_for_dupe_file(download_path, content_length):
                     return
             r = json_request(session, link, "GET", True, False)
             if not r:

@@ -424,10 +424,12 @@ def download_media(media_set, session, directory, username, post_count, location
                         if chunk:  # filter out keep-alive new chunks
                             f.write(chunk)
             except (ConnectionResetError) as e:
+                os.unlink(download_path)
                 log_error.exception(e)
                 count += 1
                 continue
             except Exception as e:
+                os.unlink(download_path)
                 log_error.exception(str(e) + "\n Tries: "+str(count))
                 count += 1
                 input("Enter to continue")

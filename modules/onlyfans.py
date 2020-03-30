@@ -116,14 +116,15 @@ def link_check(session, app_token, identifier):
     else:
         temp_user_id2["subbed"] = True
         temp_user_id2["user"] = y
-        temp_user_id2["count"] = [y["postsCount"], [y["photosCount"],
-                                                    y["videosCount"], y["audiosCount"]]]
+        temp_user_id2["count"] = [y["postsCount"], y["archivedPostsCount"], [
+            y["photosCount"], y["videosCount"], y["audiosCount"]]]
         return temp_user_id2
 
 
 def scrape_choice(user_id, app_token, post_counts, is_me):
     post_count = post_counts[0]
-    media_counts = post_counts[1]
+    archived_count = post_counts[1]
+    media_counts = post_counts[2]
     x = ["Images", "Videos", "Audios"]
     x = dict(zip(x, media_counts))
     x = [k for k, v in x.items() if v != 0]
@@ -141,6 +142,8 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
         "/stories/highlights?limit=100&offset=0&order=desc&app-token="+app_token+""
     post_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
         "/posts?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
+    archived_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
+        "/posts/archived?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
     # ARGUMENTS
     only_links = False
     if "-l" in input_choice:
@@ -158,10 +161,12 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
         mass_messages_api, x, *mandatory, post_count], "Mass Messages"]
     m_array = ["You have chosen to scrape {}", [
         message_api, x, *mandatory, post_count], "Messages"]
-    array = [s_array, h_array, p_array, mm_array, m_array]
+    a_array = ["You have chosen to scrape {}", [
+        archived_api, x, *mandatory, archived_count], "Archived"]
+    array = [s_array, h_array, p_array, a_array, mm_array, m_array]
     # array = [mm_array]
     if not is_me:
-        del array[3]
+        del array[4]
     valid_input = False
     if input_choice == "a":
         valid_input = True
@@ -276,7 +281,7 @@ def scrape_array(link, session, directory, username, api_type):
     return media_set
 
 
-def media_scraper(session, site_name, only_links, link, locations, directory, post_count, username, api_type, app_token):
+def media_scraper(session, site_name, only_links, link, locations, directory, api_count, username, api_type, app_token):
     seperator = " | "
     master_set = []
     media_set = []
@@ -294,9 +299,16 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
         directories = array[2]+[location[1]]
         if not master_set:
 
-            ceil = math.ceil(post_count / 100)
-            a = list(range(ceil))
             if api_type == "Posts":
+                ceil = math.ceil(api_count / 100)
+                a = list(range(ceil))
+                for b in a:
+                    b = b * 100
+                    master_set.append(link.replace(
+                        "offset=0", "offset=" + str(b)))
+            if api_type == "Archived":
+                ceil = math.ceil(api_count / 100)
+                a = list(range(ceil))
                 for b in a:
                     b = b * 100
                     master_set.append(link.replace(
@@ -328,7 +340,6 @@ def media_scraper(session, site_name, only_links, link, locations, directory, po
                 link_2 = "https://onlyfans.com/api2/v2/chats/"+fool_id + \
                     "/messages?limit=100&offset=0&order=desc&app-token="+app_token+""
                 xmessages(link_2)
-
             if api_type == "Messages":
                 xmessages(link)
             if api_type == "Mass Messages":

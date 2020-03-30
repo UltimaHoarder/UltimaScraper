@@ -240,11 +240,12 @@ def is_me(user_api):
 
 def setup_logger(name, log_file, level=logging.INFO):
     """To setup as many loggers as you want"""
-
+    log_filename = "logs/"+log_file
+    os.makedirs(os.path.dirname(log_filename), exist_ok=True)
     formatter = logging.Formatter(
         '%(asctime)s %(levelname)s %(name)s %(message)s')
 
-    handler = logging.FileHandler("logs/"+log_file)
+    handler = logging.FileHandler(log_filename)
     handler.setFormatter(formatter)
 
     logger = logging.getLogger(name)

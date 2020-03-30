@@ -13,6 +13,12 @@ import os
 import time
 
 log_error = helpers.setup_logger('errors', 'errors.log')
+console = logging.StreamHandler()
+console.setLevel(logging.DEBUG)
+formatter = logging.Formatter(
+    '%(asctime)s %(levelname)s %(name)s %(message)s')
+console.setFormatter(formatter)
+logging.getLogger("").addHandler(console)
 # Open config.json and fill in MANDATORY information for the script to work
 path = os.path.join('settings', 'config.json')
 json_config = json.load(open(path))
@@ -148,7 +154,7 @@ try:
         print('Task Completed in ' + stop_time + ' Minutes')
         if exit_on_completion:
             print("Now exiting.")
-            exit(0)       
+            exit(0)
         elif not infinite_loop:
             print("Input anything to continue")
             input()
@@ -157,10 +163,4 @@ try:
             time.sleep(int(loop_timeout))
 except Exception as e:
     log_error.exception(e)
-    tb = traceback.format_exc()
-    print(tb+"\n")
-    v1 = inspect.trace()[-1][0].f_locals
-    # print(v1)
-    if "s" in v1:
-        print(v1["s"])
     input()

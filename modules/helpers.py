@@ -197,6 +197,9 @@ def json_request(session, link, method="GET", stream=False, json_format=True):
         except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
             log_error.exception(e)
             count += 1
+        except Exception as e:
+            log_error.exception(e)
+            input("Enter to continue")
 
 
 def update_config(json_config):

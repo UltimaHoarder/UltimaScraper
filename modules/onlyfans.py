@@ -1,5 +1,5 @@
 import requests
-from modules.helpers import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file,setup_logger
+from modules.helpers import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger
 
 import os
 import json
@@ -427,6 +427,11 @@ def download_media(media_set, session, directory, username, post_count, location
                 log_error.exception(e)
                 count += 1
                 continue
+            except Exception as e:
+                log_error.exception(str(e) + "\n Tries: "+str(count))
+                count += 1
+                input("Enter to continue")
+                continue
             format_image(download_path, timestamp)
             log_download.info("Link: {}".format(link))
             log_download.info("Path: {}".format(download_path))
@@ -498,8 +503,7 @@ def create_session(user_agent, app_token, auth_array):
             auth_count += 1
     except Exception as e:
         log_error.exception(e)
-        print(e)
-        input()
+        input("Enter to continue")
     return [False, me_api]
 
 

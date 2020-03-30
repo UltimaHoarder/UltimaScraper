@@ -418,16 +418,22 @@ def download_media(media_set, session, directory, username, post_count, location
             r = json_request(session, link, "GET", True, False)
             if not r:
                 return False
+            delete = False
             try:
                 with open(download_path, 'wb') as f:
+                    delete = True
                     for chunk in r.iter_content(chunk_size=1024):
                         if chunk:  # filter out keep-alive new chunks
                             f.write(chunk)
             except (ConnectionResetError) as e:
+                if delete:
+                    os.unlink(download_path)
                 log_error.exception(e)
                 count += 1
                 continue
             except Exception as e:
+                if delete:
+                    os.unlink(download_path)
                 log_error.exception(str(e) + "\n Tries: "+str(count))
                 count += 1
                 input("Enter to continue")

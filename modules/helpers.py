@@ -199,7 +199,8 @@ def json_request(session, link, method="GET", stream=False, json_format=True):
             count += 1
         except Exception as e:
             log_error.exception(e)
-            input("Enter to continue")
+            count += 1
+            # input("Enter to continue")
 
 
 def update_config(json_config):

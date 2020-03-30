@@ -447,7 +447,7 @@ def download_media(media_set, session, directory, username, post_count, location
                     os.unlink(download_path)
                 log_error.exception(str(e) + "\n Tries: "+str(count))
                 count += 1
-                input("Enter to continue")
+                # input("Enter to continue")
                 continue
             format_image(download_path, timestamp)
             log_download.info("Link: {}".format(link))
@@ -520,7 +520,7 @@ def create_session(user_agent, app_token, auth_array):
             auth_count += 1
     except Exception as e:
         log_error.exception(e)
-        input("Enter to continue")
+        # input("Enter to continue")
     return [False, me_api]
 
 

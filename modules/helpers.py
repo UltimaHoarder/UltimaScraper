@@ -175,6 +175,29 @@ def check_for_dupe_file(download_path, content_length):
     return found
 
 
+def download_to_file(request, download_path):
+    partial_path = download_path + ".part"
+
+    try:
+        os.unlink(partial_path)
+    except FileNotFoundError:
+        pass
+
+    delete = False
+    try:
+        with open(partial_path, 'xb') as f:
+            delete = True
+            for chunk in request.iter_content(chunk_size=1024):
+                if chunk:  # filter out keep-alive new chunks
+                    f.write(chunk)
+    except:
+        if delete:
+            os.unlink(partial_path)
+        raise
+    else:
+        os.replace(partial_path, download_path)
+
+
 def json_request(session, link, method="GET", stream=False, json_format=True):
     count = 0
     while count < 11:

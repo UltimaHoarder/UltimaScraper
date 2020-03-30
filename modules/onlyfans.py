@@ -1,5 +1,5 @@
 import requests
-from modules.helpers import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger
+from modules.helpers import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger, download_to_file
 
 import os
 import json
@@ -419,10 +419,7 @@ def download_media(media_set, session, directory, username, post_count, location
             if not r:
                 return False
             try:
-                with open(download_path, 'wb') as f:
-                    for chunk in r.iter_content(chunk_size=1024):
-                        if chunk:  # filter out keep-alive new chunks
-                            f.write(chunk)
+                download_to_file(r, download_path)
             except (ConnectionResetError) as e:
                 log_error.exception(e)
                 count += 1

@@ -1,5 +1,5 @@
 import requests
-from modules.helpers import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file
+from modules.helpers import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file,setup_logger
 
 import os
 import json
@@ -12,7 +12,8 @@ import logging
 import math
 from random import randrange
 
-logger = logging.getLogger(__name__)
+log_download = setup_logger('downloads', 'downloads.log')
+log_error = setup_logger('errors', 'errors.log')
 
 # Open config.json and fill in OPTIONAL information
 path = os.path.join('settings', 'config.json')
@@ -422,12 +423,13 @@ def download_media(media_set, session, directory, username, post_count, location
                     for chunk in r.iter_content(chunk_size=1024):
                         if chunk:  # filter out keep-alive new chunks
                             f.write(chunk)
-            except (ConnectionResetError):
+            except (ConnectionResetError) as e:
+                log_error.exception(e)
                 count += 1
                 continue
             format_image(download_path, timestamp)
-            logger.info("Link: {}".format(link))
-            logger.info("Path: {}".format(download_path))
+            log_download.info("Link: {}".format(link))
+            log_download.info("Path: {}".format(download_path))
             return True
     print("Download Processing")
     print("Name: "+username+" | Directory: " + directory)
@@ -495,6 +497,7 @@ def create_session(user_agent, app_token, auth_array):
                 return [session, option_string, subscriber_count, me_api]
             auth_count += 1
     except Exception as e:
+        log_error.exception(e)
         print(e)
         input()
     return [False, me_api]

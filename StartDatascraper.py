@@ -12,15 +12,7 @@ import inspect
 import os
 import time
 
-# Configure logging to the console and file system at INFO level and above
-logging.basicConfig(handlers=[logging.FileHandler('application.log', 'w', 'utf-8')], level=logging.INFO,
-                    format='%(asctime)s %(levelname)s %(name)s %(message)s')
-formatter = logging.Formatter('%(asctime)s %(levelname)s %(name)s %(message)s')
-console = logging.StreamHandler()
-console.setLevel(logging.DEBUG)
-console.setFormatter(formatter)
-logging.getLogger("").addHandler(console)
-
+log_error = helpers.setup_logger('errors', 'errors.log')
 # Open config.json and fill in MANDATORY information for the script to work
 path = os.path.join('settings', 'config.json')
 json_config = json.load(open(path))
@@ -164,6 +156,7 @@ try:
             print('Pausing scraper for ' + loop_timeout + ' seconds.')
             time.sleep(int(loop_timeout))
 except Exception as e:
+    log_error.exception(e)
     tb = traceback.format_exc()
     print(tb+"\n")
     v1 = inspect.trace()[-1][0].f_locals

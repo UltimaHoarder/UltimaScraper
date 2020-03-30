@@ -6,6 +6,7 @@ import json
 import os
 from os.path import dirname as up
 import requests
+import logging
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
@@ -151,18 +152,18 @@ def format_directory(j_directory, site_name, username, location, api_type):
 
 
 def are_long_paths_enabled():
-    if os_name != "Windows":
-        return True
+    if os_name == "Windows":
+        from ctypes import WinDLL, c_ubyte
+        ntdll = WinDLL('ntdll')
 
-    from ctypes import WinDLL, c_ubyte
-    ntdll = WinDLL('ntdll')
+        if hasattr(ntdll, 'RtlAreLongPathsEnabled'):
 
-    if not hasattr(ntdll, 'RtlAreLongPathsEnabled'):
-        return False
+            ntdll.RtlAreLongPathsEnabled.restype = c_ubyte
+            ntdll.RtlAreLongPathsEnabled.argtypes = ()
+            return bool(ntdll.RtlAreLongPathsEnabled())
 
-    ntdll.RtlAreLongPathsEnabled.restype = c_ubyte
-    ntdll.RtlAreLongPathsEnabled.argtypes = ()
-    return bool(ntdll.RtlAreLongPathsEnabled())
+        else:
+            return False
 
 
 def check_for_dupe_file(download_path, content_length):
@@ -190,9 +191,11 @@ def json_request(session, link, method="GET", stream=False, json_format=True):
                 return json.loads(r.text)
             else:
                 return r
-        except (ConnectionResetError):
+        except (ConnectionResetError) as e:
+            log_error.exception(e)
             count += 1
-        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError):
+        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
+            log_error.exception(e)
             count += 1
 
 
@@ -233,3 +236,22 @@ def is_me(user_api):
         return True
     else:
         return False
+
+
+def setup_logger(name, log_file, level=logging.INFO):
+    """To setup as many loggers as you want"""
+
+    formatter = logging.Formatter(
+        '%(asctime)s %(levelname)s %(name)s %(message)s')
+
+    handler = logging.FileHandler("logs/"+log_file)
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+
+    return logger
+
+
+log_error = setup_logger('errors', 'errors.log')

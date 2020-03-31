@@ -34,7 +34,7 @@ if text_length > maximum_length:
 max_threads = multiprocessing.cpu_count()
 
 
-def start_datascraper(session, board_name, site_name, link_type=None):
+def start_datascraper(session, board_name, site_name, link_type, choice_type=None):
     print("Scrape Processing")
     user_id = link_check(session, board_name)
     if not user_id[0]:

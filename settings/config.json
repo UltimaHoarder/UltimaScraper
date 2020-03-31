@@ -28,7 +28,8 @@
         "date_format": "%d-%m-%Y",
         "ignored_keywords": [],
         "ignore_unfollowed_accounts": "",
-        "export_metadata": true
+        "export_metadata": true,
+        "blacklist_name": ""
       },
       "extra_auth_settings": {
         "extra_auth": false,

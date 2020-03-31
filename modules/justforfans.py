@@ -34,7 +34,7 @@ if text_length > maximum_length:
     text_length = maximum_length
 
 
-def start_datascraper(session, username, site_name, app_token=None):
+def start_datascraper(session, username, site_name, app_token, choice_type=None):
     print("Scrape Processing")
     user_id = link_check(session, username)
     if not user_id[0]:
@@ -123,7 +123,7 @@ def scrape_choice(username, post_count):
     return []
 
 
-def scrape_array(link, session, media_type, directory, username):
+def scrape_array(link, session, media_type, directory, username, choice_type=None):
     media_set = [[], []]
     r = session.get(link)
     if r.status_code == 404:

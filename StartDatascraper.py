@@ -145,7 +145,7 @@ try:
                 session = session_array[0][0]
             username = helpers.parse_links(site_name_lower, name)
             result = x.start_datascraper(
-                session, username, site_name, app_token)
+                session, username, site_name, app_token, choice_type=value)
             download_list.append(result)
         for y in download_list:
             for arg in y[1]:

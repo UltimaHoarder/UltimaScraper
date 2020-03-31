@@ -29,6 +29,7 @@ date_format = json_settings["date_format"]
 ignored_keywords = json_settings["ignored_keywords"]
 ignore_unfollowed_accounts = json_settings["ignore_unfollowed_accounts"]
 export_metadata = json_settings["export_metadata"]
+blacklist_name = json_settings["blacklist_name"]
 maximum_length = 240
 text_length = int(json_settings["text_length"]
                   ) if json_settings["text_length"] else maximum_length
@@ -36,7 +37,20 @@ if text_length > maximum_length:
     text_length = maximum_length
 
 
-def start_datascraper(session, identifier, site_name, app_token):
+def start_datascraper(session, identifier, site_name, app_token, choice_type=None):
+    if choice_type == 0:
+        if blacklist_name:
+            link = "https://onlyfans.com/api2/v2/lists?offset=0&limit=100&app-token="+app_token
+            r = json_request(session, link)
+            if not r:
+                return [False, []]
+            x = [c for c in r if blacklist_name == c["name"]]
+            if x:
+                users = x[0]["users"]
+                bl_ids = [x["username"] for x in users]
+                if identifier in bl_ids:
+                    print("Blacklisted: "+identifier)
+                    return [False, []]
     print("Scrape Processing")
     info = link_check(session, app_token, identifier)
     if not info["subbed"]:

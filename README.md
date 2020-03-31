@@ -172,7 +172,7 @@ ignored_keywords:
 
     Any words you input, the script will ignore any content that contains these words.
 
-|**NEW**| ignore_unfollowed_accounts:
+ignore_unfollowed_accounts:
 
     Default = ""
     a = "all"
@@ -184,6 +184,21 @@ ignored_keywords:
     Example: "ignore_unfollowed_accounts": "paid"
 
     This choice will not include any unfollowed accounts that you've paid for.
+
+|**NEW**| [blacklist_name](#blacklist_name):
+
+    Default = ""
+
+    This setting will not include any blacklisted usernames when you choose the "scrape all" option.
+
+    Go to https://onlyfans.com/my/lists and create a new list; you can name it whatever you want but I called mine "Blacklisted".
+
+    Add the list's name to the config.
+
+    Example: "blacklist_name": "Blacklisted"
+
+    You can create as many lists as you want.
+    
 
 
 

@@ -94,7 +94,6 @@ def format_media_set(location, media_set):
 
 
 def format_image(directory, timestamp):
-    os_name = platform.system()
     if os_name == "Windows":
         from win32_setctime import setctime
         setctime(directory, timestamp)

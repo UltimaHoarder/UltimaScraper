@@ -256,6 +256,8 @@ def scrape_array(link, session, directory, username, api_type):
                 date = media_api["createdAt"]
             if not link:
                 continue
+            if "ca.convert" in link:
+                link = media["preview"]
             if "ca2.convert" in link:
                 link = media["preview"]
             new_dict = dict()

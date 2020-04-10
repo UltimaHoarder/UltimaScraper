@@ -249,7 +249,7 @@ def setup_logger(name, log_file, level=logging.INFO):
     formatter = logging.Formatter(
         '%(asctime)s %(levelname)s %(name)s %(message)s')
 
-    handler = logging.FileHandler(log_filename)
+    handler = logging.FileHandler(log_filename, 'w+')
     handler.setFormatter(formatter)
 
     logger = logging.getLogger(name)

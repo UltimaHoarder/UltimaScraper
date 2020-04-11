@@ -256,11 +256,11 @@ def scrape_array(link, session, directory, username, api_type):
                 date = media_api["createdAt"]
             if not link:
                 continue
+            if "us.upload" in link:
+                continue
             if "ca.convert" in link:
                 link = media["preview"]
             if "ca2.convert" in link:
-                link = media["preview"]
-            if "us.upload" in link:
                 link = media["preview"]
             new_dict = dict()
             new_dict["post_id"] = media_api["id"]
@@ -498,26 +498,31 @@ def create_session(user_agent, app_token, auth_array):
                 if auth_array["sess"]:
                     del auth_cookies[2]
                 count = 1
-            while count < 11:
-                session = requests.Session()
-                print("Auth "+auth_version+" Attempt "+str(count)+"/"+"10")
-                max_threads = multiprocessing.cpu_count()
-                session.mount(
-                    'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
-                session.headers = {
-                    'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
-                if auth_array["sess"]:
-                    auth_cookies.append(
-                        {'name': 'sess', 'value': auth_array["sess"]})
+            session = requests.Session()
+            print("Auth "+auth_version+" Attempt "+str(count)+"/"+"10")
+            max_threads = multiprocessing.cpu_count()
+            session.mount(
+                'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+            session.headers = {
+                'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
+            if auth_array["sess"]:
+                found = False
                 for auth_cookie in auth_cookies:
-                    session.cookies.set(**auth_cookie)
+                    if auth_array["sess"] == auth_cookie["value"]:
+                        found = True
+                        break
+                if not found:
+                    auth_cookies.append(
+                        {'name': 'sess', 'value': auth_array["sess"], 'domain': '.onlyfans.com'})
+            for auth_cookie in auth_cookies:
+                session.cookies.set(**auth_cookie)
+            while count < 11:
 
                 link = "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token
-
-                # r = json_request(session, link, "HEAD", True, False)
                 r = json_request(session, link)
                 count += 1
                 if not r:
+                    auth_cookies = []
                     continue
                 me_api = r
                 if 'error' in r:

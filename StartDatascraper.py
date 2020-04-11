@@ -57,7 +57,7 @@ try:
                            ["auth"]]
 
         json_site_settings = json_sites[site_name_lower]["settings"]
-        auto_scrape_all = json_site_settings["auto_scrape_all"]
+        auto_scrape_names = json_site_settings["auto_scrape_names"]
         extra_auth_settings = json_sites[site_name_lower]["extra_auth_settings"] if "extra_auth_settings" in json_sites[site_name_lower] else {
             "extra_auth": False}
         extra_auth = extra_auth_settings["extra_auth"]
@@ -99,7 +99,7 @@ try:
                 array = x.get_subscriptions(
                     session[0], app_token, session[2], me_api, auth_count)
                 subscription_array += array
-            subscription_array = x.format_options(subscription_array)
+            subscription_array = x.format_options(subscription_array,"usernames")
         elif site_name == "justforfans":
             for json_auth in json_auth_array:
                 auth_id = json_auth['phpsessid']
@@ -122,7 +122,7 @@ try:
         names = subscription_array[0]
         if names:
             print("Names: "+subscription_array[1])
-            if not auto_scrape_all:
+            if not auto_scrape_names:
                 value = int(input().strip())
             else:
                 value = 0

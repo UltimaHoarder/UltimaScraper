@@ -63,9 +63,21 @@ def start_datascraper(session, identifier, site_name, app_token, choice_type=Non
     user_id = str(user["id"])
     username = user["username"]
     print("Name: "+username)
-    array = scrape_choice(user_id, app_token, post_counts, is_me)
+    api_array = scrape_choice(user_id, app_token, post_counts, is_me)
+    api_array = format_options(api_array, "apis")
+    apis = api_array[0]
+    api_string = api_array[1]
+    if not json_settings["auto_scrape_apis"]:
+        print("Apis: "+api_string)
+        value = int(input().strip())
+    else:
+        value = 0
+    if value:
+        apis = [apis[value]]
+    else:
+        apis.pop(0)
     prep_download = []
-    for item in array:
+    for item in apis:
         print("Type: "+item[2])
         only_links = item[1][3]
         post_count = str(item[1][4])
@@ -178,6 +190,12 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     a_array = ["You have chosen to scrape {}", [
         archived_api, x, *mandatory, archived_count], "Archived"]
     array = [s_array, h_array, p_array, a_array, mm_array, m_array]
+    new = dict()
+    for xxx in array:
+        new["api_message"] = xxx[0]
+        new["api_array"] = xxx[1]
+        new["api_type"] = xxx[2]
+        print
     # array = [mm_array]
     if not is_me:
         del array[4]
@@ -614,18 +632,32 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
         return results2
 
 
-def format_options(array):
+def format_options(array, choice_type):
     string = ""
     names = []
     array = [{"auth_count": -1, "username": "All"}]+array
     name_count = len(array)
-    if name_count > 1:
+    if "usernames" == choice_type:
+        if name_count > 1:
 
+            count = 0
+            for x in array:
+                name = x["username"]
+                string += str(count)+" = "+name
+                names.append([x["auth_count"], name])
+                if count+1 != name_count:
+                    string += " | "
+
+                count += 1
+    if "apis" == choice_type:
         count = 0
-        for x in array:
-            name = x["username"]
+        names = array
+        for api in array:
+            if "username" in api:
+                name = api["username"]
+            else:
+                name = api[2]
             string += str(count)+" = "+name
-            names.append([x["auth_count"], name])
             if count+1 != name_count:
                 string += " | "
 

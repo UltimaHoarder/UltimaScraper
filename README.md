@@ -103,11 +103,17 @@ auto_choice:
 
     You can automatically choose what you want to scrape if you add it in the config file.
     
-auto_scrape_all:
+auto_scrape_names:
 
     Default = false
 
     If set to true, the script will scrape all the names.
+    
+|**NEW**| [auto_scrape_apis](#auto_scrape_apis):
+
+    Default = true
+
+    If set to false, you'll be given the option to scrape individual apis.
     
 export_type:
 

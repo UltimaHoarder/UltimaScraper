@@ -20,7 +20,8 @@
       },
       "settings": {
         "auto_choice": "",
-        "auto_scrape_all": false,
+        "auto_scrape_names": false,
+        "auto_scrape_apis": true,
         "directory": "",
         "file_name_format": "{file_name}.{ext}",
         "text_length": "",

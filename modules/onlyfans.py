@@ -546,7 +546,10 @@ def create_session(user_agent, app_token, auth_array):
                     continue
                 me_api = r
                 if 'error' in r:
+                    error = r["error"]
                     error_message = r["error"]["message"]
+                    if error["code"] == 101:
+                        error_message = "Blocked by 2FA."
                     print(error_message)
                     if "token" in error_message:
                         break

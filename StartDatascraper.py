@@ -7,11 +7,16 @@ import modules.helpers as helpers
 import timeit
 import json
 import logging
-import traceback
-import inspect
 import os
 import time
+from argparse import ArgumentParser
 
+parser = ArgumentParser()
+parser.add_argument("-m", "--metadata", action='store_true',
+                    help="only exports metadata")
+args = parser.parse_args()
+if args.metadata:
+    print("Exporting Metadata Only")
 log_error = helpers.setup_logger('errors', 'errors.log')
 console = logging.StreamHandler()
 console.setLevel(logging.DEBUG)
@@ -164,7 +169,8 @@ try:
             username = helpers.parse_links(site_name_lower, name)
             result = x.start_datascraper(
                 session, username, site_name, app_token, choice_type=value)
-            download_list.append(result)
+            if not args.metadata:
+                download_list.append(result)
         for y in download_list:
             for arg in y[1]:
                 x.download_media(*arg)

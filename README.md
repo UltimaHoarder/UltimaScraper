@@ -207,12 +207,11 @@ ignore_unfollowed_accounts:
     
 
 
+|**NEW**| [OPTIONAL ARGUMENTS](#OPTIONAL_ARGUMENTS)
 
-# OPTIONAL ARGUMENTS
+-m
 
--l
-
-    This will only scrape and export links to a json file without downloading any files.
+    The script will download metadata files only.
 
 # API
 

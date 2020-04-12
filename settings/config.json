@@ -38,20 +38,30 @@
         "merge_auth": false
       }
     },
-    "justforfans": {
+    "stars_avn": {
       "auth": {
-        "phpsessid": "",
-        "user_hash2": ""
+        "username": "",
+        "sess": "",
+        "user-agent": ""
       },
       "settings": {
-        "auto_choice": "",
-        "auto_scrape_all": false,
+        "auto_choice": "a",
+        "auto_scrape_names": false,
+        "auto_scrape_apis": true,
         "directory": "",
         "file_name_format": "{file_name}.{ext}",
         "text_length": "",
-        "overwrite_files": true,
+        "overwrite_files": false,
         "date_format": "%d-%m-%Y",
-        "ignored_keywords": []
+        "ignored_keywords": [],
+        "ignore_unfollowed_accounts": "",
+        "export_metadata": true,
+        "blacklist_name": ""
+      },
+      "extra_auth_settings": {
+        "extra_auth": false,
+        "choose_auth": false,
+        "merge_auth": false
       }
     },
     "4chan": {

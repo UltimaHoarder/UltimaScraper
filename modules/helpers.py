@@ -20,7 +20,7 @@ os_name = platform.system()
 
 
 def parse_links(site_name, input_link):
-    if site_name in {"onlyfans", "justforfans"}:
+    if site_name in {"onlyfans", "stars_avn"}:
         username = input_link.rsplit('/', 1)[-1]
         return username
 

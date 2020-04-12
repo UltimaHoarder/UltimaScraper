@@ -20,7 +20,7 @@ path = os.path.join('settings', 'config.json')
 json_config = json.load(open(path))
 json_global_settings = json_config["settings"]
 multithreading = json_global_settings["multithreading"]
-json_settings = json_config["supported"]["onlyfans"]["settings"]
+json_settings = json_config["supported"]["stars_avn"]["settings"]
 auto_choice = json_settings["auto_choice"]
 j_directory = get_directory(json_settings['directory'])
 format_path = json_settings['file_name_format']
@@ -38,19 +38,6 @@ if text_length > maximum_length:
 
 
 def start_datascraper(session, identifier, site_name, app_token, choice_type=None):
-    if choice_type == 0:
-        if blacklist_name:
-            link = "https://onlyfans.com/api2/v2/lists?offset=0&limit=100&app-token="+app_token
-            r = json_request(session, link)
-            if not r:
-                return [False, []]
-            x = [c for c in r if blacklist_name == c["name"]]
-            if x:
-                users = x[0]["users"]
-                bl_ids = [x["username"] for x in users]
-                if identifier in bl_ids:
-                    print("Blacklisted: "+identifier)
-                    return [False, []]
     print("Scrape Processing")
     info = link_check(session, app_token, identifier)
     if not info["subbed"]:
@@ -101,8 +88,7 @@ def start_datascraper(session, identifier, site_name, app_token, choice_type=Non
 
 
 def link_check(session, app_token, identifier):
-    link = 'https://onlyfans.com/api2/v2/users/' + str(identifier) + \
-           '&app-token=' + app_token
+    link = 'https://stars.avn.com/api2/v2/users/' + str(identifier)
     y = json_request(session, link)
     temp_user_id2 = dict()
     y["is_me"] = False
@@ -117,17 +103,19 @@ def link_check(session, app_token, identifier):
     now = datetime.utcnow().date()
     result_date = datetime.utcnow().date()
     if "email" not in y:
-        subscribedByData = y["subscribedByData"]
-        if subscribedByData:
-            expired_at = subscribedByData["expiredAt"]
-            result_date = datetime.fromisoformat(
-                expired_at).replace(tzinfo=None).date()
-        if y["subscribedBy"]:
+        subscribedByData = y
+        # if subscribedByData:
+        # expired_at = subscribedByData["expiredAt"]
+        # result_date = datetime.fromisoformat(
+        #     expired_at).replace(tzinfo=None).date()
+        if y["followedBy"]:
+            subbed = True
+        elif y["subscribedBy"]:
             subbed = True
         elif y["subscribedOn"]:
             subbed = True
-        elif y["subscribedIsExpiredNow"] == False:
-            subbed = True
+        # elif y["subscribedIsExpiredNow"] == False:
+        #     subbed = True
         elif result_date >= now:
             subbed = True
         else:
@@ -142,34 +130,34 @@ def link_check(session, app_token, identifier):
     else:
         temp_user_id2["subbed"] = True
         temp_user_id2["user"] = y
-        temp_user_id2["count"] = [y["postsCount"], y["archivedPostsCount"], [
-            y["photosCount"], y["videosCount"], y["audiosCount"]]]
+        temp_user_id2["count"] = [y["postsCount"], [
+            y["photosCount"], y["videosCount"]]]
         return temp_user_id2
 
 
 def scrape_choice(user_id, app_token, post_counts, is_me):
     post_count = post_counts[0]
-    archived_count = post_counts[1]
-    media_counts = post_counts[2]
-    x = ["Images", "Videos", "Audios"]
+    media_counts = post_counts[1]
+    x = ["Images", "Videos"]
     x = dict(zip(x, media_counts))
     x = [k for k, v in x.items() if v != 0]
     if auto_choice:
         input_choice = auto_choice
     else:
-        print('Scrape: a = Everything | b = Images | c = Videos | d = Audios')
+        print('Scrape: a = Everything | b = Images | c = Videos')
         input_choice = input().strip()
-    message_api = "https://onlyfans.com/api2/v2/chats/"+user_id + \
-        "/messages?limit=100&offset=0&order=desc&app-token="+app_token+""
-    mass_messages_api = "https://onlyfans.com/api2/v2/messages/queue/stats?offset=0&limit=99&app-token="+app_token+""
-    stories_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
-        "/stories?limit=100&offset=0&order=desc&app-token="+app_token+""
-    hightlights_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
-        "/stories/highlights?limit=100&offset=0&order=desc&app-token="+app_token+""
-    post_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
-        "/posts?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
-    archived_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
-        "/posts/archived?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
+    message_api = "https://stars.avn.com/api2/v2/chats/"+user_id + \
+        "/messages?limit=50"
+    mass_messages_api = "https://stars.avn.com/api2/v2/chats/"+user_id + \
+        "/messages?limit=50"
+    stories_api = "https://stars.avn.com/api2/v2/users/"+user_id + \
+        "/stories/?limit=10&marker=&offset=0"
+    hightlights_api = "https://stars.avn.com/api2/v2/users/"+user_id + \
+        "/stories/collections/?limit=10&marker=&offset=0"
+    post_api = "https://stars.avn.com/api2/v2/users/"+user_id + \
+        "/posts/?limit=10&marker=&offset=0"
+    archived_api = "https://stars.avn.com/api2/v2/users/"+user_id + \
+        "/stories/collections/?limit=10&marker=&offset=0"
     # ARGUMENTS
     only_links = False
     if "-l" in input_choice:
@@ -187,9 +175,7 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
         mass_messages_api, x, *mandatory, post_count], "Mass Messages"]
     m_array = ["You have chosen to scrape {}", [
         message_api, x, *mandatory, post_count], "Messages"]
-    a_array = ["You have chosen to scrape {}", [
-        archived_api, x, *mandatory, archived_count], "Archived"]
-    array = [s_array, h_array, p_array, a_array, mm_array, m_array]
+    array = [s_array, h_array, p_array]
     new = dict()
     for xxx in array:
         new["api_message"] = xxx[0]
@@ -197,8 +183,8 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
         new["api_type"] = xxx[2]
         print
     # array = [mm_array]
-    if not is_me:
-        del array[4]
+    # if not is_me:
+    #     del array[4]
     valid_input = False
     if input_choice == "a":
         valid_input = True
@@ -208,8 +194,6 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
                 a.append([z, [y[0]]])
             if z == "Videos":
                 a.append([z, y[1:4]])
-            if z == "Audios":
-                a.append([z, [y[4]]])
         for item in array:
             item[0] = array[0][0].format("all")
             item[1][1] = a
@@ -225,98 +209,11 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
             item[0] = item[0].format(name)
             item[1][1] = [[name, y[1:4]]]
         valid_input = True
-    if input_choice == "d":
-        name = "Audios"
-        for item in array:
-            item[0] = item[0].format(name)
-            item[1][1] = [[name, [y[4]]]]
-        valid_input = True
     if valid_input:
         return array
     else:
         print("Invalid Choice")
     return []
-
-
-def scrape_array(link, session, directory, username, api_type):
-    media_set = [[], []]
-    media_type = directory[1]
-    count = 0
-    found = False
-    y = json_request(session, link)
-    if "error" in y:
-        return media_set
-    x = 0
-    if api_type == "Highlights":
-        y = y["stories"]
-    if api_type == "Messages":
-        y = y["list"]
-    if api_type == "Mass Messages":
-        y = y["list"]
-    master_date = "01-01-0001 00:00:00"
-    for media_api in y:
-        if api_type == "Mass Messages":
-            media_user = media_api["fromUser"]
-            media_username = media_user["username"]
-            if media_username != username:
-                continue
-        for media in media_api["media"]:
-            date = "-001-11-30T00:00:00+00:00"
-            size = 0
-            if "source" in media:
-                source = media["source"]
-                link = source["source"]
-                size = media["info"]["preview"]["size"] if "info" in media_api else 1
-                date = media_api["postedAt"] if "postedAt" in media_api else media_api["createdAt"]
-            if "src" in media:
-                link = media["src"]
-                size = media["info"]["preview"]["size"] if "info" in media_api else 1
-                date = media_api["createdAt"]
-            if not link:
-                continue
-            if "us.upload" in link:
-                continue
-            if "us.convert" in link:
-                link = media["preview"]
-            if "ca.convert" in link:
-                link = media["preview"]
-            if "ca2.convert" in link:
-                link = media["preview"]
-            new_dict = dict()
-            new_dict["post_id"] = media_api["id"]
-            new_dict["link"] = link
-            if date == "-001-11-30T00:00:00+00:00":
-                date_string = master_date
-                date_object = datetime.strptime(
-                    master_date, "%d-%m-%Y %H:%M:%S")
-            else:
-                date_object = datetime.fromisoformat(date)
-                date_string = date_object.replace(tzinfo=None).strftime(
-                    "%d-%m-%Y %H:%M:%S")
-                master_date = date_string
-
-            if media["type"] not in media_type:
-                x += 1
-                continue
-            if "text" not in media_api:
-                media_api["text"] = ""
-            new_dict["text"] = media_api["text"] if media_api["text"] else ""
-            new_dict["postedAt"] = date_string
-            media_id = media["id"] if "id" in media else None
-            media_id = media_id if isinstance(media_id, int) else None
-            file_name = link.rsplit('/', 1)[-1]
-            file_name, ext = os.path.splitext(file_name)
-            ext = ext.__str__().replace(".", "").split('?')[0]
-            file_path = reformat(directory[0][1], media_id, file_name,
-                                 new_dict["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
-            new_dict["directory"] = directory[0][1]
-            new_dict["filename"] = file_path.rsplit('/', 1)[-1]
-            new_dict["size"] = size
-            if size == 0:
-                media_set[1].append(new_dict)
-                continue
-            media_set[0].append(new_dict)
-    return media_set
 
 
 def media_scraper(session, site_name, only_links, link, locations, directory, api_count, username, api_type, app_token):
@@ -421,9 +318,9 @@ def media_scraper(session, site_name, only_links, link, locations, directory, ap
                 r = json_request(session, link)
                 if "error" in r:
                     break
-                for item in r:
-                    link2 = "https://onlyfans.com/api2/v2/stories/highlights/" + \
-                        str(item["id"])+"?app-token="+app_token+""
+                for item in r["list"]:
+                    link2 = "https://stars.avn.com/api2/v2/stories/collections/" + \
+                        str(item["id"])
                     master_set.append(link2)
         x = pool.starmap(scrape_array, product(
             master_set, [session], [directories], [username], [api_type]))
@@ -441,6 +338,71 @@ def media_scraper(session, site_name, only_links, link, locations, directory, ap
         media_set.append(results)
 
     return [media_set, directory]
+
+
+def scrape_array(link, session, directory, username, api_type):
+    media_set = [[], []]
+    media_type = directory[1]
+    count = 0
+    found = False
+    y = json_request(session, link)
+    if "error" in y:
+        return media_set
+    x = 0
+    if api_type == "Highlights":
+        y = y["stories"]
+    y = y["list"] if "list" in y else y
+    master_date = "01-01-0001 00:00:00"
+    for media_api in y:
+        if api_type == "Mass Messages":
+            media_user = media_api["fromUser"]
+            media_username = media_user["username"]
+            if media_username != username:
+                continue
+        new_api = (media_api["media"] if "media" in media_api else [media_api])
+        for media in new_api:
+            date = "-001-11-30T00:00:00+00:00"
+            size = 1
+            src = media["src"]
+            link = src["source"]
+            date = media_api["createdAt"] if "createdAt" in media_api else media_api["postedAt"]
+            if not link:
+                continue
+            new_dict = dict()
+            new_dict["post_id"] = media_api["id"]
+            new_dict["link"] = link
+            if date == "-001-11-30T00:00:00+00:00":
+                date_string = master_date
+                date_object = datetime.strptime(
+                    master_date, "%d-%m-%Y %H:%M:%S")
+            else:
+                date_object = datetime.fromisoformat(date)
+                date_string = date_object.replace(tzinfo=None).strftime(
+                    "%d-%m-%Y %H:%M:%S")
+                master_date = date_string
+            media["mediaType"] = media["mediaType"] if "mediaType" in media else media["type"]
+            if media["mediaType"] not in media_type:
+                x += 1
+                continue
+            if "text" not in media_api:
+                media_api["text"] = ""
+            new_dict["text"] = media_api["text"] if media_api["text"] else ""
+            new_dict["postedAt"] = date_string
+            media_id = media["id"] if "id" in media else None
+            media_id = media_id if isinstance(media_id, int) else None
+            file_name = link.rsplit('/', 1)[-1]
+            file_name, ext = os.path.splitext(file_name)
+            ext = ext.__str__().replace(".", "").split('?')[0]
+            file_path = reformat(directory[0][1], media_id, file_name,
+                                 new_dict["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
+            new_dict["directory"] = directory[0][1]
+            new_dict["filename"] = file_path.rsplit('/', 1)[-1]
+            new_dict["size"] = size
+            if size == 0:
+                media_set[1].append(new_dict)
+                continue
+            media_set[0].append(new_dict)
+    return media_set
 
 
 def download_media(media_set, session, directory, username, post_count, location):
@@ -509,8 +471,6 @@ def create_session(user_agent, app_token, auth_array):
     count = 1
     try:
         auth_cookies = [
-            {'name': 'auth_id', 'value': auth_array["auth_id"]},
-            {'name': 'auth_hash', 'value': auth_array["auth_hash"]}
         ]
         while auth_count < 3:
             if auth_count == 2:
@@ -524,7 +484,7 @@ def create_session(user_agent, app_token, auth_array):
             session.mount(
                 'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
             session.headers = {
-                'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
+                'User-Agent': user_agent, 'Referer': 'https://stars.avn.com/'}
             if auth_array["sess"]:
                 found = False
                 for auth_cookie in auth_cookies:
@@ -533,12 +493,12 @@ def create_session(user_agent, app_token, auth_array):
                         break
                 if not found:
                     auth_cookies.append(
-                        {'name': 'sess', 'value': auth_array["sess"], 'domain': '.onlyfans.com'})
+                        {'name': 'sess', 'value': auth_array["sess"], 'domain': '.stars.avn.com'})
             for auth_cookie in auth_cookies:
                 session.cookies.set(**auth_cookie)
             while count < 11:
 
-                link = "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token
+                link = "https://stars.avn.com/api2/v2/users/me"
                 r = json_request(session, link)
                 count += 1
                 if not r:
@@ -557,14 +517,10 @@ def create_session(user_agent, app_token, auth_array):
                 else:
                     print("Welcome "+r["name"])
                 option_string = "username or profile link"
-                link = "https://onlyfans.com/api2/v2/subscriptions/count/all?app-token="+app_token
-                r = json_request(session, link)
-                if not r:
-                    break
                 array = dict()
                 array["session"] = session
                 array["option_string"] = option_string
-                array["subscriber_count"] = r["subscriptions"]["all"]
+                array["subscriber_count"] = r["followingCount"]
                 array["me_api"] = me_api
                 return array
             auth_count += 1
@@ -578,68 +534,13 @@ def create_session(user_agent, app_token, auth_array):
 
 
 def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0):
-    link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=99&offset=0&app-token="+app_token
-    ceil = math.ceil(subscriber_count / 99)
-    a = list(range(ceil))
-    offset_array = []
-    for b in a:
-        b = b * 99
-        offset_array.append(
-            [link.replace("offset=0", "offset=" + str(b)), False])
-    if me_api["isPerformer"]:
-        link = "https://onlyfans.com/api2/v2/users/" + \
-            str(me_api["id"])+"?app-token="+app_token
-        offset_array = [[link, True]] + offset_array
-
-    def multi(array, session):
-        link = array[0]
-        performer = array[1]
-        if performer:
-            session = requests.Session()
-            x = json_request(session, link)
-            if not x["subscribedByData"]:
-                x["subscribedByData"] = dict()
-                x["subscribedByData"]["expiredAt"] = datetime.utcnow().isoformat()
-                x["subscribedByData"]["price"] = x["subscribePrice"]
-                x["subscribedByData"]["subscribePrice"] = 0
-            x = [x]
-        else:
-            x = json_request(session, link)
-        return x
-    link_count = len(offset_array) if len(offset_array) > 0 else 1
-    pool = ThreadPool(link_count)
-    results = pool.starmap(multi, product(
-        offset_array, [session]))
-    results = list(chain(*results))
-    if any("error" in result for result in results):
-        print("Invalid App Token")
-        return []
-    else:
-        results.sort(key=lambda x: x["subscribedByData"]['expiredAt'])
-        results2 = []
-        for result in results:
-            result["auth_count"] = auth_count
-            result["self"] = False
-            username = result["username"]
-            now = datetime.utcnow().date()
-            subscribedBy = result["subscribedBy"]
-            subscribedByData = result["subscribedByData"]
-            result_date = subscribedByData["expiredAt"] if subscribedByData else datetime.utcnow(
-            ).isoformat()
-            price = subscribedByData["price"]
-            subscribePrice = subscribedByData["subscribePrice"]
-            result_date = datetime.fromisoformat(
-                result_date).replace(tzinfo=None).date()
-            if result_date >= now:
-                if not subscribedBy:
-                    if ignore_unfollowed_accounts in ["all", "paid"]:
-                        if price > 0:
-                            continue
-                    if ignore_unfollowed_accounts in ["all", "free"]:
-                        if subscribePrice == 0:
-                            continue
-                results2.append(result)
-        return results2
+    link = "https://stars.avn.com/api2/v2/subscriptions/following/?limit=10&marker=&offset=0"
+    r = json_request(session, link)
+    if not r:
+        return None
+    for x in r["list"]:
+        x["auth_count"] = auth_count
+    return r["list"]
 
 
 def format_options(array, choice_type):

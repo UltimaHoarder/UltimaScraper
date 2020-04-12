@@ -1,6 +1,6 @@
 #!/usr/bin/env python
 import modules.onlyfans as onlyfans
-import modules.justforfans as justforfans
+import modules.stars_avn as stars_avn
 import modules.four_chan as four_chan
 import modules.bbwchan as bbwchan
 import modules.helpers as helpers
@@ -74,6 +74,7 @@ try:
         legacy = True
         if site_name_lower == "onlyfans":
             legacy = False
+            site_name = "OnlyFans"
             subscription_array = []
             auth_count = -1
             for json_auth in json_auth_array:
@@ -93,22 +94,38 @@ try:
                 session = x.create_session(
                     user_agent, app_token, auth_array)
                 session_array.append(session)
-                if not session[0]:
+                if not session["session"]:
                     continue
-                me_api = session[3]
+                me_api = session["me_api"]
                 array = x.get_subscriptions(
-                    session[0], app_token, session[2], me_api, auth_count)
+                    session["session"], app_token, session["subscriber_count"], me_api, auth_count)
                 subscription_array += array
-            subscription_array = x.format_options(subscription_array,"usernames")
-        elif site_name == "justforfans":
+            subscription_array = x.format_options(
+                subscription_array, "usernames")
+        elif site_name_lower == "stars_avn":
+            legacy = False
+            site_name = "Stars_Avn"
+            subscription_array = []
+            auth_count = -1
             for json_auth in json_auth_array:
-                auth_id = json_auth['phpsessid']
-                auth_hash = json_auth['user_hash2']
+                auth_count += 1
                 user_agent = global_user_agent if not json_auth['user-agent'] else json_auth['user-agent']
-                x = justforfans
-                session_array = [x.create_session(
-                    user_agent, auth_id, auth_hash)]
-                array = x.get_subscriptions()
+                sess = json_auth['sess']
+
+                auth_array = dict()
+                auth_array["sess"] = sess
+                x = stars_avn
+                session = x.create_session(
+                    user_agent, app_token, auth_array)
+                session_array.append(session)
+                if not session["session"]:
+                    continue
+                me_api = session["me_api"]
+                array = x.get_subscriptions(
+                    session["session"], app_token, session["subscriber_count"], me_api, auth_count)
+                subscription_array += array
+            subscription_array = x.format_options(
+                subscription_array, "usernames")
         elif site_name == "4chan":
             x = four_chan
             session_array = [x.create_session()]
@@ -136,10 +153,11 @@ try:
         start_time = timeit.default_timer()
         download_list = []
         for name in names:
+            # Extra Auth Support
             if not legacy:
                 json_auth = json_auth_array[name[0]]
                 auth_count = name[0]
-                session = session_array[auth_count][0]
+                session = session_array[auth_count]["session"]
                 name = name[1]
             else:
                 session = session_array[0][0]

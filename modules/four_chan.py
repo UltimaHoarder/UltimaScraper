@@ -248,7 +248,10 @@ def create_session():
         'http://', requests.adapters.HTTPAdapter(pool_connections=1, pool_maxsize=16))
     print("Welcome Anon")
     option_string = "board or thread link"
-    return [session, option_string]
+    array = dict()
+    array["session"] = session
+    array["option_string"] = option_string
+    return array
 
 
 def get_subscriptions(session=[], app_token=""):

@@ -13,7 +13,7 @@ import math
 from random import randrange
 
 log_download = setup_logger('downloads', 'downloads.log')
-log_error = setup_logger('errors', 'errors.log')
+from modules.helpers import log_error
 
 # Open config.json and fill in OPTIONAL information
 path = os.path.join('settings', 'config.json')

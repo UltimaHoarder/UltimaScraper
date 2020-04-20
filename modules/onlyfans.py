@@ -578,7 +578,7 @@ def create_session(user_agent, app_token, auth_array):
 
 
 def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0):
-    link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=99&offset=0&app-token="+app_token
+    link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?offset=0&type=active&offset=0&app-token="+app_token
     ceil = math.ceil(subscriber_count / 99)
     a = list(range(ceil))
     offset_array = []
@@ -630,15 +630,14 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
             subscribePrice = subscribedByData["subscribePrice"]
             result_date = datetime.fromisoformat(
                 result_date).replace(tzinfo=None).date()
-            if result_date >= now:
-                if not subscribedBy:
-                    if ignore_unfollowed_accounts in ["all", "paid"]:
-                        if price > 0:
-                            continue
-                    if ignore_unfollowed_accounts in ["all", "free"]:
-                        if subscribePrice == 0:
-                            continue
-                results2.append(result)
+            if not subscribedBy:
+                if ignore_unfollowed_accounts in ["all", "paid"]:
+                    if price > 0:
+                        continue
+                if ignore_unfollowed_accounts in ["all", "free"]:
+                    if subscribePrice == 0:
+                        continue
+            results2.append(result)
         return results2
 
 

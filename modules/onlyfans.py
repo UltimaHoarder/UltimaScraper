@@ -578,7 +578,7 @@ def create_session(user_agent, app_token, auth_array):
 
 
 def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0):
-    link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?offset=0&type=active&offset=0&app-token="+app_token
+    link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?offset=0&type=active&limit=99&app-token="+app_token
     ceil = math.ceil(subscriber_count / 99)
     a = list(range(ceil))
     offset_array = []

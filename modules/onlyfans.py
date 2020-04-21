@@ -564,7 +564,7 @@ def create_session(user_agent, app_token, auth_array):
                 array = dict()
                 array["session"] = session
                 array["option_string"] = option_string
-                array["subscriber_count"] = r["subscriptions"]["all"]
+                array["subscriber_count"] = r["subscriptions"]["active"]
                 array["me_api"] = me_api
                 return array
             auth_count += 1

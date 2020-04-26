@@ -1,6 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
-from modules.helpers import *
+from helpers.main_helper import *
 
 import os
 import json
@@ -19,7 +19,7 @@ import platform
 logger = logging.getLogger(__name__)
 
 # Open config.json and fill in OPTIONAL information
-path = os.path.join('settings', 'config.json')
+path = os.path.join('.settings', 'config.json')
 json_config = json.load(open(path))
 json_global_settings = json_config["settings"]
 multithreading = json_global_settings["multithreading"]

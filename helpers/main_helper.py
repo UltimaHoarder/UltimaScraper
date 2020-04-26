@@ -1,18 +1,19 @@
-import re
-from bs4 import BeautifulSoup
-import platform
 import csv
 import json
+import logging
 import os
 from os.path import dirname as up
+import platform
+import re
+
+from bs4 import BeautifulSoup
 import requests
-import logging
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
 
 # Open config.json and fill in OPTIONAL information
-path = os.path.join('settings', 'config.json')
+path = os.path.join('.settings', 'config.json')
 json_config = json.load(open(path))
 json_global_settings = json_config["settings"]
 export_type = json_global_settings["export_type"]
@@ -126,7 +127,7 @@ def get_directory(directory):
         os.makedirs(directory, exist_ok=True)
         return directory
     else:
-        return os.path.abspath("sites")
+        return os.path.abspath(".sites")
 
 
 def format_directory(j_directory, site_name, username, location, api_type):
@@ -203,7 +204,7 @@ def json_request(session, link, method="GET", stream=False, json_format=True):
 
 
 def update_config(json_config):
-    path = os.path.join('settings', 'config.json')
+    path = os.path.join('.settings', 'config.json')
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(json_config, f, ensure_ascii=False, indent=2)
 
@@ -243,7 +244,7 @@ def is_me(user_api):
 
 def setup_logger(name, log_file, level=logging.INFO):
     """To setup as many loggers as you want"""
-    log_filename = "logs/"+log_file
+    log_filename = ".logs/"+log_file
     os.makedirs(os.path.dirname(log_filename), exist_ok=True)
     formatter = logging.Formatter(
         '%(asctime)s %(levelname)s %(name)s %(message)s')

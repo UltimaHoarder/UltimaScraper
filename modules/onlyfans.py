@@ -1,5 +1,6 @@
+from helpers.main_helper import log_error
 import requests
-from modules.helpers import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger
+from helpers.main_helper import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger
 
 import os
 import json
@@ -15,7 +16,7 @@ from random import randrange
 log_download = setup_logger('downloads', 'downloads.log')
 
 # Open config.json and fill in OPTIONAL information
-path = os.path.join('settings', 'config.json')
+path = os.path.join('.settings', 'config.json')
 json_config = json.load(open(path))
 json_global_settings = json_config["settings"]
 multithreading = json_global_settings["multithreading"]

@@ -13,7 +13,6 @@ import math
 from random import randrange
 
 log_download = setup_logger('downloads', 'downloads.log')
-from modules.helpers import log_error
 
 # Open config.json and fill in OPTIONAL information
 path = os.path.join('settings', 'config.json')
@@ -190,6 +189,7 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     a_array = ["You have chosen to scrape {}", [
         archived_api, x, *mandatory, archived_count], "Archived"]
     array = [s_array, h_array, p_array, a_array, mm_array, m_array]
+    # array = [mm_array]
     new = dict()
     for xxx in array:
         new["api_message"] = xxx[0]
@@ -381,21 +381,31 @@ def media_scraper(session, site_name, only_links, link, locations, directory, ap
             if api_type == "Messages":
                 xmessages(link)
             if api_type == "Mass Messages":
-                messages = []
+                results = []
+                max_threads = multiprocessing.cpu_count()
                 offset_count = 0
+                offset_count2 = max_threads
+                # offset_count2 = 2
                 while True:
-                    y = json_request(session, link)
-                    if y:
-                        messages.append(y)
-                        offset_count2 = offset_count+99
-                        offset_count = offset_count2-99
-                        link = link.replace(
-                            "offset=" + str(offset_count), "offset=" + str(offset_count2))
-                        offset_count = offset_count2
-                    else:
+                    def process_messages(link, session):
+                        y = json_request(session, link)
+                        if y:
+                            return y
+                        else:
+                            return None
+                    link_list = [link.replace(
+                        "offset=0", "offset="+str(i*99)) for i in range(offset_count, offset_count2)]
+                    link_list = pool.starmap(process_messages, product(
+                        link_list, [session]))
+                    results.append(link_list)
+                    if any(None == result for result in link_list):
                         break
-                messages = list(chain(*messages))
-                message_count = 0
+                    else:
+                        offset_count = offset_count2
+                        offset_count2 = offset_count*2
+                        continue
+                messages = list(chain(*results))
+                messages = [i for i in messages if i]
 
                 def process_mass_messages(message, limit):
                     text = message["textCropped"].replace("&", "")

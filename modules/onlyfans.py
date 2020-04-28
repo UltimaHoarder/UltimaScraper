@@ -279,6 +279,8 @@ def scrape_array(link, session, directory, username, api_type):
                 continue
             if "us.convert" in link:
                 link = media["preview"]
+            if "uk.convert" in link:
+                link = media["preview"]
             if "ca.convert" in link:
                 link = media["preview"]
             if "ca2.convert" in link:

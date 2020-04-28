@@ -414,12 +414,15 @@ def media_scraper(session, site_name, only_links, link, locations, directory, ap
                     link_2 = "https://onlyfans.com/api2/v2/chats?limit="+limit+"&offset=0&filter=&order=activity&query=" + \
                         text+"&app-token="+app_token
                     y = json_request(session, link_2)
+                    if "error" in y:
+                        return []
                     return y
                 limit = "10"
                 if len(messages) > 99:
                     limit = "2"
                 subscribers = pool.starmap(process_mass_messages, product(
                     messages, [limit]))
+                subscribers = filter(None, subscribers)
                 subscribers = [
                     item for sublist in subscribers for item in sublist["list"]]
                 seen = set()

@@ -1,6 +1,5 @@
-from helpers.main_helper import log_error
 import requests
-from helpers.main_helper import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger
+from helpers.main_helper import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger, log_error
 
 import os
 import json
@@ -161,7 +160,7 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
         input_choice = input().strip()
     message_api = "https://onlyfans.com/api2/v2/chats/"+user_id + \
         "/messages?limit=100&offset=0&order=desc&app-token="+app_token+""
-    mass_messages_api = "https://onlyfans.com/api2/v2/messages/queue/stats?offset=0&limit=99&app-token="+app_token+""
+    mass_messages_api = "https://onlyfans.com/api2/v2/messages/queue/stats?offset=0&limit=30&app-token="+app_token+""
     stories_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
         "/stories?limit=100&offset=0&order=desc&app-token="+app_token+""
     hightlights_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
@@ -190,6 +189,7 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     a_array = ["You have chosen to scrape {}", [
         archived_api, x, *mandatory, archived_count], "Archived"]
     array = [s_array, h_array, p_array, a_array, mm_array, m_array]
+    # array = [s_array, h_array, p_array, a_array, m_array]
     # array = [mm_array]
     new = dict()
     for xxx in array:
@@ -393,20 +393,21 @@ def media_scraper(session, site_name, only_links, link, locations, directory, ap
                         if y:
                             return y
                         else:
-                            return None
+                            return []
                     link_list = [link.replace(
-                        "offset=0", "offset="+str(i*99)) for i in range(offset_count, offset_count2)]
+                        "offset=0", "offset="+str(i*30)) for i in range(offset_count, offset_count2)]
                     link_list = pool.starmap(process_messages, product(
                         link_list, [session]))
-                    results.append(link_list)
-                    if any(None == result for result in link_list):
+                    if all(not result for result in link_list):
                         break
-                    else:
-                        offset_count = offset_count2
-                        offset_count2 = offset_count*2
-                        continue
-                messages = list(chain(*results))
-                messages = [i for i in messages if i]
+                    link_list2 = list(chain(*link_list))
+
+                    results.append(link_list2)
+                    offset_count = offset_count2
+                    offset_count2 = offset_count*2
+                unsorted_messages = list(chain(*results))
+                unsorted_messages.sort(key=lambda x: x["id"])
+                messages = unsorted_messages
 
                 def process_mass_messages(message, limit):
                     text = message["textCropped"].replace("&", "")
@@ -502,9 +503,10 @@ def download_media(media_set, session, directory, username, post_count, location
             log_download.info("Link: {}".format(link))
             log_download.info("Path: {}".format(download_path))
             return True
-    print("Download Processing")
-    print("Name: "+username+" | Directory: " + directory)
-    print("Downloading "+str(len(media_set))+" "+location+"\n")
+    string = "Download Processing\n"
+    string += "Name: "+username+" | Directory: " + directory+"\n"
+    string += "Downloading "+str(len(media_set))+" "+location+"\n"
+    print(string)
     if multithreading:
         pool = ThreadPool()
     else:

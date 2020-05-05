@@ -36,7 +36,7 @@ Your auth config should look similar to this
 ![app-token](examples/2.png)
 # USAGE
 
-`python StartDatascraper.py`
+`python start_ofd.py`
 
 Enter in inputs as prompted by console.
 

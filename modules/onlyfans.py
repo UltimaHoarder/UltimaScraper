@@ -11,6 +11,7 @@ from datetime import datetime
 import logging
 import math
 from random import randrange
+from urllib.parse import urlparse
 
 log_download = setup_logger('downloads', 'downloads.log')
 
@@ -275,16 +276,16 @@ def scrape_array(link, session, directory, username, api_type):
                 date = media_api["createdAt"]
             if not link:
                 continue
-            if "us.upload" in link:
-                continue
-            if "us.convert" in link:
-                link = media["preview"]
-            if "uk.convert" in link:
-                link = media["preview"]
-            if "ca.convert" in link:
-                link = media["preview"]
-            if "ca2.convert" in link:
-                link = media["preview"]
+            matches = ["us", "uk", "ca", "ca2", "de"]
+
+            url = urlparse(link)
+            subdomain = url.hostname.split('.')[0]
+            if any(subdomain in nm for nm in matches):
+                subdomain = url.hostname.split('.')[1]
+                if "upload" in subdomain:
+                    continue
+                if "convert" in subdomain:
+                    link = media["preview"]
             new_dict = dict()
             new_dict["post_id"] = media_api["id"]
             new_dict["link"] = link

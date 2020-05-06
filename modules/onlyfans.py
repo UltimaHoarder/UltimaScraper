@@ -416,7 +416,7 @@ def media_scraper(session, site_name, only_links, link, locations, directory, ap
                     link_2 = "https://onlyfans.com/api2/v2/chats?limit="+limit+"&offset=0&filter=&order=activity&query=" + \
                         text+"&app-token="+app_token
                     y = json_request(session, link_2)
-                    if "error" in y:
+                    if None == y or "error" in y:
                         return []
                     return y
                 limit = "10"

@@ -56,41 +56,14 @@ def reformat(directory, media_id, file_name, text, ext, date, username, format_p
     path = path.replace("{ext}", ext)
     directory2 = directory + path
 
-    # if has_text:
-    #     count_string = len(path)
-    #     if count_string > maximum_length:
-    #         print
-    #     path = path.replace(
-    #             filtered_text, filtered_text[:-text_length])
-    #     count_string = len(path)
-    #     if count_string > maximum_length:
-    #         print
-    lp = are_long_paths_enabled()
-    if not lp:
-        count_string = len(directory2)
+    if has_text:
+        count_string = len(path)
+        text_count = len(filtered_text)
         if count_string > maximum_length:
-            num_sum = count_string - maximum_length
-            directory2 = directory2.replace(
-                filtered_text, filtered_text[:text_length])
-        count_string = len(directory2)
-        if count_string > maximum_length:
-            num_sum = count_string - maximum_length
-            directory2 = directory2.replace(
-                filtered_text, filtered_text[:-num_sum])
-            count_string = len(directory2)
-            if count_string > maximum_length:
-                directory2 = directory
-        count_string = len(directory2)
-        if count_string > maximum_length:
-            num_sum = count_string - maximum_length
-            directory2 = directory2.replace(
-                filtered_text, filtered_text[:50])
-            count_string = len(directory2)
-            if count_string > maximum_length:
-                directory2 = directory
-    filename = os.path.basename(directory2)
-    if len(filename) > 240:
-        directory2 = directory2.replace(filename, filename[:240]+"."+ext)
+            text_limit = count_string - text_count
+            path = path.replace(
+            filtered_text, filtered_text[:-text_limit])
+            directory2 = directory + path
     return directory2
 
 

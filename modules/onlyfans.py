@@ -31,11 +31,9 @@ ignored_keywords = json_settings["ignored_keywords"]
 ignore_unfollowed_accounts = json_settings["ignore_unfollowed_accounts"]
 export_metadata = json_settings["export_metadata"]
 blacklist_name = json_settings["blacklist_name"]
-maximum_length = 240
-text_length = int(json_settings["text_length"]
+maximum_length = 255
+maximum_length = int(json_settings["text_length"]
                   ) if json_settings["text_length"] else maximum_length
-if text_length > maximum_length:
-    text_length = maximum_length
 
 
 def start_datascraper(session, identifier, site_name, app_token, choice_type=None):
@@ -315,7 +313,7 @@ def scrape_array(link, session, directory, username, api_type):
             file_name, ext = os.path.splitext(file_name)
             ext = ext.__str__().replace(".", "").split('?')[0]
             file_path = reformat(directory[0][1], media_id, file_name,
-                                 new_dict["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
+                                 new_dict["text"], ext, date_object, username, format_path, date_format, maximum_length, maximum_length)
             new_dict["directory"] = directory[0][1]
             new_dict["filename"] = file_path.rsplit('/', 1)[-1]
             new_dict["size"] = size

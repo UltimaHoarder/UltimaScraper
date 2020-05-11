@@ -12,6 +12,7 @@ import modules.four_chan as four_chan
 import modules.onlyfans as onlyfans
 import modules.stars_avn as stars_avn
 
+
 def start_datascraper():
     parser = ArgumentParser()
     parser.add_argument("-m", "--metadata", action='store_true',
@@ -61,7 +62,7 @@ def start_datascraper():
                 site_name = site_names[x]
             site_name_lower = site_name.lower()
             json_auth_array = [json_sites[site_name_lower]
-                            ["auth"]]
+                               ["auth"]]
 
             json_site_settings = json_sites[site_name_lower]["settings"]
             auto_scrape_names = json_site_settings["auto_scrape_names"]
@@ -87,22 +88,25 @@ def start_datascraper():
                 for json_auth in json_auth_array:
                     auth_count += 1
                     app_token = json_auth['app-token']
-                    user_agent = global_user_agent if not json_auth['user-agent'] else json_auth['user-agent']
-
-                    auth_id = json_auth['auth_id']
-                    auth_hash = json_auth['auth_hash']
-                    sess = json_auth['sess']
+                    user_agent = global_user_agent if not json_auth[
+                        'user-agent'] else json_auth['user-agent']
 
                     auth_array = dict()
-                    auth_array["auth_id"] = auth_id
-                    auth_array["auth_hash"] = auth_hash
-                    auth_array["sess"] = sess
+                    auth_array["auth_id"] = json_auth['auth_id']
+                    auth_array["auth_hash"] = json_auth['auth_hash']
+                    auth_array["sess"] = json_auth['sess']
+
                     x = onlyfans
                     session = x.create_session(
                         user_agent, app_token, auth_array)
                     session_array.append(session)
                     if not session["session"]:
                         continue
+                    cookies = session["session"].cookies.get_dict()
+                    json_auth['auth_id'] = cookies["auth_id"]
+                    json_auth['auth_hash'] = cookies["auth_hash"]
+                    json_auth['sess'] = cookies["sess"]
+                    main_helper.update_config(json_config)
                     me_api = session["me_api"]
                     array = x.get_subscriptions(
                         session["session"], app_token, session["subscriber_count"], me_api, auth_count)
@@ -116,7 +120,8 @@ def start_datascraper():
                 auth_count = -1
                 for json_auth in json_auth_array:
                     auth_count += 1
-                    user_agent = global_user_agent if not json_auth['user-agent'] else json_auth['user-agent']
+                    user_agent = global_user_agent if not json_auth[
+                        'user-agent'] else json_auth['user-agent']
                     sess = json_auth['sess']
 
                     auth_array = dict()
@@ -155,7 +160,7 @@ def start_datascraper():
                 else:
                     names.pop(0)
             else:
-                print("You're not subscribed to any users.")
+                print("There's nothing to scrape.")
                 continue
             start_time = timeit.default_timer()
             download_list = []

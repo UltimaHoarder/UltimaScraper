@@ -6,6 +6,7 @@
     "exit_on_completion": false,
     "infinite_loop": true,
     "loop_timeout": "0",
+    "socks5_proxy": "",
     "global_user-agent": ""
   },
   "supported": {

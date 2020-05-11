@@ -25,6 +25,7 @@ auto_choice = json_settings["auto_choice"]
 j_directory = get_directory(json_settings['directory'])
 format_path = json_settings['file_name_format']
 overwrite_files = json_settings["overwrite_files"]
+proxy = json_global_settings["socks5_proxy"]
 date_format = json_settings["date_format"]
 ignored_keywords = json_settings["ignored_keywords"]
 ignore_unfollowed_accounts = json_settings["ignore_unfollowed_accounts"]
@@ -191,6 +192,7 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
         archived_api, x, *mandatory, archived_count], "Archived"]
     array = [s_array, h_array, p_array, a_array, mm_array, m_array]
     # array = [s_array, h_array, p_array, a_array, m_array]
+    # array = [p_array]
     # array = [mm_array]
     new = dict()
     for xxx in array:
@@ -200,7 +202,8 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
         print
     # array = [mm_array]
     if not is_me:
-        del array[4]
+        if len(array) > 3:
+            del array[4]
     valid_input = False
     if input_choice == "a":
         valid_input = True
@@ -526,6 +529,7 @@ def create_session(user_agent, app_token, auth_array):
     auth_count = 1
     auth_version = "(V1)"
     count = 1
+    max_threads = multiprocessing.cpu_count()
     try:
         auth_cookies = [
             {'name': 'auth_id', 'value': auth_array["auth_id"]},
@@ -537,9 +541,11 @@ def create_session(user_agent, app_token, auth_array):
                 if auth_array["sess"]:
                     del auth_cookies[2]
                 count = 1
+            print("Auth "+auth_version)
             session = requests.Session()
-            print("Auth "+auth_version+" Attempt "+str(count)+"/"+"10")
-            max_threads = multiprocessing.cpu_count()
+            proxies = {'http': 'socks5://'+proxy,
+                       'https': 'socks5://'+proxy}
+            session.proxies = proxies
             session.mount(
                 'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
             session.headers = {
@@ -556,7 +562,7 @@ def create_session(user_agent, app_token, auth_array):
             for auth_cookie in auth_cookies:
                 session.cookies.set(**auth_cookie)
             while count < 11:
-
+                print("Attempt "+str(count)+"/"+"10")
                 link = "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token
                 r = json_request(session, link)
                 count += 1
@@ -615,6 +621,9 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
         performer = array[1]
         if performer:
             session = requests.Session()
+            proxies = {'http': 'socks5://'+proxy,
+                       'https': 'socks5://'+proxy}
+            session.proxies = proxies
             x = json_request(session, link)
             if not x["subscribedByData"]:
                 x["subscribedByData"] = dict()

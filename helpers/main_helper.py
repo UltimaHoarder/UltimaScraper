@@ -39,11 +39,13 @@ def parse_links(site_name, input_link):
 
 def reformat(directory, media_id, file_name, text, ext, date, username, format_path, date_format, text_length, maximum_length):
     media_id = "" if media_id is None else str(media_id)
+    has_text = False
+    if "{text}" in format_path:
+        has_text = True
     path = format_path.replace("{username}", username)
     text = BeautifulSoup(text, 'lxml').get_text().replace(
         "\n", " ").strip()
     SAFE_PTN = '[^0-9a-zA-Z-_.()]+'
-    # filtered_text = re.sub(r'[\\/*?:"<>|]', '', text)
     filtered_text = re.sub(SAFE_PTN, ' ',  text.strip()
                            ).strip().replace(' ', '_')[:text_length]
     path = path.replace("{text}", filtered_text)
@@ -54,6 +56,15 @@ def reformat(directory, media_id, file_name, text, ext, date, username, format_p
     path = path.replace("{ext}", ext)
     directory2 = directory + path
 
+    # if has_text:
+    #     count_string = len(path)
+    #     if count_string > maximum_length:
+    #         print
+    #     path = path.replace(
+    #             filtered_text, filtered_text[:-text_length])
+    #     count_string = len(path)
+    #     if count_string > maximum_length:
+    #         print
     lp = are_long_paths_enabled()
     if not lp:
         count_string = len(directory2)

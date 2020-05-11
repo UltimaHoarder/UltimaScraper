@@ -545,7 +545,8 @@ def create_session(user_agent, app_token, auth_array):
             session = requests.Session()
             proxies = {'http': 'socks5://'+proxy,
                        'https': 'socks5://'+proxy}
-            session.proxies = proxies
+            if proxy:
+                session.proxies = proxies
             session.mount(
                 'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
             session.headers = {
@@ -623,7 +624,8 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
             session = requests.Session()
             proxies = {'http': 'socks5://'+proxy,
                        'https': 'socks5://'+proxy}
-            session.proxies = proxies
+            if proxy:
+                session.proxies = proxies
             x = json_request(session, link)
             if not x["subscribedByData"]:
                 x["subscribedByData"] = dict()

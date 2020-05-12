@@ -10,7 +10,7 @@ from datetime import datetime
 import math
 from urllib.parse import urlparse
 from itertools import groupby
-# import extras.OFSorter.ofsorter as ofsorter
+import extras.OFSorter.ofsorter as ofsorter
 
 log_download = setup_logger('downloads', 'downloads.log')
 
@@ -476,6 +476,8 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
         if results["invalid"]:
             results["invalid"] = [list(g) for k, g in groupby(
                 results["invalid"], key=lambda x: x["post_id"])]
+        if sort_free_paid_posts:
+            ofsorter.sorter(user_directory, api_type, location[0], results)
         metadata_set.append(results)
         media_set.append(results)
 
@@ -485,9 +487,6 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
                 os.makedirs(metadata_directory, exist_ok=True)
                 archive_directory = metadata_directory+api_type
                 export_archive(metadata_set, archive_directory)
-    # if sort_free_paid_posts:
-    #     ofsorter.sorter(user_directory)
-    #     print
     return [media_set, directory]
 
 

@@ -191,6 +191,7 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     # array = [s_array, h_array, p_array, a_array, m_array]
     # array = [p_array]
     # array = [mm_array]
+    # array = [m_array]
     new = dict()
     for xxx in array:
         new["api_message"] = xxx[0]
@@ -315,8 +316,11 @@ def media_scraper(link, session, directory, username, api_type):
 
             new_dict["paid"] = False
             if new_dict["price"]:
-                if media["id"] not in media_api["preview"] and media["canView"]:
+                if api_type in ["Messages"]:
                     new_dict["paid"] = True
+                else:
+                    if media["id"] not in media_api["preview"] and media["canView"]:
+                        new_dict["paid"] = True
             new_dict["directory"] = os.path.join(directory[0][1])
             if sort_free_paid_posts:
                 new_dict["directory"] = os.path.join(directory[1][1])

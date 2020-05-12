@@ -288,7 +288,7 @@ def media_scraper(link, session, directory, username, api_type):
             new_dict = dict()
             new_dict["post_id"] = media_api["id"]
             new_dict["link"] = link
-            new_dict["price"] = media_api["price"]
+            new_dict["price"] = media_api["price"]if "price" in media_api else None
             if date == "-001-11-30T00:00:00+00:00":
                 date_string = master_date
                 date_object = datetime.strptime(

@@ -118,19 +118,22 @@ def format_directory(j_directory, site_name, username, location, api_type):
     directory = j_directory
 
     user_directory = directory+"/"+site_name + "/"+username+"/"
-    metadata_directory = user_directory+api_type+"/Metadata/"
+    metadata_directory = user_directory+"Metadata/"
     directories = []
     count = 0
+    cats = ["","Free", "Paid"]
     if "/sites/" == j_directory:
         user_directory = os.path.dirname(os.path.dirname(
             os.path.realpath(__file__))) + user_directory
         metadata_directory = os.path.dirname(os.path.dirname(
             os.path.realpath(__file__))) + metadata_directory
-        directories.append(
-            [location, user_directory+api_type + "/" + location+"/"])
+        for cat in cats:
+            directories.append(
+                [location, os.path.join(user_directory,api_type, cat,location+"/")])
     else:
-        directories.append(
-            [location, user_directory+api_type + "/" + location+"/"])
+        for cat in cats:
+            directories.append(
+                [location, os.path.join(user_directory,api_type, cat,location+"/")])
         count += 1
     return [user_directory, metadata_directory, directories]
 

@@ -3,15 +3,13 @@ from helpers.main_helper import get_directory, json_request, reformat, format_di
 
 import os
 import json
-from itertools import count, product
-from itertools import chain
+from itertools import chain, product
 import multiprocessing
 from multiprocessing.dummy import Pool as ThreadPool
 from datetime import datetime
-import logging
 import math
-from random import randrange
 from urllib.parse import urlparse
+from itertools import groupby
 
 log_download = setup_logger('downloads', 'downloads.log')
 
@@ -30,10 +28,11 @@ date_format = json_settings["date_format"]
 ignored_keywords = json_settings["ignored_keywords"]
 ignore_unfollowed_accounts = json_settings["ignore_unfollowed_accounts"]
 export_metadata = json_settings["export_metadata"]
+sort_free_paid_posts = json_settings["sort_free_paid_posts"]
 blacklist_name = json_settings["blacklist_name"]
 maximum_length = 255
 maximum_length = int(json_settings["text_length"]
-                  ) if json_settings["text_length"] else maximum_length
+                     ) if json_settings["text_length"] else maximum_length
 
 
 def start_datascraper(session, identifier, site_name, app_token, choice_type=None):
@@ -83,7 +82,7 @@ def start_datascraper(session, identifier, site_name, app_token, choice_type=Non
         item[1].append(username)
         item[1].pop(3)
         api_type = item[2]
-        results = media_scraper(
+        results = prepare_scraper(
             session, site_name, only_links, *item[1], api_type, app_token)
         for result in results[0]:
             if not only_links:
@@ -241,11 +240,9 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     return []
 
 
-def scrape_array(link, session, directory, username, api_type):
+def media_scraper(link, session, directory, username, api_type):
     media_set = [[], []]
-    media_type = directory[1]
-    count = 0
-    found = False
+    media_type = directory[-1]
     y = json_request(session, link)
     if "error" in y:
         return media_set
@@ -290,6 +287,7 @@ def scrape_array(link, session, directory, username, api_type):
             new_dict = dict()
             new_dict["post_id"] = media_api["id"]
             new_dict["link"] = link
+            new_dict["price"] = media_api["price"]
             if date == "-001-11-30T00:00:00+00:00":
                 date_string = master_date
                 date_object = datetime.strptime(
@@ -314,7 +312,16 @@ def scrape_array(link, session, directory, username, api_type):
             ext = ext.__str__().replace(".", "").split('?')[0]
             file_path = reformat(directory[0][1], media_id, file_name,
                                  new_dict["text"], ext, date_object, username, format_path, date_format, maximum_length, maximum_length)
-            new_dict["directory"] = directory[0][1]
+
+            new_dict["paid"] = False
+            if new_dict["price"]:
+                if media["id"] not in media_api["preview"] and media["canView"]:
+                    new_dict["paid"] = True
+            new_dict["directory"] = os.path.join(directory[0][1])
+            if sort_free_paid_posts:
+                new_dict["directory"] = os.path.join(directory[1][1])
+                if new_dict["paid"]:
+                    new_dict["directory"] = os.path.join(directory[2][1])
             new_dict["filename"] = file_path.rsplit('/', 1)[-1]
             new_dict["size"] = size
             if size == 0:
@@ -324,10 +331,12 @@ def scrape_array(link, session, directory, username, api_type):
     return media_set
 
 
-def media_scraper(session, site_name, only_links, link, locations, directory, api_count, username, api_type, app_token):
+def prepare_scraper(session, site_name, only_links, link, locations, directory, api_count, username, api_type, app_token):
     seperator = " | "
+    metadata_directory = ""
     master_set = []
     media_set = []
+    metadata_set = []
     original_link = link
     for location in locations:
         pool = ThreadPool()
@@ -341,7 +350,6 @@ def media_scraper(session, site_name, only_links, link, locations, directory, ap
         metadata_directory = array[1]
         directories = array[2]+[location[1]]
         if not master_set:
-
             if api_type == "Posts":
                 ceil = math.ceil(api_count / 100)
                 a = list(range(ceil))
@@ -444,72 +452,88 @@ def media_scraper(session, site_name, only_links, link, locations, directory, ap
                     link2 = "https://onlyfans.com/api2/v2/stories/highlights/" + \
                         str(item["id"])+"?app-token="+app_token+""
                     master_set.append(link2)
-        x = pool.starmap(scrape_array, product(
+        x = pool.starmap(media_scraper, product(
             master_set, [session], [directories], [username], [api_type]))
         results = format_media_set(location[0], x)
         seen = set()
         results["valid"] = [x for x in results["valid"]
                             if x["filename"] not in seen and not seen.add(x["filename"])]
+        seen = set()
+        location_directories = [x["directory"] for x in results["valid"]
+                                if x["directory"] not in seen and not seen.add(x["directory"])]
         if results["valid"]:
+            results["valid"] = [list(g) for k, g in groupby(
+                results["valid"], key=lambda x: x["post_id"])]
             os.makedirs(directory, exist_ok=True)
-            os.makedirs(location_directory, exist_ok=True)
-            if export_metadata:
-                os.makedirs(metadata_directory, exist_ok=True)
-                archive_directory = metadata_directory+location[0]
-                export_archive(results, archive_directory)
+            for location_directory in location_directories:
+                os.makedirs(location_directory, exist_ok=True)
+        if results["invalid"]:
+            results["invalid"] = [list(g) for k, g in groupby(
+                results["invalid"], key=lambda x: x["post_id"])]
+        metadata_set.append(results)
         media_set.append(results)
 
+    if export_metadata:
+        for item in metadata_set:
+            if item["valid"] or item["invalid"]:
+                os.makedirs(metadata_directory, exist_ok=True)
+                archive_directory = metadata_directory+api_type
+                export_archive(metadata_set, archive_directory)
     return [media_set, directory]
 
 
 def download_media(media_set, session, directory, username, post_count, location):
-    def download(media, session, directory, username):
+    def download(medias, session, directory, username):
         count = 0
         while count < 11:
-            link = media["link"]
-            r = json_request(session, link, "HEAD", True, False)
-            if not r:
-                return False
+            return_bool = True
+            for media in medias:
+                link = media["link"]
+                r = json_request(session, link, "HEAD", True, False)
+                if not r:
+                    return_bool = False
+                    continue
 
-            header = r.headers
-            content_length = int(header["content-length"])
-            date_object = datetime.strptime(
-                media["postedAt"], "%d-%m-%Y %H:%M:%S")
-            og_filename = media["filename"]
-            media["ext"] = os.path.splitext(og_filename)[1]
-            media["ext"] = media["ext"].replace(".", "")
-            download_path = media["directory"]+media["filename"]
-            timestamp = date_object.timestamp()
-            if not overwrite_files:
-                if check_for_dupe_file(download_path, content_length):
-                    return
-            r = json_request(session, link, "GET", True, False)
-            if not r:
-                return False
-            delete = False
-            try:
-                with open(download_path, 'wb') as f:
-                    delete = True
-                    for chunk in r.iter_content(chunk_size=1024):
-                        if chunk:  # filter out keep-alive new chunks
-                            f.write(chunk)
-            except (ConnectionResetError) as e:
-                if delete:
-                    os.unlink(download_path)
-                log_error.exception(e)
-                count += 1
-                continue
-            except Exception as e:
-                if delete:
-                    os.unlink(download_path)
-                log_error.exception(str(e) + "\n Tries: "+str(count))
-                count += 1
-                # input("Enter to continue")
-                continue
-            format_image(download_path, timestamp)
-            log_download.info("Link: {}".format(link))
-            log_download.info("Path: {}".format(download_path))
-            return True
+                header = r.headers
+                content_length = int(header["content-length"])
+                date_object = datetime.strptime(
+                    media["postedAt"], "%d-%m-%Y %H:%M:%S")
+                og_filename = media["filename"]
+                media["ext"] = os.path.splitext(og_filename)[1]
+                media["ext"] = media["ext"].replace(".", "")
+                download_path = media["directory"]+media["filename"]
+                timestamp = date_object.timestamp()
+                if not overwrite_files:
+                    if check_for_dupe_file(download_path, content_length):
+                        return_bool = False
+                r = json_request(session, link, "GET", True, False)
+                if not r:
+                    return_bool = False
+                    continue
+                delete = False
+                try:
+                    with open(download_path, 'wb') as f:
+                        delete = True
+                        for chunk in r.iter_content(chunk_size=1024):
+                            if chunk:  # filter out keep-alive new chunks
+                                f.write(chunk)
+                except (ConnectionResetError) as e:
+                    if delete:
+                        os.unlink(download_path)
+                    log_error.exception(e)
+                    count += 1
+                    continue
+                except Exception as e:
+                    if delete:
+                        os.unlink(download_path)
+                    log_error.exception(str(e) + "\n Tries: "+str(count))
+                    count += 1
+                    # input("Enter to continue")
+                    continue
+                format_image(download_path, timestamp)
+                log_download.info("Link: {}".format(link))
+                log_download.info("Path: {}".format(download_path))
+            return return_bool
     string = "Download Processing\n"
     string += "Name: "+username+" | Directory: " + directory+"\n"
     string += "Downloading "+str(len(media_set))+" "+location+"\n"

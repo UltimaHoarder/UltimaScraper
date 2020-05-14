@@ -317,7 +317,7 @@ def media_scraper(link, session, directory, username, api_type):
 
             new_dict["paid"] = False
             if new_dict["price"]:
-                if api_type in ["Messages"]:
+                if api_type in ["Messages", "Mass Messages"]:
                     new_dict["paid"] = True
                 else:
                     if media["id"] not in media_api["preview"] and media["canView"]:

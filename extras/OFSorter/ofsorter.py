@@ -2,6 +2,7 @@ import os
 import json
 from itertools import chain
 import shutil
+import filecmp
 
 
 def sorter(user_directory, api_type, location, metadata):
@@ -16,6 +17,10 @@ def sorter(user_directory, api_type, location, metadata):
         legacy_filepath = os.path.join(legacy_directory, result["filename"])
         filepath = os.path.join(result["directory"], result["filename"])
         if result["filename"] in legacy_files:
+            if os.path.isfile(filepath):
+                same_file = filecmp.cmp(legacy_filepath,filepath,shallow=False)
+                if same_file:
+                    os.remove(filepath)
             shutil.move(legacy_filepath, filepath)
     if not os.listdir(legacy_directory):
         os.removedirs(legacy_directory)

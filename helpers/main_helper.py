@@ -95,18 +95,19 @@ def export_archive(datas, archive_directory):
             for data in datas:
                 fieldnames = []
                 media_type = data["type"].lower()
-                data["valid"] = list(chain.from_iterable(data["valid"]))
-                if data["valid"]:
-                    fieldnames.extend(data["valid"][0].keys())
-                elif data["invalid"]:
-                    fieldnames.extend(data["invalid"][0].keys())
+                valid = list(chain.from_iterable(data["valid"]))
+                invalid = list(chain.from_iterable(data["invalid"]))
+                if valid:
+                    fieldnames.extend(valid[0].keys())
+                elif invalid:
+                    fieldnames.extend(invalid[0].keys())
                 header = [media_type]+fieldnames
                 if len(fieldnames) > 1:
                     writer = csv.DictWriter(csv_file, fieldnames=header)
                     writer.writeheader()
-                    for item in data["valid"]:
+                    for item in valid:
                         writer.writerow({**{media_type: "valid"}, **item})
-                    for item in data["invalid"]:
+                    for item in invalid:
                         writer.writerow({**{media_type: "invalid"}, **item})
 
 

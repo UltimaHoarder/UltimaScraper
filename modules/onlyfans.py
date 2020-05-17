@@ -30,6 +30,7 @@ date_format = json_settings["date_format"]
 ignored_keywords = json_settings["ignored_keywords"]
 ignore_unfollowed_accounts = json_settings["ignore_unfollowed_accounts"]
 export_metadata = json_settings["export_metadata"]
+delete_legacy_metadata = json_settings["delete_legacy_metadata"]
 sort_free_paid_posts = json_settings["sort_free_paid_posts"]
 blacklist_name = json_settings["blacklist_name"]
 maximum_length = 255
@@ -488,8 +489,9 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
             if item["valid"] or item["invalid"]:
                 legacy_metadata = os.path.join(
                     user_directory, api_type, "Metadata")
-                # if os.path.isdir(legacy_metadata):
-                #     shutil.rmtree(legacy_metadata)
+                if delete_legacy_metadata:
+                    if os.path.isdir(legacy_metadata):
+                        shutil.rmtree(legacy_metadata)
         if metadata_set:
             os.makedirs(metadata_directory, exist_ok=True)
             archive_directory = metadata_directory+api_type

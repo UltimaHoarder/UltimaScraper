@@ -5,6 +5,7 @@ import os
 from os.path import dirname as up
 import platform
 import re
+from itertools import chain
 
 from bs4 import BeautifulSoup
 import requests
@@ -62,7 +63,7 @@ def reformat(directory, media_id, file_name, text, ext, date, username, format_p
         if count_string > maximum_length:
             text_limit = count_string - text_count
             path = path.replace(
-            filtered_text, filtered_text[:-text_limit])
+                filtered_text, filtered_text[:-text_limit])
             directory2 = directory + path
     return directory2
 
@@ -84,26 +85,29 @@ def format_image(directory, timestamp):
         setctime(directory, timestamp)
 
 
-def export_archive(data, archive_directory):
+def export_archive(datas, archive_directory):
     # Not Finished
     if export_type == "json":
         with open(archive_directory+".json", 'w') as outfile:
-            json.dump(data, outfile)
+            json.dump(datas, outfile)
     if export_type == "csv":
         with open(archive_directory+'.csv', mode='w', encoding='utf-8', newline='') as csv_file:
-            fieldnames = []
-            if data["valid"]:
-                fieldnames.extend(data["valid"][0].keys())
-            elif data["invalid"]:
-                fieldnames.extend(data["invalid"][0].keys())
-            header = [""]+fieldnames
-            if len(fieldnames) > 1:
-                writer = csv.DictWriter(csv_file, fieldnames=header)
-                writer.writeheader()
-                for item in data["valid"]:
-                    writer.writerow({**{"": "valid"}, **item})
-                for item in data["invalid"]:
-                    writer.writerow({**{"": "invalid"}, **item})
+            for data in datas:
+                fieldnames = []
+                media_type = data["type"].lower()
+                data["valid"] = list(chain.from_iterable(data["valid"]))
+                if data["valid"]:
+                    fieldnames.extend(data["valid"][0].keys())
+                elif data["invalid"]:
+                    fieldnames.extend(data["invalid"][0].keys())
+                header = [media_type]+fieldnames
+                if len(fieldnames) > 1:
+                    writer = csv.DictWriter(csv_file, fieldnames=header)
+                    writer.writeheader()
+                    for item in data["valid"]:
+                        writer.writerow({**{media_type: "valid"}, **item})
+                    for item in data["invalid"]:
+                        writer.writerow({**{media_type: "invalid"}, **item})
 
 
 def get_directory(directory):
@@ -121,7 +125,7 @@ def format_directory(j_directory, site_name, username, location, api_type):
     metadata_directory = user_directory+"Metadata/"
     directories = []
     count = 0
-    cats = ["","Free", "Paid"]
+    cats = ["", "Free", "Paid"]
     if "/sites/" == j_directory:
         user_directory = os.path.dirname(os.path.dirname(
             os.path.realpath(__file__))) + user_directory
@@ -129,11 +133,11 @@ def format_directory(j_directory, site_name, username, location, api_type):
             os.path.realpath(__file__))) + metadata_directory
         for cat in cats:
             directories.append(
-                [location, os.path.join(user_directory,api_type, cat,location+"/")])
+                [location, os.path.join(user_directory, api_type, cat, location+"/")])
     else:
         for cat in cats:
             directories.append(
-                [location, os.path.join(user_directory,api_type, cat,location+"/")])
+                [location, os.path.join(user_directory, api_type, cat, location+"/")])
         count += 1
     return [user_directory, metadata_directory, directories]
 

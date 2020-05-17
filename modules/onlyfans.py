@@ -11,6 +11,7 @@ import math
 from urllib.parse import urlparse
 from itertools import groupby
 import extras.OFSorter.ofsorter as ofsorter
+import shutil
 
 log_download = setup_logger('downloads', 'downloads.log')
 
@@ -482,11 +483,17 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
         media_set.append(results)
 
     if export_metadata:
+        metadata_set = [x for x in metadata_set if x["valid"] or x["invalid"]]
         for item in metadata_set:
             if item["valid"] or item["invalid"]:
-                os.makedirs(metadata_directory, exist_ok=True)
-                archive_directory = metadata_directory+api_type
-                export_archive(metadata_set, archive_directory)
+                legacy_metadata = os.path.join(
+                    user_directory, api_type, "Metadata")
+                # if os.path.isdir(legacy_metadata):
+                #     shutil.rmtree(legacy_metadata)
+        if metadata_set:
+            os.makedirs(metadata_directory, exist_ok=True)
+            archive_directory = metadata_directory+api_type
+            export_archive(metadata_set, archive_directory)
     return [media_set, directory]
 
 

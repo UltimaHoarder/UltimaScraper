@@ -1,4 +1,5 @@
 import requests
+from bs4 import BeautifulSoup
 from helpers.main_helper import *
 
 import os
@@ -8,30 +9,41 @@ import multiprocessing
 from multiprocessing.dummy import Pool as ThreadPool
 from datetime import datetime
 import re
-import logging
-
-logger = logging.getLogger(__name__)
 
 # Open config.json and fill in OPTIONAL information
-path = os.path.join('.settings', 'config.json')
-json_config = json.load(open(path))
-json_global_settings = json_config["settings"]
-multithreading = json_global_settings["multithreading"]
-json_settings = json_config["supported"]["bbwchan"]["settings"]
-auto_choice = json_settings["auto_choice"]
-j_directory = get_directory(json_settings['directory'])
-format_path = json_settings['file_name_format']
-overwrite_files = json_settings["overwrite_files"]
-date_format = json_settings["date_format"]
-boards = json_settings["boards"]
-ignored_keywords = json_settings["ignored_keywords"]
-maximum_length = 240
-text_length = int(json_settings["text_length"]
-                  ) if json_settings["text_length"] else maximum_length
-if text_length > maximum_length:
-    text_length = maximum_length
+json_global_settings = None
+multithreading = None
+json_settings = None
+auto_choice = None
+j_directory = None
+format_path = None
+overwrite_files = None
+date_format = None
+boards = None
+ignored_keywords = None
+maximum_length = None
 
 max_threads = multiprocessing.cpu_count()
+log_download = setup_logger('downloads', 'downloads.log')
+
+
+def assign_vars(config, site_settings):
+    global json_config, multithreading, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, boards, ignored_keywords, maximum_length
+
+    json_config = config
+    json_global_settings = json_config["settings"]
+    multithreading = json_global_settings["multithreading"]
+    json_settings = site_settings
+    auto_choice = json_settings["auto_choice"]
+    j_directory = get_directory(json_settings['directory'])
+    format_path = json_settings["file_name_format"]
+    overwrite_files = json_settings["overwrite_files"]
+    date_format = json_settings["date_format"]
+    boards = json_settings["boards"]
+    ignored_keywords = json_settings["ignored_keywords"]
+    maximum_length = 255
+    maximum_length = int(json_settings["text_length"]
+                         ) if json_settings["text_length"] else maximum_length
 
 
 def start_datascraper(session, board_name, site_name, link_type, choice_type=None):
@@ -125,7 +137,7 @@ def thread_scraper(thread_id, board_name, session, directory):
             print("Removed From "+location+": ", title)
             return
         else:
-            text = thread_master["subject"][:text_length]
+            text = thread_master["subject"][:maximum_length]
 
     if thread_master["message"]:
         title = thread_master["message"].lower()
@@ -134,12 +146,7 @@ def thread_scraper(thread_id, board_name, session, directory):
             return
         else:
             if not text:
-                text = thread_master["message"][:text_length]
-    text = BeautifulSoup(text, 'html.parser').get_text().replace(
-        "\n", " ").replace(
-        "\r", " ").strip()
-    text = re.sub(r'[\\/*?:"<>|]', '', text)
-    text = re.sub(' {2,}', ' ', text)
+                text = thread_master["message"][:maximum_length]
     thread_master2 = thread_master.copy()
     for key in thread_master2:
         if "posts" != key:
@@ -147,90 +154,105 @@ def thread_scraper(thread_id, board_name, session, directory):
     del thread_master2["posts"]
     thread["download_path"] = ""
     thread["posts"] = [thread_master2]+thread_master["posts"]
+    found = False
+    new_directory = ""
     for post in thread["posts"]:
+        date_object = datetime.strptime(
+            post["creation"], "%Y-%m-%dT%H:%M:%S.%fZ")
+        post["creation"] = date_object.timestamp()
         for media in post["files"]:
             ext = media["mime"].split("/")[1]
             media["ext"] = ext
             filename = os.path.splitext(media["originalName"])[0].strip()
-            media["alt_filename"] = media["path"].rsplit(
-                "a/")[1].rsplit("-")[0][:13]+"."+ext
+            text = clean_text(text)
             new_directory = directory+"/"+text+" - "+thread_id+"/"
             if not text:
                 new_directory = new_directory.replace(" - ", "")
-            date_object = datetime.strptime(
-                post["creation"], "%Y-%m-%dT%H:%M:%S.%fZ")
-            date_string = date_object.replace(tzinfo=None).strftime(
-                "%d-%m-%Y %H:%M:%S")
-            download_path = os.path.dirname(reformat(
-                new_directory, None, filename, text, ext, date_object, post["name"], format_path, date_format, text_length, maximum_length))
-            thread["download_path"] = download_path
-    return thread
+            download_path = reformat(
+                new_directory, None, filename, text, ext, date_object, post["name"], format_path, date_format, maximum_length)
+            media["download_path"] = download_path
+            found = True
+    if found:
+        thread["directory"] = new_directory
+        return thread
 
 
 def download_media(media_set, session, directory, board_name):
     def download(thread, session, directory):
-        directory = thread["download_path"]+"/"
-        valid = False
-        for post in thread["posts"]:
-            name_key = "originalName"
-            for media in post["files"]:
-                filename = re.sub(
-                    r'[\\/*?:"<>|]', '', media[name_key])
-                ext = media["ext"]
-                alt_name = media["alt_filename"]
-                link = "https://bbw-chan.nl" + media["path"]
-                download_path = directory+filename
-                count_string = len(download_path)
-                lp = are_long_paths_enabled()
-                if not lp:
-                    if count_string > maximum_length:
-                        num_sum = count_string - maximum_length
-                        name_key = "alt_filename"
-                        download_path = directory+post[name_key]+"."+ext
+        os.makedirs(directory, exist_ok=True)
+        with open(directory+'archive.json', 'w', encoding='utf-8') as outfile:
+            json.dump(thread, outfile)
+            return_bool = True
+            posts = thread["posts"]
+            for post in posts:
+                for media in post["files"]:
+                    count = 0
+                    while count < 11:
+                        if "download_path" not in media:
+                            continue
+                        link = "https://bbw-chan.nl" + media["path"]
+                        r = json_request(session, link, "HEAD", True, False)
+                        if not r:
+                            return_bool = False
+                            count += 1
+                            continue
 
-                og_filename = os.path.splitext(filename)[0]
-                # Check for dupe here
-                r = session.get(link, stream=True)
-                if r.status_code != 404:
-                    if not os.path.exists(os.path.dirname(download_path)):
-                        os.makedirs(os.path.dirname(download_path))
-                    with open(download_path, 'wb') as f:
-                        for chunk in r.iter_content(chunk_size=1024):
-                            if chunk:  # filter out keep-alive new chunks
-                                f.write(chunk)
-                    logger.info("Link: {}".format(link))
-                    logger.info("Path: {}".format(download_path))
-                    valid = True
-                else:
-                    logger.info("Fail (Link): {}".format(link))
-                    logger.info("Fail (Path): {}".format(download_path))
-        if valid:
-            os.makedirs(directory, exist_ok=True)
-            with open(directory+'archive.json', 'w') as outfile:
-                json.dump(thread, outfile)
-            return thread
-        else:
-            return
-    print("Download Processing")
-    print("Name: "+board_name)
-    print("Directory: " + directory)
-    # print("Downloading "+post_count+" "+location)
-    max_threads = len(media_set)
+                        header = r.headers
+                        content_length = int(header["content-length"])
+                        download_path = media["download_path"]
+                        timestamp = post["creation"]
+                        if not overwrite_files:
+                            if check_for_dupe_file(download_path, content_length):
+                                return_bool = False
+                                break
+                        r = json_request(session, link, "GET", True, False)
+                        if not r:
+                            return_bool = False
+                            count += 1
+                            continue
+                        os.makedirs(thread["directory"], exist_ok=True)
+                        delete = False
+                        try:
+                            with open(download_path, 'wb') as f:
+                                delete = True
+                                for chunk in r.iter_content(chunk_size=1024):
+                                    if chunk:  # filter out keep-alive new chunks
+                                        f.write(chunk)
+                        except (ConnectionResetError) as e:
+                            if delete:
+                                os.unlink(download_path)
+                            log_error.exception(e)
+                            count += 1
+                            continue
+                        except Exception as e:
+                            if delete:
+                                os.unlink(download_path)
+                            log_error.exception(
+                                str(e) + "\n Tries: "+str(count))
+                            count += 1
+                            continue
+                        format_image(download_path, timestamp)
+                        log_download.info("Link: {}".format(link))
+                        log_download.info("Path: {}".format(download_path))
+                        break
+            return return_bool
+    string = "Download Processing\n"
+    string += "Name: "+board_name+"\n"
+    string += "Directory: " + directory+"\n"
+    print(string)
     if multithreading:
-        pool = ThreadPool(max_threads)
+        pool = ThreadPool()
     else:
         pool = ThreadPool(1)
-    session.mount(
-        'https://', requests.adapters.HTTPAdapter(pool_connections=4, pool_maxsize=max_threads))
     pool.starmap(download, product(media_set, [session], [directory]))
 
 
 def create_session():
     session = requests.Session()
     session.mount(
-        'http://', requests.adapters.HTTPAdapter(pool_connections=4, pool_maxsize=16))
+        'http://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
     session.mount(
-        'https://', requests.adapters.HTTPAdapter(pool_connections=4, pool_maxsize=16))
+        'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
     print("Welcome Anon")
     option_string = "board or thread link"
     array = dict()

@@ -16,26 +16,46 @@ import shutil
 log_download = setup_logger('downloads', 'downloads.log')
 
 # Open config.json and fill in OPTIONAL information
-path = os.path.join('.settings', 'config.json')
-json_config = json.load(open(path))
-json_global_settings = json_config["settings"]
-multithreading = json_global_settings["multithreading"]
-json_settings = json_config["supported"]["onlyfans"]["settings"]
-auto_choice = json_settings["auto_choice"]
-j_directory = get_directory(json_settings['directory'])
-format_path = json_settings['file_name_format']
-overwrite_files = json_settings["overwrite_files"]
-proxy = json_global_settings["socks5_proxy"]
-date_format = json_settings["date_format"]
-ignored_keywords = json_settings["ignored_keywords"]
-ignore_unfollowed_accounts = json_settings["ignore_unfollowed_accounts"]
-export_metadata = json_settings["export_metadata"]
-delete_legacy_metadata = json_settings["delete_legacy_metadata"]
-sort_free_paid_posts = json_settings["sort_free_paid_posts"]
-blacklist_name = json_settings["blacklist_name"]
-maximum_length = 255
-maximum_length = int(json_settings["text_length"]
-                     ) if json_settings["text_length"] else maximum_length
+json_config = None
+multithreading = None
+json_settings = None
+auto_choice = None
+j_directory = None
+format_path = None
+overwrite_files = None
+proxy = None
+date_format = None
+ignored_keywords = None
+ignore_unfollowed_accounts = None
+export_metadata = None
+delete_legacy_metadata = None
+sort_free_paid_posts = None
+blacklist_name = None
+maximum_length = None
+
+
+def assign_vars(config, site_settings):
+    global json_config, multithreading, proxy, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_unfollowed_accounts, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length
+
+    json_config = config
+    json_global_settings = json_config["settings"]
+    multithreading = json_global_settings["multithreading"]
+    proxy = json_global_settings["socks5_proxy"]
+    json_settings = site_settings
+    auto_choice = json_settings["auto_choice"]
+    j_directory = get_directory(json_settings['directory'])
+    format_path = json_settings["file_name_format"]
+    overwrite_files = json_settings["overwrite_files"]
+    date_format = json_settings["date_format"]
+    ignored_keywords = json_settings["ignored_keywords"]
+    ignore_unfollowed_accounts = json_settings["ignore_unfollowed_accounts"]
+    export_metadata = json_settings["export_metadata"]
+    delete_legacy_metadata = json_settings["delete_legacy_metadata"]
+    sort_free_paid_posts = json_settings["sort_free_paid_posts"]
+    blacklist_name = json_settings["blacklist_name"]
+    maximum_length = 255
+    maximum_length = int(json_settings["text_length"]
+                         ) if json_settings["text_length"] else maximum_length
 
 
 def start_datascraper(session, identifier, site_name, app_token, choice_type=None):
@@ -195,13 +215,12 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     # array = [p_array]
     # array = [mm_array]
     # array = [m_array]
-    new = dict()
-    for xxx in array:
-        new["api_message"] = xxx[0]
-        new["api_array"] = xxx[1]
-        new["api_type"] = xxx[2]
-        print
-    # array = [mm_array]
+    # new = dict()
+    # for xxx in array:
+    #     new["api_message"] = xxx[0]
+    #     new["api_array"] = xxx[1]
+    #     new["api_type"] = xxx[2]
+    #     print
     if not is_me:
         if len(array) > 3:
             del array[4]
@@ -290,7 +309,7 @@ def media_scraper(link, session, directory, username, api_type):
                     link = media["preview"]
             new_dict = dict()
             new_dict["post_id"] = media_api["id"]
-            new_dict["link"] = link
+            new_dict["links"] = ["link", media["preview"]]
             new_dict["price"] = media_api["price"]if "price" in media_api else None
             if date == "-001-11-30T00:00:00+00:00":
                 date_string = master_date
@@ -308,6 +327,10 @@ def media_scraper(link, session, directory, username, api_type):
             if "text" not in media_api:
                 media_api["text"] = ""
             new_dict["text"] = media_api["text"] if media_api["text"] else ""
+            matches = [s for s in ignored_keywords if s in new_dict["text"]]
+            if matches:
+                print("Matches: ", matches)
+                continue
             new_dict["postedAt"] = date_string
             media_id = media["id"] if "id" in media else None
             media_id = media_id if isinstance(media_id, int) else None
@@ -315,7 +338,7 @@ def media_scraper(link, session, directory, username, api_type):
             file_name, ext = os.path.splitext(file_name)
             ext = ext.__str__().replace(".", "").split('?')[0]
             file_path = reformat(directory[0][1], media_id, file_name,
-                                 new_dict["text"], ext, date_object, username, format_path, date_format, maximum_length, maximum_length)
+                                 new_dict["text"], ext, date_object, username, format_path, date_format, maximum_length)
 
             new_dict["paid"] = False
             if new_dict["price"]:
@@ -501,32 +524,41 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
 
 def download_media(media_set, session, directory, username, post_count, location):
     def download(medias, session, directory, username):
-        count = 0
-        while count < 11:
-            return_bool = True
-            for media in medias:
-                link = media["link"]
-                r = json_request(session, link, "HEAD", True, False)
-                if not r:
-                    return_bool = False
-                    continue
+        return_bool = True
+        for media in medias:
+            count = 0
+            while count < 11:
+                links = media["links"]
 
-                header = r.headers
-                content_length = int(header["content-length"])
+                def choose_link(links):
+                    for link in links:
+                        r = json_request(session, link, "HEAD", True, False)
+                        if not r:
+                            continue
+
+                        header = r.headers
+                        content_length = int(header["content-length"])
+                        if not content_length:
+                            continue
+                        return [link, content_length]
+                result = choose_link(links)
+                if not result:
+                    continue
+                link = result[0]
+                content_length = result[1]
                 date_object = datetime.strptime(
                     media["postedAt"], "%d-%m-%Y %H:%M:%S")
-                og_filename = media["filename"]
-                media["ext"] = os.path.splitext(og_filename)[1]
-                media["ext"] = media["ext"].replace(".", "")
                 download_path = media["directory"]+media["filename"]
                 timestamp = date_object.timestamp()
                 if not overwrite_files:
                     if check_for_dupe_file(download_path, content_length):
                         return_bool = False
-                        continue
+                        count += 1
+                        break
                 r = json_request(session, link, "GET", True, False)
                 if not r:
                     return_bool = False
+                    count += 1
                     continue
                 delete = False
                 try:
@@ -546,11 +578,11 @@ def download_media(media_set, session, directory, username, post_count, location
                         os.unlink(download_path)
                     log_error.exception(str(e) + "\n Tries: "+str(count))
                     count += 1
-                    # input("Enter to continue")
                     continue
                 format_image(download_path, timestamp)
                 log_download.info("Link: {}".format(link))
                 log_download.info("Path: {}".format(download_path))
+                break
             return return_bool
     string = "Download Processing\n"
     string += "Name: "+username+" | Directory: " + directory+"\n"
@@ -573,7 +605,8 @@ def create_session(user_agent, app_token, auth_array):
     try:
         auth_cookies = [
             {'name': 'auth_id', 'value': auth_array["auth_id"]},
-            {'name': 'auth_hash', 'value': auth_array["auth_hash"]}
+            {'name': 'auth_hash', 'value': auth_array["auth_hash"]},
+            {'name': 'fp', 'value': auth_array["fp"]}
         ]
         while auth_count < 3:
             if auth_count == 2:
@@ -602,8 +635,10 @@ def create_session(user_agent, app_token, auth_array):
                         {'name': 'sess', 'value': auth_array["sess"], 'domain': '.onlyfans.com'})
             for auth_cookie in auth_cookies:
                 session.cookies.set(**auth_cookie)
+            
+            max_count = 10
             while count < 11:
-                print("Attempt "+str(count)+"/"+"10")
+                print("Auth Attempt "+str(count)+"/"+str(max_count))
                 link = "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token
                 r = json_request(session, link)
                 count += 1
@@ -611,17 +646,46 @@ def create_session(user_agent, app_token, auth_array):
                     auth_cookies = []
                     continue
                 me_api = r
-                if 'error' in r:
-                    error = r["error"]
-                    error_message = r["error"]["message"]
-                    if error["code"] == 101:
-                        error_message = "Blocked by 2FA."
-                    print(error_message)
-                    if "token" in error_message:
-                        break
-                    continue
-                else:
-                    print("Welcome "+r["name"])
+
+                def resolve_auth(r):
+                    if 'error' in r:
+                        error = r["error"]
+                        error_message = r["error"]["message"]
+                        error_code = error["code"]
+                        if error_code == 0:
+                            print(error_message)
+                        if error_code == 101:
+                            error_message = "Blocked by 2FA."
+                            print(error_message)
+                            if auth_array["support_2fa"]:
+                                link = "https://onlyfans.com/api2/v2/users/otp?app-token="+app_token
+                                count = 1
+                                max_count = 3
+                                while count < max_count+1:
+                                    print("2FA Attempt "+str(count) +
+                                          "/"+str(max_count))
+                                    code = input("Enter 2FA Code\n")
+                                    data = {'code': code, 'rememberMe': True}
+                                    r = json_request(
+                                        session, link, "PUT", data)
+                                    if "error" in r:
+                                        count += 1
+                                    else:
+                                        print("Success")
+                                        return [True, r]
+                        return [False, r["error"]["message"]]
+                if "name" not in r:
+                    result = resolve_auth(r)
+                    if not result[0]:
+                        error_message = result[1]
+                        if "token" in error_message:
+                            break
+                        if "Code wrong" in error_message:
+                            break
+                        continue
+                    else:
+                        continue
+                print("Welcome "+r["name"])
                 option_string = "username or profile link"
                 link = "https://onlyfans.com/api2/v2/subscriptions/count/all?app-token="+app_token
                 r = json_request(session, link)

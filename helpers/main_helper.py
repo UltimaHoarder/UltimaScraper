@@ -14,19 +14,36 @@ path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
 
 # Open config.json and fill in OPTIONAL information
-path = os.path.join('.settings', 'config.json')
-json_config = json.load(open(path))
-json_global_settings = json_config["settings"]
-export_type = json_global_settings["export_type"]
+json_global_settings = None
 os_name = platform.system()
 
 
+def assign_vars(config):
+    global json_global_settings
+
+    json_config = config
+    json_global_settings = json_config["settings"]
+
+def rename_duplicates(seen, filename):
+    filename_lower = filename.lower()
+    if filename_lower not in seen:
+        seen.add(filename_lower)
+    else:
+        count = 1
+        while filename_lower in seen:
+            filename = filename+" ("+str(count)+")"
+            filename_lower = filename.lower()
+            count += 1
+        seen.add(filename_lower)
+    return [seen,filename]
+
+
 def parse_links(site_name, input_link):
-    if site_name in {"onlyfans", "stars_avn"}:
+    if site_name in {"onlyfans", "starsavn"}:
         username = input_link.rsplit('/', 1)[-1]
         return username
 
-    if site_name in {"4chan", "bbwchan"}:
+    if site_name in {"fourchan", "bbwchan"}:
         if "catalog" in input_link:
             input_link = input_link.split("/")[1]
             print(input_link)
@@ -38,17 +55,29 @@ def parse_links(site_name, input_link):
             return input_link
 
 
-def reformat(directory, media_id, file_name, text, ext, date, username, format_path, date_format, text_length, maximum_length):
+def clean_text(string, remove_spaces=False):
+    matches = ["\n", "<br>"]
+    for m in matches:
+        string = string.replace(
+            m, " ").strip()
+    string = ' '.join(string.split())
+    string = BeautifulSoup(string, 'lxml').get_text()
+    SAFE_PTN = "[^0-9a-zA-Z-_.'()]+"
+    string = re.sub(SAFE_PTN, ' ',  string.strip()
+                    ).strip()
+    if remove_spaces:
+        string = string.replace(' ', '_')
+    return string
+
+
+def reformat(directory, media_id, file_name, text, ext, date, username, format_path, date_format, maximum_length):
     media_id = "" if media_id is None else str(media_id)
     has_text = False
     if "{text}" in format_path:
         has_text = True
     path = format_path.replace("{username}", username)
-    text = BeautifulSoup(text, 'lxml').get_text().replace(
-        "\n", " ").strip()
-    SAFE_PTN = '[^0-9a-zA-Z-_.()]+'
-    filtered_text = re.sub(SAFE_PTN, ' ',  text.strip()
-                           ).strip().replace(' ', '_')[:text_length]
+    filtered_text = text[:maximum_length]
+    directory = directory.replace(text, filtered_text)
     path = path.replace("{text}", filtered_text)
     date = date.strftime(date_format)
     path = path.replace("{date}", date)
@@ -87,6 +116,7 @@ def format_image(directory, timestamp):
 
 def export_archive(datas, archive_directory):
     # Not Finished
+    export_type = json_global_settings["export_type"]
     if export_type == "json":
         with open(archive_directory+".json", 'w') as outfile:
             json.dump(datas, outfile)
@@ -119,7 +149,7 @@ def get_directory(directory):
         return os.path.abspath(".sites")
 
 
-def format_directory(j_directory, site_name, username, location, api_type):
+def format_directory(j_directory, site_name, username, location="", api_type=""):
     directory = j_directory
 
     user_directory = directory+"/"+site_name + "/"+username+"/"
@@ -167,14 +197,14 @@ def check_for_dupe_file(download_path, content_length):
     return found
 
 
-def json_request(session, link, method="GET", stream=False, json_format=True):
+def json_request(session, link, method="GET", data="",stream=False, json_format=True):
     count = 0
     while count < 11:
         try:
             headers = session.headers
             if json_format:
                 headers["accept"] = "application/json, text/plain, */*"
-            r = session.request(method, link, stream=stream)
+            r = session.request(method, link, json=data,stream=stream)
             content_type = r.headers['Content-Type']
             if json_format:
                 if "application/json;" not in content_type:
@@ -241,7 +271,7 @@ def setup_logger(name, log_file, level=logging.INFO):
     formatter = logging.Formatter(
         '%(asctime)s %(levelname)s %(name)s %(message)s')
 
-    handler = logging.FileHandler(log_filename, 'w+')
+    handler = logging.FileHandler(log_filename, 'w+', encoding='utf-8')
     handler.setFormatter(formatter)
 
     logger = logging.getLogger(name)

@@ -1,5 +1,5 @@
 import requests
-from helpers.main_helper import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger
+from helpers.main_helper import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger, log_error
 
 import os
 import json
@@ -13,28 +13,44 @@ import math
 from random import randrange
 
 log_download = setup_logger('downloads', 'downloads.log')
-log_error = setup_logger('errors', 'errors.log')
 
 # Open config.json and fill in OPTIONAL information
-path = os.path.join('.settings', 'config.json')
-json_config = json.load(open(path))
-json_global_settings = json_config["settings"]
-multithreading = json_global_settings["multithreading"]
-json_settings = json_config["supported"]["stars_avn"]["settings"]
-auto_choice = json_settings["auto_choice"]
-j_directory = get_directory(json_settings['directory'])
-format_path = json_settings['file_name_format']
-overwrite_files = json_settings["overwrite_files"]
-date_format = json_settings["date_format"]
-ignored_keywords = json_settings["ignored_keywords"]
-ignore_unfollowed_accounts = json_settings["ignore_unfollowed_accounts"]
-export_metadata = json_settings["export_metadata"]
-blacklist_name = json_settings["blacklist_name"]
-maximum_length = 240
-text_length = int(json_settings["text_length"]
-                  ) if json_settings["text_length"] else maximum_length
-if text_length > maximum_length:
-    text_length = maximum_length
+json_config = None
+multithreading = None
+json_settings = None
+auto_choice = None
+j_directory = None
+format_path = None
+overwrite_files = None
+proxy = None
+date_format = None
+ignored_keywords = None
+ignore_unfollowed_accounts = None
+export_metadata = None
+blacklist_name = None
+maximum_length = None
+
+
+def assign_vars(config, site_settings):
+    global json_config, multithreading, proxy, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_unfollowed_accounts, export_metadata, blacklist_name, maximum_length
+
+    json_config = config
+    json_global_settings = json_config["settings"]
+    multithreading = json_global_settings["multithreading"]
+    proxy = json_global_settings["socks5_proxy"]
+    json_settings = site_settings
+    auto_choice = json_settings["auto_choice"]
+    j_directory = get_directory(json_settings['directory'])
+    format_path = json_settings["file_name_format"]
+    overwrite_files = json_settings["overwrite_files"]
+    date_format = json_settings["date_format"]
+    ignored_keywords = json_settings["ignored_keywords"]
+    ignore_unfollowed_accounts = json_settings["ignore_unfollowed_accounts"]
+    export_metadata = json_settings["export_metadata"]
+    blacklist_name = json_settings["blacklist_name"]
+    maximum_length = 255
+    maximum_length = int(json_settings["text_length"]
+                         ) if json_settings["text_length"] else maximum_length
 
 
 def start_datascraper(session, identifier, site_name, app_token, choice_type=None):
@@ -71,7 +87,7 @@ def start_datascraper(session, identifier, site_name, app_token, choice_type=Non
         item[1].append(username)
         item[1].pop(3)
         api_type = item[2]
-        results = media_scraper(
+        results = prepare_scraper(
             session, site_name, only_links, *item[1], api_type, app_token)
         for result in results[0]:
             if not only_links:
@@ -176,12 +192,12 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     m_array = ["You have chosen to scrape {}", [
         message_api, x, *mandatory, post_count], "Messages"]
     array = [s_array, h_array, p_array]
-    new = dict()
-    for xxx in array:
-        new["api_message"] = xxx[0]
-        new["api_array"] = xxx[1]
-        new["api_type"] = xxx[2]
-        print
+    # new = dict()
+    # for xxx in array:
+    #     new["api_message"] = xxx[0]
+    #     new["api_array"] = xxx[1]
+    #     new["api_type"] = xxx[2]
+    #     print
     # array = [mm_array]
     # if not is_me:
     #     del array[4]
@@ -216,7 +232,7 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     return []
 
 
-def media_scraper(session, site_name, only_links, link, locations, directory, api_count, username, api_type, app_token):
+def prepare_scraper(session, site_name, only_links, link, locations, directory, api_count, username, api_type, app_token):
     seperator = " | "
     master_set = []
     media_set = []
@@ -322,7 +338,7 @@ def media_scraper(session, site_name, only_links, link, locations, directory, ap
                     link2 = "https://stars.avn.com/api2/v2/stories/collections/" + \
                         str(item["id"])
                     master_set.append(link2)
-        x = pool.starmap(scrape_array, product(
+        x = pool.starmap(media_scraper, product(
             master_set, [session], [directories], [username], [api_type]))
         results = format_media_set(location[0], x)
         seen = set()
@@ -334,15 +350,15 @@ def media_scraper(session, site_name, only_links, link, locations, directory, ap
             if export_metadata:
                 os.makedirs(metadata_directory, exist_ok=True)
                 archive_directory = metadata_directory+location[0]
-                export_archive(results, archive_directory)
+                export_archive([results], archive_directory)
         media_set.append(results)
 
     return [media_set, directory]
 
 
-def scrape_array(link, session, directory, username, api_type):
+def media_scraper(link, session, directory, username, api_type):
     media_set = [[], []]
-    media_type = directory[1]
+    media_type = directory[-1]
     count = 0
     found = False
     y = json_request(session, link)
@@ -394,7 +410,7 @@ def scrape_array(link, session, directory, username, api_type):
             file_name, ext = os.path.splitext(file_name)
             ext = ext.__str__().replace(".", "").split('?')[0]
             file_path = reformat(directory[0][1], media_id, file_name,
-                                 new_dict["text"], ext, date_object, username, format_path, date_format, text_length, maximum_length)
+                                 new_dict["text"], ext, date_object, username, format_path, date_format, maximum_length)
             new_dict["directory"] = directory[0][1]
             new_dict["filename"] = file_path.rsplit('/', 1)[-1]
             new_dict["size"] = size
@@ -412,7 +428,8 @@ def download_media(media_set, session, directory, username, post_count, location
             link = media["link"]
             r = json_request(session, link, "HEAD", True, False)
             if not r:
-                return False
+                count += 1
+                continue
 
             header = r.headers
             content_length = int(header["content-length"])
@@ -428,7 +445,8 @@ def download_media(media_set, session, directory, username, post_count, location
                     return
             r = json_request(session, link, "GET", True, False)
             if not r:
-                return False
+                count += 1
+                continue
             delete = False
             try:
                 with open(download_path, 'wb') as f:
@@ -447,15 +465,15 @@ def download_media(media_set, session, directory, username, post_count, location
                     os.unlink(download_path)
                 log_error.exception(str(e) + "\n Tries: "+str(count))
                 count += 1
-                # input("Enter to continue")
                 continue
             format_image(download_path, timestamp)
             log_download.info("Link: {}".format(link))
             log_download.info("Path: {}".format(download_path))
             return True
-    print("Download Processing")
-    print("Name: "+username+" | Directory: " + directory)
-    print("Downloading "+str(len(media_set))+" "+location+"\n")
+    string = "Download Processing\n"
+    string += "Name: "+username+" | Directory: " + directory+"\n"
+    string += "Downloading "+str(len(media_set))+" "+location+"\n"
+    print(string)
     if multithreading:
         pool = ThreadPool()
     else:
@@ -472,14 +490,14 @@ def create_session(user_agent, app_token, auth_array):
     try:
         auth_cookies = [
         ]
-        while auth_count < 3:
+        while auth_count < 2:
             if auth_count == 2:
                 auth_version = "(V2)"
                 if auth_array["sess"]:
                     del auth_cookies[2]
                 count = 1
             session = requests.Session()
-            print("Auth "+auth_version+" Attempt "+str(count)+"/"+"10")
+            print("Auth "+auth_version)
             max_threads = multiprocessing.cpu_count()
             session.mount(
                 'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
@@ -497,7 +515,7 @@ def create_session(user_agent, app_token, auth_array):
             for auth_cookie in auth_cookies:
                 session.cookies.set(**auth_cookie)
             while count < 11:
-
+                print("Attempt "+str(count)+"/"+"10")
                 link = "https://stars.avn.com/api2/v2/users/me"
                 r = json_request(session, link)
                 count += 1

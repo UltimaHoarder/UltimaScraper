@@ -309,7 +309,7 @@ def media_scraper(link, session, directory, username, api_type):
                     link = media["preview"]
             new_dict = dict()
             new_dict["post_id"] = media_api["id"]
-            new_dict["links"] = ["link", media["preview"]]
+            new_dict["links"] = [link, media["preview"]]
             new_dict["price"] = media_api["price"]if "price" in media_api else None
             if date == "-001-11-30T00:00:00+00:00":
                 date_string = master_date
@@ -530,7 +530,7 @@ def download_media(media_set, session, directory, username, post_count, location
             while count < 11:
                 links = media["links"]
 
-                def choose_link(links):
+                def choose_link(session, links):
                     for link in links:
                         r = json_request(session, link, "HEAD", True, False)
                         if not r:
@@ -541,7 +541,7 @@ def download_media(media_set, session, directory, username, post_count, location
                         if not content_length:
                             continue
                         return [link, content_length]
-                result = choose_link(links)
+                result = choose_link(session, links)
                 if not result:
                     continue
                 link = result[0]
@@ -635,7 +635,7 @@ def create_session(user_agent, app_token, auth_array):
                         {'name': 'sess', 'value': auth_array["sess"], 'domain': '.onlyfans.com'})
             for auth_cookie in auth_cookies:
                 session.cookies.set(**auth_cookie)
-            
+
             max_count = 10
             while count < 11:
                 print("Auth Attempt "+str(count)+"/"+str(max_count))
@@ -667,7 +667,7 @@ def create_session(user_agent, app_token, auth_array):
                                     code = input("Enter 2FA Code\n")
                                     data = {'code': code, 'rememberMe': True}
                                     r = json_request(
-                                        session, link, "PUT", data)
+                                        session, link, "PUT", data=data)
                                     if "error" in r:
                                         count += 1
                                     else:

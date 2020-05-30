@@ -524,9 +524,9 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
 
 def download_media(media_set, session, directory, username, post_count, location):
     def download(medias, session, directory, username):
-        return_bool = True
         for media in medias:
             count = 0
+            return_bool = True
             while count < 11:
                 links = media["links"]
 
@@ -583,7 +583,7 @@ def download_media(media_set, session, directory, username, post_count, location
                 log_download.info("Link: {}".format(link))
                 log_download.info("Path: {}".format(download_path))
                 break
-            return return_bool
+        return return_bool
     string = "Download Processing\n"
     string += "Name: "+username+" | Directory: " + directory+"\n"
     string += "Downloading "+str(len(media_set))+" "+location+"\n"

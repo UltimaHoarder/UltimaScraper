@@ -115,7 +115,7 @@ def start_datascraper(session, identifier, site_name, app_token, choice_type=Non
                 directory = results[1]
                 location = result["type"]
                 prep_download.append(
-                    [media_set["valid"], session, directory, username, post_count, location])
+                    [media_set["valid"], session, directory, username, post_count, location,api_type])
     # When profile is done scraping, this function will return True
     print("Scrape Completed"+"\n")
     return [True, prep_download]
@@ -172,8 +172,8 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     post_count = post_counts[0]
     archived_count = post_counts[1]
     media_counts = post_counts[2]
-    x = ["Images", "Videos", "Audios"]
-    x = dict(zip(x, media_counts))
+    media_types = ["Images", "Videos", "Audios"]
+    x = dict(zip(media_types, media_counts))
     x = [k for k, v in x.items() if v != 0]
     if auto_choice:
         input_choice = auto_choice
@@ -205,14 +205,15 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     p_array = ["You have chosen to scrape {}", [
         post_api, x, *mandatory, post_count], "Posts"]
     mm_array = ["You have chosen to scrape {}", [
-        mass_messages_api, x, *mandatory, post_count], "Mass Messages"]
+        mass_messages_api, media_types, *mandatory, post_count], "Mass Messages"]
     m_array = ["You have chosen to scrape {}", [
-        message_api, x, *mandatory, post_count], "Messages"]
+        message_api, media_types, *mandatory, post_count], "Messages"]
     a_array = ["You have chosen to scrape {}", [
-        archived_api, x, *mandatory, archived_count], "Archived"]
+        archived_api, media_types, *mandatory, archived_count], "Archived"]
     array = [s_array, h_array, p_array, a_array, mm_array, m_array]
     # array = [s_array, h_array, p_array, a_array, m_array]
     # array = [p_array]
+    # array = [a_array]
     # array = [mm_array]
     # array = [m_array]
     # new = dict()
@@ -227,15 +228,15 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     valid_input = False
     if input_choice == "a":
         valid_input = True
-        a = []
-        for z in x:
-            if z == "Images":
-                a.append([z, [y[0]]])
-            if z == "Videos":
-                a.append([z, y[1:4]])
-            if z == "Audios":
-                a.append([z, [y[4]]])
         for item in array:
+            a = []
+            for z in item[1][1]:
+                if z == "Images":
+                    a.append([z, [y[0]]])
+                if z == "Videos":
+                    a.append([z, y[1:4]])
+                if z == "Audios":
+                    a.append([z, [y[4]]])
             item[0] = array[0][0].format("all")
             item[1][1] = a
     if input_choice == "b":
@@ -429,7 +430,6 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
                 max_threads = multiprocessing.cpu_count()
                 offset_count = 0
                 offset_count2 = max_threads
-                # offset_count2 = 2
                 while True:
                     def process_messages(link, session):
                         y = json_request(session, link)
@@ -522,11 +522,11 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
     return [media_set, directory]
 
 
-def download_media(media_set, session, directory, username, post_count, location):
+def download_media(media_set, session, directory, username, post_count, location, api_type):
     def download(medias, session, directory, username):
+        return_bool = True
         for media in medias:
             count = 0
-            return_bool = True
             while count < 11:
                 links = media["links"]
 
@@ -585,7 +585,7 @@ def download_media(media_set, session, directory, username, post_count, location
                 break
         return return_bool
     string = "Download Processing\n"
-    string += "Name: "+username+" | Directory: " + directory+"\n"
+    string += "Name: "+username+" | Type: "+api_type+" | Directory: " + directory+"\n"
     string += "Downloading "+str(len(media_set))+" "+location+"\n"
     print(string)
     if multithreading:

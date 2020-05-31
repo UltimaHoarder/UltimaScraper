@@ -20,9 +20,10 @@ class start(object):
 
             class OnlyFans:
                 def __init__(self, module):
-                    self.auth = module.get('auth', self.Auth())
-                    self.settings = module.get('settings', self.Settings())
-                    self.extra_auth_settings = module.get('extra_auth_settings', self.ExtraAuthSettings())
+                    self.auth = self.Auth(module.get('auth', {}))
+                    self.settings = self.Settings(module.get('settings', {}))
+                    self.extra_auth_settings = self.ExtraAuthSettings(
+                        module.get('extra_auth_settings', {}))
 
                 class Auth:
                     def __init__(self, option={}):
@@ -46,7 +47,7 @@ class start(object):
                         self.directory = option.get('directory', "")
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
-                        self.text_length = option.get('text_length', "")
+                        self.text_length = option.get('text_length', "255")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
                         self.date_format = option.get(
@@ -72,9 +73,10 @@ class start(object):
 
             class StarsAvn:
                 def __init__(self, module):
-                    self.auth = module.get('auth', self.Auth())
-                    self.settings = module.get('settings', self.Settings())
-                    self.extra_auth_settings = module.get('extra_auth_settings', self.ExtraAuthSettings())
+                    self.auth = self.Auth(module.get('auth', {}))
+                    self.settings = self.Settings(module.get('settings', {}))
+                    self.extra_auth_settings = self.ExtraAuthSettings(
+                        module.get('extra_auth_settings', {}))
 
                 class Auth:
                     def __init__(self, option={}):
@@ -92,7 +94,7 @@ class start(object):
                         self.directory = option.get('directory', "")
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
-                        self.text_length = option.get('text_length', "")
+                        self.text_length = option.get('text_length', "255")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
                         self.date_format = option.get(
@@ -114,8 +116,8 @@ class start(object):
 
             class FourChan:
                 def __init__(self, module):
-                    self.auth = module.get('auth', self.Auth())
-                    self.settings = module.get('settings', self.Settings())
+                    self.auth = self.Auth(module.get('auth', {}))
+                    self.settings = self.Settings(module.get('settings', {}))
 
                 class Auth:
                     def __init__(self, option={}):
@@ -129,7 +131,7 @@ class start(object):
                         self.directory = option.get('directory', "")
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
-                        self.text_length = option.get('text_length', "")
+                        self.text_length = option.get('text_length', "255")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
                         self.date_format = option.get(
@@ -141,8 +143,8 @@ class start(object):
 
             class BBWChan:
                 def __init__(self, module):
-                    self.auth = module.get('auth', self.Auth())
-                    self.settings = module.get('settings', self.Settings())
+                    self.auth = self.Auth(module.get('auth', {}))
+                    self.settings = self.Settings(module.get('settings', {}))
 
                 class Auth:
                     def __init__(self, option={}):
@@ -156,7 +158,7 @@ class start(object):
                         self.directory = option.get('directory', "")
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
-                        self.text_length = option.get('text_length', "")
+                        self.text_length = option.get('text_length', "255")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
                         self.date_format = option.get(

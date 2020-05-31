@@ -1,5 +1,5 @@
 import requests
-from helpers.main_helper import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger, log_error
+from helpers.main_helper import clean_text, get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger, log_error
 
 import os
 import json
@@ -115,7 +115,7 @@ def start_datascraper(session, identifier, site_name, app_token, choice_type=Non
                 directory = results[1]
                 location = result["type"]
                 prep_download.append(
-                    [media_set["valid"], session, directory, username, post_count, location,api_type])
+                    [media_set["valid"], session, directory, username, post_count, location, api_type])
     # When profile is done scraping, this function will return True
     print("Scrape Completed"+"\n")
     return [True, prep_download]
@@ -325,13 +325,14 @@ def media_scraper(link, session, directory, username, api_type):
             if media["type"] not in media_type:
                 x += 1
                 continue
-            if "text" not in media_api:
-                media_api["text"] = ""
-            new_dict["text"] = media_api["text"] if media_api["text"] else ""
-            matches = [s for s in ignored_keywords if s in new_dict["text"]]
+            if "rawText" not in media_api:
+                media_api["rawText"] = ""
+            text = media_api["rawText"] if media_api["rawText"] else ""
+            matches = [s for s in ignored_keywords if s in text]
             if matches:
                 print("Matches: ", matches)
                 continue
+            text = clean_text(text)
             new_dict["postedAt"] = date_string
             media_id = media["id"] if "id" in media else None
             media_id = media_id if isinstance(media_id, int) else None
@@ -339,8 +340,8 @@ def media_scraper(link, session, directory, username, api_type):
             file_name, ext = os.path.splitext(file_name)
             ext = ext.__str__().replace(".", "").split('?')[0]
             file_path = reformat(directory[0][1], media_id, file_name,
-                                 new_dict["text"], ext, date_object, username, format_path, date_format, maximum_length)
-
+                                 text, ext, date_object, username, format_path, date_format, maximum_length)
+            new_dict["text"] = text
             new_dict["paid"] = False
             if new_dict["price"]:
                 if api_type in ["Messages", "Mass Messages"]:
@@ -585,7 +586,8 @@ def download_media(media_set, session, directory, username, post_count, location
                 break
         return return_bool
     string = "Download Processing\n"
-    string += "Name: "+username+" | Type: "+api_type+" | Directory: " + directory+"\n"
+    string += "Name: "+username+" | Type: " + \
+        api_type+" | Directory: " + directory+"\n"
     string += "Downloading "+str(len(media_set))+" "+location+"\n"
     print(string)
     if multithreading:

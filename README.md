@@ -60,15 +60,15 @@ file_name_format:
 
     Default = "{file_name}.{ext}"
 
+    {id} = The media's ID (onlyfans-specific) [UNIQUE]
+    
+    {file_name} = The media's file name [UNIQUE]
+    
     {username} = The account's username
 
     {date} = The post's date
-
-    {id} = The media's ID (onlyfans-specific)
     
     {text} = The media's text (You will get errors; don't use this)
-
-    {file_name} = The media's file name
 
     {ext} = The media's file extension
 
@@ -79,7 +79,7 @@ text_length:
 
     Default = ""
     Ideal = "50"
-    Max = "240"
+    Max = "255"
 
     When you use {text} in file_name_format, a limit of how many characters can be set by inputting a number.
     
@@ -214,25 +214,6 @@ ignore_unfollowed_accounts:
 -m
 
     The script will download metadata files only.
-
-# API
-
-You can import the following functions from modules.onlyfans
-These functions will go through various changes, so each commit may break your code.
-
-create_session(user_agent, auth_id, auth_hash, app_token)
-    
-    This function will try to create and return a authenticated session along with your subscriber count.
-    
-get_subscriptions(session, app_token, subscriber_count)
-
-    This function will return an array of all the accounts you're subscribed too.
-
-
-start_datascraper(session, app_token, username)
-
-    This function will scrape the username/link you pass.
-    The function will return true if scrape has finished and false if something went wrong.
 
 # FAQ
 Before troubleshooting, make sure you're using Python 3.8.

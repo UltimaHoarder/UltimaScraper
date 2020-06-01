@@ -598,7 +598,21 @@ def download_media(media_set, session, directory, username, post_count, location
         media_set, [session], [directory], [username]))
 
 
-def create_session(user_agent, app_token, auth_array):
+def create_session():
+    max_threads = multiprocessing.cpu_count()
+    session = requests.Session()
+    proxies = {'http': 'socks5://'+proxy,
+               'https': 'socks5://'+proxy}
+    if proxy:
+        session.proxies = proxies
+    session.mount(
+        'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+    ip = session.get('https://checkip.amazonaws.com').text.strip()
+    print("Session IP: "+ip)
+    return session
+
+
+def create_auth(session, user_agent, app_token, auth_array):
     me_api = []
     auth_count = 1
     auth_version = "(V1)"
@@ -617,13 +631,6 @@ def create_session(user_agent, app_token, auth_array):
                     del auth_cookies[2]
                 count = 1
             print("Auth "+auth_version)
-            session = requests.Session()
-            proxies = {'http': 'socks5://'+proxy,
-                       'https': 'socks5://'+proxy}
-            if proxy:
-                session.proxies = proxies
-            session.mount(
-                'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
             session.headers = {
                 'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
             if auth_array["sess"]:

@@ -107,7 +107,8 @@ def start_datascraper():
                         'user_agent'] else json_auth['user_agent']
 
                     x = onlyfans
-                    session = x.create_session(
+                    session = x.create_session()
+                    session = x.create_auth(session,
                         user_agent, app_token, json_auth)
                     session_array.append(session)
                     if not session["session"]:

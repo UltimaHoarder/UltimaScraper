@@ -302,15 +302,21 @@ def media_scraper(link, session, directory, username, api_type):
 
             url = urlparse(link)
             subdomain = url.hostname.split('.')[0]
+            preview_link = media["preview"]
             if any(subdomain in nm for nm in matches):
                 subdomain = url.hostname.split('.')[1]
                 if "upload" in subdomain:
                     continue
                 if "convert" in subdomain:
-                    link = media["preview"]
+                    link = preview_link
+            rules = [link == "",
+                    preview_link == ""]
+            if all(rules):
+                continue
             new_dict = dict()
             new_dict["post_id"] = media_api["id"]
-            new_dict["links"] = [link, media["preview"]]
+            new_dict["media_id"] = media["id"]
+            new_dict["links"] = [link, preview_link]
             new_dict["price"] = media_api["price"]if "price" in media_api else None
             if date == "-001-11-30T00:00:00+00:00":
                 date_string = master_date
@@ -334,12 +340,12 @@ def media_scraper(link, session, directory, username, api_type):
                 continue
             text = clean_text(text)
             new_dict["postedAt"] = date_string
-            media_id = media["id"] if "id" in media else None
-            media_id = media_id if isinstance(media_id, int) else None
+            post_id = new_dict["post_id"]
+            media_id = new_dict["media_id"]
             file_name = link.rsplit('/', 1)[-1]
             file_name, ext = os.path.splitext(file_name)
             ext = ext.__str__().replace(".", "").split('?')[0]
-            file_path = reformat(directory[0][1], media_id, file_name,
+            file_path = reformat(directory[0][1], post_id, media_id, file_name,
                                  text, ext, date_object, username, format_path, date_format, maximum_length)
             new_dict["text"] = text
             new_dict["paid"] = False

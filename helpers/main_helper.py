@@ -24,6 +24,7 @@ def assign_vars(config):
     json_config = config
     json_global_settings = json_config["settings"]
 
+
 def rename_duplicates(seen, filename):
     filename_lower = filename.lower()
     if filename_lower not in seen:
@@ -35,7 +36,7 @@ def rename_duplicates(seen, filename):
             filename_lower = filename.lower()
             count += 1
         seen.add(filename_lower)
-    return [seen,filename]
+    return [seen, filename]
 
 
 def parse_links(site_name, input_link):
@@ -70,18 +71,20 @@ def clean_text(string, remove_spaces=False):
     return string
 
 
-def reformat(directory, media_id, file_name, text, ext, date, username, format_path, date_format, maximum_length):
+def reformat(directory, post_id,media_id, file_name, text, ext, date, username, format_path, date_format, maximum_length):
+    post_id = "" if post_id is None else str(post_id)
     media_id = "" if media_id is None else str(media_id)
     has_text = False
     if "{text}" in format_path:
         has_text = True
-    path = format_path.replace("{username}", username)
+    path = format_path.replace("{post_id}", post_id)
+    path = path.replace("{media_id}", media_id)
+    path = path.replace("{username}", username)
     filtered_text = text[:maximum_length]
     directory = directory.replace(text, filtered_text)
     path = path.replace("{text}", filtered_text)
     date = date.strftime(date_format)
     path = path.replace("{date}", date)
-    path = path.replace("{id}", media_id)
     path = path.replace("{file_name}", file_name)
     path = path.replace("{ext}", ext)
     directory2 = directory + path
@@ -205,9 +208,9 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
             if json_format:
                 headers["accept"] = "application/json, text/plain, */*"
             if data:
-                r = session.request(method, link, json=data,stream=stream)
+                r = session.request(method, link, json=data, stream=stream)
             else:
-                r = session.request(method, link,stream=stream)
+                r = session.request(method, link, stream=stream)
             content_type = r.headers['Content-Type']
             if json_format:
                 if "application/json;" not in content_type:

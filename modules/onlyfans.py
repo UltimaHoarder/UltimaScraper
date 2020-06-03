@@ -440,7 +440,7 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
                 while True:
                     def process_messages(link, session):
                         y = json_request(session, link)
-                        if y:
+                        if y and "error" not in y:
                             return y
                         else:
                             return []

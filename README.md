@@ -232,4 +232,12 @@ I'm getting authed into the wrong account
 
 I'm using Linux OS and something isn't working.
 
-    Script was built on Windows 10. If you're using Linux you can still submit an issue and I'll try my best to fix it. 
+    Script was built on Windows 10. If you're using Linux you can still submit an issue and I'll try my best to fix it.
+    
+Do OnlyFans or OnlyFans models know I'm using this script?
+
+    No, but there is identifiable information in the metadata folder which contains your IP address, so don't share it unless you're using a proxy/vpn or just don't care.
+    
+Do you collect session information?
+
+    No. The code is on Github which allows you to audit the codebase yourself. You can use wireshark or any other network analysis program to verify the outgoing connections are respective to the modules you chose.

@@ -146,6 +146,7 @@ def export_archive(datas, archive_directory):
 
 def get_directory(directory):
     if directory:
+        directory = os.path.expanduser(directory)
         os.makedirs(directory, exist_ok=True)
         return directory
     else:

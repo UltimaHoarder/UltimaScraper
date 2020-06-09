@@ -122,7 +122,7 @@ def export_archive(datas, archive_directory):
     export_type = json_global_settings["export_type"]
     if export_type == "json":
         with open(archive_directory+".json", 'w') as outfile:
-            json.dump(datas, outfile)
+            json.dump(datas, outfile, indent=4)
     if export_type == "csv":
         with open(archive_directory+'.csv', mode='w', encoding='utf-8', newline='') as csv_file:
             for data in datas:

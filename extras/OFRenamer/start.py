@@ -108,7 +108,7 @@ if __name__ == "__main__":
     match = ["All", "OnlyFans", "StarsAVN", "4Chan", "BBWChan"]
     choices = list(zip(choices, match))
     x = 0
-    # x = int(input())
+    x = int(input())
     if x == 0:
         del choices[0]
     else:

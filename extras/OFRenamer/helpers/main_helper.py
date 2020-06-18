@@ -1,4 +1,5 @@
 import csv
+from genericpath import exists
 import json
 import logging
 import os
@@ -6,13 +7,13 @@ from os.path import dirname as up
 import platform
 import re
 from itertools import chain
+import shutil
 
 from bs4 import BeautifulSoup
 import requests
 import classes.make_config as make_config
 import copy
 from datetime import datetime
-import extras.OFRenamer.start as ofrenamer
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
@@ -90,39 +91,6 @@ def format_image(directory, timestamp):
         from win32_setctime import setctime
         setctime(directory, timestamp)
     os.utime(directory, (timestamp, timestamp))
-
-
-def export_archive(datas, archive_path, json_settings):
-    # Not Finished
-    export_type = json_global_settings["export_type"]
-    if export_type == "json":
-        archive_path = os.path.join(archive_path+".json")
-        if os.path.exists(archive_path):
-            datas2 = ofrenamer.start(archive_path, json_settings)
-            if datas == datas2:
-                return
-        with open(archive_path, 'w') as outfile:
-            json.dump(datas, outfile)
-    if export_type == "csv":
-        archive_path = os.path.join(archive_path+".csv")
-        with open(archive_path, mode='w', encoding='utf-8', newline='') as csv_file:
-            for data in datas:
-                fieldnames = []
-                media_type = data["type"].lower()
-                valid = list(chain.from_iterable(data["valid"]))
-                invalid = list(chain.from_iterable(data["invalid"]))
-                if valid:
-                    fieldnames.extend(valid[0].keys())
-                elif invalid:
-                    fieldnames.extend(invalid[0].keys())
-                header = [media_type]+fieldnames
-                if len(fieldnames) > 1:
-                    writer = csv.DictWriter(csv_file, fieldnames=header)
-                    writer.writeheader()
-                    for item in valid:
-                        writer.writerow({**{media_type: "valid"}, **item})
-                    for item in invalid:
-                        writer.writerow({**{media_type: "invalid"}, **item})
 
 
 def format_path(j_directory, site_name):
@@ -317,11 +285,17 @@ def setup_logger(name, log_file, level=logging.INFO):
 
     return logger
 
+def metadata_fixer(directory):
+    archive_file = os.path.join(directory,"archive.json")
+    metadata_file = os.path.join(directory,"Metadata")
+    if os.path.exists(archive_file):
+        os.makedirs(metadata_file,exist_ok=True)
+        new = os.path.join(metadata_file,"Archive.json")
+        shutil.move(archive_file,new)
 
 def update_metadata(path, metadata):
     with open(path, 'w') as outfile:
         json.dump(metadata, outfile)
-    print
 
 
 log_error = setup_logger('errors', 'errors.log')

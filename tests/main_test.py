@@ -17,15 +17,24 @@ def check_config():
     if os.path.isfile(path):
         json_config = json.load(open(path))
         for key, value in json_config["supported"].items():
-            file_name_format = value["settings"]["file_name_format"]
+            settings = value["settings"]
+            if "directory" in settings:
+                if not settings["directory"]:
+                    settings["directory"] = "{site_name}"
+                settings["download_path"] = settings["directory"]
+                del settings["directory"]
+            file_name_format = settings["file_name_format"]
             top = ["{id}"]
             bottom = ["{media_id}"]
             z = list(zip(top, bottom))
             for x in z:
                 if x[0] in file_name_format:
-                    value["settings"]["file_name_format"] = file_name_format.replace(
+                    settings["file_name_format"] = file_name_format.replace(
                         x[0], x[1])
-                    new = value["settings"]["file_name_format"]
+                    new = settings["file_name_format"]
                     print("Changed "+file_name_format+" to "+new + " for "+key)
                     print
-        main_helper.update_config(json_config)
+        json_config2 = json.load(open(path))
+        if json_config != json_config2:
+            main_helper.update_config(json_config)
+            input("The .settings\\config.json file has been updated. Fill in whatever you need to fill in and then press enter when done.\n")

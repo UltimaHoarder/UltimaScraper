@@ -1,5 +1,6 @@
 import requests
 from bs4 import BeautifulSoup
+from requests.adapters import HTTPAdapter
 from helpers.main_helper import *
 
 import os
@@ -11,6 +12,7 @@ from datetime import datetime
 import re
 
 # Open config.json and fill in OPTIONAL information
+json_config = None
 json_global_settings = None
 multithreading = None
 json_settings = None
@@ -27,7 +29,7 @@ max_threads = multiprocessing.cpu_count()
 log_download = setup_logger('downloads', 'downloads.log')
 
 
-def assign_vars(config, site_settings):
+def assign_vars(config, site_settings, site_name):
     global json_config, multithreading, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, boards, ignored_keywords, maximum_length
 
     json_config = config
@@ -35,7 +37,7 @@ def assign_vars(config, site_settings):
     multithreading = json_global_settings["multithreading"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
-    j_directory = get_directory(json_settings['directory'])
+    j_directory = get_directory(json_settings['download_path'], site_name)
     format_path = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
@@ -157,15 +159,15 @@ def thread_scraper(thread_id, board_name, session, directory):
                 filename = str(post["no"])
             result = rename_duplicates(seen, filename)
             seen = result[0]
-            filename = result[1]
+            file_name = result[1]
             text = clean_text(text)
             new_directory = directory+"/"+text+" - "+thread_id+"/"
             if not text:
                 new_directory = new_directory.replace(" - ", "")
             date_object = datetime.fromtimestamp(post["time"])
-            download_path = reformat(
-                new_directory, None, filename, text, ext, date_object, post["name"], format_path, date_format, maximum_length)
-            post["download_path"] = download_path
+            file_path = reformat(new_directory, None, None, file_name,
+                                 text, ext, date_object, post["name"], format_path, date_format, maximum_length)
+            post["download_path"] = file_path
             found = True
     if found:
         thread["directory"] = new_directory
@@ -175,8 +177,11 @@ def thread_scraper(thread_id, board_name, session, directory):
 def download_media(media_set, session, directory, board_name):
     def download(thread, session, directory):
         thread_directory = thread["directory"]
-        os.makedirs(thread_directory, exist_ok=True)
-        with open(os.path.join(thread_directory, 'archive.json'), 'w') as outfile:
+        metadata_directory = os.path.join(
+            thread_directory, "Metadata")
+        os.makedirs(metadata_directory, exist_ok=True)
+        metadata_filepath = os.path.join(metadata_directory, "Posts.json")
+        with open(os.path.join(metadata_filepath), 'w') as outfile:
             json.dump(thread, outfile)
         return_bool = True
         medias = thread["posts"]
@@ -246,9 +251,9 @@ def download_media(media_set, session, directory, board_name):
 def create_session():
     session = requests.Session()
     session.mount(
-        'http://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+        'http://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
     session.mount(
-        'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+        'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
     print("Welcome Anon")
     option_string = "board or thread link"
     array = dict()

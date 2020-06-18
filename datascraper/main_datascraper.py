@@ -5,7 +5,6 @@ import os
 import time
 import timeit
 from argparse import ArgumentParser
-import copy
 
 import helpers.main_helper as main_helper
 from helpers.main_helper import update_config
@@ -13,7 +12,6 @@ import modules.bbwchan as bbwchan
 import modules.fourchan as fourchan
 import modules.onlyfans as onlyfans
 import modules.starsavn as starsavn
-import classes.make_config as make_config
 
 
 def start_datascraper():
@@ -30,20 +28,9 @@ def start_datascraper():
         '%(asctime)s %(levelname)s %(name)s %(message)s')
     console.setFormatter(formatter)
     logging.getLogger("").addHandler(console)
-    # Open config.json and fill in MANDATORY information for the script to work
-    path = os.path.join('.settings', 'config.json')
-    if os.path.isfile(path):
-        json_config = json.load(open(path))
-    else:
-        json_config = {}
-    json_config2 = json.loads(json.dumps(make_config.start(
-        **json_config), default=lambda o: o.__dict__))
-    if json_config != json_config2:
-        update_config(json_config2)
-    if not json_config:
-        input("The .settings\\config.json file has been created. Fill in whatever you need to fill in and then press enter when done.\n")
-        json_config2 = json.load(open(path))
-    json_config = copy.deepcopy(json_config2)
+    # root = os.getcwd()
+    config_path = os.path.join('.settings', 'config.json')
+    json_config, json_config2 = main_helper.get_config(config_path)
     json_settings = json_config["settings"]
     json_sites = json_config["supported"]
     infinite_loop = json_settings["infinite_loop"]
@@ -99,7 +86,7 @@ def start_datascraper():
                 site_name = "OnlyFans"
                 subscription_array = []
                 auth_count = -1
-                x.assign_vars(json_config, json_site_settings)
+                x.assign_vars(json_config, json_site_settings,site_name)
                 for json_auth in json_auth_array:
                     auth_count += 1
                     app_token = json_auth['app_token']
@@ -109,12 +96,14 @@ def start_datascraper():
                     x = onlyfans
                     session = x.create_session()
                     session = x.create_auth(session,
-                        user_agent, app_token, json_auth)
+                                            user_agent, app_token, json_auth)
                     session_array.append(session)
                     if not session["session"]:
                         continue
                     cookies = session["session"].cookies.get_dict()
-                    json_auth['auth_id'] = cookies["auth_id"]
+                    auth_id = cookies["auth_id"]
+                    json_auth['auth_id'] = auth_id
+                    json_auth['auth_uniq_'] = cookies["auth_uniq_"+auth_id]
                     json_auth['auth_hash'] = cookies["auth_hash"]
                     json_auth['sess'] = cookies["sess"]
                     json_auth['fp'] = cookies["fp"]
@@ -132,7 +121,7 @@ def start_datascraper():
                 subscription_array = []
                 auth_count = -1
                 x = starsavn
-                x.assign_vars(json_config, json_site_settings)
+                x.assign_vars(json_config, json_site_settings,site_name)
                 for json_auth in json_auth_array:
                     auth_count += 1
                     user_agent = global_user_agent if not json_auth[
@@ -141,8 +130,9 @@ def start_datascraper():
 
                     auth_array = dict()
                     auth_array["sess"] = sess
-                    session = x.create_session(
-                        user_agent, app_token, auth_array)
+                    session = x.create_session()
+                    session = x.create_auth(session,
+                                            user_agent, app_token, json_auth)
                     session_array.append(session)
                     if not session["session"]:
                         continue
@@ -155,14 +145,14 @@ def start_datascraper():
             elif site_name == "fourchan":
                 x = fourchan
                 site_name = "4Chan"
-                x.assign_vars(json_config, json_site_settings)
+                x.assign_vars(json_config, json_site_settings,site_name)
                 session_array = [x.create_session()]
                 array = x.get_subscriptions()
                 subscription_array = x.format_options(array)
             elif site_name == "bbwchan":
                 x = bbwchan
                 site_name = "BBWChan"
-                x.assign_vars(json_config, json_site_settings)
+                x.assign_vars(json_config, json_site_settings,site_name)
                 session_array = [x.create_session()]
                 array = x.get_subscriptions()
                 subscription_array = x.format_options(array)

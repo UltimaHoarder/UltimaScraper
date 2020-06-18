@@ -1,21 +1,18 @@
 import requests
+from requests.adapters import HTTPAdapter
 from helpers.main_helper import clean_text, get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger, log_error
-
 import os
-import json
-from itertools import chain, product
+from itertools import chain, product, groupby
 import multiprocessing
 from multiprocessing.dummy import Pool as ThreadPool
 from datetime import datetime
 import math
 from urllib.parse import urlparse
-from itertools import groupby
 import extras.OFSorter.ofsorter as ofsorter
 import shutil
 
 log_download = setup_logger('downloads', 'downloads.log')
 
-# Open config.json and fill in OPTIONAL information
 json_config = None
 multithreading = None
 json_settings = None
@@ -34,7 +31,7 @@ blacklist_name = None
 maximum_length = None
 
 
-def assign_vars(config, site_settings):
+def assign_vars(config, site_settings, site_name):
     global json_config, multithreading, proxy, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_unfollowed_accounts, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length
 
     json_config = config
@@ -43,7 +40,7 @@ def assign_vars(config, site_settings):
     proxy = json_global_settings["socks5_proxy"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
-    j_directory = get_directory(json_settings['directory'])
+    j_directory = get_directory(json_settings['download_path'], site_name)
     format_path = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
@@ -59,19 +56,6 @@ def assign_vars(config, site_settings):
 
 
 def start_datascraper(session, identifier, site_name, app_token, choice_type=None):
-    if choice_type == 0:
-        if blacklist_name:
-            link = "https://onlyfans.com/api2/v2/lists?offset=0&limit=100&app-token="+app_token
-            r = json_request(session, link)
-            if not r:
-                return [False, []]
-            x = [c for c in r if blacklist_name == c["name"]]
-            if x:
-                users = x[0]["users"]
-                bl_ids = [x["username"] for x in users]
-                if identifier in bl_ids:
-                    print("Blacklisted: "+identifier)
-                    return [False, []]
     print("Scrape Processing")
     info = link_check(session, app_token, identifier)
     if not info["subbed"]:
@@ -310,7 +294,7 @@ def media_scraper(link, session, directory, username, api_type):
                 if "convert" in subdomain:
                     link = preview_link
             rules = [link == "",
-                    preview_link == ""]
+                     preview_link == ""]
             if all(rules):
                 continue
             new_dict = dict()
@@ -524,8 +508,8 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
                         shutil.rmtree(legacy_metadata)
         if metadata_set:
             os.makedirs(metadata_directory, exist_ok=True)
-            archive_directory = metadata_directory+api_type
-            export_archive(metadata_set, archive_directory)
+            archive_directory = os.path.join(metadata_directory, api_type)
+            export_archive(metadata_set, archive_directory,json_settings)
     return [media_set, directory]
 
 
@@ -559,6 +543,7 @@ def download_media(media_set, session, directory, username, post_count, location
                 timestamp = date_object.timestamp()
                 if not overwrite_files:
                     if check_for_dupe_file(download_path, content_length):
+                        format_image(download_path, timestamp)
                         return_bool = False
                         count += 1
                         break
@@ -612,7 +597,7 @@ def create_session():
     if proxy:
         session.proxies = proxies
     session.mount(
-        'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+        'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
     ip = session.get('https://checkip.amazonaws.com').text.strip()
     print("Session IP: "+ip)
     return session
@@ -623,11 +608,12 @@ def create_auth(session, user_agent, app_token, auth_array):
     auth_count = 1
     auth_version = "(V1)"
     count = 1
-    max_threads = multiprocessing.cpu_count()
     try:
+        auth_id = auth_array["auth_id"]
         auth_cookies = [
-            {'name': 'auth_id', 'value': auth_array["auth_id"]},
+            {'name': 'auth_id', 'value': auth_id},
             {'name': 'auth_hash', 'value': auth_array["auth_hash"]},
+            {'name': 'auth_uniq_'+auth_id, 'value': auth_array["auth_uniq_"]},
             {'name': 'fp', 'value': auth_array["fp"]}
         ]
         while auth_count < 3:
@@ -745,21 +731,44 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
                        'https': 'socks5://'+proxy}
             if proxy:
                 session.proxies = proxies
-            x = json_request(session, link)
-            if not x["subscribedByData"]:
-                x["subscribedByData"] = dict()
-                x["subscribedByData"]["expiredAt"] = datetime.utcnow().isoformat()
-                x["subscribedByData"]["price"] = x["subscribePrice"]
-                x["subscribedByData"]["subscribePrice"] = 0
-            x = [x]
+            r = json_request(session, link)
+            if isinstance(r, dict):
+                if "subscribedByData" not in r:
+                    r["subscribedByData"] = dict()
+                    r["subscribedByData"]["expiredAt"] = datetime.utcnow().isoformat()
+                    r["subscribedByData"]["price"] = r["subscribePrice"]
+                    r["subscribedByData"]["subscribePrice"] = 0
+            r = [r]
         else:
-            x = json_request(session, link)
-        return x
+            r = json_request(session, link)
+        return r
     link_count = len(offset_array) if len(offset_array) > 0 else 1
     pool = ThreadPool(link_count)
     results = pool.starmap(multi, product(
         offset_array, [session]))
     results = list(chain(*results))
+    if blacklist_name:
+        link = "https://onlyfans.com/api2/v2/lists?offset=0&limit=100&app-token="+app_token
+        r = json_request(session, link)
+        if not r:
+            return [False, []]
+        x = [c for c in r if blacklist_name == c["name"]]
+        if x:
+            x = x[0]
+            list_users = x["users"]
+            if x["usersCount"] > 2:
+                list_id = str(x["id"])
+                link = "https://onlyfans.com/api2/v2/lists/"+list_id + \
+                    "/users?offset=0&limit=100&query=&app-token="+app_token
+                r = json_request(session, link)
+                list_users = r
+            users = list_users
+            bl_ids = [x["username"] for x in users]
+            for result in results:
+                identifier = result["username"]
+                if identifier in bl_ids:
+                    print("Blacklisted: "+identifier)
+                    results.remove(result)
     if any("error" in result for result in results):
         print("Invalid App Token")
         return []

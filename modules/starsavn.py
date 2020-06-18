@@ -1,4 +1,5 @@
 import requests
+from requests.adapters import HTTPAdapter
 from helpers.main_helper import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger, log_error
 
 import os
@@ -14,7 +15,6 @@ from random import randrange
 
 log_download = setup_logger('downloads', 'downloads.log')
 
-# Open config.json and fill in OPTIONAL information
 json_config = None
 multithreading = None
 json_settings = None
@@ -31,7 +31,7 @@ blacklist_name = None
 maximum_length = None
 
 
-def assign_vars(config, site_settings):
+def assign_vars(config, site_settings, site_name):
     global json_config, multithreading, proxy, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_unfollowed_accounts, export_metadata, blacklist_name, maximum_length
 
     json_config = config
@@ -40,7 +40,7 @@ def assign_vars(config, site_settings):
     proxy = json_global_settings["socks5_proxy"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
-    j_directory = get_directory(json_settings['directory'])
+    j_directory = get_directory(json_settings['download_path'], site_name)
     format_path = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
@@ -349,8 +349,8 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
             os.makedirs(location_directory, exist_ok=True)
             if export_metadata:
                 os.makedirs(metadata_directory, exist_ok=True)
-                archive_directory = metadata_directory+location[0]
-                export_archive([results], archive_directory)
+                archive_directory = os.path.join(metadata_directory, api_type)
+                export_archive([results], archive_directory,json_settings)
         media_set.append(results)
 
     return [media_set, directory]
@@ -386,7 +386,7 @@ def media_scraper(link, session, directory, username, api_type):
                 continue
             new_dict = dict()
             new_dict["post_id"] = media_api["id"]
-            new_dict["link"] = link
+            new_dict["links"] = [link]
             if date == "-001-11-30T00:00:00+00:00":
                 date_string = master_date
                 date_object = datetime.strptime(
@@ -404,13 +404,15 @@ def media_scraper(link, session, directory, username, api_type):
                 media_api["text"] = ""
             new_dict["text"] = media_api["text"] if media_api["text"] else ""
             new_dict["postedAt"] = date_string
+            post_id = new_dict["post_id"]
             media_id = media["id"] if "id" in media else None
             media_id = media_id if isinstance(media_id, int) else None
+            text = new_dict["text"]
             file_name = link.rsplit('/', 1)[-1]
             file_name, ext = os.path.splitext(file_name)
             ext = ext.__str__().replace(".", "").split('?')[0]
-            file_path = reformat(directory[0][1], media_id, file_name,
-                                 new_dict["text"], ext, date_object, username, format_path, date_format, maximum_length)
+            file_path = reformat(directory[0][1], post_id, media_id, file_name,
+                                 text, ext, date_object, username, format_path, date_format, maximum_length)
             new_dict["directory"] = directory[0][1]
             new_dict["filename"] = file_path.rsplit('/', 1)[-1]
             new_dict["size"] = size
@@ -482,7 +484,21 @@ def download_media(media_set, session, directory, username, post_count, location
         media_set, [session], [directory], [username]))
 
 
-def create_session(user_agent, app_token, auth_array):
+def create_session():
+    max_threads = multiprocessing.cpu_count()
+    session = requests.Session()
+    proxies = {'http': 'socks5://'+proxy,
+               'https': 'socks5://'+proxy}
+    if proxy:
+        session.proxies = proxies
+    session.mount(
+        'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+    ip = session.get('https://checkip.amazonaws.com').text.strip()
+    print("Session IP: "+ip)
+    return session
+
+
+def create_auth(session, user_agent, app_token, auth_array):
     me_api = []
     auth_count = 1
     auth_version = "(V1)"
@@ -496,11 +512,7 @@ def create_session(user_agent, app_token, auth_array):
                 if auth_array["sess"]:
                     del auth_cookies[2]
                 count = 1
-            session = requests.Session()
             print("Auth "+auth_version)
-            max_threads = multiprocessing.cpu_count()
-            session.mount(
-                'https://', requests.adapters.HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
             session.headers = {
                 'User-Agent': user_agent, 'Referer': 'https://stars.avn.com/'}
             if auth_array["sess"]:

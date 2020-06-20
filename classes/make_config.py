@@ -55,8 +55,8 @@ class start(object):
                             'date_format', "%d-%m-%Y")
                         self.ignored_keywords = option.get(
                             'ignored_keywords', [])
-                        self.ignore_unfollowed_accounts = option.get(
-                            'ignore_unfollowed_accounts', "")
+                        self.ignore_type = option.get(
+                            'ignore_type', "")
                         self.export_metadata = option.get(
                             'export_metadata', True)
                         self.delete_legacy_metadata = option.get(
@@ -102,8 +102,8 @@ class start(object):
                             'date_format', "%d-%m-%Y")
                         self.ignored_keywords = option.get(
                             'ignored_keywords', [])
-                        self.ignore_unfollowed_accounts = option.get(
-                            'ignore_unfollowed_accounts', "")
+                        self.ignore_type = option.get(
+                            'ignore_type', "")
                         self.export_metadata = option.get(
                             'export_metadata', True)
                         self.blacklist_name = option.get(

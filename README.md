@@ -28,6 +28,7 @@ Fill in the following:
 * `{"user-agent":"your_user-agent"}`
 
 Optional change:
+* `{"fp":"your_fp"}`
 * `{"app-token":"your_token"}`
 
 
@@ -188,18 +189,30 @@ Open:
 
     Any words you input, the script will ignore any content that contains these words.
 
-[#ignore_unfollowed_accounts](README.md#ignore_unfollowed_accounts):
+[#ignore_type](README.md#ignore_type):
 
     Default = ""
-    a = "all"
-    b = "paid"
-    c = "free"
+    a = "paid"
+    b = "free"
 
-    This setting will not include any paid or free accounts that you've unfollowed in your subscription list.
+    This setting will not include any paid or free accounts in your subscription list.
 
-    Example: "ignore_unfollowed_accounts": "paid"
+    Example: "ignore_type": "paid"
 
-    This choice will not include any unfollowed accounts that you've paid for.
+    This choice will not include any accounts that you've paid for.
+
+[#export_metadata](README.md#export_metadata):
+
+    Default = true
+
+    Set to false if you don't want to save metadata.
+
+[#sort_free_paid_posts](README.md#sort_free_paid_posts):
+
+    Default = true
+
+    Set to false if you want to use the old file structure.
+    If you do set to false, it'll be incompatable.
 
 [#blacklist_name](README.md#blacklist_name):
 
@@ -228,33 +241,34 @@ Before troubleshooting, make sure you're using Python 3.8.
 
 Error: Access Denied /  Auth Loop
 
-    Make sure your cookies and user-agent are correct.
+>Make sure your cookies and user-agent are correct.
 
 AttributeError: type object 'datetime.datetime' has no attribute 'fromisoformat'
 
-    Only works with Python 3.7 and above.
+>Only works with Python 3.7 and above.
 
 I can't see ".settings" folder'
 
-    Make sure you can see hidden files
-    [Windows Tutorial](https://support.microsoft.com/en-gb/help/4028316/windows-view-hidden-files-and-folders-in-windows-10)
-
-    [Mac Tutorial](https://setapp.com/how-to/show-hidden-files-on-mac)
-
-    [Linux] I'm not linking thousands of different distrbutuions
+>Make sure you can see hidden files
+>
+>[Windows Tutorial](https://support.microsoft.com/en-gb/help/4028316/windows-view-hidden-files-and-folders-in-windows-10)
+>
+>[Mac Tutorial](https://setapp.com/how-to/show-hidden-files-on-mac)
+>
+>[Linux](https://www.google.com/)
 
 I'm getting authed into the wrong account
 
-    Enjoy the free content.
+>Enjoy the free content.
 
 I'm using Linux OS and something isn't working.
 
-    Script was built on Windows 10. If you're using Linux you can still submit an issue and I'll try my best to fix it.
+>Script was built on Windows 10. If you're using Linux you can still submit an issue and I'll try my best to fix it.
     
 Do OnlyFans or OnlyFans models know I'm using this script?
 
-    No, but there is identifiable information in the metadata folder which contains your IP address, so don't share it unless you're using a proxy/vpn or just don't care.
+>No, but there is identifiable information in the metadata folder which contains your IP address, so don't share it unless you're using a proxy/vpn or just don't care.
     
 Do you collect session information?
 
-    No. The code is on Github which allows you to audit the codebase yourself. You can use wireshark or any other network analysis program to verify the outgoing connections are respective to the modules you chose.
+>No. The code is on Github which allows you to audit the codebase yourself. You can use wireshark or any other network analysis program to verify the outgoing connections are respective to the modules you chose.

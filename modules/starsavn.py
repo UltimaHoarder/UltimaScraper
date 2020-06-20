@@ -25,14 +25,14 @@ overwrite_files = None
 proxy = None
 date_format = None
 ignored_keywords = None
-ignore_unfollowed_accounts = None
+ignore_type = None
 export_metadata = None
 blacklist_name = None
 maximum_length = None
 
 
 def assign_vars(config, site_settings, site_name):
-    global json_config, multithreading, proxy, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_unfollowed_accounts, export_metadata, blacklist_name, maximum_length
+    global json_config, multithreading, proxy, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, blacklist_name, maximum_length
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -45,7 +45,7 @@ def assign_vars(config, site_settings, site_name):
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
     ignored_keywords = json_settings["ignored_keywords"]
-    ignore_unfollowed_accounts = json_settings["ignore_unfollowed_accounts"]
+    ignore_type = json_settings["ignore_type"]
     export_metadata = json_settings["export_metadata"]
     blacklist_name = json_settings["blacklist_name"]
     maximum_length = 255

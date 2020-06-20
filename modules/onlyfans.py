@@ -591,7 +591,7 @@ def download_media(media_set, session, directory, username, post_count, location
         media_set, [session], [directory], [username]))
 
 
-def create_session():
+def create_session(test_ip=True):
     max_threads = multiprocessing.cpu_count()
     session = requests.Session()
     proxies = {'http': 'socks5h://'+proxy,
@@ -600,12 +600,13 @@ def create_session():
         session.proxies = proxies
     session.mount(
         'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
-    ip = session.get('https://checkip.amazonaws.com').text.strip()
-    print("Session IP: "+ip)
+    if test_ip:
+        ip = session.get('https://checkip.amazonaws.com').text.strip()
+        print("Session IP: "+ip)
     return session
 
 
-def create_auth(session, user_agent, app_token, auth_array):
+def create_auth(session, user_agent, app_token, auth_array, max_auth=2):
     me_api = []
     auth_count = 1
     auth_version = "(V1)"
@@ -618,7 +619,7 @@ def create_auth(session, user_agent, app_token, auth_array):
             {'name': 'auth_uniq_'+auth_id, 'value': auth_array["auth_uniq_"]},
             {'name': 'fp', 'value': auth_array["fp"]}
         ]
-        while auth_count < 3:
+        while auth_count < max_auth+1:
             if auth_count == 2:
                 auth_version = "(V2)"
                 if auth_array["sess"]:

@@ -2,13 +2,16 @@
 ![app-token](examples/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 =============
 
-# Mandatory
-
-Read the [#FAQ](https://github.com/DIGITALCRIMINAL/OnlyFans/blob/master/README.md#faq) at the bottom of this page before submitting a issue.
+# Mandatory Tutorial
+Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a issue.
 
 From the project folder open CMD/Terminal and run the command below:
 
 `pip install -r requirements.txt`
+
+Start:
+
+`start_ofd.py`
 
 Open:
 
@@ -20,14 +23,15 @@ Fill in the following:
 
 * `{"auth_id":"your_auth_id"}`
 * `{"auth_hash":"your_auth_hash"}`
+* `{"auth_uniq_":"your_auth_uniq_"}`
+* `{"sess":"your_sess_token"}`
 * `{"user-agent":"your_user-agent"}`
 
 Optional change:
-* `{"sess":"your_sess_token"}`
 * `{"app-token":"your_token"}`
 
 
-Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get app-token, auth_id, auth_hash, sess and user-agent
+Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get said above cookies
 
 ![app-token](examples/1.png)
 
@@ -49,9 +53,11 @@ Open:
 
 [settings]
 
-directory:
+download_path:
     
-    Default = ""
+    Default = "{site_name}"
+
+    {site_name} = The site's name you're scraping
     Leave directory empty if you want files to be downloaded in the script folder.
 
     If you're going to fill, please remember to use forward ("/") slashes only.
@@ -60,13 +66,15 @@ file_name_format:
 
     Default = "{file_name}.{ext}"
 
-    {id} = The media's ID (onlyfans-specific) [UNIQUE]
+    {post_id} = The posts's ID
+
+    {media_id} = The media's ID [UNIQUE]
     
     {file_name} = The media's file name [UNIQUE]
     
     {username} = The account's username
 
-    {date} = The post's date
+    {date} = The post's creation date
     
     {text} = The media's text (You will get errors; don't use this)
 
@@ -83,7 +91,7 @@ text_length:
 
     When you use {text} in file_name_format, a limit of how many characters can be set by inputting a number.
     
-auto_site_choice:
+[auto_site_choice](#auto_site_choice):
 
     Default = ""
 
@@ -93,7 +101,7 @@ auto_site_choice:
 
     You can automatically choose what you want to scrape if you add it in the config file.
     
-auto_choice:
+[auto_choice](#auto_choice):
 
     Default = ""
 
@@ -105,19 +113,19 @@ auto_choice:
 
     You can automatically choose what you want to scrape if you add it in the config file.
     
-auto_scrape_names:
+[auto_scrape_names](#auto_scrape_names):
 
     Default = false
 
     If set to true, the script will scrape all the names.
     
-|**NEW**| [auto_scrape_apis](#auto_scrape_apis):
+[auto_scrape_apis](#auto_scrape_apis):
 
     Default = true
 
     If set to false, you'll be given the option to scrape individual apis.
     
-export_type:
+[export_type](#export_type):
 
     Default = "json"
 
@@ -126,13 +134,13 @@ export_type:
 
     You can export an archive to different formats.
 
-overwrite_files:
+[overwrite_files](#overwrite_files):
 
     Default = true
 
     If set to false, any file with the same name won't be downloaded.
 
-date_format:
+[date_format](#date_format):
 
     Default = "%d-%m-%Y"
 
@@ -140,47 +148,47 @@ date_format:
 
     "%m-%d-%Y"
 
-multithreading:
+[multithreading](#multithreading):
 
     Default = true
 
     If set to false, you will download files 1 by 1. (If you don't have fast internet, may god help you.)
     I'd reccomend leaving it set to true.
 
-exit_on_completion:
+[exit_on_completion](#exit_on_completion):
 
     Default = false
 
     If set to true the scraper run once and exit upon completion, otherwise the scraper will give the option to run again. This is useful if the scraper is being executed by a cron job or another script.
 
-infinite_loop:
+[infinite_loop](#infinite_loop):
 
     Default = true
 
     If set to false, the script will run once and ask you to input anything to continue.
 
-loop_timeout:
+[loop_timeout](#loop_timeout):
 
     Default = 0
 
     When infinite_loop is set to true this will set the time in seconds to pause the loop in between runs. 
 
 
-boards:
+[boards](#boards):
 
     Default = []
     Example = ["s", "gif"]
 
     Input boards names that you want to automatically scrape.
 
-ignored_keywords:
+[ignored_keywords](#ignored_keywords):
 
     Default = []
     Example = ["ignore", "me"]
 
     Any words you input, the script will ignore any content that contains these words.
 
-ignore_unfollowed_accounts:
+[ignore_unfollowed_accounts](#ignore_unfollowed_accounts):
 
     Default = ""
     a = "all"
@@ -193,7 +201,7 @@ ignore_unfollowed_accounts:
 
     This choice will not include any unfollowed accounts that you've paid for.
 
-|**NEW**| [blacklist_name](#blacklist_name):
+[blacklist_name](#blacklist_name):
 
     Default = ""
 
@@ -209,7 +217,7 @@ ignore_unfollowed_accounts:
     
 
 
-|**NEW**| [OPTIONAL ARGUMENTS](#OPTIONAL_ARGUMENTS)
+[OPTIONAL ARGUMENTS](#OPTIONAL_ARGUMENTS)
 
 -m
 
@@ -225,6 +233,15 @@ Error: Access Denied /  Auth Loop
 AttributeError: type object 'datetime.datetime' has no attribute 'fromisoformat'
 
     Only works with Python 3.7 and above.
+
+I can't see ".settings" folder'
+
+    Make sure you can see hidden files
+[Windows Tutorial](https://support.microsoft.com/en-gb/help/4028316/windows-view-hidden-files-and-folders-in-windows-10)
+
+[Mac Tutorial](https://setapp.com/how-to/show-hidden-files-on-mac)
+
+[Linux] I'm not linking thousands of different distrbutuions
 
 I'm getting authed into the wrong account
 

@@ -509,7 +509,7 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
         if metadata_set:
             os.makedirs(metadata_directory, exist_ok=True)
             archive_directory = os.path.join(metadata_directory, api_type)
-            export_archive(metadata_set, archive_directory,json_settings)
+            export_archive(metadata_set, archive_directory, json_settings)
     return [media_set, directory]
 
 
@@ -562,7 +562,9 @@ def download_media(media_set, session, directory, username, post_count, location
                 except (ConnectionResetError) as e:
                     if delete:
                         os.unlink(download_path)
-                    log_error.exception(e)
+                    count += 1
+                    continue
+                except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
                     count += 1
                     continue
                 except Exception as e:
@@ -592,8 +594,8 @@ def download_media(media_set, session, directory, username, post_count, location
 def create_session():
     max_threads = multiprocessing.cpu_count()
     session = requests.Session()
-    proxies = {'http': 'socks5://'+proxy,
-               'https': 'socks5://'+proxy}
+    proxies = {'http': 'socks5h://'+proxy,
+               'https': 'socks5h://'+proxy}
     if proxy:
         session.proxies = proxies
     session.mount(
@@ -727,8 +729,8 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
         performer = array[1]
         if performer:
             session = requests.Session()
-            proxies = {'http': 'socks5://'+proxy,
-                       'https': 'socks5://'+proxy}
+            proxies = {'http': 'socks5h://'+proxy,
+                       'https': 'socks5h://'+proxy}
             if proxy:
                 session.proxies = proxies
             r = json_request(session, link)

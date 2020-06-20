@@ -53,7 +53,7 @@ Open:
 
 [settings]
 
-download_path:
+[#download_path](README#download_path):
     
     Default = "{site_name}"
 
@@ -62,7 +62,7 @@ download_path:
 
     If you're going to fill, please remember to use forward ("/") slashes only.
 
-file_name_format:
+[#file_name_format](README#file_name_format):
 
     Default = "{file_name}.{ext}"
 
@@ -83,7 +83,7 @@ file_name_format:
     Example: {date}/{text}-{file_name}.{ext}
     Warning: It's important to keep a unique identifier next to .{ext}. By default it's {file_name}.
     
-text_length:
+[#text_length](README#text_length):
 
     Default = ""
     Ideal = "50"
@@ -91,7 +91,7 @@ text_length:
 
     When you use {text} in file_name_format, a limit of how many characters can be set by inputting a number.
     
-[#auto_site_choice](#auto_site_choice):
+[#auto_site_choice](README.md#auto_site_choice):
 
     Default = ""
 
@@ -237,11 +237,11 @@ AttributeError: type object 'datetime.datetime' has no attribute 'fromisoformat'
 I can't see ".settings" folder'
 
     Make sure you can see hidden files
-[Windows Tutorial](https://support.microsoft.com/en-gb/help/4028316/windows-view-hidden-files-and-folders-in-windows-10)
+    [Windows Tutorial](https://support.microsoft.com/en-gb/help/4028316/windows-view-hidden-files-and-folders-in-windows-10)
 
-[Mac Tutorial](https://setapp.com/how-to/show-hidden-files-on-mac)
+    [Mac Tutorial](https://setapp.com/how-to/show-hidden-files-on-mac)
 
-[Linux] I'm not linking thousands of different distrbutuions
+    [Linux] I'm not linking thousands of different distrbutuions
 
 I'm getting authed into the wrong account
 

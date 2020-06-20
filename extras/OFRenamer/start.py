@@ -1,3 +1,4 @@
+#!/usr/bin/env python3
 from classes.prepare_metadata import prepare_metadata
 import helpers.main_helper as main_helper
 import os

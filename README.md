@@ -13,7 +13,7 @@ Start:
 
 `start_ofd.py`
 
-Open:
+Open and edit:
 
 `config.json`
 
@@ -91,7 +91,7 @@ text_length:
 
     When you use {text} in file_name_format, a limit of how many characters can be set by inputting a number.
     
-[auto_site_choice](#auto_site_choice):
+[#auto_site_choice](#auto_site_choice):
 
     Default = ""
 
@@ -101,7 +101,7 @@ text_length:
 
     You can automatically choose what you want to scrape if you add it in the config file.
     
-[auto_choice](#auto_choice):
+[#auto_choice](README.md#auto_choice):
 
     Default = ""
 
@@ -113,19 +113,19 @@ text_length:
 
     You can automatically choose what you want to scrape if you add it in the config file.
     
-[auto_scrape_names](#auto_scrape_names):
+[#auto_scrape_names](README.md#auto_scrape_names):
 
     Default = false
 
     If set to true, the script will scrape all the names.
     
-[auto_scrape_apis](#auto_scrape_apis):
+[#auto_scrape_apis](README.md#auto_scrape_apis):
 
     Default = true
 
     If set to false, you'll be given the option to scrape individual apis.
     
-[export_type](#export_type):
+[#export_type](README.md#export_type):
 
     Default = "json"
 
@@ -134,13 +134,13 @@ text_length:
 
     You can export an archive to different formats.
 
-[overwrite_files](#overwrite_files):
+[#overwrite_files](README.md#overwrite_files):
 
     Default = true
 
     If set to false, any file with the same name won't be downloaded.
 
-[date_format](#date_format):
+[#date_format](README.md#date_format):
 
     Default = "%d-%m-%Y"
 
@@ -148,47 +148,47 @@ text_length:
 
     "%m-%d-%Y"
 
-[multithreading](#multithreading):
+[#multithreading](README.md#multithreading):
 
     Default = true
 
     If set to false, you will download files 1 by 1. (If you don't have fast internet, may god help you.)
     I'd reccomend leaving it set to true.
 
-[exit_on_completion](#exit_on_completion):
+[#exit_on_completion](README.md#exit_on_completion):
 
     Default = false
 
     If set to true the scraper run once and exit upon completion, otherwise the scraper will give the option to run again. This is useful if the scraper is being executed by a cron job or another script.
 
-[infinite_loop](#infinite_loop):
+[#infinite_loop](README.md#infinite_loop):
 
     Default = true
 
     If set to false, the script will run once and ask you to input anything to continue.
 
-[loop_timeout](#loop_timeout):
+[#loop_timeout](README.md#loop_timeout):
 
     Default = 0
 
     When infinite_loop is set to true this will set the time in seconds to pause the loop in between runs. 
 
 
-[boards](#boards):
+[#boards](README.md#boards):
 
     Default = []
     Example = ["s", "gif"]
 
     Input boards names that you want to automatically scrape.
 
-[ignored_keywords](#ignored_keywords):
+[#ignored_keywords](README.md#ignored_keywords):
 
     Default = []
     Example = ["ignore", "me"]
 
     Any words you input, the script will ignore any content that contains these words.
 
-[ignore_unfollowed_accounts](#ignore_unfollowed_accounts):
+[#ignore_unfollowed_accounts](README.md#ignore_unfollowed_accounts):
 
     Default = ""
     a = "all"
@@ -201,7 +201,7 @@ text_length:
 
     This choice will not include any unfollowed accounts that you've paid for.
 
-[blacklist_name](#blacklist_name):
+[#blacklist_name](README.md#blacklist_name):
 
     Default = ""
 
@@ -217,7 +217,7 @@ text_length:
     
 
 
-[OPTIONAL ARGUMENTS](#OPTIONAL_ARGUMENTS)
+[#OPTIONAL ARGUMENTS](README.md#OPTIONAL_ARGUMENTS)
 
 -m
 

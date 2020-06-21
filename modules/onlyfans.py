@@ -736,7 +736,7 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
                 session.proxies = proxies
             r = json_request(session, link)
             if isinstance(r, dict):
-                if "subscribedByData" not in r:
+                if not r["subscribedByData"]:
                     r["subscribedByData"] = dict()
                     r["subscribedByData"]["expiredAt"] = datetime.utcnow().isoformat()
                     r["subscribedByData"]["price"] = r["subscribePrice"]

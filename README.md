@@ -23,9 +23,11 @@ Fill in the following:
 
 * `{"auth_id":"your_auth_id"}`
 * `{"auth_hash":"your_auth_hash"}`
-* `{"auth_uniq_":"your_auth_uniq_"}`
 * `{"sess":"your_sess_token"}`
 * `{"user-agent":"your_user-agent"}`
+
+If you're using 2FA or have this cookie:
+* `{"auth_uniq_":"your_auth_uniq_"}`
 
 Optional change:
 * `{"fp":"your_fp"}`

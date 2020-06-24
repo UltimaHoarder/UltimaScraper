@@ -11,7 +11,7 @@ from os.path import dirname as up
 from collections import namedtuple
 
 
-def fix_metadata(posts, json_settings, username):
+def fix_metadata(posts, json_settings, username, site_name):
     for post in posts:
         for model in post:
             model_folder = model.directory
@@ -27,6 +27,7 @@ def fix_metadata(posts, json_settings, username):
             format_path = json_settings["file_name_format"]
             date_format = json_settings["date_format"]
             text_length = json_settings["text_length"]
+            download_path = json_settings["download_path"]
             today = datetime.today()
             today = today.strftime("%d-%m-%Y %H:%M:%S")
 
@@ -61,6 +62,15 @@ def fix_metadata(posts, json_settings, username):
                 filepath = update(filepath)
             else:
                 folder = os.path.dirname(filepath)
+                folder = os.path.abspath(folder)
+                while not os.path.exists(folder):
+                    print("NOT FOUND: "+folder)
+                    last_path = folder.split(username+"\\")[1]
+                    directory = main_helper.get_directory(
+                        download_path, site_name)
+                    reformat.directory = directory
+                    folder = os.path.join(directory, username, last_path)
+                print("FOUND: "+folder)
                 files = os.listdir(folder)
                 y = [file_ for file_ in files if filename in file_]
                 if y:
@@ -75,11 +85,12 @@ def start(metadata_filepath, json_settings):
     metadatas = json.load(open(metadata_filepath))
     metadatas2 = prepare_metadata(metadatas).items
     username = os.path.basename(up(up(metadata_filepath)))
+    site_name = os.path.basename(up(up(up(metadata_filepath))))
     for metadata in metadatas2:
         metadata.valid = fix_metadata(
-            metadata.valid, json_settings, username)
+            metadata.valid, json_settings, username, site_name)
         metadata.invalid = fix_metadata(
-            metadata.invalid, json_settings, username)
+            metadata.invalid, json_settings, username, site_name)
     metadatas2 = json.loads(json.dumps(
         metadatas2, default=lambda o: o.__dict__))
     if metadatas != metadatas2:

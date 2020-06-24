@@ -427,14 +427,24 @@ def download_media(media_set, session, directory, username, post_count, location
     def download(media, session, directory, username):
         count = 0
         while count < 11:
-            link = media["link"]
-            r = json_request(session, link, "HEAD", True, False)
-            if not r:
-                count += 1
+            links = media["links"]
+            def choose_link(session, links):
+                for link in links:
+                    r = json_request(session, link, "HEAD", True, False)
+                    if not r:
+                        continue
+
+                    header = r.headers
+                    content_length = int(header["content-length"])
+                    if not content_length:
+                        continue
+                    return [link, content_length]
+            result = choose_link(session, links)
+            if not result:
                 continue
 
-            header = r.headers
-            content_length = int(header["content-length"])
+            link = result[0]
+            content_length = result[1]
             date_object = datetime.strptime(
                 media["postedAt"], "%d-%m-%Y %H:%M:%S")
             og_filename = media["filename"]

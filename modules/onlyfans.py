@@ -300,7 +300,10 @@ def media_scraper(link, session, directory, username, api_type):
             new_dict = dict()
             new_dict["post_id"] = media_api["id"]
             new_dict["media_id"] = media["id"]
-            new_dict["links"] = [link, preview_link]
+            new_dict["links"] = []
+            for xlink in link, preview_link:
+                if xlink:
+                    new_dict["links"].append(xlink)
             new_dict["price"] = media_api["price"]if "price" in media_api else None
             if date == "-001-11-30T00:00:00+00:00":
                 date_string = master_date
@@ -538,6 +541,7 @@ def download_media(media_set, session, directory, username, post_count, location
                         return [link, content_length]
                 result = choose_link(session, links)
                 if not result:
+                    count +=1
                     continue
                 link = result[0]
                 content_length = result[1]

@@ -227,7 +227,12 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
                 if "application/json;" not in content_type:
                     count += 1
                     continue
-                return json.loads(r.text)
+                text = r.text
+                if not text:
+                    message = "ERROR: 100 Posts skipped. Please post the username you're trying to scrape on the issue "'100 Posts Skipped'""
+                    log_error.exception(message)
+                    return
+                return json.loads(text)
             else:
                 return r
         except (ConnectionResetError) as e:

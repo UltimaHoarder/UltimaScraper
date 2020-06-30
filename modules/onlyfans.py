@@ -172,7 +172,7 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     hightlights_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
         "/stories/highlights?limit=100&offset=0&order=desc&app-token="+app_token+""
     post_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
-        "/posts?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
+        "/posts?limit=0&offset=0&order=publish_date_desc&app-token="+app_token+""
     archived_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
         "/posts/archived?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
     # ARGUMENTS
@@ -252,7 +252,7 @@ def media_scraper(link, session, directory, username, api_type):
     media_set = [[], []]
     media_type = directory[-1]
     y = json_request(session, link)
-    if "error" in y:
+    if not y or "error" in y:
         return media_set
     x = 0
     if api_type == "Highlights":
@@ -374,10 +374,13 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
         directories = array[2]+[location[1]]
         if not master_set:
             if api_type == "Posts":
-                ceil = math.ceil(api_count / 100)
+                num = 100
+                link = link.replace("limit=0","limit="+str(num))
+                original_link = link
+                ceil = math.ceil(api_count / num)
                 a = list(range(ceil))
                 for b in a:
-                    b = b * 100
+                    b = b * num
                     master_set.append(link.replace(
                         "offset=0", "offset=" + str(b)))
             if api_type == "Archived":
@@ -476,6 +479,7 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
                     master_set.append(link2)
         x = pool.starmap(media_scraper, product(
             master_set, [session], [directories], [username], [api_type]))
+        print
         results = format_media_set(location[0], x)
         seen = set()
         results["valid"] = [x for x in results["valid"]
@@ -605,6 +609,12 @@ def create_session(test_ip=True):
         print("Session IP: "+ip)
     return session
 
+def get_paid_posts(session,app_token):
+    paid_api = "https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token="+app_token+""
+    directory = []
+    directory.append
+    x = media_scraper(paid_api,session)
+    print
 
 def create_auth(session, user_agent, app_token, auth_array, max_auth=2):
     me_api = []

@@ -100,6 +100,7 @@ def start_datascraper():
                     session_array.append(session)
                     if not session["session"]:
                         continue
+                    # x.get_paid_posts(session["session"],app_token)
                     cookies = session["session"].cookies.get_dict()
                     auth_id = cookies["auth_id"]
                     json_auth['auth_id'] = auth_id

@@ -133,7 +133,7 @@ if __name__ == "__main__":
         directory = main_helper.get_directory(download_path, name)
         if "OFRenamer\\.sites" in directory:
             directory = os.path.join(up(up(config_path)), ".sites", name)
-        # content_folders = os.listdir(directory)
+        content_folders = os.listdir(directory)
         # content_folders = ["queenarri"]
         models_folders2 = []
         if name in ["4Chan", "BBWChan"]:

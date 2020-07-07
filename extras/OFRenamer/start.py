@@ -68,8 +68,8 @@ def fix_metadata(posts, json_settings, username, site_name):
                     last_path = folder.split(username+"\\")[1]
                     directory = main_helper.get_directory(
                         download_path, site_name)
-                    reformat.directory = directory
                     folder = os.path.join(directory, username, last_path)
+                    reformat.directory = folder
                 print("FOUND: "+folder)
                 files = os.listdir(folder)
                 y = [file_ for file_ in files if filename in file_]

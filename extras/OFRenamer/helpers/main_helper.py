@@ -285,13 +285,15 @@ def setup_logger(name, log_file, level=logging.INFO):
 
     return logger
 
+
 def metadata_fixer(directory):
-    archive_file = os.path.join(directory,"archive.json")
-    metadata_file = os.path.join(directory,"Metadata")
+    archive_file = os.path.join(directory, "archive.json")
+    metadata_file = os.path.join(directory, "Metadata")
     if os.path.exists(archive_file):
-        os.makedirs(metadata_file,exist_ok=True)
-        new = os.path.join(metadata_file,"Archive.json")
-        shutil.move(archive_file,new)
+        os.makedirs(metadata_file, exist_ok=True)
+        new = os.path.join(metadata_file, "Archive.json")
+        shutil.move(archive_file, new)
+
 
 def update_metadata(path, metadata):
     with open(path, 'w') as outfile:

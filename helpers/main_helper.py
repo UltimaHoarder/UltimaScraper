@@ -47,7 +47,7 @@ def parse_links(site_name, input_link):
         username = input_link.rsplit('/', 1)[-1]
         return username
 
-    if site_name in {"fourchan", "bbwchan"}:
+    if site_name in {"patreon","fourchan", "bbwchan"}:
         if "catalog" in input_link:
             input_link = input_link.split("/")[1]
             print(input_link)
@@ -90,7 +90,6 @@ def format_image(directory, timestamp):
         from win32_setctime import setctime
         setctime(directory, timestamp)
     os.utime(directory, (timestamp, timestamp))
-
 
 def export_archive(datas, archive_path, json_settings):
     # Not Finished
@@ -224,7 +223,8 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
                 r = session.request(method, link, stream=stream)
             content_type = r.headers['Content-Type']
             if json_format:
-                if "application/json;" not in content_type:
+                matches = ["application/json;","application/vnd.api+json"]
+                if all(match not in content_type for match in matches):
                     count += 1
                     continue
                 text = r.text

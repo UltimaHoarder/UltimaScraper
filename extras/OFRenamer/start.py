@@ -119,7 +119,7 @@ if __name__ == "__main__":
     print(string)
     match = ["All", "OnlyFans", "StarsAVN", "4Chan", "BBWChan"]
     choices = list(zip(choices, match))
-    x = 0
+    x = 1
     x = int(input())
     if x == 0:
         del choices[0]
@@ -133,7 +133,8 @@ if __name__ == "__main__":
         directory = main_helper.get_directory(download_path, name)
         if "OFRenamer\\.sites" in directory:
             directory = os.path.join(up(up(config_path)), ".sites", name)
-        content_folders = os.listdir(directory)
+        # content_folders = os.listdir(directory)
+        # content_folders = ["queenarri"]
         models_folders2 = []
         if name in ["4Chan", "BBWChan"]:
             for models_folder in content_folders:
@@ -151,7 +152,35 @@ if __name__ == "__main__":
         content_folders = models_folders2
         for content_folder in content_folders:
             metadata_directory = os.path.join(content_folder, "Metadata")
-            folders = os.listdir(metadata_directory)
+            folders = []
+            if os.path.exists(metadata_directory):
+                folders = os.listdir(metadata_directory)
+                matches = ["desktop.ini"]
+                folders = [x for x in folders if x not in matches]
+            if not folders:
+                folders2 = os.listdir(content_folder)
+                matches = ["Metadata", "desktop.ini"]
+                folders2 = [x for x in folders2 if x not in matches]
+                for folder in folders2:
+                    type_metadata = os.path.join(
+                        content_folder, folder, "Metadata")
+                    if not os.path.exists(type_metadata):
+                        continue
+                    os.makedirs(metadata_directory, exist_ok=True)
+                    l = os.listdir(type_metadata)
+                    x = []
+                    ext = ".json"
+                    for item in l:
+                        if ext in item:
+                            path = os.path.join(type_metadata, item)
+                            filename, ext = os.path.splitext(item)
+                            metadata = json.load(open(path))
+                            x.append(metadata)
+                    filename = folder+ext
+                    metadata_filepath = os.path.join(
+                        metadata_directory, filename)
+                    main_helper.update_metadata(metadata_filepath, x)
+                    folders.append(filename)
             # folders = list(reversed(folders))
             for metadata_file in folders:
                 metadata_filepath = os.path.join(

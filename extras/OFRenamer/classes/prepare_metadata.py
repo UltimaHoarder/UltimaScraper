@@ -7,6 +7,8 @@ def valid_invalid(item):
         class Item():
             def __init__(self, option={}):
                 self.post_id = option.get("post_id", None)
+                if "link" in option:
+                    option["links"] = [option["link"]]
                 self.links = option.get("links", [])
                 self.price = option.get("price", None)
                 self.text = option.get("text", "")

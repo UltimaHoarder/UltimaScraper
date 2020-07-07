@@ -378,7 +378,7 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
         if not master_set:
             if api_type == "Posts":
                 num = 100
-                link = link.replace("limit=0","limit="+str(num))
+                link = link.replace("limit=0", "limit="+str(num))
                 original_link = link
                 ceil = math.ceil(api_count / num)
                 a = list(range(ceil))
@@ -541,7 +541,7 @@ def download_media(media_set, session, directory, username, post_count, location
                         return [link, content_length]
                 result = choose_link(session, links)
                 if not result:
-                    count +=1
+                    count += 1
                     continue
                 link = result[0]
                 content_length = result[1]
@@ -613,12 +613,14 @@ def create_session(test_ip=True):
         print("Session IP: "+ip)
     return session
 
-def get_paid_posts(session,app_token):
+
+def get_paid_posts(session, app_token):
     paid_api = "https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token="+app_token+""
     directory = []
     directory.append
-    x = media_scraper(paid_api,session)
+    x = media_scraper(paid_api, session)
     print
+
 
 def create_auth(session, user_agent, app_token, auth_array, max_auth=2):
     me_api = []
@@ -781,7 +783,8 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
                 list_users = r
             users = list_users
             bl_ids = [x["username"] for x in users]
-            for result in results:
+            results2 = results.copy()
+            for result in results2:
                 identifier = result["username"]
                 if identifier in bl_ids:
                     print("Blacklisted: "+identifier)

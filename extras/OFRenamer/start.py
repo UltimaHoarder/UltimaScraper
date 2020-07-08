@@ -63,13 +63,21 @@ def fix_metadata(posts, json_settings, username, site_name):
             else:
                 folder = os.path.dirname(filepath)
                 folder = os.path.abspath(folder)
+                categories = ["Free", "Paid"]
                 while not os.path.exists(folder):
-                    print("NOT FOUND: "+folder)
-                    last_path = folder.split(username+"\\")[1]
-                    directory = main_helper.get_directory(
-                        download_path, site_name)
-                    folder = os.path.join(directory, username, last_path)
-                    reformat.directory = folder
+                    for category in categories:
+                        print("NOT FOUND: "+folder)
+                        last_path = folder.split(username+"\\")[1]
+                        x = last_path.split("\\")
+                        x.insert(1,category)
+                        x = list(filter(None, x))
+                        last_path = "\\".join(x)
+                        directory = main_helper.get_directory(
+                            download_path, site_name)
+                        folder = os.path.join(directory, username, last_path)
+                        if os.path.exists(folder):
+                            reformat.directory = folder
+                            break
                 print("FOUND: "+folder)
                 files = os.listdir(folder)
                 y = [file_ for file_ in files if filename in file_]

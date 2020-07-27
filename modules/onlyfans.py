@@ -1,6 +1,6 @@
 import requests
 from requests.adapters import HTTPAdapter
-from helpers.main_helper import clean_text, get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger, log_error
+from helpers.main_helper import clean_text, get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger, log_error,create_sign
 import os
 from itertools import chain, product, groupby
 import multiprocessing
@@ -642,6 +642,7 @@ def create_auth(session, user_agent, app_token, auth_array, max_auth=2):
                     del auth_cookies[2]
                 count = 1
             print("Auth "+auth_version)
+            sess = auth_array["sess"]
             session.headers = {
                 'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
             if auth_array["sess"]:
@@ -660,6 +661,8 @@ def create_auth(session, user_agent, app_token, auth_array, max_auth=2):
             while count < 11:
                 print("Auth Attempt "+str(count)+"/"+str(max_count))
                 link = "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token
+                a = [session,link,sess,user_agent]
+                session = create_sign(*a)
                 r = json_request(session, link)
                 count += 1
                 if not r:

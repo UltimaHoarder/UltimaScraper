@@ -13,6 +13,9 @@ import classes.make_config as make_config
 import copy
 from datetime import datetime
 import extras.OFRenamer.start as ofrenamer
+import hashlib
+from urllib.parse import urlparse
+import time as time2
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
@@ -47,7 +50,7 @@ def parse_links(site_name, input_link):
         username = input_link.rsplit('/', 1)[-1]
         return username
 
-    if site_name in {"patreon","fourchan", "bbwchan"}:
+    if site_name in {"patreon", "fourchan", "bbwchan"}:
         if "catalog" in input_link:
             input_link = input_link.split("/")[1]
             print(input_link)
@@ -90,6 +93,7 @@ def format_image(directory, timestamp):
         from win32_setctime import setctime
         setctime(directory, timestamp)
     os.utime(directory, (timestamp, timestamp))
+
 
 def export_archive(datas, archive_path, json_settings):
     # Not Finished
@@ -223,7 +227,7 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
                 r = session.request(method, link, stream=stream)
             content_type = r.headers['Content-Type']
             if json_format:
-                matches = ["application/json;","application/vnd.api+json"]
+                matches = ["application/json;", "application/vnd.api+json"]
                 if all(match not in content_type for match in matches):
                     count += 1
                     continue
@@ -325,6 +329,21 @@ def update_metadata(path, metadata):
     with open(path, 'w') as outfile:
         json.dump(metadata, outfile)
     print
+
+
+def create_sign(session, link, sess, user_agent, text="onlyfans"):
+    time = str(int(round(time2.time() * 1000-300000)))
+    path = urlparse(link).path
+    query = urlparse(link).query
+    path = path+"?"+query
+    a = [sess, time, path, user_agent, text]
+    msg = "\n".join(a)
+    message = msg.encode("utf-8")
+    hash_object = hashlib.sha1(message)
+    sha_1 = hash_object.hexdigest()
+    session.headers["sign"] = sha_1
+    session.headers["time"] = time
+    return session
 
 
 log_error = setup_logger('errors', 'errors.log')

@@ -1,21 +1,22 @@
+import copy
 import csv
+import hashlib
 import json
 import logging
 import os
-from os.path import dirname as up
 import platform
 import re
-from itertools import chain
-
-from bs4 import BeautifulSoup
-import requests
-import classes.make_config as make_config
-import copy
-from datetime import datetime
-import extras.OFRenamer.start as ofrenamer
-import hashlib
-from urllib.parse import urlparse
 import time as time2
+from datetime import datetime
+from itertools import chain
+from os.path import dirname as up
+from urllib.parse import urlparse
+
+import requests
+from bs4 import BeautifulSoup
+
+import classes.make_config as make_config
+import extras.OFRenamer.start as ofrenamer
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
@@ -215,6 +216,11 @@ def check_for_dupe_file(download_path, content_length):
 
 
 def json_request(session, link, method="GET", stream=False, json_format=True, data={}):
+    if session.headers["access-token"]:
+        sess = session.headers["access-token"]
+        user_agent = session.headers["User-Agent"]
+        a = [session, link, sess, user_agent]
+        session = create_sign(*a)
     count = 0
     while count < 11:
         try:
@@ -341,6 +347,7 @@ def create_sign(session, link, sess, user_agent, text="onlyfans"):
     message = msg.encode("utf-8")
     hash_object = hashlib.sha1(message)
     sha_1 = hash_object.hexdigest()
+    session.headers["access-token"] = sess
     session.headers["sign"] = sha_1
     session.headers["time"] = time
     return session

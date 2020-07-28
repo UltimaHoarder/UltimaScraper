@@ -1,15 +1,21 @@
+import math
+import multiprocessing
+import os
+import shutil
+from datetime import datetime
+from itertools import chain, groupby, product
+from multiprocessing.dummy import Pool as ThreadPool
+from urllib.parse import urlparse
+
 import requests
 from requests.adapters import HTTPAdapter
-from helpers.main_helper import clean_text, get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger, log_error,create_sign
-import os
-from itertools import chain, product, groupby
-import multiprocessing
-from multiprocessing.dummy import Pool as ThreadPool
-from datetime import datetime
-import math
-from urllib.parse import urlparse
+
 import extras.OFSorter.ofsorter as ofsorter
-import shutil
+from helpers.main_helper import (check_for_dupe_file, clean_text, create_sign,
+                                 export_archive, format_directory,
+                                 format_image, format_media_set, get_directory,
+                                 json_request, log_error, reformat,
+                                 setup_logger)
 
 log_download = setup_logger('downloads', 'downloads.log')
 
@@ -21,6 +27,7 @@ j_directory = None
 format_path = None
 overwrite_files = None
 proxy = None
+cert = None
 date_format = None
 ignored_keywords = None
 ignore_type = None
@@ -32,12 +39,13 @@ maximum_length = None
 
 
 def assign_vars(config, site_settings, site_name):
-    global json_config, multithreading, proxy, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length
+    global json_config, multithreading, proxy, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length
 
     json_config = config
     json_global_settings = json_config["settings"]
     multithreading = json_global_settings["multithreading"]
     proxy = json_global_settings["socks5_proxy"]
+    cert = json_global_settings["cert"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
     j_directory = get_directory(json_settings['download_path'], site_name)
@@ -107,7 +115,7 @@ def start_datascraper(session, identifier, site_name, app_token, choice_type=Non
 
 def link_check(session, app_token, identifier):
     link = 'https://onlyfans.com/api2/v2/users/' + str(identifier) + \
-           '&app-token=' + app_token
+           '?app-token=' + app_token
     y = json_request(session, link)
     temp_user_id2 = dict()
     y["is_me"] = False
@@ -606,6 +614,8 @@ def create_session(test_ip=True):
                'https': 'socks5h://'+proxy}
     if proxy:
         session.proxies = proxies
+        if cert:
+            session.verify = cert
     session.mount(
         'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
     if test_ip:
@@ -631,9 +641,10 @@ def create_auth(session, user_agent, app_token, auth_array, max_auth=2):
         auth_id = auth_array["auth_id"]
         auth_cookies = [
             {'name': 'auth_id', 'value': auth_id},
+            {'name': 'sess', 'value': auth_array["sess"]},
             {'name': 'auth_hash', 'value': auth_array["auth_hash"]},
             {'name': 'auth_uniq_'+auth_id, 'value': auth_array["auth_uniq_"]},
-            {'name': 'fp', 'value': auth_array["fp"]}
+            {'name': 'fp', 'value': auth_array["fp"]},
         ]
         while auth_count < max_auth+1:
             if auth_count == 2:
@@ -661,7 +672,7 @@ def create_auth(session, user_agent, app_token, auth_array, max_auth=2):
             while count < 11:
                 print("Auth Attempt "+str(count)+"/"+str(max_count))
                 link = "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token
-                a = [session,link,sess,user_agent]
+                a = [session, link, sess, user_agent]
                 session = create_sign(*a)
                 r = json_request(session, link)
                 count += 1
@@ -753,6 +764,8 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
                        'https': 'socks5h://'+proxy}
             if proxy:
                 session.proxies = proxies
+                if cert:
+                    session.verify = cert
             r = json_request(session, link)
             if isinstance(r, dict):
                 if not r["subscribedByData"]:

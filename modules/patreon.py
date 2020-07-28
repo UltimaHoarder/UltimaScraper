@@ -1,17 +1,23 @@
+import math
+import mimetypes
+import multiprocessing
+import os
+import shutil
+from datetime import datetime
+from itertools import chain, groupby, product
+from multiprocessing.dummy import Pool as ThreadPool
+from urllib.parse import urlparse
+
 import requests
 from requests.adapters import HTTPAdapter
 from requests.sessions import session
-from helpers.main_helper import clean_text, get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger, log_error
-import os
-from itertools import chain, product, groupby
-import multiprocessing
-from multiprocessing.dummy import Pool as ThreadPool
-from datetime import datetime
-import math
-from urllib.parse import urlparse
+
 import extras.OFSorter.ofsorter as ofsorter
-import shutil
-import mimetypes
+from helpers.main_helper import (check_for_dupe_file, clean_text,
+                                 export_archive, format_directory,
+                                 format_image, format_media_set, get_directory,
+                                 json_request, log_error, reformat,
+                                 setup_logger)
 
 log_download = setup_logger('downloads', 'downloads.log')
 
@@ -23,6 +29,7 @@ j_directory = None
 format_path = None
 overwrite_files = None
 proxy = None
+cert = None
 date_format = None
 ignored_keywords = None
 ignore_type = None
@@ -34,12 +41,13 @@ maximum_length = None
 
 
 def assign_vars(config, site_settings, site_name):
-    global json_config, multithreading, proxy, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length
+    global json_config, multithreading, proxy, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length
 
     json_config = config
     json_global_settings = json_config["settings"]
     multithreading = json_global_settings["multithreading"]
     proxy = json_global_settings["socks5_proxy"]
+    cert = json_global_settings["cert"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
     j_directory = get_directory(json_settings['download_path'], site_name)
@@ -64,6 +72,8 @@ def create_session(test_ip=True):
                'https': 'socks5h://'+proxy}
     if proxy:
         session.proxies = proxies
+        if cert:
+            session.verify = cert
     session.mount(
         'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
     if test_ip:

@@ -808,7 +808,7 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
             result["self"] = False
             username = result["username"]
             now = datetime.utcnow().date()
-            subscribedBy = result["subscribedBy"]
+            # subscribedBy = result["subscribedBy"]
             subscribedByData = result["subscribedByData"]
             result_date = subscribedByData["expiredAt"] if subscribedByData else datetime.utcnow(
             ).isoformat()

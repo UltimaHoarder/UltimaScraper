@@ -338,7 +338,8 @@ def update_metadata(path, metadata):
 
 
 def create_sign(session, link, sess, user_agent, text="onlyfans"):
-    time = str(int(round(time2.time() * 1000-300000)))
+    # Users: 300000 | Creators: 301000
+    time = str(int(round(time2.time() * 1000-301000)))
     path = urlparse(link).path
     query = urlparse(link).query
     path = path+"?"+query

@@ -758,15 +758,9 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
     def multi(array, session):
         link = array[0]
         performer = array[1]
+        r = json_request(session, link)
+        # Following logic is unique to creators only
         if performer:
-            session = requests.Session()
-            proxies = {'http': 'socks5h://'+proxy,
-                       'https': 'socks5h://'+proxy}
-            if proxy:
-                session.proxies = proxies
-                if cert:
-                    session.verify = cert
-            r = json_request(session, link)
             if isinstance(r, dict):
                 if not r["subscribedByData"]:
                     r["subscribedByData"] = dict()
@@ -774,8 +768,6 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
                     r["subscribedByData"]["price"] = r["subscribePrice"]
                     r["subscribedByData"]["subscribePrice"] = 0
             r = [r]
-        else:
-            r = json_request(session, link)
         return r
     link_count = len(offset_array) if len(offset_array) > 0 else 1
     pool = ThreadPool(link_count)

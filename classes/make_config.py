@@ -1,7 +1,7 @@
 class start(object):
     def __init__(self, settings={}, supported={}):
         class Settings(object):
-            def __init__(self, auto_site_choice="", export_type="json", multithreading=True, exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy="", global_user_agent=""):
+            def __init__(self, auto_site_choice="", export_type="json", multithreading=True, exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy="", cert="", global_user_agent=""):
                 self.auto_site_choice = auto_site_choice
                 self.export_type = export_type
                 self.multithreading = multithreading
@@ -9,10 +9,11 @@ class start(object):
                 self.infinite_loop = infinite_loop
                 self.loop_timeout = loop_timeout
                 self.socks5_proxy = socks5_proxy
+                self.cert = cert
                 self.global_user_agent = global_user_agent
 
         class Supported(object):
-            def __init__(self, onlyfans={}, patreon={},starsavn={}, fourchan={}, bbwchan={}):
+            def __init__(self, onlyfans={}, patreon={}, starsavn={}, fourchan={}, bbwchan={}):
                 self.onlyfans = self.OnlyFans(onlyfans)
                 self.patreon = self.Patreon(patreon)
                 self.starsavn = self.StarsAvn(starsavn)
@@ -46,7 +47,8 @@ class start(object):
                             'auto_scrape_names', False)
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
-                        self.download_path = option.get('download_path', "{site_name}")
+                        self.download_path = option.get(
+                            'download_path', "{site_name}")
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")
@@ -94,7 +96,8 @@ class start(object):
                             'auto_scrape_names', False)
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
-                        self.download_path = option.get('download_path', "{site_name}")
+                        self.download_path = option.get(
+                            'download_path', "{site_name}")
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")
@@ -141,7 +144,8 @@ class start(object):
                             'auto_scrape_names', False)
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
-                        self.download_path = option.get('download_path', "{site_name}")
+                        self.download_path = option.get(
+                            'download_path', "{site_name}")
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")
@@ -178,7 +182,8 @@ class start(object):
                         self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
-                        self.download_path = option.get('download_path', "{site_name}")
+                        self.download_path = option.get(
+                            'download_path', "{site_name}")
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")
@@ -205,7 +210,8 @@ class start(object):
                         self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
-                        self.download_path = option.get('download_path', "{site_name}")
+                        self.download_path = option.get(
+                            'download_path', "{site_name}")
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")

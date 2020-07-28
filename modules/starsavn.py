@@ -1,17 +1,20 @@
-import requests
-from requests.adapters import HTTPAdapter
-from helpers.main_helper import get_directory, json_request, reformat, format_directory, format_media_set, export_archive, format_image, check_for_dupe_file, setup_logger, log_error
-
-import os
 import json
-from itertools import count, product
-from itertools import chain
-import multiprocessing
-from multiprocessing.dummy import Pool as ThreadPool
-from datetime import datetime
 import logging
 import math
+import multiprocessing
+import os
+from datetime import datetime
+from itertools import chain, count, product
+from multiprocessing.dummy import Pool as ThreadPool
 from random import randrange
+
+import requests
+from requests.adapters import HTTPAdapter
+
+from helpers.main_helper import (check_for_dupe_file, export_archive,
+                                 format_directory, format_image,
+                                 format_media_set, get_directory, json_request,
+                                 log_error, reformat, setup_logger)
 
 log_download = setup_logger('downloads', 'downloads.log')
 
@@ -23,6 +26,7 @@ j_directory = None
 format_path = None
 overwrite_files = None
 proxy = None
+cert = None
 date_format = None
 ignored_keywords = None
 ignore_type = None
@@ -32,12 +36,13 @@ maximum_length = None
 
 
 def assign_vars(config, site_settings, site_name):
-    global json_config, multithreading, proxy, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, blacklist_name, maximum_length
+    global json_config, multithreading, proxy, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, blacklist_name, maximum_length
 
     json_config = config
     json_global_settings = json_config["settings"]
     multithreading = json_global_settings["multithreading"]
     proxy = json_global_settings["socks5_proxy"]
+    cert = json_global_settings["cert"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
     j_directory = get_directory(json_settings['download_path'], site_name)
@@ -350,7 +355,7 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
             if export_metadata:
                 os.makedirs(metadata_directory, exist_ok=True)
                 archive_directory = os.path.join(metadata_directory, api_type)
-                export_archive([results], archive_directory,json_settings)
+                export_archive([results], archive_directory, json_settings)
         media_set.append(results)
 
     return [media_set, directory]
@@ -428,6 +433,7 @@ def download_media(media_set, session, directory, username, post_count, location
         count = 0
         while count < 11:
             links = media["links"]
+
             def choose_link(session, links):
                 for link in links:
                     r = json_request(session, link, "HEAD", True, False)
@@ -501,6 +507,8 @@ def create_session():
                'https': 'socks5://'+proxy}
     if proxy:
         session.proxies = proxies
+        if cert:
+            session.verify = cert
     session.mount(
         'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
     ip = session.get('https://checkip.amazonaws.com').text.strip()

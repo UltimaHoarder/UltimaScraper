@@ -63,7 +63,7 @@ def assign_vars(config, site_settings, site_name):
                          ) if json_settings["text_length"] else maximum_length
 
 
-def start_datascraper(session, identifier, site_name, app_token, choice_type=None):
+def start_datascraper(session, identifier, site_name, app_token,choice_type=None):
     print("Scrape Processing")
     info = link_check(session, app_token, identifier)
     if not info["subbed"]:
@@ -677,7 +677,6 @@ def create_auth(session, user_agent, app_token, auth_array, max_auth=2):
                 r = json_request(session, link)
                 count += 1
                 if not r:
-                    auth_cookies = []
                     continue
                 me_api = r
 

@@ -4,9 +4,12 @@
             "username": "",
             "auth_id": "",
             "auth_hash": "",
+            "auth_uniq_": "",
             "sess": "",
-            "app-token": "33d57ade8c02dbc5a333db99ff9ae26a",
-            "user-agent": ""
-        }]
+            "fp": "",
+            "app_token": "33d57ade8c02dbc5a333db99ff9ae26a",
+            "user_agent": "",
+            "support_2fa": true
+          }]
     }
 }

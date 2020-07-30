@@ -563,7 +563,7 @@ def download_media(media_set, session, directory, username, post_count, location
                         return_bool = False
                         count += 1
                         break
-                r = json_request(session, link, "GET", True, False)
+                r = json_request(session, link, stream=True, json_format=False)
                 if not r:
                     return_bool = False
                     count += 1

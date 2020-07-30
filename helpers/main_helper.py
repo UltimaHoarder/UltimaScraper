@@ -214,20 +214,30 @@ def check_for_dupe_file(download_path, content_length):
             found = True
     return found
 
-def session_rules(session,link):
+
+def session_rules(session, link):
     if "https://onlyfans.com/api2/v2/" in link:
         sess = session.headers["access-token"]
         user_agent = session.headers["User-Agent"]
         a = [session, link, sess, user_agent]
         session = create_sign(*a)
     return session
-    
-def session_retry_rules(session,link):
-    boolean  = True
+
+
+def session_retry_rules(r, link):
+    # 0 Fine, 1 Continue, 2 Break
+    boolean = 0
+    if "https://onlyfans.com/api2/v2/" in link:
+        text = r.text
+        if "Invalid request sign" in text:
+            boolean = 1
+        elif "Access Denied" in text:
+            boolean = 2
     return boolean
 
+
 def json_request(session, link, method="GET", stream=False, json_format=True, data={}):
-    session = session_rules(session,link)
+    session = session_rules(session, link)
     count = 0
     while count < 11:
         try:
@@ -238,9 +248,12 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
                 r = session.request(method, link, json=data, stream=stream)
             else:
                 r = session.request(method, link, stream=stream)
-            if r.status_code != 200:
-                count += 1
+            count += 1
+            rule = session_retry_rules(r, link)
+            if rule == 1:
                 continue
+            elif rule == 2:
+                break
             content_type = r.headers['Content-Type']
             if json_format:
                 matches = ["application/json;", "application/vnd.api+json"]

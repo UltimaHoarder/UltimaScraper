@@ -1,7 +1,6 @@
-import json
-import os
 import sys
-
+import os
+import json
 import helpers.main_helper as main_helper
 
 
@@ -34,7 +33,7 @@ def check_config():
                         x[0], x[1])
                     new = settings["file_name_format"]
                     print("Changed "+file_name_format+" to "+new + " for "+key)
-
+                    print
         json_config2 = json.load(open(path))
         if json_config != json_config2:
             main_helper.update_config(json_config)

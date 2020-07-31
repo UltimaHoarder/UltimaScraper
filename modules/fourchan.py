@@ -1,13 +1,21 @@
-import multiprocessing
-from itertools import product
-from multiprocessing.dummy import Pool as ThreadPool
-
+import requests
+from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
-
 from helpers.main_helper import *
 
+import os
+import json
+from itertools import product
+import multiprocessing
+from multiprocessing.dummy import Pool as ThreadPool
+from datetime import datetime
+import re
+
 # Open config.json and fill in OPTIONAL information
+json_config = None
+json_global_settings = None
 multithreading = None
+json_settings = None
 auto_choice = None
 j_directory = None
 format_path = None
@@ -21,10 +29,13 @@ max_threads = multiprocessing.cpu_count()
 log_download = setup_logger('downloads', 'downloads.log')
 
 
-def assign_vars(json_config, json_settings, site_name):
-    global multithreading, auto_choice, j_directory, overwrite_files, date_format, format_path, boards, ignored_keywords, maximum_length
+def assign_vars(config, site_settings, site_name):
+    global json_config, multithreading, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, boards, ignored_keywords, maximum_length
 
-    multithreading = json_config["settings"]["multithreading"]
+    json_config = config
+    json_global_settings = json_config["settings"]
+    multithreading = json_global_settings["multithreading"]
+    json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
     j_directory = get_directory(json_settings['download_path'], site_name)
     format_path = json_settings["file_name_format"]
@@ -46,6 +57,7 @@ def start_datascraper(session, board_name, site_name, link_type, choice_type=Non
         return [False]
     print("Board: " + board_name)
     array = scrape_choice(board_name)
+    link_array = {}
     if multithreading:
         pool = ThreadPool()
     else:
@@ -129,7 +141,7 @@ def thread_scraper(thread_id, board_name, session, directory):
         if any(ignored_keyword in title for ignored_keyword in ignored_keywords):
             print("Removed From "+location+": ", title)
             return
-
+    text = ""
     if "sub" in thread_master:
         text = thread_master["sub"][:maximum_length]
     else:
@@ -207,7 +219,7 @@ def download_media(media_set, session, directory, board_name):
                         for chunk in r.iter_content(chunk_size=1024):
                             if chunk:  # filter out keep-alive new chunks
                                 f.write(chunk)
-                except ConnectionResetError as e:
+                except (ConnectionResetError) as e:
                     if delete:
                         os.unlink(download_path)
                     log_error.exception(e)

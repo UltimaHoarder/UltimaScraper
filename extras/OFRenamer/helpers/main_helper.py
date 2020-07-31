@@ -1,17 +1,19 @@
-import copy
+import csv
+from genericpath import exists
 import json
 import logging
 import os
+from os.path import dirname as up
 import platform
 import re
+from itertools import chain
 import shutil
-from datetime import datetime
-from os.path import dirname as up
 
-import requests
 from bs4 import BeautifulSoup
-
+import requests
 import classes.make_config as make_config
+import copy
+from datetime import datetime
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
@@ -92,7 +94,9 @@ def format_image(directory, timestamp):
 
 
 def format_path(j_directory, site_name):
-    return j_directory.replace("{site_name}", site_name)
+    format_path = j_directory
+    path = format_path.replace("{site_name}", site_name)
+    return path
 
 
 def reformat(directory, post_id, media_id, filename, text, ext, date, username, format_path, date_format, maximum_length):
@@ -194,7 +198,7 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
                 return json.loads(r.text)
             else:
                 return r
-        except ConnectionResetError as e:
+        except (ConnectionResetError) as e:
             log_error.exception(e)
             count += 1
         except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
@@ -214,7 +218,7 @@ def get_config(config_path):
             json_config = {}
     else:
         json_config = {}
-    json_config2 = json.loads(json.dumps(make_config.Start(
+    json_config2 = json.loads(json.dumps(make_config.start(
         **json_config), default=lambda o: o.__dict__))
     if json_config != json_config2:
         update_config(json_config2)

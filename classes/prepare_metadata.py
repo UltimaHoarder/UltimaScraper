@@ -2,8 +2,10 @@ from itertools import groupby
 
 
 def valid_invalid(item):
+    print
+
     def sort_item(item):
-        class Item:
+        class Item():
             def __init__(self, option={}):
                 self.post_id = option.get("post_id", None)
                 self.links = option.get("links", [])
@@ -14,7 +16,7 @@ def valid_invalid(item):
                 self.directory = option.get("directory", "")
                 self.filename = option.get("filename", "")
                 self.size = option.get("size", None)
-
+                print
 
         def fix(item):
             return item
@@ -22,19 +24,21 @@ def valid_invalid(item):
         x = Item(item)
         return x
 
-    class Sort:
+    class sort():
         def __init__(self, valid):
             x = []
             for items in valid:
                 if isinstance(items, dict):
                     items = [items]
+                    print
                 for item in items:
                     x.append(sort_item(item))
 
             x = [list(g) for k, g in groupby(
                 x, key=lambda x: x.post_id)]
             self.sorted = x
-    x = Sort(item).sorted
+    x = sort(item).sorted
+    print
     return x
 
 
@@ -46,9 +50,11 @@ class prepare_metadata(object):
     def __init__(self, items=[]):
         class Item(object):
             def __init__(self, type, valid, invalid):
+                print
                 self.type = type
                 self.valid = valid_invalid(valid)
                 self.invalid = valid_invalid(invalid)
+                print
         x = []
         for item in items:
             x.append(Item(**item))
@@ -69,11 +75,10 @@ class prepare_reformat(object):
         self.date_format = date_format
         self.maximum_length = int(maximum_length)
 
-
 class obj(object):
     def __init__(self, d):
         for a, b in d.items():
             if isinstance(b, (list, tuple)):
-                setattr(self, a, [obj(x) if isinstance(x, dict) else x for x in b])
+               setattr(self, a, [obj(x) if isinstance(x, dict) else x for x in b])
             else:
-                setattr(self, a, obj(b) if isinstance(b, dict) else b)
+               setattr(self, a, obj(b) if isinstance(b, dict) else b)

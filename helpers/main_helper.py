@@ -25,9 +25,10 @@ json_global_settings = None
 os_name = platform.system()
 
 
-def assign_vars(json_config):
+def assign_vars(config):
     global json_global_settings
 
+    json_config = config
     json_global_settings = json_config["settings"]
 
 
@@ -129,7 +130,9 @@ def export_archive(datas, archive_path, json_settings):
 
 
 def format_path(j_directory, site_name):
-    return j_directory.replace("{site_name}", site_name)
+    format_path = j_directory
+    path = format_path.replace("{site_name}", site_name)
+    return path
 
 
 def reformat(directory, post_id, media_id, filename, text, ext, date, username, format_path, date_format, maximum_length):
@@ -265,9 +268,9 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
                 return json.loads(text)
             else:
                 return r
-        except ConnectionResetError:
+        except (ConnectionResetError) as e:
             count += 1
-        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError):
+        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
             count += 1
         except Exception as e:
             log_error.exception(e)
@@ -283,7 +286,7 @@ def get_config(config_path):
             json_config = {}
     else:
         json_config = {}
-    json_config2 = json.loads(json.dumps(make_config.Start(
+    json_config2 = json.loads(json.dumps(make_config.start(
         **json_config), default=lambda o: o.__dict__))
     if json_config != json_config2:
         update_config(json_config2)
@@ -354,6 +357,7 @@ def setup_logger(name, log_file, level=logging.INFO):
 def update_metadata(path, metadata):
     with open(path, 'w') as outfile:
         json.dump(metadata, outfile)
+    print
 
 
 def create_sign(session, link, sess, user_agent, text="onlyfans"):

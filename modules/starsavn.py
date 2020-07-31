@@ -1,9 +1,12 @@
+import json
+import logging
 import math
 import multiprocessing
 import os
 from datetime import datetime
-from itertools import chain, product
+from itertools import chain, count, product
 from multiprocessing.dummy import Pool as ThreadPool
+from random import randrange
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -121,9 +124,9 @@ def link_check(session, app_token, identifier):
     now = datetime.utcnow().date()
     result_date = datetime.utcnow().date()
     if "email" not in y:
-        # subscribed_by_data = y
-        # if subscribed_by_data:
-        # expired_at = subscribed_by_data["expiredAt"]
+        subscribedByData = y
+        # if subscribedByData:
+        # expired_at = subscribedByData["expiredAt"]
         # result_date = datetime.fromisoformat(
         #     expired_at).replace(tzinfo=None).date()
         if y["followedBy"]:
@@ -235,17 +238,18 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
 
 
 def prepare_scraper(session, site_name, only_links, link, locations, directory, api_count, username, api_type, app_token):
-    separator = " | "
+    seperator = " | "
     master_set = []
     media_set = []
     original_link = link
     for location in locations:
         pool = ThreadPool()
         link = original_link
-        print("Scraping ["+str(separator.join(location[1])) +
+        print("Scraping ["+str(seperator.join(location[1])) +
               "]. Should take less than a minute.")
         array = format_directory(
             j_directory, site_name, username, location[0], api_type)
+        user_directory = array[0]
         location_directory = array[2][0][1]
         metadata_directory = array[1]
         directories = array[2]+[location[1]]
@@ -309,11 +313,12 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
                     else:
                         break
                 messages = list(chain(*messages))
+                message_count = 0
 
                 def process_mass_messages(message, limit):
                     text = message["textCropped"].replace("&", "")
-                    link_2 = "https://onlyfans.com/api2/v2/chats?limit=" + limit + "&offset=0&filter=&order=activity&query=" + \
-                        text + "&app-token=" + app_token
+                    link_2 = "https://onlyfans.com/api2/v2/chats?limit="+limit+"&offset=0&filter=&order=activity&query=" + \
+                        text+"&app-token="+app_token
                     y = json_request(session, link_2)
                     return y
                 limit = "10"
@@ -326,7 +331,8 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
                 seen = set()
                 subscribers = [x for x in subscribers if x["withUser"]
                                ["id"] not in seen and not seen.add(x["withUser"]["id"])]
-                pool.starmap(process_chats, product(subscribers))
+                x = pool.starmap(process_chats, product(
+                    subscribers))
             if api_type == "Stories":
                 master_set.append(link)
             if api_type == "Highlights":
@@ -358,6 +364,8 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
 def media_scraper(link, session, directory, username, api_type):
     media_set = [[], []]
     media_type = directory[-1]
+    count = 0
+    found = False
     y = json_request(session, link)
     if "error" in y:
         return media_set
@@ -374,6 +382,7 @@ def media_scraper(link, session, directory, username, api_type):
                 continue
         new_api = (media_api["media"] if "media" in media_api else [media_api])
         for media in new_api:
+            date = "-001-11-30T00:00:00+00:00"
             size = 1
             src = media["src"]
             link = src["source"]
@@ -463,7 +472,7 @@ def download_media(media_set, session, directory, username, post_count, location
                     for chunk in r.iter_content(chunk_size=1024):
                         if chunk:  # filter out keep-alive new chunks
                             f.write(chunk)
-            except ConnectionResetError as e:
+            except (ConnectionResetError) as e:
                 if delete:
                     os.unlink(download_path)
                 log_error.exception(e)

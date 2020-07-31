@@ -1,4 +1,4 @@
-class Start(object):
+class start(object):
     def __init__(self, settings={}, supported={}):
         class Settings(object):
             def __init__(self, auto_site_choice="", export_type="json", multithreading=True, exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy="", cert="", global_user_agent=""):

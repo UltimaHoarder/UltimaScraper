@@ -1,14 +1,14 @@
 #!/usr/bin/env python3
-from classes.prepare_metadata import prepare_metadata
-import helpers.main_helper as main_helper
-import os
 import json
-import sys
-from datetime import datetime
+import os
 import shutil
+import sys
 import urllib.parse as urlparse
+from datetime import datetime
 from os.path import dirname as up
-from collections import namedtuple
+
+import helpers.main_helper as main_helper
+from classes.prepare_metadata import prepare_metadata
 
 
 def fix_metadata(posts, json_settings, username, site_name):
@@ -21,7 +21,6 @@ def fix_metadata(posts, json_settings, username, site_name):
                 path = model.filename
             filename = os.path.basename(path)
             filepath = os.path.join(model_folder, filename)
-            post_id = str(model.post_id)
             filename, ext = os.path.splitext(filename)
             ext = ext.replace(".", "")
             format_path = json_settings["file_name_format"]
@@ -119,7 +118,6 @@ if __name__ == "__main__":
     print(string)
     match = ["All", "OnlyFans", "StarsAVN", "4Chan", "BBWChan"]
     choices = list(zip(choices, match))
-    x = 1
     x = int(input())
     if x == 0:
         del choices[0]
@@ -167,13 +165,13 @@ if __name__ == "__main__":
                     if not os.path.exists(type_metadata):
                         continue
                     os.makedirs(metadata_directory, exist_ok=True)
-                    l = os.listdir(type_metadata)
+                    files = os.listdir(type_metadata)
                     x = []
                     ext = ".json"
-                    for item in l:
-                        if ext in item:
-                            path = os.path.join(type_metadata, item)
-                            filename, ext = os.path.splitext(item)
+                    for file in files:
+                        if ext in file:
+                            path = os.path.join(type_metadata, file)
+                            filename, ext = os.path.splitext(file)
                             metadata = json.load(open(path))
                             x.append(metadata)
                     filename = folder+ext

@@ -1,23 +1,15 @@
-import math
 import mimetypes
 import multiprocessing
 import os
-import shutil
 from datetime import datetime
-from itertools import chain, groupby, product
+from itertools import chain, product
 from multiprocessing.dummy import Pool as ThreadPool
-from urllib.parse import urlparse
 
 import requests
 from requests.adapters import HTTPAdapter
-from requests.sessions import session
 
-import extras.OFSorter.ofsorter as ofsorter
-from helpers.main_helper import (check_for_dupe_file, clean_text,
-                                 export_archive, format_directory,
-                                 format_image, format_media_set, get_directory,
-                                 json_request, log_error, reformat,
-                                 setup_logger)
+from helpers.main_helper import (check_for_dupe_file, format_image, get_directory,
+                                 json_request, log_error, setup_logger)
 
 log_download = setup_logger('downloads', 'downloads.log')
 
@@ -82,16 +74,15 @@ def create_session(test_ip=True):
     return session
 
 
-def create_auth(session, user_agent, auth_array, max_auth=2):
+def create_auth(session, user_agent, app_token, auth_array, max_auth=2):
     me_api = []
     auth_count = 1
     auth_version = "(V1)"
     count = 1
     try:
-        auth_cookie = []
         auth_cookies = [{'name': 'cf_clearance', 'value': auth_array["cf_clearance"], 'domain': '.patreon.com'}
                         ]
-        print
+
         while auth_count < max_auth+1:
             if auth_count == 2:
                 auth_version = "(V2)"
@@ -135,7 +126,7 @@ def create_auth(session, user_agent, auth_array, max_auth=2):
                             error_message = "Blocked by 2FA."
                             print(error_message)
                             if auth_array["support_2fa"]:
-                                link = "https://onlyfans.com/api2/v2/users/otp?app-token="+app_token
+                                link = "https://onlyfans.com/api2/v2/users/otp?app-token=" + app_token
                                 count = 1
                                 max_count = 3
                                 while count < max_count+1:
@@ -237,12 +228,10 @@ def start_datascraper(session, identifier, site_name, app_token, choice_type=Non
         print("First time? Did you forget to edit your config.json file?")
         return [False, []]
     user = info["user"]
-    user_id = str(user["id"])
     username = user["name"]
     print("Name: "+username)
     identifiers = [identifier, username]
-    results = prepare_scraper(
-        session, identifiers)
+    prepare_scraper(session, identifiers)
     # When profile is done scraping, this function will return True
     print("Scrape Completed"+"\n")
     prep_download = []
@@ -250,12 +239,10 @@ def start_datascraper(session, identifier, site_name, app_token, choice_type=Non
 
 
 def link_check(session, identifier):
-    print
     link = "https://www.patreon.com/api/campaigns/" + \
         str(identifier) + \
         "?include=access_rules.tier.null&fields[access_rule]=access_rule_type%2Camount_cents%2Cpost_count&fields[reward]=title%2Cid%2Camount_cents&json-api-version=1.0"
     y = json_request(session, link)
-    print
     temp_user_id2 = dict()
     if not y:
         temp_user_id2["subbed"] = False
@@ -280,7 +267,6 @@ def prepare_scraper(session, identifiers):
     posts = []
     directory = os.path.join(str(j_directory), username)
     while True:
-        print
         y = json_request(session, link)
         included = y["included"]
         for x in included:
@@ -297,7 +283,6 @@ def prepare_scraper(session, identifiers):
                 owner_relationship = att["owner_relationship"].capitalize()
                 if owner_relationship in ["Main", "Inline"]:
                     owner_relationship = "Images"
-                    print
                 x["file_name"] = file_name
                 x["size"] = att["size_bytes"]
                 directory2 = os.path.join(
@@ -365,12 +350,12 @@ def prepare_scraper(session, identifiers):
                     for chunk in r.iter_content(chunk_size=1024):
                         if chunk:  # filter out keep-alive new chunks
                             f.write(chunk)
-            except (ConnectionResetError) as e:
+            except ConnectionResetError:
                 if delete:
                     os.unlink(download_path)
                 count += 1
                 continue
-            except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
+            except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError):
                 count += 1
                 continue
             except Exception as e:
@@ -387,4 +372,3 @@ def prepare_scraper(session, identifiers):
     pool = ThreadPool()
     pool.starmap(download, product(
         posts, [session]))
-    print

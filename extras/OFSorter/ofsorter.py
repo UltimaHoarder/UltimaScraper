@@ -1,8 +1,7 @@
-import os
-import json
-from itertools import chain
-import shutil
 import filecmp
+import os
+import shutil
+from itertools import chain
 
 
 def sorter(user_directory, api_type, location, metadata):
@@ -10,8 +9,6 @@ def sorter(user_directory, api_type, location, metadata):
     if not os.path.isdir(legacy_directory):
         return
     legacy_files = os.listdir(legacy_directory)
-    metadata_directory = os.path.join(
-        user_directory, "Metadata", api_type+".json")
     results = list(chain(*metadata["valid"]))
     for result in results:
         legacy_filepath = os.path.join(legacy_directory, result["filename"])

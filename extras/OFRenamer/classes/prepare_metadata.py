@@ -4,7 +4,7 @@ from itertools import groupby
 def valid_invalid(item):
 
     def sort_item(item):
-        class Item():
+        class Item:
             def __init__(self, option={}):
                 self.post_id = option.get("post_id", None)
                 if "link" in option:
@@ -24,7 +24,7 @@ def valid_invalid(item):
         x = Item(item)
         return x
 
-    class sort():
+    class Sort:
         def __init__(self, valid):
             x = []
             for items in valid:
@@ -36,7 +36,7 @@ def valid_invalid(item):
             x = [list(g) for k, g in groupby(
                 x, key=lambda x: x.post_id)]
             self.sorted = x
-    x = sort(item).sorted
+    x = Sort(item).sorted
     return x
 
 

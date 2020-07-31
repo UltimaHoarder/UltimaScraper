@@ -7,12 +7,12 @@ import timeit
 from argparse import ArgumentParser
 
 import helpers.main_helper as main_helper
-from helpers.main_helper import update_config
 import modules.bbwchan as bbwchan
 import modules.fourchan as fourchan
 import modules.onlyfans as onlyfans
 import modules.patreon as patreon
 import modules.starsavn as starsavn
+from helpers.main_helper import update_config
 
 
 def start_datascraper():
@@ -72,12 +72,12 @@ def start_datascraper():
 
             json_site_settings = json_sites[site_name_lower]["settings"]
             auto_scrape_names = json_site_settings["auto_scrape_names"]
-            extra_auth_settings = json_sites[site_name_lower]["extra_auth_settings"] if "extra_auth_settings" in json_sites[site_name_lower] else {
-                "extra_auth": False}
+            extra_auth_settings = (json_sites[site_name_lower]["extra_auth_settings"]
+                                   if "extra_auth_settings" in json_sites[site_name_lower]
+                                   else {"extra_auth": False})
             extra_auth = extra_auth_settings["extra_auth"]
             if extra_auth:
                 choose_auth = extra_auth_settings["choose_auth"]
-                merge_auth = extra_auth_settings["merge_auth"]
                 json_auth_array += extra_auth_config[site_name_lower]["extra_auth"]
                 if choose_auth:
                     json_auth_array = main_helper.choose_auth(json_auth_array)
@@ -89,19 +89,15 @@ def start_datascraper():
             if site_name_lower == "onlyfans":
                 legacy = False
                 site_name = "OnlyFans"
-                subscription_array = []
                 auth_count = -1
                 x.assign_vars(json_config, json_site_settings, site_name)
                 for json_auth in json_auth_array:
                     auth_count += 1
                     app_token = json_auth['app_token']
-                    user_agent = global_user_agent if not json_auth[
-                        'user_agent'] else json_auth['user_agent']
-
+                    user_agent = global_user_agent if not json_auth['user_agent'] else json_auth['user_agent']
                     x = onlyfans
                     session = x.create_session()
-                    session = x.create_auth(session,
-                                            user_agent, app_token, json_auth)
+                    session = x.create_auth(session, user_agent, app_token, json_auth)
                     session_array.append(session)
                     if not session["session"]:
                         continue
@@ -121,21 +117,17 @@ def start_datascraper():
                     subscription_array += array
                 subscription_array = x.format_options(
                     subscription_array, "usernames")
-            if site_name_lower == "patreon":
+            elif site_name_lower == "patreon":
                 legacy = False
                 site_name = "Patreon"
-                subscription_array = []
                 auth_count = -1
                 x = patreon
                 x.assign_vars(json_config, json_site_settings, site_name)
                 for json_auth in json_auth_array:
                     auth_count += 1
-                    user_agent = global_user_agent if not json_auth[
-                        'user_agent'] else json_auth['user_agent']
-
+                    user_agent = global_user_agent if not json_auth['user_agent'] else json_auth['user_agent']
                     session = x.create_session()
-                    session = x.create_auth(session,
-                                            user_agent, json_auth)
+                    session = x.create_auth(session, user_agent, app_token, json_auth)
                     session_array.append(session)
                     if not session["session"]:
                         continue
@@ -149,25 +141,21 @@ def start_datascraper():
                     subscription_array += array
                 subscription_array = x.format_options(
                     subscription_array, "usernames")
-                print
+
             elif site_name_lower == "starsavn":
                 legacy = False
                 site_name = "StarsAVN"
-                subscription_array = []
                 auth_count = -1
                 x = starsavn
                 x.assign_vars(json_config, json_site_settings, site_name)
                 for json_auth in json_auth_array:
                     auth_count += 1
-                    user_agent = global_user_agent if not json_auth[
-                        'user_agent'] else json_auth['user_agent']
+                    user_agent = global_user_agent if not json_auth['user_agent'] else json_auth['user_agent']
                     sess = json_auth['sess']
-
                     auth_array = dict()
                     auth_array["sess"] = sess
                     session = x.create_session()
-                    session = x.create_auth(session,
-                                            user_agent, app_token, json_auth)
+                    session = x.create_auth(session, user_agent, app_token, json_auth)
                     session_array.append(session)
                     if not session["session"]:
                         continue
@@ -191,26 +179,25 @@ def start_datascraper():
                 session_array = [x.create_session()]
                 array = x.get_subscriptions()
                 subscription_array = x.format_options(array)
-            names = subscription_array[0]
-            if names:
-                print("Names: "+subscription_array[1])
-                if not auto_scrape_names:
-                    value = int(input().strip())
-                else:
-                    value = 0
-                if value:
-                    names = [names[value]]
-                else:
-                    names.pop(0)
-            else:
+
+            if not subscription_array or not subscription_array[0]:
                 print("There's nothing to scrape.")
                 continue
+            names = subscription_array[0]
+            print("Names: " + subscription_array[1])
+            if not auto_scrape_names:
+                value = int(input().strip())
+            else:
+                value = 0
+            if value:
+                names = [names[value]]
+            else:
+                names.pop(0)
             start_time = timeit.default_timer()
             download_list = []
             for name in names:
                 # Extra Auth Support
                 if not legacy:
-                    json_auth = json_auth_array[name[0]]
                     auth_count = name[0]
                     session = session_array[auth_count]["session"]
                     name = name[-1]
@@ -238,4 +225,3 @@ def start_datascraper():
                 time.sleep(int(loop_timeout))
     except Exception as e:
         log_error.exception(e)
-        input()

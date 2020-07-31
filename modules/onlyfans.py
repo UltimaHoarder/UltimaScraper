@@ -63,7 +63,7 @@ def assign_vars(config, site_settings, site_name):
                          ) if json_settings["text_length"] else maximum_length
 
 
-def start_datascraper(session, identifier, site_name, app_token,choice_type=None):
+def start_datascraper(session, identifier, site_name, app_token, choice_type=None):
     print("Scrape Processing")
     info = link_check(session, app_token, identifier)
     if not info["subbed"]:
@@ -130,9 +130,9 @@ def link_check(session, app_token, identifier):
     now = datetime.utcnow().date()
     result_date = datetime.utcnow().date()
     if "email" not in y:
-        subscribedByData = y["subscribedByData"]
-        if subscribedByData:
-            expired_at = subscribedByData["expiredAt"]
+        subscribed_by_data = y["subscribedByData"]
+        if subscribed_by_data:
+            expired_at = subscribed_by_data["expiredAt"]
             result_date = datetime.fromisoformat(
                 expired_at).replace(tzinfo=None).date()
         if y["subscribedBy"]:
@@ -380,7 +380,6 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
         array = format_directory(
             j_directory, site_name, username, location[0], api_type)
         user_directory = array[0]
-        location_directory = array[2][0][1]
         metadata_directory = array[1]
         directories = array[2]+[location[1]]
         if not master_set:
@@ -459,10 +458,10 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
 
                 def process_mass_messages(message, limit):
                     text = message["textCropped"].replace("&", "")
-                    link_2 = "https://onlyfans.com/api2/v2/chats?limit="+limit+"&offset=0&filter=&order=activity&query=" + \
-                        text+"&app-token="+app_token
+                    link_2 = "https://onlyfans.com/api2/v2/chats?limit=" + limit + "&offset=0&filter=&order=activity&query=" + \
+                        text + "&app-token=" + app_token
                     y = json_request(session, link_2)
-                    if None == y or "error" in y:
+                    if y is None or "error" in y:
                         return []
                     return y
                 limit = "10"
@@ -476,8 +475,7 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
                 seen = set()
                 subscribers = [x for x in subscribers if x["withUser"]
                                ["id"] not in seen and not seen.add(x["withUser"]["id"])]
-                x = pool.starmap(process_chats, product(
-                    subscribers))
+                pool.starmap(process_chats, product(subscribers))
             if api_type == "Stories":
                 master_set.append(link)
             if api_type == "Highlights":
@@ -490,7 +488,7 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
                     master_set.append(link2)
         x = pool.starmap(media_scraper, product(
             master_set, [session], [directories], [username], [api_type]))
-        print
+
         results = format_media_set(location[0], x)
         seen = set()
         results["valid"] = [x for x in results["valid"]
@@ -575,7 +573,7 @@ def download_media(media_set, session, directory, username, post_count, location
                         for chunk in r.iter_content(chunk_size=1024):
                             if chunk:  # filter out keep-alive new chunks
                                 f.write(chunk)
-                except (ConnectionResetError) as e:
+                except ConnectionResetError as e:
                     if delete:
                         os.unlink(download_path)
                     count += 1
@@ -629,7 +627,6 @@ def get_paid_posts(session, app_token):
     directory = []
     directory.append
     x = media_scraper(paid_api, session)
-    print
 
 
 def create_auth(session, user_agent, app_token, auth_array, max_auth=2):
@@ -805,21 +802,14 @@ def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0
         for result in results:
             result["auth_count"] = auth_count
             result["self"] = False
-            username = result["username"]
-            now = datetime.utcnow().date()
-            # subscribedBy = result["subscribedBy"]
-            subscribedByData = result["subscribedByData"]
-            result_date = subscribedByData["expiredAt"] if subscribedByData else datetime.utcnow(
-            ).isoformat()
-            price = subscribedByData["price"]
-            subscribePrice = subscribedByData["subscribePrice"]
-            result_date = datetime.fromisoformat(
-                result_date).replace(tzinfo=None).date()
+            subscribed_by_data = result["subscribedByData"]
+            price = subscribed_by_data["price"]
+            subscribe_price = subscribed_by_data["subscribePrice"]
             if ignore_type in ["paid"]:
                 if price > 0:
                     continue
             if ignore_type in ["free"]:
-                if subscribePrice == 0:
+                if subscribe_price == 0:
                     continue
             results2.append(result)
         return results2

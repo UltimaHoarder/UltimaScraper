@@ -52,7 +52,7 @@ Enter in inputs as prompted by console.
 
 Open:
 
-`config.json` (Open with a texteditor)
+`config.json` (Open with a text editor)
 
 [settings]
 

@@ -406,6 +406,7 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
                 f_offset_count = 0
                 while True:
                     y = json_request(session, link)
+                    return y
                     if "list" in y:
                         if y["list"]:
                             master_set.append(link)

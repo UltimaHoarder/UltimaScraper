@@ -8,7 +8,7 @@ import platform
 import re
 import time as time2
 from datetime import datetime
-from itertools import chain
+from itertools import chain,zip_longest
 from os.path import dirname as up
 from urllib.parse import urlparse
 
@@ -241,14 +241,14 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
     count = 0
     while count < 11:
         try:
+            count += 1
             headers = session.headers
             if json_format:
                 headers["accept"] = "application/json, text/plain, */*"
             if data:
-                r = session.request(method, link, json=data, stream=stream)
+                r = session.request(method, link, json=data, stream=stream, timeout=10)
             else:
-                r = session.request(method, link, stream=stream)
-            count += 1
+                r = session.request(method, link, stream=stream, timeout=10)
             rule = session_retry_rules(r, link)
             if rule == 1:
                 continue
@@ -258,7 +258,6 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
             if json_format:
                 matches = ["application/json;", "application/vnd.api+json"]
                 if all(match not in content_type for match in matches):
-                    count += 1
                     continue
                 text = r.text
                 if not text:
@@ -269,13 +268,12 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
             else:
                 return r
         except (ConnectionResetError) as e:
-            count += 1
+            continue
         except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
-            count += 1
+            continue
         except Exception as e:
             log_error.exception(e)
-            count += 1
-            # input("Enter to continue")
+            continue
 
 
 def get_config(config_path):
@@ -375,6 +373,10 @@ def create_sign(session, link, sess, user_agent, text="onlyfans"):
     session.headers["sign"] = sha_1
     session.headers["time"] = time
     return session
+    
+def grouper(n, iterable, fillvalue=None):
+  args = [iter(iterable)] * n
+  return list(zip_longest(fillvalue=fillvalue, *args))
 
 
 log_error = setup_logger('errors', 'errors.log')

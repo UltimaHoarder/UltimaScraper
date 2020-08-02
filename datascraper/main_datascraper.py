@@ -42,7 +42,7 @@ def start_datascraper():
     exit_on_completion = json_settings['exit_on_completion']
     loop_timeout = json_settings['loop_timeout']
 
-    string = ""
+    string = "Site: "
     site_names = []
     bl = ["patreon"]
     if not domain:
@@ -57,13 +57,18 @@ def start_datascraper():
                 string += " | "
 
             count += 1
+        string += "x = Exit"
+
     try:
         while True:
             if domain:
                 site_name = domain
             else:
-                print("Site: "+string)
-                x = int(input())
+                print(string)
+                x = input()
+                if x is "x":
+                    break
+                x = int(x)
                 site_name = site_names[x]
             site_name_lower = site_name.lower()
 

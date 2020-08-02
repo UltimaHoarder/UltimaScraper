@@ -66,7 +66,7 @@ def start_datascraper():
             else:
                 print(string)
                 x = input()
-                if x is "x":
+                if x == "x":
                     break
                 x = int(x)
                 site_name = site_names[x]

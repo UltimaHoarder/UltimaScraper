@@ -254,8 +254,8 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
                 continue
             elif rule == 2:
                 break
-            content_type = r.headers['Content-Type']
             if json_format:
+                content_type = r.headers['Content-Type']
                 matches = ["application/json;", "application/vnd.api+json"]
                 if all(match not in content_type for match in matches):
                     continue

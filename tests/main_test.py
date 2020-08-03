@@ -16,6 +16,11 @@ def check_config():
     path = os.path.join('.settings', 'config.json')
     if os.path.isfile(path):
         json_config = json.load(open(path))
+        for key, value in json_config["settings"].items():
+            if key == "socks5_proxy":
+                if not isinstance(value, list):
+                    value = [value]
+                    json_config["settings"][key] = value
         for key, value in json_config["supported"].items():
             settings = value["settings"]
             if "directory" in settings:
@@ -33,7 +38,6 @@ def check_config():
                         x[0], x[1])
                     new = settings["file_name_format"]
                     print("Changed "+file_name_format+" to "+new + " for "+key)
-                    print
         json_config2 = json.load(open(path))
         if json_config != json_config2:
             main_helper.update_config(json_config)

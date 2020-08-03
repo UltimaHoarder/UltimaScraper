@@ -105,6 +105,9 @@ def start_datascraper():
 
                     x = onlyfans
                     session = x.create_session()
+                    if not session:
+                        print("Unable to create session")
+                        continue
                     session = x.create_auth(session,
                                             user_agent, app_token, json_auth)
                     session_array.append(session)

@@ -610,6 +610,9 @@ def download_media(media_set, session, directory, username, post_count, location
 
 
 def create_session(custom_proxy="",test_ip=True):
+    session = requests.Session()
+    if not proxy:
+        return session
     for proxy2 in proxy:
         max_threads = multiprocessing.cpu_count()
         session = requests.Session()

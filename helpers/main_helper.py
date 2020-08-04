@@ -6,11 +6,12 @@ import logging
 import os
 import platform
 import re
-import time as time2
 from datetime import datetime
 from itertools import chain,zip_longest
 from os.path import dirname as up
 from urllib.parse import urlparse
+import time
+import random
 
 import requests
 from bs4 import BeautifulSoup
@@ -239,6 +240,7 @@ def session_retry_rules(r, link):
 def json_request(session, link, method="GET", stream=False, json_format=True, data={}):
     session = session_rules(session, link)
     count = 0
+    sleep_number = random.randint(2, 5)
     while count < 11:
         try:
             count += 1
@@ -270,6 +272,7 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
         except (ConnectionResetError) as e:
             continue
         except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
+            time.sleep(sleep_number)
             continue
         except Exception as e:
             log_error.exception(e)
@@ -360,18 +363,18 @@ def update_metadata(path, metadata):
 
 def create_sign(session, link, sess, user_agent, text="onlyfans"):
     # Users: 300000 | Creators: 301000
-    time = str(int(round(time2.time() * 1000-301000)))
+    time2 = str(int(round(time.time() * 1000-301000)))
     path = urlparse(link).path
     query = urlparse(link).query
     path = path+"?"+query
-    a = [sess, time, path, user_agent, text]
+    a = [sess, time2, path, user_agent, text]
     msg = "\n".join(a)
     message = msg.encode("utf-8")
     hash_object = hashlib.sha1(message)
     sha_1 = hash_object.hexdigest()
     session.headers["access-token"] = sess
     session.headers["sign"] = sha_1
-    session.headers["time"] = time
+    session.headers["time"] = time2
     return session
     
 def grouper(n, iterable, fillvalue=None):

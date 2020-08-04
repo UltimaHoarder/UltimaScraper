@@ -63,7 +63,7 @@ def assign_vars(config, site_settings, site_name):
                          ) if json_settings["text_length"] else maximum_length
 
 
-def start_datascraper(session, identifier, site_name, app_token, choice_type=None):
+def start_datascraper(session, identifier, site_name, app_token,choice_type=None):
     print("Scrape Processing")
     info = link_check(session, app_token, identifier)
     if not info["subbed"]:
@@ -540,7 +540,7 @@ def download_media(media_set, session, directory, username, post_count, location
 
                 def choose_link(session, links):
                     for link in links:
-                        r = json_request(session, link, "HEAD", True, False)
+                        r = json_request(session, link, "HEAD", stream=True, json_format=False)
                         if not r:
                             continue
 
@@ -609,15 +609,13 @@ def download_media(media_set, session, directory, username, post_count, location
         media_set, [session], [directory], [username]))
 
 
-def create_session(custom_proxy="", test_ip=True):
-    session = requests.Session()
-    if not proxy:
-        return session
+def create_session(custom_proxy="",test_ip=True):
     for proxy2 in proxy:
         max_threads = multiprocessing.cpu_count()
+        session = requests.Session()
         proxy2 = custom_proxy if custom_proxy else proxy2
         proxies = {'http': 'socks5h://'+proxy2,
-                   'https': 'socks5h://'+proxy2}
+                'https': 'socks5h://'+proxy2}
         if proxy2:
             session.proxies = proxies
             if cert:

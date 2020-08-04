@@ -312,6 +312,8 @@ def media_scraper(link, session, directory, username, api_type):
             for xlink in link, preview_link:
                 if xlink:
                     new_dict["links"].append(xlink)
+                if "video" in media_type:
+                    break
             new_dict["price"] = media_api["price"]if "price" in media_api else None
             if date == "-001-11-30T00:00:00+00:00":
                 date_string = master_date

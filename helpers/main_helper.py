@@ -271,7 +271,7 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
                 return r
         except (ConnectionResetError) as e:
             continue
-        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
+        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError,requests.exceptions.ReadTimeout) as e:
             time.sleep(sleep_number)
             continue
         except Exception as e:

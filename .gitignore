@@ -145,3 +145,5 @@ $RECYCLE.BIN/
 .sites
 *.log
 .settings/config.json
+.settings/extra_auth.json
+extras/OFRenamer/.settings/config.json

@@ -157,7 +157,6 @@ def start_datascraper():
                     subscription_array += array
                 subscription_array = x.format_options(
                     subscription_array, "usernames")
-                print
             elif site_name_lower == "starsavn":
                 legacy = False
                 site_name = "StarsAVN"
@@ -201,13 +200,13 @@ def start_datascraper():
                 subscription_array = x.format_options(array)
             names = subscription_array[0]
             if names:
-                print("Names: "+subscription_array[1])
+                print("Names: Username = username | "+subscription_array[1])
                 if not auto_scrape_names:
-                    value = int(input().strip())
-                else:
-                    value = 0
-                if value:
-                    names = [names[value]]
+                    value = input().strip()
+                    if value.isdigit():
+                        names = [names[int(value)]]
+                    else:
+                        names = [name for name in names if value in name[1]]
                 else:
                     names.pop(0)
             else:

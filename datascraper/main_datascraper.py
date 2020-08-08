@@ -204,11 +204,14 @@ def start_datascraper():
                 if not auto_scrape_names:
                     value = input().strip()
                     if value.isdigit():
-                        names = [names[int(value)]]
+                        if value == "0":
+                            names = names[1:]
+                        else:
+                            names = [names[int(value)]]
                     else:
                         names = [name for name in names if value in name[1]]
                 else:
-                    names.pop(0)
+                    names = names[1:]
             else:
                 print("There's nothing to scrape.")
                 continue

@@ -211,6 +211,7 @@ def start_datascraper():
                     else:
                         names = [name for name in names if value in name[1]]
                 else:
+                    value = 0
                     names = names[1:]
             else:
                 print("There's nothing to scrape.")

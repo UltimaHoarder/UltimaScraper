@@ -56,7 +56,8 @@ def fix_metadata(posts, json_settings, username, site_name):
                 new_format = main_helper.reformat(**temp)
                 new_format = os.path.abspath(new_format)
                 if filepath != new_format:
-                    shutil.move(filepath, new_format)
+                    if not os.path.isfile(new_format):
+                        shutil.move(filepath, new_format)
                 return new_format
             if os.path.isfile(filepath):
                 filepath = update(filepath)

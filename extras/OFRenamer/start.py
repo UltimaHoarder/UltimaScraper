@@ -83,20 +83,21 @@ def fix_metadata(posts, json_settings, username, site_name):
 
 
 def start(metadata_filepath, json_settings):
-    metadatas = json.load(open(metadata_filepath))
-    metadatas2 = prepare_metadata(metadatas).items
-    username = os.path.basename(up(up(metadata_filepath)))
-    site_name = os.path.basename(up(up(up(metadata_filepath))))
-    for metadata in metadatas2:
-        metadata.valid = fix_metadata(
-            metadata.valid, json_settings, username, site_name)
-        metadata.invalid = fix_metadata(
-            metadata.invalid, json_settings, username, site_name)
-    metadatas2 = json.loads(json.dumps(
-        metadatas2, default=lambda o: o.__dict__))
-    if metadatas != metadatas2:
-        main_helper.update_metadata(metadata_filepath, metadatas2)
-    return metadatas2
+    if os.path.getsize(metadata_filepath) > 0:
+        metadatas = json.load(open(metadata_filepath))
+        metadatas2 = prepare_metadata(metadatas).items
+        username = os.path.basename(up(up(metadata_filepath)))
+        site_name = os.path.basename(up(up(up(metadata_filepath))))
+        for metadata in metadatas2:
+            metadata.valid = fix_metadata(
+                metadata.valid, json_settings, username, site_name)
+            metadata.invalid = fix_metadata(
+                metadata.invalid, json_settings, username, site_name)
+        metadatas2 = json.loads(json.dumps(
+            metadatas2, default=lambda o: o.__dict__))
+        if metadatas != metadatas2:
+            main_helper.update_metadata(metadata_filepath, metadatas2)
+        return metadatas2
 
 
 if __name__ == "__main__":

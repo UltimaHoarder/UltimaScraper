@@ -795,7 +795,7 @@ def create_auth(sessions, user_agent, app_token, auth_array, max_auth=2):
     except Exception as e:
         log_error.exception(e)
     array = dict()
-    array["session"] = None
+    array["sessions"] = None
     array["me_api"] = me_api
     return array
 

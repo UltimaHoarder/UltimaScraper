@@ -7,7 +7,7 @@ import os
 import platform
 import re
 from datetime import datetime
-from itertools import chain,zip_longest
+from itertools import chain, zip_longest
 from os.path import dirname as up
 from urllib.parse import urlparse
 import time
@@ -96,6 +96,14 @@ def format_image(directory, timestamp):
         from win32_setctime import setctime
         setctime(directory, timestamp)
     os.utime(directory, (timestamp, timestamp))
+
+
+def filter_metadata(datas):
+    for data in datas:
+        for items in data["valid"]:
+            for item in items:
+                item.pop("session")
+    return datas
 
 
 def export_archive(datas, archive_path, json_settings):
@@ -238,7 +246,7 @@ def session_retry_rules(r, link):
     return boolean
 
 
-def json_request(session, link, method="GET", stream=False, json_format=True, data={}):
+def json_request(session, link, method="GET", stream=False, json_format=True, data={}, sleep=True):
     session = session_rules(session, link)
     count = 0
     sleep_number = random.randint(2, 5)
@@ -249,7 +257,8 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
             if json_format:
                 headers["accept"] = "application/json, text/plain, */*"
             if data:
-                r = session.request(method, link, json=data, stream=stream, timeout=10)
+                r = session.request(method, link, json=data,
+                                    stream=stream, timeout=10)
             else:
                 r = session.request(method, link, stream=stream, timeout=10)
             rule = session_retry_rules(r, link)
@@ -272,8 +281,9 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
                 return r
         except (ConnectionResetError) as e:
             continue
-        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError,requests.exceptions.ReadTimeout,socket.timeout) as e:
-            time.sleep(sleep_number)
+        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout, socket.timeout) as e:
+            if sleep:
+                time.sleep(sleep_number)
             continue
         except Exception as e:
             log_error.exception(e)
@@ -377,10 +387,25 @@ def create_sign(session, link, sess, user_agent, text="onlyfans"):
     session.headers["sign"] = sha_1
     session.headers["time"] = time2
     return session
-    
+
+
 def grouper(n, iterable, fillvalue=None):
-  args = [iter(iterable)] * n
-  return list(zip_longest(fillvalue=fillvalue, *args))
+    args = [iter(iterable)] * n
+    return list(zip_longest(fillvalue=fillvalue, *args))
+
+
+def assign_session(medias, number):
+    count = 0
+    medias2 = []
+    for auth in medias:
+        media2 = {}
+        media2["link"] = auth
+        media2["count"] = count
+        medias2.append(media2)
+        count += 1
+        if count == number:
+            count = 0
+    return medias2
 
 
 log_error = setup_logger('errors', 'errors.log')

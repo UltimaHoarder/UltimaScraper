@@ -104,17 +104,17 @@ def start_datascraper():
                         'user_agent'] else json_auth['user_agent']
 
                     x = onlyfans
-                    session = x.create_session()
-                    if not session:
+                    sessions = x.create_session()
+                    if not sessions:
                         print("Unable to create session")
                         continue
-                    session = x.create_auth(session,
+                    session = x.create_auth(sessions,
                                             user_agent, app_token, json_auth)
                     session_array.append(session)
-                    if not session["session"]:
+                    if not session["sessions"]:
                         continue
                     # x.get_paid_posts(session["session"],app_token)
-                    cookies = session["session"].cookies.get_dict()
+                    cookies = session["sessions"][0].cookies.get_dict()
                     auth_id = cookies["auth_id"]
                     json_auth['auth_id'] = auth_id
                     json_auth['auth_uniq_'] = cookies["auth_uniq_"+auth_id]
@@ -125,7 +125,7 @@ def start_datascraper():
                         update_config(json_config)
                     me_api = session["me_api"]
                     array = x.get_subscriptions(
-                        session["session"], app_token, session["subscriber_count"], me_api, auth_count)
+                        session["sessions"][0], app_token, session["subscriber_count"], me_api, auth_count)
                     subscription_array += array
                 subscription_array = x.format_options(
                     subscription_array, "usernames")
@@ -223,7 +223,10 @@ def start_datascraper():
                 if not legacy:
                     json_auth = json_auth_array[name[0]]
                     auth_count = name[0]
-                    session = session_array[auth_count]["session"]
+                    if "session" in session_array[auth_count]:
+                        session = session_array[auth_count]["session"]
+                    else:
+                        session = session_array[auth_count]["sessions"]
                     name = name[-1]
                 else:
                     session = session_array[0]["session"]

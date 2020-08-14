@@ -500,7 +500,7 @@ def download_media(media_set, session, directory, username, post_count, location
         media_set, [session], [directory], [username]))
 
 
-def create_session(custom_proxy="",test_ip=True):
+def create_session(custom_proxy="", test_ip=True):
     session = requests.Session()
     if not proxy:
         return session
@@ -509,7 +509,7 @@ def create_session(custom_proxy="",test_ip=True):
         session = requests.Session()
         proxy2 = custom_proxy if custom_proxy else proxy2
         proxies = {'http': 'socks5h://'+proxy2,
-                'https': 'socks5h://'+proxy2}
+                   'https': 'socks5h://'+proxy2}
         if proxy2:
             session.proxies = proxies
             if cert:

@@ -6,6 +6,7 @@ from datetime import datetime
 from itertools import chain, groupby, product
 from multiprocessing.dummy import Pool as ThreadPool
 from urllib.parse import urlparse
+import copy
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -15,7 +16,7 @@ from helpers.main_helper import (check_for_dupe_file, clean_text, create_sign,
                                  export_archive, format_directory,
                                  format_image, format_media_set, get_directory,
                                  json_request, log_error, reformat,
-                                 setup_logger)
+                                 setup_logger, assign_session, filter_metadata)
 
 log_download = setup_logger('downloads', 'downloads.log')
 
@@ -63,9 +64,9 @@ def assign_vars(config, site_settings, site_name):
                          ) if json_settings["text_length"] else maximum_length
 
 
-def start_datascraper(session, identifier, site_name, app_token,choice_type=None):
+def start_datascraper(sessions, identifier, site_name, app_token, choice_type=None):
     print("Scrape Processing")
-    info = link_check(session, app_token, identifier)
+    info = link_check(sessions[0], app_token, identifier)
     if not info["subbed"]:
         print(info["user"])
         print("First time? Did you forget to edit your config.json file?")
@@ -98,16 +99,17 @@ def start_datascraper(session, identifier, site_name, app_token,choice_type=None
         item[1].pop(3)
         api_type = item[2]
         results = prepare_scraper(
-            session, site_name, only_links, *item[1], api_type, app_token)
-        for result in results[0]:
-            if not only_links:
-                media_set = result
-                if not media_set["valid"]:
-                    continue
-                directory = results[1]
-                location = result["type"]
-                prep_download.append(
-                    [media_set["valid"], session, directory, username, post_count, location, api_type])
+            sessions, site_name, only_links, *item[1], api_type, app_token)
+        if results:
+            for result in results[0]:
+                if not only_links:
+                    media_set = result
+                    if not media_set["valid"]:
+                        continue
+                    directory = results[1]
+                    location = result["type"]
+                    prep_download.append(
+                        [media_set["valid"], sessions, directory, username, post_count, location, api_type])
     # When profile is done scraping, this function will return True
     print("Scrape Completed"+"\n")
     return [True, prep_download]
@@ -172,6 +174,8 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     else:
         print('Scrape: a = Everything | b = Images | c = Videos | d = Audios')
         input_choice = input().strip()
+    user_api_ = "https://onlyfans.com/api2/v2/users/"+user_id + \
+        "?app-token="+app_token+""
     message_api = "https://onlyfans.com/api2/v2/chats/"+user_id + \
         "/messages?limit=100&offset=0&order=desc&app-token="+app_token+""
     mass_messages_api = "https://onlyfans.com/api2/v2/messages/queue/stats?offset=0&limit=30&app-token="+app_token+""
@@ -190,6 +194,8 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
         input_choice = input_choice.replace(" -l", "")
     mandatory = [j_directory, only_links]
     y = ["photo", "video", "stream", "gif", "audio"]
+    u_array = ["You have chosen to scrape {}", [
+        user_api_, x, *mandatory, post_count], "Profile"]
     s_array = ["You have chosen to scrape {}", [
         stories_api, x, *mandatory, post_count], "Stories"]
     h_array = ["You have chosen to scrape {}", [
@@ -202,8 +208,9 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
         message_api, media_types, *mandatory, post_count], "Messages"]
     a_array = ["You have chosen to scrape {}", [
         archived_api, media_types, *mandatory, archived_count], "Archived"]
-    array = [s_array, h_array, p_array, a_array, mm_array, m_array]
+    array = [u_array, s_array, h_array, p_array, a_array, mm_array, m_array]
     # array = [s_array, h_array, p_array, a_array, m_array]
+    # array = [u_array]
     # array = [p_array]
     # array = [a_array]
     # array = [mm_array]
@@ -215,8 +222,8 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     #     new["api_type"] = xxx[2]
     #     print
     if not is_me:
-        if len(array) > 3:
-            del array[4]
+        if len(array) > 4:
+            del array[5]
     valid_input = False
     if input_choice == "a":
         valid_input = True
@@ -256,7 +263,36 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     return []
 
 
-def media_scraper(link, session, directory, username, api_type):
+def profile_scraper(link, session, directory, username):
+    y = json_request(session, link)
+    q = []
+    q.append(["Avatars", y["avatar"]])
+    q.append(["Headers", y["header"]])
+    for x in q:
+        new_dict = dict()
+        media_type = x[0]
+        media_link = x[1]
+        new_dict["links"] = [media_link]
+        directory2 = os.path.join(directory, username, "Profile", media_type)
+        os.makedirs(directory2, exist_ok=True)
+        download_path = os.path.join(
+            directory2, media_link.split("/")[-2]+".jpg")
+        if not overwrite_files:
+            if os.path.isfile(download_path):
+                continue
+        r = json_request(session, media_link, stream=True,
+                         json_format=False, sleep=False)
+        if not r:
+            continue
+        with open(download_path, 'wb') as f:
+            for chunk in r.iter_content(chunk_size=1024):
+                if chunk:  # filter out keep-alive new chunks
+                    f.write(chunk)
+
+
+def media_scraper(result, sessions, directory, username, api_type):
+    link = result["link"]
+    session = sessions[result["count"]]
     media_set = [[], []]
     media_type = directory[-1]
     y = json_request(session, link)
@@ -312,7 +348,6 @@ def media_scraper(link, session, directory, username, api_type):
             for xlink in link, preview_link:
                 if xlink:
                     new_dict["links"].append(xlink)
-                if "video" in media_type:
                     break
             new_dict["price"] = media_api["price"]if "price" in media_api else None
             if date == "-001-11-30T00:00:00+00:00":
@@ -362,11 +397,12 @@ def media_scraper(link, session, directory, username, api_type):
             if size == 0:
                 media_set[1].append(new_dict)
                 continue
+            new_dict["session"] = session
             media_set[0].append(new_dict)
     return media_set
 
 
-def prepare_scraper(session, site_name, only_links, link, locations, directory, api_count, username, api_type, app_token):
+def prepare_scraper(sessions, site_name, only_links, link, locations, directory, api_count, username, api_type, app_token):
     seperator = " | "
     user_directory = ""
     metadata_directory = ""
@@ -386,6 +422,9 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
         metadata_directory = array[1]
         directories = array[2]+[location[1]]
         if not master_set:
+            if api_type == "Profile":
+                profile_scraper(link, sessions[0], directory, username)
+                return
             if api_type == "Posts":
                 num = 100
                 link = link.replace("limit=0", "limit="+str(num))
@@ -407,7 +446,7 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
             def xmessages(link):
                 f_offset_count = 0
                 while True:
-                    y = json_request(session, link)
+                    y = json_request(sessions[0], link)
                     if not y:
                         return
                     if "list" in y:
@@ -449,7 +488,7 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
                     link_list = [link.replace(
                         "offset=0", "offset="+str(i*30)) for i in range(offset_count, offset_count2)]
                     link_list = pool.starmap(process_messages, product(
-                        link_list, [session]))
+                        link_list, [sessions[0]]))
                     if all(not result for result in link_list):
                         break
                     link_list2 = list(chain(*link_list))
@@ -465,7 +504,7 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
                     text = message["textCropped"].replace("&", "")
                     link_2 = "https://onlyfans.com/api2/v2/chats?limit="+limit+"&offset=0&filter=&order=activity&query=" + \
                         text+"&app-token="+app_token
-                    y = json_request(session, link_2)
+                    y = json_request(sessions[0], link_2)
                     if None == y or "error" in y:
                         return []
                     return y
@@ -485,15 +524,16 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
             if api_type == "Stories":
                 master_set.append(link)
             if api_type == "Highlights":
-                r = json_request(session, link)
+                r = json_request(sessions[0], link)
                 if "error" in r:
                     break
                 for item in r:
                     link2 = "https://onlyfans.com/api2/v2/stories/highlights/" + \
                         str(item["id"])+"?app-token="+app_token+""
                     master_set.append(link2)
+        master_set2 = assign_session(master_set, len(sessions))
         x = pool.starmap(media_scraper, product(
-            master_set, [session], [directories], [username], [api_type]))
+            master_set2, [sessions], [directories], [username], [api_type]))
         print
         results = format_media_set(location[0], x)
         seen = set()
@@ -528,6 +568,8 @@ def prepare_scraper(session, site_name, only_links, link, locations, directory, 
         if metadata_set:
             os.makedirs(metadata_directory, exist_ok=True)
             archive_directory = os.path.join(metadata_directory, api_type)
+            metadata_set_copy = copy.deepcopy(metadata_set)
+            metadata_set = filter_metadata(metadata_set_copy)
             export_archive(metadata_set, archive_directory, json_settings)
     return [media_set, directory]
 
@@ -537,12 +579,14 @@ def download_media(media_set, session, directory, username, post_count, location
         return_bool = True
         for media in medias:
             count = 0
+            session = media["session"]
             while count < 11:
                 links = media["links"]
 
                 def choose_link(session, links):
                     for link in links:
-                        r = json_request(session, link, "HEAD", stream=True, json_format=False)
+                        r = json_request(session, link, "HEAD",
+                                         stream=True, json_format=False)
                         if not r:
                             continue
 
@@ -565,7 +609,6 @@ def download_media(media_set, session, directory, username, post_count, location
                     if check_for_dupe_file(download_path, content_length):
                         format_image(download_path, timestamp)
                         return_bool = False
-                        count += 1
                         break
                 r = json_request(session, link, stream=True, json_format=False)
                 if not r:
@@ -611,16 +654,17 @@ def download_media(media_set, session, directory, username, post_count, location
         media_set, [session], [directory], [username]))
 
 
-def create_session(custom_proxy="",test_ip=True):
-    session = requests.Session()
+def create_session(custom_proxy="", test_ip=True):
+    session = [requests.Session()]
     if not proxy:
         return session
+    sessions = []
     for proxy2 in proxy:
         max_threads = multiprocessing.cpu_count()
         session = requests.Session()
         proxy2 = custom_proxy if custom_proxy else proxy2
         proxies = {'http': 'socks5h://'+proxy2,
-                'https': 'socks5h://'+proxy2}
+                   'https': 'socks5h://'+proxy2}
         if proxy2:
             session.proxies = proxies
             if cert:
@@ -629,23 +673,24 @@ def create_session(custom_proxy="",test_ip=True):
             'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
         if test_ip:
             link = 'https://checkip.amazonaws.com'
-            r = json_request(session, link, json_format=False)
+            r = json_request(session, link, json_format=False, sleep=False)
             if not r:
                 continue
             ip = r.text.strip()
             print("Session IP: "+ip)
-        return session
+        sessions.append(session)
+    return sessions
 
 
 def get_paid_posts(session, app_token):
-    paid_api = "https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token="+app_token+""
-    directory = []
-    directory.append
-    x = media_scraper(paid_api, session)
+    # paid_api = "https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token="+app_token+""
+    # directory = []
+    # directory.append
+    # x = media_scraper(paid_api, session)
     print
 
 
-def create_auth(session, user_agent, app_token, auth_array, max_auth=2):
+def create_auth(sessions, user_agent, app_token, auth_array, max_auth=2):
     me_api = []
     auth_count = 1
     auth_version = "(V1)"
@@ -667,27 +712,30 @@ def create_auth(session, user_agent, app_token, auth_array, max_auth=2):
                 count = 1
             print("Auth "+auth_version)
             sess = auth_array["sess"]
-            session.headers = {
-                'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
-            if auth_array["sess"]:
-                found = False
+            for session in sessions:
+                session.headers = {
+                    'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
+                if auth_array["sess"]:
+                    found = False
+                    for auth_cookie in auth_cookies:
+                        if auth_array["sess"] == auth_cookie["value"]:
+                            found = True
+                            break
+                    if not found:
+                        auth_cookies.append(
+                            {'name': 'sess', 'value': auth_array["sess"], 'domain': '.onlyfans.com'})
                 for auth_cookie in auth_cookies:
-                    if auth_array["sess"] == auth_cookie["value"]:
-                        found = True
-                        break
-                if not found:
-                    auth_cookies.append(
-                        {'name': 'sess', 'value': auth_array["sess"], 'domain': '.onlyfans.com'})
-            for auth_cookie in auth_cookies:
-                session.cookies.set(**auth_cookie)
+                    session.cookies.set(**auth_cookie)
 
             max_count = 10
             while count < 11:
                 print("Auth Attempt "+str(count)+"/"+str(max_count))
                 link = "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token
-                a = [session, link, sess, user_agent]
-                session = create_sign(*a)
-                r = json_request(session, link)
+                for session in sessions:
+                    a = [session, link, sess, user_agent]
+                    session = create_sign(*a)
+                session = sessions[0]
+                r = json_request(session, link, sleep=False)
                 count += 1
                 if not r:
                     continue
@@ -734,11 +782,11 @@ def create_auth(session, user_agent, app_token, auth_array, max_auth=2):
                 print("Welcome "+r["name"])
                 option_string = "username or profile link"
                 link = "https://onlyfans.com/api2/v2/subscriptions/count/all?app-token="+app_token
-                r = json_request(session, link)
+                r = json_request(session, link, sleep=False)
                 if not r:
                     break
                 array = dict()
-                array["session"] = session
+                array["sessions"] = sessions
                 array["option_string"] = option_string
                 array["subscriber_count"] = r["subscriptions"]["active"]
                 array["me_api"] = me_api

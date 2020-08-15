@@ -607,7 +607,7 @@ def download_media(media_set, session, directory, username, post_count, location
                 content_length = result[1]
                 date_object = datetime.strptime(
                     media["postedAt"], "%d-%m-%Y %H:%M:%S")
-                download_path = media["directory"]+media["filename"]
+                download_path = os.path.join(media["directory"],media["filename"])
                 timestamp = date_object.timestamp()
                 if not overwrite_files:
                     if check_for_dupe_file(download_path, content_length):

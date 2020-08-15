@@ -392,7 +392,7 @@ def media_scraper(result, sessions, directory, username, api_type):
                 new_dict["directory"] = os.path.join(directory[1][1])
                 if new_dict["paid"]:
                     new_dict["directory"] = os.path.join(directory[2][1])
-            new_dict["filename"] = file_path.rsplit('/', 1)[-1]
+            new_dict["filename"] = os.path.basename(file_path)
             new_dict["size"] = size
             if size == 0:
                 media_set[1].append(new_dict)

@@ -196,7 +196,7 @@ def format_directory(j_directory, site_name, username, location="", api_type="")
     cats = ["", "Free", "Paid"]
     for cat in cats:
         directories.append(
-            [location, os.path.join(user_directory, api_type, cat, location+"/")])
+            [location, os.path.join(user_directory, api_type, cat, location)])
     return [user_directory, metadata_directory, directories]
 
 

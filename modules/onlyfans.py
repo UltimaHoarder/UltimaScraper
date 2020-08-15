@@ -266,8 +266,12 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
 def profile_scraper(link, session, directory, username):
     y = json_request(session, link)
     q = []
-    q.append(["Avatars", y["avatar"]])
-    q.append(["Headers", y["header"]])
+    avatar = y["avatar"]
+    header = y["header"]
+    if avatar:
+        q.append(["Avatars", avatar])
+    if header:
+        q.append(["Headers", header])
     for x in q:
         new_dict = dict()
         media_type = x[0]

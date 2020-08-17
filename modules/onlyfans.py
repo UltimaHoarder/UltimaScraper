@@ -682,6 +682,8 @@ def create_session(custom_proxy="", test_ip=True):
                 continue
             ip = r.text.strip()
             print("Session IP: "+ip)
+        if custom_proxy:
+            return session
         sessions.append(session)
     return sessions
 

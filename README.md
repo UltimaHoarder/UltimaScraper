@@ -11,7 +11,7 @@ From the project folder open CMD/Terminal and run the command below:
 
 Start:
 
-`start_ofd.py`
+`python start_ofd.py` or double click `start_ofd.py`
 
 Open and edit:
 
@@ -25,7 +25,7 @@ Fill in the following:
 * `{"sess":"your_sess_token"}`
 * `{"user-agent":"your_user-agent"}`
 
-If you're using 2FA or have this cookie:
+If you're using 2FA or have these cookie:
 * `{"auth_hash":"your_auth_hash"}`
 * `{"auth_uniq_":"your_auth_uniq_"}`
 
@@ -33,6 +33,7 @@ Optional change:
 * `{"fp":"your_fp"}`
 * `{"app-token":"your_token"}`
 
+Only enter in cookies that reflect your OnlyFans account otherwise, you'll get auth errors.
 
 Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get said above cookies
 
@@ -43,7 +44,7 @@ Your auth config should look similar to this
 ![app-token](examples/2.png)
 # USAGE
 
-`python start_ofd.py`
+`python start_ofd.py` or double click `start_ofd.py`
 
 Enter in inputs as prompted by console.
 

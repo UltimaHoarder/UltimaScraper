@@ -407,5 +407,8 @@ def assign_session(medias, number):
             count = 0
     return medias2
 
+def create_link_group(max_threads):
+    x = range
+    print
 
 log_error = setup_logger('errors', 'errors.log')

@@ -12,7 +12,7 @@ import requests
 from requests.adapters import HTTPAdapter
 
 import extras.OFSorter.ofsorter as ofsorter
-from helpers.main_helper import (check_for_dupe_file, clean_text, create_sign,
+from helpers.main_helper import (check_for_dupe_file, clean_text, create_link_group, create_sign,
                                  export_archive, format_directory,
                                  format_image, format_media_set, get_directory,
                                  json_request, log_error, reformat,
@@ -237,7 +237,7 @@ def scrape_choice(user_id, post_counts, is_me):
             new_item["api_array"]["media_types"] = [[name, [y[0]]]]
         elif input_choice == "c":
             name = "Videos"
-            new_item["api_array"]["media_types"] = [[name, [y[1:4]]]]
+            new_item["api_array"]["media_types"] = [[name, y[1:4]]]
         elif input_choice == "d":
             name = "Audios"
             new_item["api_array"]["media_types"] = [[name, [y[4]]]]
@@ -684,11 +684,16 @@ def create_session(custom_proxy="", test_ip=True):
     return sessions
 
 
-def get_paid_posts(session):
+def get_paid_posts(sessions):
     paid_api = "https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token="+app_token+""
+    max_threads = multiprocessing.cpu_count()
+    x = create_link_group(max_threads)
+    print
+    result = {}
+    result["link"] = paid_api
     directory = []
     print
-    x = media_scraper(paid_api, session)
+    x = media_scraper(paid_api, sessions,"a","a","a")
     print
 
 

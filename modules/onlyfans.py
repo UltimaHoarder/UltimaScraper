@@ -720,7 +720,7 @@ def create_auth(sessions, user_agent, app_token, auth_array, max_auth=2):
             sess = auth_array["sess"]
             for session in sessions:
                 session.headers = {
-                    'User-Agent': user_agent, 'Referer': 'https://onlyfans.com/'}
+                    'user-agent': user_agent, 'referer': 'https://onlyfans.com/'}
                 if auth_array["sess"]:
                     found = False
                     for auth_cookie in auth_cookies:

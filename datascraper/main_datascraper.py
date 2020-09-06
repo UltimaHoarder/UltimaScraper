@@ -88,7 +88,6 @@ def start_datascraper():
                     json_auth_array = main_helper.choose_auth(json_auth_array)
             session_array = []
             x = onlyfans
-            app_token = ""
             subscription_array = []
             legacy = True
             if site_name_lower == "onlyfans":
@@ -96,24 +95,24 @@ def start_datascraper():
                 site_name = "OnlyFans"
                 subscription_array = []
                 auth_count = -1
-                x.assign_vars(json_config, json_site_settings, site_name)
                 for json_auth in json_auth_array:
                     auth_count += 1
-                    app_token = json_auth['app_token']
                     user_agent = global_user_agent if not json_auth[
                         'user_agent'] else json_auth['user_agent']
 
                     x = onlyfans
+                    x.assign_vars(json_auth,json_config, json_site_settings, site_name)
                     sessions = x.create_session()
                     if not sessions:
                         print("Unable to create session")
                         continue
                     session = x.create_auth(sessions,
-                                            user_agent, app_token, json_auth)
+                                            user_agent, json_auth, max_auth=1)
                     session_array.append(session)
                     if not session["sessions"]:
                         continue
-                    # x.get_paid_posts(session["session"],app_token)
+                    # x.get_paid_posts(session["sessions"][0])
+                    print
                     cookies = session["sessions"][0].cookies.get_dict()
                     auth_id = cookies["auth_id"]
                     json_auth['auth_id'] = auth_id
@@ -125,7 +124,7 @@ def start_datascraper():
                         update_config(json_config)
                     me_api = session["me_api"]
                     array = x.get_subscriptions(
-                        session["sessions"][0], app_token, session["subscriber_count"], me_api, auth_count)
+                        session["sessions"][0], session["subscriber_count"], me_api, auth_count)
                     subscription_array += array
                 subscription_array = x.format_options(
                     subscription_array, "usernames")
@@ -174,13 +173,13 @@ def start_datascraper():
                     auth_array["sess"] = sess
                     session = x.create_session()
                     session = x.create_auth(session,
-                                            user_agent, app_token, json_auth)
+                                            user_agent, json_auth)
                     session_array.append(session)
                     if not session["session"]:
                         continue
                     me_api = session["me_api"]
                     array = x.get_subscriptions(
-                        session["session"], app_token, session["subscriber_count"], me_api, auth_count)
+                        session["session"], session["subscriber_count"], me_api, auth_count)
                     subscription_array += array
                 subscription_array = x.format_options(
                     subscription_array, "usernames")
@@ -218,10 +217,12 @@ def start_datascraper():
                 continue
             start_time = timeit.default_timer()
             download_list = []
+            app_token = ""
             for name in names:
                 # Extra Auth Support
                 if not legacy:
                     json_auth = json_auth_array[name[0]]
+                    app_token = json_auth["app_token"] if "app_token" in json_auth else ""
                     auth_count = name[0]
                     if "session" in session_array[auth_count]:
                         session = session_array[auth_count]["session"]
@@ -233,7 +234,7 @@ def start_datascraper():
                 main_helper.assign_vars(json_config)
                 username = main_helper.parse_links(site_name_lower, name)
                 result = x.start_datascraper(
-                    session, username, site_name, app_token, choice_type=value)
+                    session, username, site_name, app_token,choice_type=value)
                 if not args.metadata:
                     download_list.append(result)
             for y in download_list:

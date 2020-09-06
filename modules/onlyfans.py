@@ -37,10 +37,11 @@ delete_legacy_metadata = None
 sort_free_paid_posts = None
 blacklist_name = None
 maximum_length = None
+app_token = None
 
 
-def assign_vars(config, site_settings, site_name):
-    global json_config, multithreading, proxy, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length
+def assign_vars(json_auth, config, site_settings, site_name):
+    global json_config, multithreading, proxy, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -62,11 +63,14 @@ def assign_vars(config, site_settings, site_name):
     maximum_length = 255
     maximum_length = int(json_settings["text_length"]
                          ) if json_settings["text_length"] else maximum_length
+    app_token = json_auth['app_token']
 
 
-def start_datascraper(sessions, identifier, site_name, app_token, choice_type=None):
+def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=None):
+    global app_token
     print("Scrape Processing")
-    info = link_check(sessions[0], app_token, identifier)
+    app_token = app_token2
+    info = link_check(sessions[0], identifier)
     if not info["subbed"]:
         print(info["user"])
         print("First time? Did you forget to edit your config.json file?")
@@ -77,8 +81,8 @@ def start_datascraper(sessions, identifier, site_name, app_token, choice_type=No
     user_id = str(user["id"])
     username = user["username"]
     print("Name: "+username)
-    api_array = scrape_choice(user_id, app_token, post_counts, is_me)
-    api_array = format_options(api_array, "apis")
+    api_array = scrape_choice(user_id, post_counts, is_me)
+    api_array = format_options2(api_array, "apis")
     apis = api_array[0]
     api_string = api_array[1]
     if not json_settings["auto_scrape_apis"]:
@@ -92,14 +96,13 @@ def start_datascraper(sessions, identifier, site_name, app_token, choice_type=No
         apis.pop(0)
     prep_download = []
     for item in apis:
-        print("Type: "+item[2])
-        only_links = item[1][3]
-        post_count = str(item[1][4])
-        item[1].append(username)
-        item[1].pop(3)
-        api_type = item[2]
+        print("Type: "+item["api_type"])
+        only_links = item["api_array"]["only_links"]
+        post_count = str(item["api_array"]["post_count"])
+        item["api_array"]["username"] = username
+        api_type = item["api_type"]
         results = prepare_scraper(
-            sessions, site_name, only_links, *item[1], api_type, app_token)
+            sessions, site_name, item)
         if results:
             for result in results[0]:
                 if not only_links:
@@ -115,7 +118,7 @@ def start_datascraper(sessions, identifier, site_name, app_token, choice_type=No
     return [True, prep_download]
 
 
-def link_check(session, app_token, identifier):
+def link_check(session, identifier):
     link = 'https://onlyfans.com/api2/v2/users/' + str(identifier) + \
            '?app-token=' + app_token
     y = json_request(session, link)
@@ -162,7 +165,7 @@ def link_check(session, app_token, identifier):
         return temp_user_id2
 
 
-def scrape_choice(user_id, app_token, post_counts, is_me):
+def scrape_choice(user_id, post_counts, is_me):
     post_count = post_counts[0]
     archived_count = post_counts[1]
     media_counts = post_counts[2]
@@ -215,52 +218,37 @@ def scrape_choice(user_id, app_token, post_counts, is_me):
     # array = [a_array]
     # array = [mm_array]
     # array = [m_array]
-    # new = dict()
-    # for xxx in array:
-    #     new["api_message"] = xxx[0]
-    #     new["api_array"] = xxx[1]
-    #     new["api_type"] = xxx[2]
-    #     print
-    if not is_me:
-        if len(array) > 4:
-            del array[5]
-    valid_input = False
-    if input_choice == "a":
-        valid_input = True
-        for item in array:
-            a = []
-            for z in item[1][1]:
-                if z == "Images":
-                    a.append([z, [y[0]]])
-                if z == "Videos":
-                    a.append([z, y[1:4]])
-                if z == "Audios":
-                    a.append([z, [y[4]]])
-            item[0] = array[0][0].format("all")
-            item[1][1] = a
-    if input_choice == "b":
-        name = "Images"
-        for item in array:
-            item[0] = item[0].format(name)
-            item[1][1] = [[name, [y[0]]]]
-        valid_input = True
-    if input_choice == "c":
-        name = "Videos"
-        for item in array:
-            item[0] = item[0].format(name)
-            item[1][1] = [[name, y[1:4]]]
-        valid_input = True
-    if input_choice == "d":
-        name = "Audios"
-        for item in array:
-            item[0] = item[0].format(name)
-            item[1][1] = [[name, [y[4]]]]
-        valid_input = True
-    if valid_input:
-        return array
-    else:
-        print("Invalid Choice")
-    return []
+    new_array = []
+    valid_input = True
+    for xxx in array:
+        if xxx[2] == "Mass Messages":
+            if not is_me:
+                continue
+        new_item = dict()
+        new_item["api_message"] = xxx[0]
+        new_item["api_array"] = {}
+        new_item["api_array"]["api_link"] = xxx[1][0]
+        new_item["api_array"]["media_types"] = xxx[1][1]
+        new_item["api_array"]["directory"] = xxx[1][2]
+        new_item["api_array"]["only_links"] = xxx[1][3]
+        new_item["api_array"]["post_count"] = xxx[1][4]
+        if input_choice == "b":
+            name = "Images"
+            new_item["api_array"]["media_types"] = [[name, [y[0]]]]
+        elif input_choice == "c":
+            name = "Videos"
+            new_item["api_array"]["media_types"] = [[name, [y[1:4]]]]
+        elif input_choice == "d":
+            name = "Audios"
+            new_item["api_array"]["media_types"] = [[name, [y[4]]]]
+        else:
+            print("Invalid Choice")
+            valid_input = False
+            break
+        new_item["api_type"] = xxx[2]
+        if valid_input:
+            new_array.append(new_item)
+    return new_array
 
 
 def profile_scraper(link, session, directory, username):
@@ -406,7 +394,14 @@ def media_scraper(result, sessions, directory, username, api_type):
     return media_set
 
 
-def prepare_scraper(sessions, site_name, only_links, link, locations, directory, api_count, username, api_type, app_token):
+def prepare_scraper(sessions, site_name, item):
+    api_type = item["api_type"]
+    api_array = item["api_array"]
+    link = api_array["api_link"]
+    locations = api_array["media_types"]
+    username = api_array["username"]
+    directory = api_array["directory"]
+    api_count = api_array["post_count"]
     seperator = " | "
     user_directory = ""
     metadata_directory = ""
@@ -607,7 +602,8 @@ def download_media(media_set, session, directory, username, post_count, location
                 content_length = result[1]
                 date_object = datetime.strptime(
                     media["postedAt"], "%d-%m-%Y %H:%M:%S")
-                download_path = os.path.join(media["directory"],media["filename"])
+                download_path = os.path.join(
+                    media["directory"], media["filename"])
                 timestamp = date_object.timestamp()
                 if not overwrite_files:
                     if check_for_dupe_file(download_path, content_length):
@@ -688,7 +684,7 @@ def create_session(custom_proxy="", test_ip=True):
     return sessions
 
 
-def get_paid_posts(session, app_token):
+def get_paid_posts(session):
     paid_api = "https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token="+app_token+""
     directory = []
     print
@@ -696,7 +692,7 @@ def get_paid_posts(session, app_token):
     print
 
 
-def create_auth(sessions, user_agent, app_token, auth_array, max_auth=2):
+def create_auth(sessions, user_agent, auth_array, max_auth=2):
     me_api = []
     auth_count = 1
     auth_version = "(V1)"
@@ -806,7 +802,7 @@ def create_auth(sessions, user_agent, app_token, auth_array, max_auth=2):
     return array
 
 
-def get_subscriptions(session, app_token, subscriber_count, me_api, auth_count=0):
+def get_subscriptions(session, subscriber_count, me_api, auth_count=0):
     link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?offset=0&type=active&limit=99&app-token="+app_token
     ceil = math.ceil(subscriber_count / 99)
     a = list(range(ceil))
@@ -918,6 +914,42 @@ def format_options(array, choice_type):
                 name = api["username"]
             else:
                 name = api[2]
+            string += str(count)+" = "+name
+            if count+1 != name_count:
+                string += " | "
+
+            count += 1
+    return [names, string]
+
+
+def format_options2(array, choice_type):
+    string = ""
+    names = []
+    new_item = {}
+    new_item["auth_count"] = -1
+    new_item["username"] = "All"
+    array = [new_item]+array
+    name_count = len(array)
+    if "usernames" == choice_type:
+        if name_count > 1:
+
+            count = 0
+            for x in array:
+                name = x["username"]
+                string += str(count)+" = "+name
+                names.append([x["auth_count"], name])
+                if count+1 != name_count:
+                    string += " | "
+
+                count += 1
+    if "apis" == choice_type:
+        count = 0
+        names = array
+        for api in array:
+            if "username" in api:
+                name = api["username"]
+            else:
+                name = api["api_type"]
             string += str(count)+" = "+name
             if count+1 != name_count:
                 string += " | "

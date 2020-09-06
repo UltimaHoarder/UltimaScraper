@@ -225,6 +225,9 @@ def download_media(media_set, session, directory, board_name):
                     log_error.exception(e)
                     count += 1
                     continue
+                except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
+                    count += 1
+                    continue
                 except Exception as e:
                     if delete:
                         os.unlink(download_path)

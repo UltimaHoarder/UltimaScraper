@@ -228,7 +228,7 @@ def check_for_dupe_file(download_path, content_length):
 def session_rules(session, link):
     if "https://onlyfans.com/api2/v2/" in link:
         sess = session.headers["access-token"]
-        user_agent = session.headers["User-Agent"]
+        user_agent = session.headers["user-agent"]
         a = [session, link, sess, user_agent]
         session = create_sign(*a)
     return session

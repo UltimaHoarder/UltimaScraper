@@ -689,10 +689,10 @@ def create_session(custom_proxy="", test_ip=True):
 
 
 def get_paid_posts(session, app_token):
-    # paid_api = "https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token="+app_token+""
-    # directory = []
-    # directory.append
-    # x = media_scraper(paid_api, session)
+    paid_api = "https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token="+app_token+""
+    directory = []
+    print
+    x = media_scraper(paid_api, session)
     print
 
 

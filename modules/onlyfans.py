@@ -232,7 +232,18 @@ def scrape_choice(user_id, post_counts, is_me):
         new_item["api_array"]["directory"] = xxx[1][2]
         new_item["api_array"]["only_links"] = xxx[1][3]
         new_item["api_array"]["post_count"] = xxx[1][4]
-        if input_choice == "b":
+        if input_choice == "a":
+            name = "All"
+            a = []
+            for z in new_item["api_array"]["media_types"]:
+                if z == "Images":
+                    a.append([z, [y[0]]])
+                if z == "Videos":
+                    a.append([z, y[1:4]])
+                if z == "Audios":
+                    a.append([z, [y[4]]])
+            new_item["api_array"]["media_types"] = a
+        elif input_choice == "b":
             name = "Images"
             new_item["api_array"]["media_types"] = [[name, [y[0]]]]
         elif input_choice == "c":
@@ -693,7 +704,7 @@ def get_paid_posts(sessions):
     result["link"] = paid_api
     directory = []
     print
-    x = media_scraper(paid_api, sessions,"a","a","a")
+    x = media_scraper(paid_api, sessions, "a", "a", "a")
     print
 
 

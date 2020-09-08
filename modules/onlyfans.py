@@ -670,28 +670,30 @@ def create_session(custom_proxy="", test_ip=True):
     if not proxy:
         return session
     sessions = []
-    for proxy2 in proxy:
-        max_threads = multiprocessing.cpu_count()
-        session = requests.Session()
-        proxy2 = custom_proxy if custom_proxy else proxy2
-        proxies = {'http': 'socks5h://'+proxy2,
-                   'https': 'socks5h://'+proxy2}
-        if proxy2:
-            session.proxies = proxies
-            if cert:
-                session.verify = cert
-        session.mount(
-            'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
-        if test_ip:
-            link = 'https://checkip.amazonaws.com'
-            r = json_request(session, link, json_format=False, sleep=False)
-            if not r:
-                continue
-            ip = r.text.strip()
-            print("Session IP: "+ip)
-        if custom_proxy:
-            return session
-        sessions.append(session)
+    while not sessions:
+        for proxy2 in proxy:
+            max_threads = multiprocessing.cpu_count()
+            session = requests.Session()
+            proxy2 = custom_proxy if custom_proxy else proxy2
+            proxies = {'http': 'socks5h://'+proxy2,
+                       'https': 'socks5h://'+proxy2}
+            if proxy2:
+                session.proxies = proxies
+                if cert:
+                    session.verify = cert
+            session.mount(
+                'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+            if test_ip:
+                link = 'https://checkip.amazonaws.com'
+                r = json_request(session, link, json_format=False, sleep=False)
+                if not r:
+                    print("Proxy Not Set: "+proxy2)
+                    continue
+                ip = r.text.strip()
+                print("Session IP: "+ip)
+            if custom_proxy:
+                return [session]
+            sessions.append(session)
     return sessions
 
 

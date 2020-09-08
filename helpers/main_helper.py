@@ -246,7 +246,7 @@ def session_retry_rules(r, link):
     return boolean
 
 
-def json_request(session, link, method="GET", stream=False, json_format=True, data={}, sleep=True):
+def json_request(session, link, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=10):
     session = session_rules(session, link)
     count = 0
     sleep_number = random.randint(2, 5)
@@ -258,9 +258,9 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
                 headers["accept"] = "application/json, text/plain, */*"
             if data:
                 r = session.request(method, link, json=data,
-                                    stream=stream, timeout=10)
+                                    stream=stream, timeout=timeout)
             else:
-                r = session.request(method, link, stream=stream, timeout=10)
+                r = session.request(method, link, stream=stream, timeout=timeout)
             rule = session_retry_rules(r, link)
             if rule == 1:
                 continue

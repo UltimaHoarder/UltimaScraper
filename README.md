@@ -25,7 +25,7 @@ Fill in the following:
 * `{"sess":"your_sess_token"}`
 * `{"user-agent":"your_user-agent"}`
 
-If you're using 2FA or have these cookie:
+If you're using 2FA or have these cookies:
 * `{"auth_hash":"your_auth_hash"}`
 * `{"auth_uniq_":"your_auth_uniq_"}`
 

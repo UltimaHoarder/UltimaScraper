@@ -16,11 +16,17 @@ def check_config():
     path = os.path.join('.settings', 'config.json')
     if os.path.isfile(path):
         json_config = json.load(open(path))
+
+        new_settings = json_config["settings"].copy()
         for key, value in json_config["settings"].items():
             if key == "socks5_proxy":
                 if not isinstance(value, list):
-                    value = [value]
-                    json_config["settings"][key] = value
+                    new_settings[key] = [value]
+            if key == "global_user-agent":
+                new_settings["global_user_agent"] = value
+                del new_settings["global_user-agent"]
+        json_config["settings"] = new_settings
+
         for key, value in json_config["supported"].items():
             settings = value["settings"]
             if "directory" in settings:

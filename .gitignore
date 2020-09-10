@@ -144,6 +144,5 @@ $RECYCLE.BIN/
 # Project Specific
 .sites
 *.log
-.settings/config.json
-.settings/extra_auth.json
-extras/OFRenamer/.settings/config.json
+.settings/*
+extras/OFRenamer/.settings/*

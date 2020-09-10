@@ -141,19 +141,6 @@ def get_directory(directory, site_name):
         x = os.path.join(fp, directory)
         return os.path.abspath(x)
 
-
-def format_directory(j_directory, site_name, username, location="", api_type=""):
-    directory = j_directory
-    user_directory = os.path.join(directory, username)
-    metadata_directory = os.path.join(user_directory, "Metadata")
-    directories = []
-    cats = ["", "Free", "Paid"]
-    for cat in cats:
-        directories.append(
-            [location, os.path.join(user_directory, api_type, cat, location+"/")])
-    return [user_directory, metadata_directory, directories]
-
-
 def are_long_paths_enabled():
     if os_name == "Windows":
         from ctypes import WinDLL, c_ubyte

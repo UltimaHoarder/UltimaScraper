@@ -217,7 +217,7 @@ def scrape_choice(user_id, post_counts, is_me):
     # array = [p_array]
     # array = [a_array]
     # array = [mm_array]
-    # array = [m_array]
+    array = [m_array]
     new_array = []
     valid_input = True
     for xxx in array:
@@ -316,6 +316,8 @@ def media_scraper(result, sessions, locations, username, api_type):
         media_set2["valid"] = []
         media_set2["invalid"] = []
         for media_api in y:
+            if api_type == "Messages":
+                media_api["rawText"] = media_api["text"]
             if api_type == "Mass Messages":
                 media_user = media_api["fromUser"]
                 media_username = media_user["username"]
@@ -374,7 +376,7 @@ def media_scraper(result, sessions, locations, username, api_type):
                     continue
                 if "rawText" not in media_api:
                     media_api["rawText"] = ""
-                text = media_api["rawText"] if media_api["rawText"] else media_api["text"]
+                text = media_api["rawText"] if media_api["rawText"] else ""
                 matches = [s for s in ignored_keywords if s in text]
                 if matches:
                     print("Matches: ", matches)

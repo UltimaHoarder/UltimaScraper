@@ -25,7 +25,7 @@ auto_choice = None
 j_directory = None
 format_path = None
 overwrite_files = None
-proxy = None
+proxies = None
 cert = None
 date_format = None
 ignored_keywords = None
@@ -39,16 +39,17 @@ app_token = None
 
 
 def assign_vars(json_auth, config, site_settings, site_name):
-    global json_config, multithreading, proxy, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length, app_token
+    global json_config, multithreading, proxies, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
     multithreading = json_global_settings["multithreading"]
-    proxy = json_global_settings["socks5_proxy"]
+    proxies = json_global_settings["socks5_proxy"]
     cert = json_global_settings["cert"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
-    j_directory = main_helper.get_directory(json_settings['download_path'], site_name)
+    j_directory = main_helper.get_directory(
+        json_settings['download_path'], site_name)
     format_path = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
@@ -283,7 +284,7 @@ def profile_scraper(link, session, directory, username):
             if os.path.isfile(download_path):
                 continue
         r = main_helper.json_request(session, media_link, stream=True,
-                         json_format=False, sleep=False)
+                                     json_format=False, sleep=False)
         if not r:
             continue
         with open(download_path, 'wb') as f:
@@ -386,7 +387,7 @@ def media_scraper(result, sessions, locations, username, api_type):
                 file_name, ext = os.path.splitext(file_name)
                 ext = ext.__str__().replace(".", "").split('?')[0]
                 file_path = main_helper.reformat(location[0][1], post_id, media_id, file_name,
-                                     text, ext, date_object, username, format_path, date_format, maximum_length)
+                                                 text, ext, date_object, username, format_path, date_format, maximum_length)
                 new_dict["text"] = text
                 new_dict["paid"] = False
                 if new_dict["price"]:
@@ -533,7 +534,7 @@ def prepare_scraper(sessions, site_name, item):
             item for sublist in subscribers for item in sublist["list"]]
         seen = set()
         subscribers = [x for x in subscribers if x["withUser"]
-                        ["id"] not in seen and not seen.add(x["withUser"]["id"])]
+                       ["id"] not in seen and not seen.add(x["withUser"]["id"])]
         x = pool.starmap(process_chats, product(
             subscribers))
     if api_type == "Stories":
@@ -567,7 +568,8 @@ def prepare_scraper(sessions, site_name, item):
             archive_directory = os.path.join(metadata_directory, api_type)
             metadata_set_copy = copy.deepcopy(metadata_set)
             metadata_set = main_helper.filter_metadata(metadata_set_copy)
-            main_helper.export_archive(metadata_set, archive_directory, json_settings)
+            main_helper.export_archive(
+                metadata_set, archive_directory, json_settings)
     return [media_set, directory]
 
 
@@ -583,7 +585,7 @@ def download_media(media_set, session, directory, username, post_count, location
                 def choose_link(session, links):
                     for link in links:
                         r = main_helper.json_request(session, link, "HEAD",
-                                         stream=True, json_format=False)
+                                                     stream=True, json_format=False)
                         if not r:
                             continue
 
@@ -608,7 +610,8 @@ def download_media(media_set, session, directory, username, post_count, location
                         main_helper.format_image(download_path, timestamp)
                         return_bool = False
                         break
-                r = main_helper.json_request(session, link, stream=True, json_format=False)
+                r = main_helper.json_request(
+                    session, link, stream=True, json_format=False)
                 if not r:
                     return_bool = False
                     count += 1
@@ -631,7 +634,8 @@ def download_media(media_set, session, directory, username, post_count, location
                 except Exception as e:
                     if delete:
                         os.unlink(download_path)
-                    main_helper.log_error.exception(str(e) + "\n Tries: "+str(count))
+                    main_helper.log_error.exception(
+                        str(e) + "\n Tries: "+str(count))
                     count += 1
                     continue
                 main_helper.format_image(download_path, timestamp)
@@ -654,33 +658,38 @@ def download_media(media_set, session, directory, username, post_count, location
 
 def create_session(custom_proxy="", test_ip=True):
     session = [requests.Session()]
-    if not proxy:
+    if not proxies:
         return session
+
+    max_threads = multiprocessing.cpu_count()
+
+    def set_sessions(proxy):
+        session = requests.Session()
+        proxy_type = {'http': 'socks5h://'+proxy,
+                      'https': 'socks5h://'+proxy}
+        if proxy:
+            session.proxies = proxy_type
+            if cert:
+                session.verify = cert
+        session.mount(
+            'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+        if test_ip:
+            link = 'https://checkip.amazonaws.com'
+            r = main_helper.json_request(
+                session, link, json_format=False, sleep=False)
+            if not r:
+                print("Proxy Not Set: "+proxy+"\n")
+                return
+            ip = r.text.strip()
+            print("Session IP: "+ip+"\n")
+        return session
+    pool = ThreadPool()
     sessions = []
     while not sessions:
-        for proxy2 in proxy:
-            max_threads = multiprocessing.cpu_count()
-            session = requests.Session()
-            proxy2 = custom_proxy if custom_proxy else proxy2
-            proxies = {'http': 'socks5h://'+proxy2,
-                       'https': 'socks5h://'+proxy2}
-            if proxy2:
-                session.proxies = proxies
-                if cert:
-                    session.verify = cert
-            session.mount(
-                'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
-            if test_ip:
-                link = 'https://checkip.amazonaws.com'
-                r = main_helper.json_request(session, link, json_format=False, sleep=False)
-                if not r:
-                    print("Proxy Not Set: "+proxy2)
-                    continue
-                ip = r.text.strip()
-                print("Session IP: "+ip)
-            if custom_proxy:
-                return [session]
-            sessions.append(session)
+        proxies2 = [custom_proxy] if custom_proxy else proxies
+        sessions = pool.starmap(set_sessions, product(
+            proxies2))
+        sessions = [x for x in sessions if x]
     return sessions
 
 

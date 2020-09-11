@@ -217,7 +217,7 @@ def scrape_choice(user_id, post_counts, is_me):
     # array = [p_array]
     # array = [a_array]
     # array = [mm_array]
-    array = [m_array]
+    # array = [m_array]
     new_array = []
     valid_input = True
     for xxx in array:

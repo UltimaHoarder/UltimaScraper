@@ -7,7 +7,6 @@ import timeit
 from argparse import ArgumentParser
 
 import helpers.main_helper as main_helper
-from helpers.main_helper import update_config
 import modules.bbwchan as bbwchan
 import modules.fourchan as fourchan
 import modules.onlyfans as onlyfans
@@ -101,7 +100,8 @@ def start_datascraper():
                         'user_agent'] else json_auth['user_agent']
 
                     x = onlyfans
-                    x.assign_vars(json_auth,json_config, json_site_settings, site_name)
+                    x.assign_vars(json_auth, json_config,
+                                  json_site_settings, site_name)
                     sessions = x.create_session()
                     if not sessions:
                         print("Unable to create session")
@@ -121,7 +121,7 @@ def start_datascraper():
                     json_auth['sess'] = cookies["sess"]
                     json_auth['fp'] = cookies["fp"]
                     if json_config != json_config2:
-                        update_config(json_config)
+                        main_helper.update_config(json_config)
                     me_api = session["me_api"]
                     array = x.get_subscriptions(
                         session["sessions"][0], session["subscriber_count"], me_api, auth_count)
@@ -149,7 +149,7 @@ def start_datascraper():
                     cookies = session["session"].cookies.get_dict()
                     json_auth['session_id'] = cookies["session_id"]
                     if json_config != json_config2:
-                        update_config(json_config)
+                        main_helper.update_config(json_config)
                     me_api = session["me_api"]
                     array = x.get_subscriptions(
                         session["session"], auth_count)
@@ -215,7 +215,7 @@ def start_datascraper():
             else:
                 print("There's nothing to scrape.")
                 continue
-            start_time = timeit.default_timer()
+            archive_time = timeit.default_timer()
             download_list = []
             app_token = ""
             for name in names:
@@ -234,14 +234,14 @@ def start_datascraper():
                 main_helper.assign_vars(json_config)
                 username = main_helper.parse_links(site_name_lower, name)
                 result = x.start_datascraper(
-                    session, username, site_name, app_token,choice_type=value)
+                    session, username, site_name, app_token, choice_type=value)
                 if not args.metadata:
                     download_list.append(result)
             for y in download_list:
                 for arg in y[1]:
                     x.download_media(*arg)
-            stop_time = str(int(timeit.default_timer() - start_time) / 60)
-            print('Task Completed in ' + stop_time + ' Minutes')
+            stop_time = str(int(timeit.default_timer() - archive_time) / 60)[:4]
+            print('Archive Completed in ' + stop_time + ' Minutes')
             if exit_on_completion:
                 print("Now exiting.")
                 exit(0)

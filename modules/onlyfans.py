@@ -7,18 +7,16 @@ from itertools import chain, groupby, product
 from multiprocessing.dummy import Pool as ThreadPool
 from urllib.parse import urlparse
 import copy
+import timeit
+
 
 import requests
 from requests.adapters import HTTPAdapter
 
 import extras.OFSorter.ofsorter as ofsorter
-from helpers.main_helper import (check_for_dupe_file, clean_text, create_link_group, create_sign,
-                                 export_archive, format_directory,
-                                 format_image, format_media_set, get_directory,
-                                 json_request, log_error, reformat,
-                                 setup_logger, assign_session, filter_metadata)
+import helpers.main_helper as main_helper
 
-log_download = setup_logger('downloads', 'downloads.log')
+log_download = main_helper.setup_logger('downloads', 'downloads.log')
 
 json_config = None
 multithreading = None
@@ -50,7 +48,7 @@ def assign_vars(json_auth, config, site_settings, site_name):
     cert = json_global_settings["cert"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
-    j_directory = get_directory(json_settings['download_path'], site_name)
+    j_directory = main_helper.get_directory(json_settings['download_path'], site_name)
     format_path = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
@@ -121,7 +119,7 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
 def link_check(session, identifier):
     link = 'https://onlyfans.com/api2/v2/users/' + str(identifier) + \
            '?app-token=' + app_token
-    y = json_request(session, link)
+    y = main_helper.json_request(session, link)
     temp_user_id2 = dict()
     y["is_me"] = False
     if not y:
@@ -214,6 +212,7 @@ def scrape_choice(user_id, post_counts, is_me):
     array = [u_array, s_array, h_array, p_array, a_array, mm_array, m_array]
     # array = [s_array, h_array, p_array, a_array, m_array]
     # array = [u_array]
+    # array = [h_array]
     # array = [p_array]
     # array = [a_array]
     # array = [mm_array]
@@ -263,7 +262,7 @@ def scrape_choice(user_id, post_counts, is_me):
 
 
 def profile_scraper(link, session, directory, username):
-    y = json_request(session, link)
+    y = main_helper.json_request(session, link)
     q = []
     avatar = y["avatar"]
     header = y["header"]
@@ -283,7 +282,7 @@ def profile_scraper(link, session, directory, username):
         if not overwrite_files:
             if os.path.isfile(download_path):
                 continue
-        r = json_request(session, media_link, stream=True,
+        r = main_helper.json_request(session, media_link, stream=True,
                          json_format=False, sleep=False)
         if not r:
             continue
@@ -293,12 +292,11 @@ def profile_scraper(link, session, directory, username):
                     f.write(chunk)
 
 
-def media_scraper(result, sessions, directory, username, api_type):
+def media_scraper(result, sessions, locations, username, api_type):
     link = result["link"]
     session = sessions[result["count"]]
-    media_set = [[], []]
-    media_type = directory[-1]
-    y = json_request(session, link)
+    media_set = []
+    y = main_helper.json_request(session, link)
     if not y or "error" in y:
         return media_set
     x = 0
@@ -308,100 +306,108 @@ def media_scraper(result, sessions, directory, username, api_type):
         y = y["list"]
     if api_type == "Mass Messages":
         y = y["list"]
-    master_date = "01-01-0001 00:00:00"
-    for media_api in y:
-        if api_type == "Mass Messages":
-            media_user = media_api["fromUser"]
-            media_username = media_user["username"]
-            if media_username != username:
-                continue
-        for media in media_api["media"]:
-            date = "-001-11-30T00:00:00+00:00"
-            size = 0
-            if "source" in media:
-                source = media["source"]
-                link = source["source"]
-                size = media["info"]["preview"]["size"] if "info" in media_api else 1
-                date = media_api["postedAt"] if "postedAt" in media_api else media_api["createdAt"]
-            if "src" in media:
-                link = media["src"]
-                size = media["info"]["preview"]["size"] if "info" in media_api else 1
-                date = media_api["createdAt"]
-            if not link:
-                continue
-            matches = ["us", "uk", "ca", "ca2", "de"]
-
-            url = urlparse(link)
-            subdomain = url.hostname.split('.')[0]
-            preview_link = media["preview"]
-            if any(subdomain in nm for nm in matches):
-                subdomain = url.hostname.split('.')[1]
-                if "upload" in subdomain:
+    for location in locations:
+        master_date = "01-01-0001 00:00:00"
+        media_type = location[-1]
+        media_type2 = location[0][0]
+        media_set2 = {}
+        media_set2["type"] = media_type2
+        media_set2["valid"] = []
+        media_set2["invalid"] = []
+        for media_api in y:
+            if api_type == "Mass Messages":
+                media_user = media_api["fromUser"]
+                media_username = media_user["username"]
+                if media_username != username:
                     continue
-                if "convert" in subdomain:
-                    link = preview_link
-            rules = [link == "",
-                     preview_link == ""]
-            if all(rules):
-                continue
-            new_dict = dict()
-            new_dict["post_id"] = media_api["id"]
-            new_dict["media_id"] = media["id"]
-            new_dict["links"] = []
-            for xlink in link, preview_link:
-                if xlink:
-                    new_dict["links"].append(xlink)
-                    break
-            new_dict["price"] = media_api["price"]if "price" in media_api else None
-            if date == "-001-11-30T00:00:00+00:00":
-                date_string = master_date
-                date_object = datetime.strptime(
-                    master_date, "%d-%m-%Y %H:%M:%S")
-            else:
-                date_object = datetime.fromisoformat(date)
-                date_string = date_object.replace(tzinfo=None).strftime(
-                    "%d-%m-%Y %H:%M:%S")
-                master_date = date_string
+            for media in media_api["media"]:
+                date = "-001-11-30T00:00:00+00:00"
+                size = 0
+                if "source" in media:
+                    source = media["source"]
+                    link = source["source"]
+                    size = media["info"]["preview"]["size"] if "info" in media_api else 1
+                    date = media_api["postedAt"] if "postedAt" in media_api else media_api["createdAt"]
+                if "src" in media:
+                    link = media["src"]
+                    size = media["info"]["preview"]["size"] if "info" in media_api else 1
+                    date = media_api["createdAt"]
+                if not link:
+                    continue
+                matches = ["us", "uk", "ca", "ca2", "de"]
 
-            if media["type"] not in media_type:
-                x += 1
-                continue
-            if "rawText" not in media_api:
-                media_api["rawText"] = ""
-            text = media_api["rawText"] if media_api["rawText"] else ""
-            matches = [s for s in ignored_keywords if s in text]
-            if matches:
-                print("Matches: ", matches)
-                continue
-            text = clean_text(text)
-            new_dict["postedAt"] = date_string
-            post_id = new_dict["post_id"]
-            media_id = new_dict["media_id"]
-            file_name = link.rsplit('/', 1)[-1]
-            file_name, ext = os.path.splitext(file_name)
-            ext = ext.__str__().replace(".", "").split('?')[0]
-            file_path = reformat(directory[0][1], post_id, media_id, file_name,
-                                 text, ext, date_object, username, format_path, date_format, maximum_length)
-            new_dict["text"] = text
-            new_dict["paid"] = False
-            if new_dict["price"]:
-                if api_type in ["Messages", "Mass Messages"]:
-                    new_dict["paid"] = True
+                url = urlparse(link)
+                subdomain = url.hostname.split('.')[0]
+                preview_link = media["preview"]
+                if any(subdomain in nm for nm in matches):
+                    subdomain = url.hostname.split('.')[1]
+                    if "upload" in subdomain:
+                        continue
+                    if "convert" in subdomain:
+                        link = preview_link
+                rules = [link == "",
+                         preview_link == ""]
+                if all(rules):
+                    continue
+                new_dict = dict()
+                new_dict["post_id"] = media_api["id"]
+                new_dict["media_id"] = media["id"]
+                new_dict["links"] = []
+                for xlink in link, preview_link:
+                    if xlink:
+                        new_dict["links"].append(xlink)
+                        break
+                new_dict["price"] = media_api["price"]if "price" in media_api else None
+                if date == "-001-11-30T00:00:00+00:00":
+                    date_string = master_date
+                    date_object = datetime.strptime(
+                        master_date, "%d-%m-%Y %H:%M:%S")
                 else:
-                    if media["id"] not in media_api["preview"] and media["canView"]:
+                    date_object = datetime.fromisoformat(date)
+                    date_string = date_object.replace(tzinfo=None).strftime(
+                        "%d-%m-%Y %H:%M:%S")
+                    master_date = date_string
+
+                if media["type"] not in media_type:
+                    x += 1
+                    continue
+                if "rawText" not in media_api:
+                    media_api["rawText"] = ""
+                text = media_api["rawText"] if media_api["rawText"] else ""
+                matches = [s for s in ignored_keywords if s in text]
+                if matches:
+                    print("Matches: ", matches)
+                    continue
+                text = main_helper.clean_text(text)
+                new_dict["postedAt"] = date_string
+                post_id = new_dict["post_id"]
+                media_id = new_dict["media_id"]
+                file_name = link.rsplit('/', 1)[-1]
+                file_name, ext = os.path.splitext(file_name)
+                ext = ext.__str__().replace(".", "").split('?')[0]
+                file_path = main_helper.reformat(location[0][1], post_id, media_id, file_name,
+                                     text, ext, date_object, username, format_path, date_format, maximum_length)
+                new_dict["text"] = text
+                new_dict["paid"] = False
+                if new_dict["price"]:
+                    if api_type in ["Messages", "Mass Messages"]:
                         new_dict["paid"] = True
-            new_dict["directory"] = os.path.join(directory[0][1])
-            if sort_free_paid_posts:
-                new_dict["directory"] = os.path.join(directory[1][1])
-                if new_dict["paid"]:
-                    new_dict["directory"] = os.path.join(directory[2][1])
-            new_dict["filename"] = os.path.basename(file_path)
-            new_dict["size"] = size
-            if size == 0:
-                media_set[1].append(new_dict)
-                continue
-            new_dict["session"] = session
-            media_set[0].append(new_dict)
+                    else:
+                        if media["id"] not in media_api["preview"] and media["canView"]:
+                            new_dict["paid"] = True
+                new_dict["directory"] = os.path.join(location[0][1])
+                if sort_free_paid_posts:
+                    new_dict["directory"] = os.path.join(location[1][1])
+                    if new_dict["paid"]:
+                        new_dict["directory"] = os.path.join(location[2][1])
+                new_dict["filename"] = os.path.basename(file_path)
+                new_dict["size"] = size
+                if size == 0:
+                    media_set2["invalid"].append(new_dict)
+                    continue
+                new_dict["session"] = session
+                media_set2["valid"].append(new_dict)
+        media_set.append(media_set2)
     return media_set
 
 
@@ -420,152 +426,133 @@ def prepare_scraper(sessions, site_name, item):
     media_set = []
     metadata_set = []
     original_link = link
+    directories = []
+    pool = ThreadPool()
     for location in locations:
-        pool = ThreadPool()
         link = original_link
         print("Scraping ["+str(seperator.join(location[1])) +
               "]. Should take less than a minute.")
-        array = format_directory(
+        array = main_helper.format_directory(
             j_directory, site_name, username, location[0], api_type)
         user_directory = array[0]
-        location_directory = array[2][0][1]
         metadata_directory = array[1]
-        directories = array[2]+[location[1]]
-        if not master_set:
-            if api_type == "Profile":
-                profile_scraper(link, sessions[0], directory, username)
-                return
-            if api_type == "Posts":
-                num = 100
-                link = link.replace("limit=0", "limit="+str(num))
-                original_link = link
-                ceil = math.ceil(api_count / num)
-                a = list(range(ceil))
-                for b in a:
-                    b = b * num
-                    master_set.append(link.replace(
-                        "offset=0", "offset=" + str(b)))
-            if api_type == "Archived":
-                ceil = math.ceil(api_count / 100)
-                a = list(range(ceil))
-                for b in a:
-                    b = b * 100
-                    master_set.append(link.replace(
-                        "offset=0", "offset=" + str(b)))
+        directories.append(array[2]+[location[1]])
+    if api_type == "Profile":
+        profile_scraper(link, sessions[0], directory, username)
+        return
+    if api_type == "Posts":
+        num = 100
+        link = link.replace("limit=0", "limit="+str(num))
+        original_link = link
+        ceil = math.ceil(api_count / num)
+        a = list(range(ceil))
+        for b in a:
+            b = b * num
+            master_set.append(link.replace(
+                "offset=0", "offset=" + str(b)))
+    if api_type == "Archived":
+        ceil = math.ceil(api_count / 100)
+        a = list(range(ceil))
+        for b in a:
+            b = b * 100
+            master_set.append(link.replace(
+                "offset=0", "offset=" + str(b)))
 
-            def xmessages(link):
-                f_offset_count = 0
-                while True:
-                    y = json_request(sessions[0], link)
-                    if not y:
-                        return
-                    if "list" in y:
-                        if y["list"]:
-                            master_set.append(link)
-                            if y["hasMore"]:
-                                f_offset_count2 = f_offset_count+100
-                                f_offset_count = f_offset_count2-100
-                                link = link.replace(
-                                    "offset=" + str(f_offset_count), "offset=" + str(f_offset_count2))
-                                f_offset_count = f_offset_count2
-                            else:
-                                break
-                        else:
-                            break
+    def xmessages(link):
+        f_offset_count = 0
+        while True:
+            y = main_helper.json_request(sessions[0], link)
+            if not y:
+                return
+            if "list" in y:
+                if y["list"]:
+                    master_set.append(link)
+                    if y["hasMore"]:
+                        f_offset_count2 = f_offset_count+100
+                        f_offset_count = f_offset_count2-100
+                        link = link.replace(
+                            "offset=" + str(f_offset_count), "offset=" + str(f_offset_count2))
+                        f_offset_count = f_offset_count2
                     else:
                         break
-
-            def process_chats(subscriber):
-                fool = subscriber["withUser"]
-                fool_id = str(fool["id"])
-                link_2 = "https://onlyfans.com/api2/v2/chats/"+fool_id + \
-                    "/messages?limit=100&offset=0&order=desc&app-token="+app_token+""
-                xmessages(link_2)
-            if api_type == "Messages":
-                xmessages(link)
-            if api_type == "Mass Messages":
-                results = []
-                max_threads = multiprocessing.cpu_count()
-                offset_count = 0
-                offset_count2 = max_threads
-                while True:
-                    def process_messages(link, session):
-                        y = json_request(session, link)
-                        if y and "error" not in y:
-                            return y
-                        else:
-                            return []
-                    link_list = [link.replace(
-                        "offset=0", "offset="+str(i*30)) for i in range(offset_count, offset_count2)]
-                    link_list = pool.starmap(process_messages, product(
-                        link_list, [sessions[0]]))
-                    if all(not result for result in link_list):
-                        break
-                    link_list2 = list(chain(*link_list))
-
-                    results.append(link_list2)
-                    offset_count = offset_count2
-                    offset_count2 = offset_count*2
-                unsorted_messages = list(chain(*results))
-                unsorted_messages.sort(key=lambda x: x["id"])
-                messages = unsorted_messages
-
-                def process_mass_messages(message, limit):
-                    text = message["textCropped"].replace("&", "")
-                    link_2 = "https://onlyfans.com/api2/v2/chats?limit="+limit+"&offset=0&filter=&order=activity&query=" + \
-                        text+"&app-token="+app_token
-                    y = json_request(sessions[0], link_2)
-                    if None == y or "error" in y:
-                        return []
-                    return y
-                limit = "10"
-                if len(messages) > 99:
-                    limit = "2"
-                subscribers = pool.starmap(process_mass_messages, product(
-                    messages, [limit]))
-                subscribers = filter(None, subscribers)
-                subscribers = [
-                    item for sublist in subscribers for item in sublist["list"]]
-                seen = set()
-                subscribers = [x for x in subscribers if x["withUser"]
-                               ["id"] not in seen and not seen.add(x["withUser"]["id"])]
-                x = pool.starmap(process_chats, product(
-                    subscribers))
-            if api_type == "Stories":
-                master_set.append(link)
-            if api_type == "Highlights":
-                r = json_request(sessions[0], link)
-                if "error" in r:
+                else:
                     break
-                for item in r:
-                    link2 = "https://onlyfans.com/api2/v2/stories/highlights/" + \
-                        str(item["id"])+"?app-token="+app_token+""
-                    master_set.append(link2)
-        master_set2 = assign_session(master_set, len(sessions))
-        x = pool.starmap(media_scraper, product(
-            master_set2, [sessions], [directories], [username], [api_type]))
-        print
-        results = format_media_set(location[0], x)
-        seen = set()
-        results["valid"] = [x for x in results["valid"]
-                            if x["filename"] not in seen and not seen.add(x["filename"])]
-        seen = set()
-        location_directories = [x["directory"] for x in results["valid"]
-                                if x["directory"] not in seen and not seen.add(x["directory"])]
-        if results["valid"]:
-            results["valid"] = [list(g) for k, g in groupby(
-                results["valid"], key=lambda x: x["post_id"])]
-            os.makedirs(directory, exist_ok=True)
-            for location_directory in location_directories:
-                os.makedirs(location_directory, exist_ok=True)
-        if results["invalid"]:
-            results["invalid"] = [list(g) for k, g in groupby(
-                results["invalid"], key=lambda x: x["post_id"])]
-        if sort_free_paid_posts:
-            ofsorter.sorter(user_directory, api_type, location[0], results)
-        metadata_set.append(results)
-        media_set.append(results)
+            else:
+                break
 
+    def process_chats(subscriber):
+        fool = subscriber["withUser"]
+        fool_id = str(fool["id"])
+        link_2 = "https://onlyfans.com/api2/v2/chats/"+fool_id + \
+            "/messages?limit=100&offset=0&order=desc&app-token="+app_token+""
+        xmessages(link_2)
+    if api_type == "Messages":
+        xmessages(link)
+    if api_type == "Mass Messages":
+        results = []
+        max_threads = multiprocessing.cpu_count()
+        offset_count = 0
+        offset_count2 = max_threads
+        while True:
+            def process_messages(link, session):
+                y = main_helper.json_request(session, link)
+                if y and "error" not in y:
+                    return y
+                else:
+                    return []
+            link_list = [link.replace(
+                "offset=0", "offset="+str(i*30)) for i in range(offset_count, offset_count2)]
+            link_list = pool.starmap(process_messages, product(
+                link_list, [sessions[0]]))
+            if all(not result for result in link_list):
+                break
+            link_list2 = list(chain(*link_list))
+
+            results.append(link_list2)
+            offset_count = offset_count2
+            offset_count2 = offset_count*2
+        unsorted_messages = list(chain(*results))
+        unsorted_messages.sort(key=lambda x: x["id"])
+        messages = unsorted_messages
+
+        def process_mass_messages(message, limit):
+            text = message["textCropped"].replace("&", "")
+            link_2 = "https://onlyfans.com/api2/v2/chats?limit="+limit+"&offset=0&filter=&order=activity&query=" + \
+                text+"&app-token="+app_token
+            y = main_helper.json_request(sessions[0], link_2)
+            if None == y or "error" in y:
+                return []
+            return y
+        limit = "10"
+        if len(messages) > 99:
+            limit = "2"
+        subscribers = pool.starmap(process_mass_messages, product(
+            messages, [limit]))
+        subscribers = filter(None, subscribers)
+        subscribers = [
+            item for sublist in subscribers for item in sublist["list"]]
+        seen = set()
+        subscribers = [x for x in subscribers if x["withUser"]
+                        ["id"] not in seen and not seen.add(x["withUser"]["id"])]
+        x = pool.starmap(process_chats, product(
+            subscribers))
+    if api_type == "Stories":
+        master_set.append(link)
+    if api_type == "Highlights":
+        r = main_helper.json_request(sessions[0], link)
+        if "error" in r:
+            return
+        for item in r:
+            link2 = "https://onlyfans.com/api2/v2/stories/highlights/" + \
+                str(item["id"])+"?app-token="+app_token+""
+            master_set.append(link2)
+    master_set2 = main_helper.assign_session(master_set, len(sessions))
+    media_set = pool.starmap(media_scraper, product(
+        master_set2, [sessions], [directories], [username], [api_type]))
+    media_set = main_helper.format_media_set(media_set)
+    seen = set()
+
+    metadata_set = media_set
     if export_metadata:
         metadata_set = [x for x in metadata_set if x["valid"] or x["invalid"]]
         for item in metadata_set:
@@ -579,8 +566,8 @@ def prepare_scraper(sessions, site_name, item):
             os.makedirs(metadata_directory, exist_ok=True)
             archive_directory = os.path.join(metadata_directory, api_type)
             metadata_set_copy = copy.deepcopy(metadata_set)
-            metadata_set = filter_metadata(metadata_set_copy)
-            export_archive(metadata_set, archive_directory, json_settings)
+            metadata_set = main_helper.filter_metadata(metadata_set_copy)
+            main_helper.export_archive(metadata_set, archive_directory, json_settings)
     return [media_set, directory]
 
 
@@ -595,7 +582,7 @@ def download_media(media_set, session, directory, username, post_count, location
 
                 def choose_link(session, links):
                     for link in links:
-                        r = json_request(session, link, "HEAD",
+                        r = main_helper.json_request(session, link, "HEAD",
                                          stream=True, json_format=False)
                         if not r:
                             continue
@@ -617,11 +604,11 @@ def download_media(media_set, session, directory, username, post_count, location
                     media["directory"], media["filename"])
                 timestamp = date_object.timestamp()
                 if not overwrite_files:
-                    if check_for_dupe_file(download_path, content_length):
-                        format_image(download_path, timestamp)
+                    if main_helper.check_for_dupe_file(download_path, content_length):
+                        main_helper.format_image(download_path, timestamp)
                         return_bool = False
                         break
-                r = json_request(session, link, stream=True, json_format=False)
+                r = main_helper.json_request(session, link, stream=True, json_format=False)
                 if not r:
                     return_bool = False
                     count += 1
@@ -644,10 +631,10 @@ def download_media(media_set, session, directory, username, post_count, location
                 except Exception as e:
                     if delete:
                         os.unlink(download_path)
-                    log_error.exception(str(e) + "\n Tries: "+str(count))
+                    main_helper.log_error.exception(str(e) + "\n Tries: "+str(count))
                     count += 1
                     continue
-                format_image(download_path, timestamp)
+                main_helper.format_image(download_path, timestamp)
                 log_download.info("Link: {}".format(link))
                 log_download.info("Path: {}".format(download_path))
                 break
@@ -685,7 +672,7 @@ def create_session(custom_proxy="", test_ip=True):
                 'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
             if test_ip:
                 link = 'https://checkip.amazonaws.com'
-                r = json_request(session, link, json_format=False, sleep=False)
+                r = main_helper.json_request(session, link, json_format=False, sleep=False)
                 if not r:
                     print("Proxy Not Set: "+proxy2)
                     continue
@@ -700,7 +687,7 @@ def create_session(custom_proxy="", test_ip=True):
 def get_paid_posts(sessions):
     paid_api = "https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token="+app_token+""
     max_threads = multiprocessing.cpu_count()
-    x = create_link_group(max_threads)
+    x = main_helper.create_link_group(max_threads)
     print
     result = {}
     result["link"] = paid_api
@@ -753,9 +740,9 @@ def create_auth(sessions, user_agent, auth_array, max_auth=2):
                 link = "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token
                 for session in sessions:
                     a = [session, link, sess, user_agent]
-                    session = create_sign(*a)
+                    session = main_helper.create_sign(*a)
                 session = sessions[0]
-                r = json_request(session, link, sleep=False)
+                r = main_helper.json_request(session, link, sleep=False)
                 count += 1
                 if not r:
                     continue
@@ -780,7 +767,7 @@ def create_auth(sessions, user_agent, auth_array, max_auth=2):
                                           "/"+str(max_count))
                                     code = input("Enter 2FA Code\n")
                                     data = {'code': code, 'rememberMe': True}
-                                    r = json_request(
+                                    r = main_helper.json_request(
                                         session, link, "PUT", data=data)
                                     if "error" in r:
                                         count += 1
@@ -802,7 +789,7 @@ def create_auth(sessions, user_agent, auth_array, max_auth=2):
                 print("Welcome "+r["name"])
                 option_string = "username or profile link"
                 link = "https://onlyfans.com/api2/v2/subscriptions/count/all?app-token="+app_token
-                r = json_request(session, link, sleep=False)
+                r = main_helper.json_request(session, link, sleep=False)
                 if not r:
                     break
                 array = dict()
@@ -813,7 +800,7 @@ def create_auth(sessions, user_agent, auth_array, max_auth=2):
                 return array
             auth_count += 1
     except Exception as e:
-        log_error.exception(e)
+        main_helper.log_error.exception(e)
     array = dict()
     array["sessions"] = None
     array["me_api"] = me_api
@@ -837,7 +824,7 @@ def get_subscriptions(session, subscriber_count, me_api, auth_count=0):
     def multi(array, session):
         link = array[0]
         performer = array[1]
-        r = json_request(session, link)
+        r = main_helper.json_request(session, link)
         # Following logic is unique to creators only
         if performer:
             if isinstance(r, dict):
@@ -857,7 +844,7 @@ def get_subscriptions(session, subscriber_count, me_api, auth_count=0):
     results = list(chain(*results))
     if blacklist_name:
         link = "https://onlyfans.com/api2/v2/lists?offset=0&limit=100&app-token="+app_token
-        r = json_request(session, link)
+        r = main_helper.json_request(session, link)
         if not r:
             return [False, []]
         x = [c for c in r if blacklist_name == c["name"]]
@@ -868,7 +855,7 @@ def get_subscriptions(session, subscriber_count, me_api, auth_count=0):
                 list_id = str(x["id"])
                 link = "https://onlyfans.com/api2/v2/lists/"+list_id + \
                     "/users?offset=0&limit=100&query=&app-token="+app_token
-                r = json_request(session, link)
+                r = main_helper.json_request(session, link)
                 list_users = r
             users = list_users
             bl_ids = [x["username"] for x in users]

@@ -7,7 +7,7 @@ import os
 import platform
 import re
 from datetime import datetime
-from itertools import chain, zip_longest
+from itertools import chain, zip_longest, groupby
 from os.path import dirname as up
 from urllib.parse import urlparse
 import time
@@ -80,15 +80,31 @@ def clean_text(string, remove_spaces=False):
     return string
 
 
-def format_media_set(location, media_set):
-    x = {}
-    x["type"] = location
-    x["valid"] = []
-    x["invalid"] = []
-    for y in media_set:
-        x["valid"].extend(y[0])
-        x["invalid"].extend(y[1])
-    return x
+def format_media_set(media_set):
+    media_set = list(chain(*media_set))
+    media_set.sort(key=lambda x: x["type"])
+    media_set = [list(g) for k, g in groupby(
+        media_set, key=lambda x: x["type"])]
+    new_list = []
+    for item in media_set:
+        item2 = {k: [d[k] for d in item] for k in item[0]}
+        item2["type"] = item2["type"][0]
+        item2["valid"] = list(chain(*item2["valid"]))
+        item2["invalid"] = list(chain(*item2["invalid"]))
+        if item2["valid"]:
+            seen = set()
+            item2["valid"] = [x for x in item2["valid"]
+                              if x["filename"] not in seen and not seen.add(x["filename"])]
+            seen = set()
+            location_directories = [x["directory"] for x in item2["valid"]
+                                    if x["directory"] not in seen and not seen.add(x["directory"])]
+            for location_directory in location_directories:
+                os.makedirs(location_directory, exist_ok=True)
+            item2["valid"] = [list(g) for k, g in groupby(
+                item2["valid"], key=lambda x: x["post_id"])]
+        new_list.append(item2)
+    print
+    return new_list
 
 
 def format_image(directory, timestamp):
@@ -250,6 +266,7 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
     session = session_rules(session, link)
     count = 0
     sleep_number = random.randint(2, 5)
+    result = {}
     while count < 11:
         try:
             count += 1
@@ -260,7 +277,8 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
                 r = session.request(method, link, json=data,
                                     stream=stream, timeout=timeout)
             else:
-                r = session.request(method, link, stream=stream, timeout=timeout)
+                r = session.request(
+                    method, link, stream=stream, timeout=timeout)
             rule = session_retry_rules(r, link)
             if rule == 1:
                 continue
@@ -275,7 +293,7 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
                 if not text:
                     message = "ERROR: 100 Posts skipped. Please post the username you're trying to scrape on the issue "'100 Posts Skipped'""
                     log_error.exception(message)
-                    return
+                    return result
                 return json.loads(text)
             else:
                 return r
@@ -288,6 +306,7 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
         except Exception as e:
             log_error.exception(e)
             continue
+    return result
 
 
 def get_config(config_path):
@@ -407,8 +426,10 @@ def assign_session(medias, number):
             count = 0
     return medias2
 
+
 def create_link_group(max_threads):
     x = range
     print
+
 
 log_error = setup_logger('errors', 'errors.log')

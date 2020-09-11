@@ -374,7 +374,7 @@ def media_scraper(result, sessions, locations, username, api_type):
                     continue
                 if "rawText" not in media_api:
                     media_api["rawText"] = ""
-                text = media_api["rawText"] if media_api["rawText"] else ""
+                text = media_api["rawText"] if media_api["rawText"] else media_api["text"]
                 matches = [s for s in ignored_keywords if s in text]
                 if matches:
                     print("Matches: ", matches)

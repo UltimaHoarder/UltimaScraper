@@ -2,7 +2,6 @@ from itertools import groupby
 
 
 def valid_invalid(item):
-    print
 
     def sort_item(item):
         class Item():
@@ -17,7 +16,6 @@ def valid_invalid(item):
                 self.directory = option.get("directory", "")
                 self.filename = option.get("filename", "")
                 self.size = option.get("size", None)
-                print
 
         def fix(item):
             return item
@@ -31,7 +29,6 @@ def valid_invalid(item):
             for items in valid:
                 if isinstance(items, dict):
                     items = [items]
-                    print
                 for item in items:
                     x.append(sort_item(item))
 
@@ -39,7 +36,6 @@ def valid_invalid(item):
                 x, key=lambda x: x.post_id)]
             self.sorted = x
     x = sort(item).sorted
-    print
     return x
 
 
@@ -51,11 +47,9 @@ class prepare_metadata(object):
     def __init__(self, items=[]):
         class Item(object):
             def __init__(self, type, valid, invalid):
-                print
                 self.type = type
                 self.valid = valid_invalid(valid)
                 self.invalid = valid_invalid(invalid)
-                print
         x = []
         for item in items:
             x.append(Item(**item))

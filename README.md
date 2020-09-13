@@ -250,6 +250,7 @@ Before troubleshooting, make sure you're using Python 3.8.
 Error: Access Denied /  Auth Loop
 
 >Make sure your cookies and user-agent are correct.
+>Use this tool [Cookie Helper](https://github.com/M-rcus/OnlyFans-Cookie-Helper)
 
 AttributeError: type object 'datetime.datetime' has no attribute 'fromisoformat'
 
@@ -263,7 +264,7 @@ I can't see ".settings" folder'
 >
 >[Mac Tutorial](https://setapp.com/how-to/show-hidden-files-on-mac)
 >
->[Linux](https://www.google.com/)
+>[Linux](https://www.google.com)
 
 I'm getting authed into the wrong account
 

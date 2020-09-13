@@ -327,7 +327,7 @@ def prepare_scraper(sessions, site_name, item):
         profile_scraper(link, sessions[0], directory, username)
         return
     if api_type == "Posts":
-        num = 50
+        num = 100
         link = link.replace("limit=0", "limit="+str(num))
         original_link = link
         ceil = math.ceil(api_count / num)
@@ -433,9 +433,25 @@ def prepare_scraper(sessions, site_name, item):
                 str(item["id"])+"?app-token="+app_token+""
             master_set.append(link2)
     master_set2 = main_helper.assign_session(master_set, len(sessions))
-    media_set = pool.starmap(media_scraper, product(
-        master_set2, [sessions], [directories], [username], [api_type]))
-    # media_set = main_helper.restore_missing_data(sessions, media_set)
+    media_set = []
+    count = len(master_set2)
+    while True:
+        media_set2 = pool.starmap(media_scraper, product(
+            master_set2, [sessions], [directories], [username], [api_type]))
+        media_set.extend(media_set2)
+        if count > 1:
+            faulty = [x for x in media_set2 if not x]
+            if not faulty:
+                print("Found: "+api_type)
+                break
+            else:
+                num = len(faulty)*100
+                print("Missing "+str(num)+" Posts... Retrying...")
+                master_set2 = main_helper.restore_missing_data(
+                    master_set2, media_set2)
+        else:
+            print("No "+api_type+" Found.")
+            break
     media_set = main_helper.format_media_set(media_set)
     seen = set()
 

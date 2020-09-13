@@ -327,7 +327,7 @@ def prepare_scraper(sessions, site_name, item):
         profile_scraper(link, sessions[0], directory, username)
         return
     if api_type == "Posts":
-        num = 100
+        num = 50
         link = link.replace("limit=0", "limit="+str(num))
         original_link = link
         ceil = math.ceil(api_count / num)
@@ -435,6 +435,7 @@ def prepare_scraper(sessions, site_name, item):
     master_set2 = main_helper.assign_session(master_set, len(sessions))
     media_set = pool.starmap(media_scraper, product(
         master_set2, [sessions], [directories], [username], [api_type]))
+    # media_set = main_helper.restore_missing_data(sessions, media_set)
     media_set = main_helper.format_media_set(media_set)
     seen = set()
 

@@ -262,10 +262,10 @@ def session_retry_rules(r, link):
     return boolean
 
 
-def json_request(session, link, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=10):
+def json_request(session, link, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20):
     session = session_rules(session, link)
     count = 0
-    sleep_number = random.randint(2, 5)
+    sleep_number = 0.5
     result = {}
     while count < 11:
         try:
@@ -302,11 +302,41 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
         except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout, socket.timeout) as e:
             if sleep:
                 time.sleep(sleep_number)
+                sleep_number += 0.5
             continue
         except Exception as e:
             log_error.exception(e)
             continue
     return result
+
+
+# def restore_missing_data(sessions, media_set):
+#     count = 0
+#     set_count = len(media_set)
+#     for item in media_set:
+#         if not item:
+#             negative_count = count-1
+#             positive_count = count+1
+#             if negative_count > 0 and negative_count < set_count:
+#                 print
+#             elif positive_count > 0 and positive_count < set_count:
+#                 media_item = media_set[positive_count]
+#                 s = [x["valid"] for x in media_item]
+#                 a = list(chain(*s))
+#                 a.sort(key=lambda x: x["post_id"])
+#                 q = a[0]
+#                 date_object = datetime.strptime(
+#                     q["postedAt"], "%d-%m-%Y %H:%M:%S")
+#                 postedAt = str(date_object.timestamp())
+#                 print(postedAt)
+#                 new_link = "ok"
+#                 r = json_request(sessions[0], new_link)
+#                 print
+#             else:
+#                 print
+#             print
+#         print
+#         count += 1
 
 
 def get_config(config_path):
@@ -413,13 +443,13 @@ def grouper(n, iterable, fillvalue=None):
     return list(zip_longest(fillvalue=fillvalue, *args))
 
 
-def assign_session(medias, number):
+def assign_session(medias, number, key_one="link", key_two="count"):
     count = 0
     medias2 = []
     for auth in medias:
         media2 = {}
-        media2["link"] = auth
-        media2["count"] = count
+        media2[key_one] = auth
+        media2[key_two] = count
         medias2.append(media2)
         count += 1
         if count == number:

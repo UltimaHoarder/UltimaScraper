@@ -201,6 +201,7 @@ def start_datascraper():
             if names:
                 print("Names: Username = username | "+subscription_array[1])
                 if not auto_scrape_names:
+                    value = "2"
                     value = input().strip()
                     if value.isdigit():
                         if value == "0":

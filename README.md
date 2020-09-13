@@ -2,6 +2,11 @@
 ![app-token](examples/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 =============
 
+# Video Tutorial
+Watch this video made by Omnipotent of [RaidForums](https://raidforums.com/) or follow the tutorial below (Thanks):
+
+https://www.youtube.com/watch?v=3r8SQT7mNHk
+
 # Mandatory Tutorial
 Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a issue.
 

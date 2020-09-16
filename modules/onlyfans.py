@@ -432,7 +432,7 @@ def prepare_scraper(sessions, site_name, item):
             link2 = "https://onlyfans.com/api2/v2/stories/highlights/" + \
                 str(item["id"])+"?app-token="+app_token+""
             master_set.append(link2)
-    master_set2 = main_helper.assign_session(master_set, len(sessions))
+    master_set2 = main_helper.assign_session(master_set, sessions)
     media_set = []
     count = len(master_set2)
     while True:

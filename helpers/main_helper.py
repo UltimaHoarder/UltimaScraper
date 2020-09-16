@@ -424,18 +424,27 @@ def grouper(n, iterable, fillvalue=None):
     return list(zip_longest(fillvalue=fillvalue, *args))
 
 
-def assign_session(medias, item, key_one="link", key_two="count"):
+def assign_session(medias, item, key_one="link", key_two="count", capped=False):
     count = 0
+    activate_cap = False
     number = len(item)
     medias2 = []
     for auth in medias:
         media2 = {}
         media2[key_one] = auth
-        media2[key_two] = count
+        if not number:
+            count = -1
+        if activate_cap:
+            media2[key_two] = -1
+        else:
+            media2[key_two] = count
+
         medias2.append(media2)
         count += 1
         if count >= number:
             count = 0
+            if capped:
+                activate_cap = True
     return medias2
 
 

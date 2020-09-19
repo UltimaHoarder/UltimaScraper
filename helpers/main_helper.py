@@ -319,6 +319,34 @@ def restore_missing_data(master_set2,media_set):
         count += 1
     return new_set
 
+# def restore_missing_data2(master_set2, media_set):
+#     count = 0
+#     new_set = []
+#     for item in media_set:
+#         if not item:
+#             link_item = master_set2[count]
+#             link = link_item["link"]
+#             offset = int(link.split('?')[-1].split('&')[1].split("=")[1])
+#             limit = int(link.split("?")[-1].split("&")[0].split("=")[1])
+#             num = 2
+#             x = []
+#             limit2 = int(limit/num)
+#             offset2 = offset
+#             for item in range(1, num+1):
+#                 link2 = link.replace("limit="+str(limit), "limit="+str(limit2))
+#                 link2 = link2.replace(
+#                     "offset="+str(offset), "offset="+str(offset2))
+#                 offset2 += limit2
+#                 i = {}
+#                 i["link"] = link2
+#                 i["count"] = link_item["count"]
+#                 new_set.append(i)
+#                 print(link2)
+#             print
+#         print(master_set2[count]["link"])
+#         count += 1
+#     return new_set
+
 
 def get_config(config_path):
     if os.path.isfile(config_path):

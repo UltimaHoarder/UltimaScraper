@@ -435,7 +435,9 @@ def prepare_scraper(sessions, site_name, item):
     master_set2 = main_helper.assign_session(master_set, sessions)
     media_set = []
     count = len(master_set2)
-    while True:
+    max_attempts = 100
+    for attempt in list(range(max_attempts)):
+        print("Scrape Attempt: "+str(attempt+1)+"/"+str(max_attempts))
         media_set2 = pool.starmap(media_scraper, product(
             master_set2, [sessions], [directories], [username], [api_type]))
         media_set.extend(media_set2)

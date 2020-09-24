@@ -116,8 +116,7 @@ def start_datascraper():
                     cookies = session["sessions"][0].cookies.get_dict()
                     auth_id = cookies["auth_id"]
                     json_auth['auth_id'] = auth_id
-                    json_auth['auth_uniq_'] = cookies["auth_uniq_"+auth_id]
-                    json_auth['auth_hash'] = cookies["auth_hash"]
+                    json_auth['sc_is_visitor_unique'] = cookies["sc_is_visitor_unique"]
                     json_auth['sess'] = cookies["sess"]
                     json_auth['fp'] = cookies["fp"]
                     if json_config != json_config2:

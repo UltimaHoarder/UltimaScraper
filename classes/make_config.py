@@ -31,8 +31,7 @@ class start(object):
                     def __init__(self, option={}):
                         self.username = option.get('username', "")
                         self.auth_id = option.get('auth_id', "")
-                        self.auth_hash = option.get('auth_hash', "")
-                        self.auth_uniq_ = option.get('auth_uniq_', "")
+                        self.sc_is_visitor_unique = option.get('sc_is_visitor_unique', "")
                         self.sess = option.get('sess', "")
                         self.fp = option.get('fp', "")
                         self.app_token = option.get(

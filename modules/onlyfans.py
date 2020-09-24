@@ -731,8 +731,7 @@ def create_auth(sessions, user_agent, auth_array, max_auth=2):
         auth_cookies = [
             {'name': 'auth_id', 'value': auth_id},
             {'name': 'sess', 'value': auth_array["sess"]},
-            {'name': 'auth_hash', 'value': auth_array["auth_hash"]},
-            {'name': 'auth_uniq_'+auth_id, 'value': auth_array["auth_uniq_"]},
+            {'name': 'sc_is_visitor_unique', 'value': auth_array["sc_is_visitor_unique"]},
             {'name': 'fp', 'value': auth_array["fp"]},
         ]
         while auth_count < max_auth+1:

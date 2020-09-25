@@ -733,6 +733,7 @@ def create_auth(sessions, user_agent, auth_array, max_auth=2):
             {'name': 'sess', 'value': auth_array["sess"]},
             {'name': 'auth_hash', 'value': auth_array["auth_hash"]},
             {'name': 'auth_uniq_'+auth_id, 'value': auth_array["auth_uniq_"]},
+            {'name': 'auth_uid_'+auth_id, 'value': None},
             {'name': 'fp', 'value': auth_array["fp"]},
         ]
         while auth_count < max_auth+1:

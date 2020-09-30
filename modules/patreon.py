@@ -50,7 +50,7 @@ def assign_vars(config, site_settings, site_name):
     cert = json_global_settings["cert"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
-    j_directory = get_directory(json_settings['download_path'], site_name)
+    j_directory = get_directory(json_settings['download_paths'], site_name)
     format_path = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
@@ -68,8 +68,8 @@ def assign_vars(config, site_settings, site_name):
 def create_session(test_ip=True):
     max_threads = multiprocessing.cpu_count()
     session = requests.Session()
-    proxies = {'http': 'socks5h://'+proxy,
-               'https': 'socks5h://'+proxy}
+    proxies = {'http': f'socks5h://{proxy}',
+               'https': f'socks5h://{proxy}'}
     if proxy:
         session.proxies = proxies
         if cert:
@@ -134,22 +134,6 @@ def create_auth(session, user_agent, auth_array, max_auth=2):
                         if error_code == 101:
                             error_message = "Blocked by 2FA."
                             print(error_message)
-                            if auth_array["support_2fa"]:
-                                link = "https://onlyfans.com/api2/v2/users/otp?app-token="+app_token
-                                count = 1
-                                max_count = 3
-                                while count < max_count+1:
-                                    print("2FA Attempt "+str(count) +
-                                          "/"+str(max_count))
-                                    code = input("Enter 2FA Code\n")
-                                    data = {'code': code, 'rememberMe': True}
-                                    r = json_request(
-                                        session, link, "PUT", data=data)
-                                    if "error" in r:
-                                        count += 1
-                                    else:
-                                        print("Success")
-                                        return [True, r]
                         return [False, r["error"]["message"]]
                 r = r["data"]
                 if "id" not in r:
@@ -303,7 +287,7 @@ def prepare_scraper(session, identifiers):
                 directory2 = os.path.join(
                     directory, owner_type, owner_relationship)
                 os.makedirs(directory2, exist_ok=True)
-                x["download_path"] = os.path.join(directory2, file_name)
+                x["download_paths"] = os.path.join(directory2, file_name)
                 date_string = datetime.fromisoformat(
                     att["created_at"]).replace(tzinfo=None).strftime(
                     "%d-%m-%Y %H:%M:%S")
@@ -319,8 +303,10 @@ def prepare_scraper(session, identifiers):
     posts = [x for x in posts
              if x["file_name"]+str(x["size"]) not in seen and not seen.add(x["file_name"]+str(x["size"]))]
     posts.sort(key=lambda x: x["id"], reverse=True)
+    return posts
 
-    def download(media, session):
+def download_media(media_set, session):
+    def download(media,session):
         return_bool = True
         count = 0
         while count < 11:
@@ -329,7 +315,7 @@ def prepare_scraper(session, identifiers):
             def choose_link(session, links):
                 for link in links:
                     r = json_request(session, link, "HEAD", True, False)
-                    if not r:
+                    if not isinstance(r, requests.Response):
                         continue
 
                     header = r.headers
@@ -354,7 +340,7 @@ def prepare_scraper(session, identifiers):
                     count += 1
                     break
             r = json_request(session, link, "GET", True, False)
-            if not r:
+            if not isinstance(r, requests.Response):
                 return_bool = False
                 count += 1
                 continue
@@ -385,6 +371,5 @@ def prepare_scraper(session, identifiers):
             break
         return return_bool
     pool = ThreadPool()
-    pool.starmap(download, product(
-        posts, [session]))
-    print
+    pool.starmap(download_media, product(
+        media_set, [session]))

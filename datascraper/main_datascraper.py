@@ -37,9 +37,10 @@ def start_datascraper():
     global_user_agent = json_settings['global_user_agent']
     domain = json_settings["auto_site_choice"]
     path = os.path.join('.settings', 'extra_auth.json')
-    extra_auth_config = json.load(open(path))
+    extra_auth_config, extra_auth_config2 = main_helper.get_config(path)
     exit_on_completion = json_settings['exit_on_completion']
     loop_timeout = json_settings['loop_timeout']
+    main_helper.assign_vars(json_config)
 
     string = "Site: "
     site_names = []
@@ -161,25 +162,26 @@ def start_datascraper():
                 site_name = "StarsAVN"
                 subscription_array = []
                 auth_count = -1
-                x = starsavn
-                x.assign_vars(json_config, json_site_settings, site_name)
                 for json_auth in json_auth_array:
                     auth_count += 1
                     user_agent = global_user_agent if not json_auth[
                         'user_agent'] else json_auth['user_agent']
-                    sess = json_auth['sess']
 
-                    auth_array = dict()
-                    auth_array["sess"] = sess
-                    session = x.create_session()
-                    session = x.create_auth(session,
-                                            user_agent, json_auth)
-                    session_array.append(session)
-                    if not session["session"]:
+                    x = starsavn
+                    x.assign_vars(json_config, json_site_settings, site_name)
+                    sessions = x.create_session()
+                    if not sessions:
+                        print("Unable to create session")
                         continue
+                    session = x.create_auth(sessions,
+                                            user_agent, json_auth, max_auth=1)
+                    session_array.append(session)
+                    if not session["sessions"]:
+                        continue
+
                     me_api = session["me_api"]
                     array = x.get_subscriptions(
-                        session["session"], session["subscriber_count"], me_api, auth_count)
+                        session["sessions"][0], session["subscriber_count"], me_api, auth_count)
                     subscription_array += array
                 subscription_array = x.format_options(
                     subscription_array, "usernames")
@@ -241,7 +243,8 @@ def start_datascraper():
             for y in download_list:
                 for arg in y[1]:
                     x.download_media(*arg)
-            stop_time = str(int(timeit.default_timer() - archive_time) / 60)[:4]
+            stop_time = str(
+                int(timeit.default_timer() - archive_time) / 60)[:4]
             print('Archive Completed in ' + stop_time + ' Minutes')
             if exit_on_completion:
                 print("Now exiting.")

@@ -13,25 +13,49 @@ from urllib.parse import urlparse
 import time
 import random
 import socket
+import psutil
+import shutil
 
 import requests
 from bs4 import BeautifulSoup
 
-import classes.make_config as make_config
+import classes.make_settings as make_settings
 import extras.OFRenamer.start as ofrenamer
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
 
 json_global_settings = None
+min_drive_space = None
 os_name = platform.system()
 
 
+def setup_logger(name, log_file, level=logging.INFO):
+    """To setup as many loggers as you want"""
+    log_filename = ".logs/"+log_file
+    os.makedirs(os.path.dirname(log_filename), exist_ok=True)
+    formatter = logging.Formatter(
+        '%(asctime)s %(levelname)s %(name)s %(message)s')
+
+    handler = logging.FileHandler(log_filename, 'w+', encoding='utf-8')
+    handler.setFormatter(formatter)
+
+    logger = logging.getLogger(name)
+    logger.setLevel(level)
+    logger.addHandler(handler)
+
+    return logger
+
+
+log_error = setup_logger('errors', 'errors.log')
+
+
 def assign_vars(config):
-    global json_global_settings
+    global json_global_settings, min_drive_space
 
     json_config = config
     json_global_settings = json_config["settings"]
+    min_drive_space = json_global_settings["min_drive_space"]
 
 
 def rename_duplicates(seen, filename):
@@ -155,10 +179,13 @@ def export_archive(datas, archive_path, json_settings):
                         writer.writerow({**{media_type: "invalid"}, **item})
 
 
-def format_path(j_directory, site_name):
-    format_path = j_directory
-    path = format_path.replace("{site_name}", site_name)
-    return path
+def format_paths(j_directories, site_name):
+    paths = []
+    for j_directory in j_directories:
+        format_path = j_directory
+        path = format_path.replace("{site_name}", site_name)
+        paths.append(path)
+    return paths
 
 
 def reformat(directory, post_id, media_id, filename, text, ext, date, username, format_path, date_format, maximum_length):
@@ -193,15 +220,44 @@ def reformat(directory, post_id, media_id, filename, text, ext, date, username, 
     return directory2
 
 
-def get_directory(directory, site_name):
-    directory = format_path(directory, site_name)
-    if os.path.isabs(directory):
-        os.makedirs(directory, exist_ok=True)
-        return directory
-    else:
-        fp = os.path.abspath(".sites")
-        x = os.path.join(fp, directory)
-        return os.path.abspath(x)
+def get_directory(directories, site_name):
+    directories = format_paths(directories, site_name)
+    new_directories = []
+    for directory in directories:
+        if os.path.isabs(directory):
+            os.makedirs(directory, exist_ok=True)
+        else:
+            fp = os.path.abspath(".sites")
+            x = os.path.join(fp, directory)
+            directory = os.path.abspath(x)
+        new_directories.append(directory)
+    directory = check_space(new_directories, min_size=min_drive_space)
+    return directory
+
+
+def check_space(download_paths, min_size, priority="download"):
+    root = ""
+    while not root:
+        paths = []
+        for download_path in download_paths:
+            drive = os.path.splitdrive(download_path)[0]
+            obj_Disk = psutil.disk_usage(drive)
+            free = obj_Disk.free / (1024.0 ** 3)
+            x = {}
+            x["path"] = download_path
+            x["free"] = free
+            paths.append(x)
+        if priority == "download":
+            paths.sort(key=lambda x: x["free"], reverse=True)
+            for item in paths:
+                download_path = item["path"]
+                free = item["free"]
+                if free > min_size:
+                    root = download_path
+        elif priority == "upload":
+            paths.sort(key=lambda x: x["free"])
+            root = download_paths[0]
+    return root
 
 
 def format_directory(j_directory, site_name, username, location="", api_type=""):
@@ -310,7 +366,7 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
     return result
 
 
-def restore_missing_data(master_set2,media_set):
+def restore_missing_data(master_set2, media_set):
     count = 0
     new_set = []
     for item in media_set:
@@ -356,20 +412,32 @@ def get_config(config_path):
             json_config = {}
     else:
         json_config = {}
-    json_config2 = json.loads(json.dumps(make_config.start(
-        **json_config), default=lambda o: o.__dict__))
+    file_name = os.path.basename(config_path)
+    if file_name == "config.json":
+        json_config2 = json.loads(json.dumps(make_settings.config(
+            **json_config), default=lambda o: o.__dict__))
+    else:
+        if "onlyfans" in json_config:
+            new = {}
+            new["supported"] = json_config
+            json_config = new
+        json_config2 = json.loads(json.dumps(make_settings.extra_auth(
+            **json_config), default=lambda o: o.__dict__))
     if json_config != json_config2:
-        update_config(json_config2)
+        update_config(json_config2, file_name=file_name)
     if not json_config:
-        input("The .settings\\config.json file has been created. Fill in whatever you need to fill in and then press enter when done.\n")
+        input(
+            f"The .settings\\{file_name} file has been created. Fill in whatever you need to fill in and then press enter when done.\n")
         json_config2 = json.load(open(config_path))
 
     json_config = copy.deepcopy(json_config2)
     return json_config, json_config2
 
 
-def update_config(json_config):
-    path = os.path.join('.settings', 'config.json')
+def update_config(json_config, file_name="config.json"):
+    directory = '.settings'
+    os.makedirs(directory, exist_ok=True)
+    path = os.path.join(directory, file_name)
     with open(path, 'w', encoding='utf-8') as f:
         json.dump(json_config, f, ensure_ascii=False, indent=2)
 
@@ -405,23 +473,6 @@ def is_me(user_api):
         return True
     else:
         return False
-
-
-def setup_logger(name, log_file, level=logging.INFO):
-    """To setup as many loggers as you want"""
-    log_filename = ".logs/"+log_file
-    os.makedirs(os.path.dirname(log_filename), exist_ok=True)
-    formatter = logging.Formatter(
-        '%(asctime)s %(levelname)s %(name)s %(message)s')
-
-    handler = logging.FileHandler(log_filename, 'w+', encoding='utf-8')
-    handler.setFormatter(formatter)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    logger.addHandler(handler)
-
-    return logger
 
 
 def update_metadata(path, metadata):
@@ -481,4 +532,10 @@ def create_link_group(max_threads):
     print
 
 
-log_error = setup_logger('errors', 'errors.log')
+def metadata_fixer(directory):
+    archive_file = os.path.join(directory, "archive.json")
+    metadata_file = os.path.join(directory, "Metadata")
+    if os.path.exists(archive_file):
+        os.makedirs(metadata_file, exist_ok=True)
+        new = os.path.join(metadata_file, "Archive.json")
+        shutil.move(archive_file, new)

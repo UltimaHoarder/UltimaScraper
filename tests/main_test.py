@@ -11,12 +11,14 @@ def version_check():
         string += "Press enter to continue"
         input(string)
 
+# Updating any outdated config values
+
 
 def check_config():
-    path = os.path.join('.settings', 'config.json')
-    if os.path.isfile(path):
-        json_config = json.load(open(path))
-
+    file_name = "config.json"
+    path = os.path.join('.settings', file_name)
+    json_config, json_config2 = main_helper.get_config(path)
+    if json_config:
         new_settings = json_config["settings"].copy()
         for key, value in json_config["settings"].items():
             if key == "socks5_proxy":
@@ -31,9 +33,12 @@ def check_config():
             settings = value["settings"]
             if "directory" in settings:
                 if not settings["directory"]:
-                    settings["directory"] = "{site_name}"
+                    settings["directory"] = ["{site_name}"]
                 settings["download_path"] = settings["directory"]
                 del settings["directory"]
+            if "download_path" in settings:
+                settings["download_paths"] = [settings["download_path"]]
+                del settings["download_path"]
             file_name_format = settings["file_name_format"]
             top = ["{id}"]
             bottom = ["{media_id}"]
@@ -44,7 +49,19 @@ def check_config():
                         x[0], x[1])
                     new = settings["file_name_format"]
                     print("Changed "+file_name_format+" to "+new + " for "+key)
-        json_config2 = json.load(open(path))
         if json_config != json_config2:
             main_helper.update_config(json_config)
-            input("The .settings\\config.json file has been updated. Fill in whatever you need to fill in and then press enter when done.\n")
+            input(
+                f"The .settings\\{file_name} file has been updated. Fill in whatever you need to fill in and then press enter when done.\n")
+
+
+def check_extra_auth():
+    file_name = "extra_auth.json"
+    path = os.path.join('.settings', file_name)
+    json_config, json_config2 = main_helper.get_config(
+        path)
+    if json_config:
+        if json_config != json_config2:
+            main_helper.update_config(json_config, file_name=file_name)
+            input(
+                f"The .settings\\{file_name} file has been updated. Fill in whatever you need to fill in and then press enter when done.\n")

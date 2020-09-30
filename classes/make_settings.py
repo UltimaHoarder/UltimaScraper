@@ -1,10 +1,11 @@
-class start(object):
+class config(object):
     def __init__(self, settings={}, supported={}):
         class Settings(object):
-            def __init__(self, auto_site_choice="", export_type="json", multithreading=True, exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy=[], cert="", global_user_agent=""):
+            def __init__(self, auto_site_choice="", export_type="json", multithreading=True, min_drive_space=0, exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy=[], cert="", global_user_agent=""):
                 self.auto_site_choice = auto_site_choice
                 self.export_type = export_type
                 self.multithreading = multithreading
+                self.min_drive_space = min_drive_space
                 self.exit_on_completion = exit_on_completion
                 self.infinite_loop = infinite_loop
                 self.loop_timeout = loop_timeout
@@ -47,8 +48,8 @@ class start(object):
                             'auto_scrape_names', False)
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
-                        self.download_path = option.get(
-                            'download_path', "{site_name}")
+                        self.download_paths = option.get(
+                            'download_paths', ["{site_name}"])
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")
@@ -96,8 +97,8 @@ class start(object):
                             'auto_scrape_names', False)
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
-                        self.download_path = option.get(
-                            'download_path', "{site_name}")
+                        self.download_paths = option.get(
+                            'download_paths', ["{site_name}"])
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")
@@ -144,8 +145,8 @@ class start(object):
                             'auto_scrape_names', False)
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
-                        self.download_path = option.get(
-                            'download_path', "{site_name}")
+                        self.download_paths = option.get(
+                            'download_paths', ["{site_name}"])
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")
@@ -182,8 +183,8 @@ class start(object):
                         self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
-                        self.download_path = option.get(
-                            'download_path', "{site_name}")
+                        self.download_paths = option.get(
+                            'download_paths', ["{site_name}"])
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")
@@ -210,8 +211,8 @@ class start(object):
                         self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
-                        self.download_path = option.get(
-                            'download_path', "{site_name}")
+                        self.download_paths = option.get(
+                            'download_paths', ["{site_name}"])
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")
@@ -224,4 +225,67 @@ class start(object):
                         self.ignored_keywords = option.get(
                             'ignored_keywords', [])
         self.settings = Settings(**settings)
+        self.supported = Supported(**supported)
+
+
+class extra_auth(object):
+    def __init__(self, supported={}):
+        class Supported(object):
+            def __init__(self, onlyfans={}, patreon={}, starsavn={}):
+                self.onlyfans = self.OnlyFans(onlyfans)
+                self.patreon = self.Patreon(patreon)
+                self.starsavn = self.StarsAvn(starsavn)
+
+            class OnlyFans:
+                def __init__(self, module):
+                    if "extra_auth" in module:
+                        module["auths"] = module["extra_auth"]
+                    auths = module.get("auths", [{}])
+                    self.auths = []
+                    for auth in auths:
+                        self.auths.append(self.Auths(auth))
+
+                class Auths:
+                    def __init__(self, option={}):
+                        self.username = option.get('username', "")
+                        self.auth_id = option.get('auth_id', "")
+                        self.auth_hash = option.get('auth_hash', "")
+                        self.auth_uniq_ = option.get('auth_uniq_', "")
+                        self.sess = option.get('sess', "")
+                        self.fp = option.get('fp', "")
+                        self.app_token = option.get(
+                            'app_token', '33d57ade8c02dbc5a333db99ff9ae26a')
+                        self.user_agent = option.get('user_agent', "")
+                        self.support_2fa = option.get('support_2fa', True)
+
+            class Patreon:
+                def __init__(self, module):
+                    if "extra_auth" in module:
+                        module["auths"] = module["extra_auth"]
+                    auths = module.get("auths", [{}])
+                    self.auths = []
+                    for auth in auths:
+                        self.auths.append(self.Auths(auth))
+
+                class Auths:
+                    def __init__(self, option={}):
+                        self.cf_clearance = option.get('cf_clearance', "")
+                        self.session_id = option.get('session_id', "")
+                        self.user_agent = option.get('user_agent', "")
+                        self.support_2fa = option.get('support_2fa', True)
+
+            class StarsAvn:
+                def __init__(self, module):
+                    if "extra_auth" in module:
+                        module["auths"] = module["extra_auth"]
+                    auths = module.get("auths", [{}])
+                    self.auths = []
+                    for auth in auths:
+                        self.auths.append(self.Auths(auth))
+
+                class Auths:
+                    def __init__(self, option={}):
+                        self.username = option.get('username', "")
+                        self.sess = option.get('sess', "")
+                        self.user_agent = option.get('user_agent', "")
         self.supported = Supported(**supported)

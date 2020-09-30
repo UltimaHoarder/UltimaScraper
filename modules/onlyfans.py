@@ -13,7 +13,7 @@ import timeit
 import requests
 from requests.adapters import HTTPAdapter
 
-import extras.OFSorter.ofsorter as ofsorter
+# import extras.OFSorter.ofsorter as ofsorter
 import helpers.main_helper as main_helper
 
 log_download = main_helper.setup_logger('downloads', 'downloads.log')
@@ -49,7 +49,7 @@ def assign_vars(json_auth, config, site_settings, site_name):
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
     j_directory = main_helper.get_directory(
-        json_settings['download_path'], site_name)
+        json_settings['download_paths'], site_name)
     format_path = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
@@ -119,8 +119,7 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
 
 # Checks if the model is valid and grabs content count
 def link_check(session, identifier):
-    link = 'https://onlyfans.com/api2/v2/users/' + str(identifier) + \
-           '?app-token=' + app_token
+    link = f'https://onlyfans.com/api2/v2/users/{identifier}?app-token={app_token}'
     y = main_helper.json_request(session, link)
     temp_user_id2 = dict()
     y["is_me"] = False
@@ -182,7 +181,7 @@ def scrape_choice(user_id, post_counts, is_me):
         "?app-token="+app_token+""
     message_api = "https://onlyfans.com/api2/v2/chats/"+user_id + \
         "/messages?limit=100&offset=0&order=desc&app-token="+app_token+""
-    mass_messages_api = "https://onlyfans.com/api2/v2/messages/queue/stats?offset=0&limit=30&app-token="+app_token+""
+    mass_messages_api = f"https://onlyfans.com/api2/v2/messages/queue/stats?offset=0&limit=30&app-token={app_token}"
     stories_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
         "/stories?limit=100&offset=0&order=desc&app-token="+app_token+""
     hightlights_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
@@ -288,7 +287,7 @@ def profile_scraper(link, session, directory, username):
                 continue
         r = main_helper.json_request(session, media_link, stream=True,
                                      json_format=False, sleep=False)
-        if not r:
+        if not isinstance(r, requests.Response):
             continue
         with open(download_path, 'wb') as f:
             for chunk in r.iter_content(chunk_size=1024):
@@ -369,8 +368,7 @@ def prepare_scraper(sessions, site_name, item):
     def process_chats(subscriber):
         fool = subscriber["withUser"]
         fool_id = str(fool["id"])
-        link_2 = "https://onlyfans.com/api2/v2/chats/"+fool_id + \
-            "/messages?limit=100&offset=0&order=desc&app-token="+app_token+""
+        link_2 = f"https://onlyfans.com/api2/v2/chats/{fool_id}/messages?limit=100&offset=0&order=desc&app-token={app_token}"
         xmessages(link_2)
     if api_type == "Messages":
         xmessages(link)
@@ -429,8 +427,7 @@ def prepare_scraper(sessions, site_name, item):
         if "error" in r:
             return
         for item in r:
-            link2 = "https://onlyfans.com/api2/v2/stories/highlights/" + \
-                str(item["id"])+"?app-token="+app_token+""
+            link2 = f"https://onlyfans.com/api2/v2/stories/highlights/{item['id']}?app-token={app_token}"
             master_set.append(link2)
     master_set2 = main_helper.assign_session(master_set, sessions)
     media_set = []
@@ -455,7 +452,6 @@ def prepare_scraper(sessions, site_name, item):
             print("No "+api_type+" Found.")
             break
     media_set = main_helper.format_media_set(media_set)
-    seen = set()
 
     metadata_set = media_set
     if export_metadata:
@@ -613,7 +609,7 @@ def download_media(media_set, session, directory, username, post_count, location
                     for link in links:
                         r = main_helper.json_request(session, link, "HEAD",
                                                      stream=True, json_format=False)
-                        if not r:
+                        if not isinstance(r, requests.Response):
                             continue
 
                         header = r.headers
@@ -639,7 +635,7 @@ def download_media(media_set, session, directory, username, post_count, location
                         break
                 r = main_helper.json_request(
                     session, link, stream=True, json_format=False)
-                if not r:
+                if not isinstance(r, requests.Response):
                     return_bool = False
                     count += 1
                     continue
@@ -704,7 +700,7 @@ def create_session(custom_proxy="", test_ip=True):
             link = 'https://checkip.amazonaws.com'
             r = main_helper.json_request(
                 session, link, json_format=False, sleep=False)
-            if not r:
+            if not isinstance(r, requests.Response):
                 print("Proxy Not Set: "+proxy+"\n")
                 return
             ip = r.text.strip()
@@ -762,7 +758,7 @@ def create_auth(sessions, user_agent, auth_array, max_auth=2):
             max_count = 10
             while count < 11:
                 print("Auth Attempt "+str(count)+"/"+str(max_count))
-                link = "https://onlyfans.com/api2/v2/users/customer?app-token="+app_token
+                link = f"https://onlyfans.com/api2/v2/users/customer?app-token={app_token}"
                 for session in sessions:
                     a = [session, link, sess, user_agent]
                     session = main_helper.create_sign(*a)
@@ -784,7 +780,7 @@ def create_auth(sessions, user_agent, auth_array, max_auth=2):
                             error_message = "Blocked by 2FA."
                             print(error_message)
                             if auth_array["support_2fa"]:
-                                link = "https://onlyfans.com/api2/v2/users/otp?app-token="+app_token
+                                link = f"https://onlyfans.com/api2/v2/users/otp?app-token={app_token}"
                                 count = 1
                                 max_count = 3
                                 while count < max_count+1:
@@ -813,7 +809,7 @@ def create_auth(sessions, user_agent, auth_array, max_auth=2):
                         continue
                 print("Welcome "+r["name"])
                 option_string = "username or profile link"
-                link = "https://onlyfans.com/api2/v2/subscriptions/count/all?app-token="+app_token
+                link = f"https://onlyfans.com/api2/v2/subscriptions/count/all?app-token={app_token}"
                 r = main_helper.json_request(session, link, sleep=False)
                 if not r:
                     break
@@ -833,7 +829,7 @@ def create_auth(sessions, user_agent, auth_array, max_auth=2):
 
 
 def get_subscriptions(session, subscriber_count, me_api, auth_count=0):
-    link = "https://onlyfans.com/api2/v2/subscriptions/subscribes?offset=0&type=active&limit=99&app-token="+app_token
+    link = f"https://onlyfans.com/api2/v2/subscriptions/subscribes?offset=0&type=active&limit=99&app-token={app_token}"
     ceil = math.ceil(subscriber_count / 99)
     a = list(range(ceil))
     offset_array = []
@@ -842,8 +838,7 @@ def get_subscriptions(session, subscriber_count, me_api, auth_count=0):
         offset_array.append(
             [link.replace("offset=0", "offset=" + str(b)), False])
     if me_api["isPerformer"]:
-        link = "https://onlyfans.com/api2/v2/users/" + \
-            str(me_api["id"])+"?app-token="+app_token
+        link = f"https://onlyfans.com/api2/v2/users/{me_api['id']}?app-token={app_token}"
         offset_array = [[link, True]] + offset_array
 
     def multi(array, session):
@@ -868,7 +863,7 @@ def get_subscriptions(session, subscriber_count, me_api, auth_count=0):
     results = [x for x in results if x is not None]
     results = list(chain(*results))
     if blacklist_name:
-        link = "https://onlyfans.com/api2/v2/lists?offset=0&limit=100&app-token="+app_token
+        link = f"https://onlyfans.com/api2/v2/lists?offset=0&limit=100&app-token={app_token}"
         r = main_helper.json_request(session, link)
         if not r:
             return [False, []]
@@ -878,8 +873,7 @@ def get_subscriptions(session, subscriber_count, me_api, auth_count=0):
             list_users = x["users"]
             if x["usersCount"] > 2:
                 list_id = str(x["id"])
-                link = "https://onlyfans.com/api2/v2/lists/"+list_id + \
-                    "/users?offset=0&limit=100&query=&app-token="+app_token
+                link = f"https://onlyfans.com/api2/v2/lists/{list_id}/users?offset=0&limit=100&query=&app-token={app_token}"
                 r = main_helper.json_request(session, link)
                 list_users = r
             users = list_users
@@ -921,7 +915,7 @@ def get_subscriptions(session, subscriber_count, me_api, auth_count=0):
 
 # Ah yes, the feature that will probably never be done
 def get_paid_posts(sessions):
-    paid_api = "https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token="+app_token+""
+    paid_api = f"https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token={app_token}"
     max_threads = multiprocessing.cpu_count()
     x = main_helper.create_link_group(max_threads)
     print

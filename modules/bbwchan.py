@@ -36,7 +36,7 @@ def assign_vars(config, site_settings, site_name):
     multithreading = json_global_settings["multithreading"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
-    j_directory = get_directory(json_settings['download_path'], site_name)
+    j_directory = get_directory(json_settings['download_paths'], site_name)
     format_path = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
@@ -192,7 +192,7 @@ def download_media(media_set, session, directory, board_name):
                         continue
                     link = "https://bbw-chan.nl" + media["path"]
                     r = json_request(session, link, "HEAD", True, False)
-                    if not r:
+                    if not isinstance(r, requests.Response):
                         return_bool = False
                         count += 1
                         continue
@@ -206,7 +206,7 @@ def download_media(media_set, session, directory, board_name):
                             return_bool = False
                             break
                     r = json_request(session, link, "GET", True, False)
-                    if not r:
+                    if not isinstance(r, requests.Response):
                         return_bool = False
                         count += 1
                         continue

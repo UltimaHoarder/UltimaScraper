@@ -107,7 +107,7 @@ if __name__ == "__main__":
     import extra_helpers.main_helper as main_helper2
     directory = os.path.abspath(os.path.join(
         os.pardir, os.pardir))
-    settings_directory = os.path.join(directory, ".settingsa")
+    settings_directory = os.path.join(directory, ".settings")
     if os.path.exists(settings_directory):
         print
     else:

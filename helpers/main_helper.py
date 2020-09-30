@@ -26,7 +26,7 @@ path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
 
 json_global_settings = None
-min_drive_space = None
+min_drive_space = 0
 os_name = platform.system()
 
 
@@ -215,7 +215,7 @@ def reformat(directory, post_id, media_id, filename, text, ext, date, username, 
         if count_string > maximum_length:
             text_limit = count_string - text_count
             path = path.replace(
-                filtered_text, filtered_text[:-text_limit])
+                filtered_text, filtered_text[:text_limit])
             directory2 = os.path.join(directory, path)
     return directory2
 

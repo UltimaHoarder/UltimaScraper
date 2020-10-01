@@ -224,18 +224,17 @@ def get_directory(directories, site_name):
     directories = format_paths(directories, site_name)
     new_directories = []
     for directory in directories:
-        if os.path.isabs(directory):
-            os.makedirs(directory, exist_ok=True)
-        else:
+        if not os.path.isabs(directory):
             fp = os.path.abspath(".sites")
             x = os.path.join(fp, directory)
             directory = os.path.abspath(x)
+        os.makedirs(directory, exist_ok=True)
         new_directories.append(directory)
     directory = check_space(new_directories, min_size=min_drive_space)
     return directory
 
 
-def check_space(download_paths, min_size, priority="download"):
+def check_space(download_paths, min_size=min_drive_space, priority="download"):
     root = ""
     while not root:
         paths = []

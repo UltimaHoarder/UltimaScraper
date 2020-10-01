@@ -247,12 +247,12 @@ def check_space(download_paths, min_size=min_drive_space, priority="download"):
             x["free"] = free
             paths.append(x)
         if priority == "download":
-            paths.sort(key=lambda x: x["free"], reverse=True)
             for item in paths:
                 download_path = item["path"]
                 free = item["free"]
                 if free > min_size:
                     root = download_path
+                    break
         elif priority == "upload":
             paths.sort(key=lambda x: x["free"])
             root = download_paths[0]

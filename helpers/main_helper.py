@@ -239,8 +239,7 @@ def check_space(download_paths, min_size=min_drive_space, priority="download"):
     while not root:
         paths = []
         for download_path in download_paths:
-            drive = os.path.splitdrive(download_path)[0]
-            obj_Disk = psutil.disk_usage(drive)
+            obj_Disk = psutil.disk_usage(download_path)
             free = obj_Disk.free / (1024.0 ** 3)
             x = {}
             x["path"] = download_path

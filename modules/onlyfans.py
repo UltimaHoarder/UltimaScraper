@@ -8,6 +8,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 from urllib.parse import urlparse
 import copy
 import timeit
+import json
 
 
 import requests
@@ -15,6 +16,7 @@ from requests.adapters import HTTPAdapter
 
 import helpers.main_helper as main_helper
 import classes.prepare_download as prepare_download
+from types import SimpleNamespace
 
 log_download = main_helper.setup_logger('downloads', 'downloads.log')
 
@@ -73,17 +75,24 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
     print("Scrape Processing")
     app_token = app_token2
     info = link_check(sessions[0], identifier)
+    if not info["exists"]:
+        return [False]
     user = info["user"]
-    if not info["subbed"]:
-        print(f"You are not subbed to {user['username']}")
-        return [False, user]
-    is_me = user["is_me"]
+    user = json.loads(json.dumps(
+        user), object_hook=lambda d: SimpleNamespace(**d))
+    is_me = user.is_me
     post_counts = info["count"]
     post_count = post_counts[0]
-    user_id = str(user["id"])
-    avatar = user["avatar"]
-    username = user["username"]
-    link = user["link"]
+    user_id = str(user.id)
+    avatar = user.avatar
+    username = user.username
+    link = user.link
+    prep_download = prepare_download.start(
+        username=username, link=link, image_url=avatar, post_count=post_count, webhook=webhook)
+    prep_download.user = user
+    if not info["subbed"]:
+        print(f"You are not subbed to {user.username}")
+        return [False, prep_download]
     print("Name: "+username)
     api_array = scrape_choice(user_id, post_counts, is_me)
     api_array = format_options(api_array, "apis")
@@ -98,8 +107,6 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
         apis = [apis[value]]
     else:
         apis.pop(0)
-    prep_download = prepare_download.start(
-        username=username, link=link, image_url=avatar, post_count=post_count, webhook=webhook)
     for item in apis:
         print("Type: "+item["api_type"])
         only_links = item["api_array"]["only_links"]
@@ -128,16 +135,13 @@ def link_check(session, identifier):
     link = f'https://onlyfans.com/api2/v2/users/{identifier}?app-token={app_token}'
     y = main_helper.json_request(session, link)
     temp_user_id2 = dict()
+    temp_user_id2["exists"] = True
     y["is_me"] = False
-    if not y:
-        temp_user_id2["subbed"] = False
-        y["username"] = identifier
-        temp_user_id2["user"] = y
-        return temp_user_id2
     if "error" in y:
         temp_user_id2["subbed"] = False
         y["username"] = identifier
         temp_user_id2["user"] = y
+        temp_user_id2["exists"] = False
         return temp_user_id2
     now = datetime.utcnow().date()
     today = datetime.utcnow().date()
@@ -163,12 +167,11 @@ def link_check(session, identifier):
         y["is_me"] = True
     if not subbed:
         temp_user_id2["subbed"] = False
-        temp_user_id2["user"] = y
     else:
         temp_user_id2["subbed"] = True
-        temp_user_id2["user"] = y
-        temp_user_id2["count"] = [y["postsCount"], y["archivedPostsCount"], [
-            y["photosCount"], y["videosCount"], y["audiosCount"]]]
+    temp_user_id2["user"] = y
+    temp_user_id2["count"] = [y["postsCount"], y["archivedPostsCount"], [
+        y["photosCount"], y["videosCount"], y["audiosCount"]]]
     temp_user_id2["user"]["link"] = model_link
     return temp_user_id2
 

@@ -20,6 +20,7 @@ import requests
 from bs4 import BeautifulSoup
 
 import classes.make_settings as make_settings
+import classes.prepare_webhooks as prepare_webhooks
 import extras.OFRenamer.start as ofrenamer
 
 path = up(up(os.path.realpath(__file__)))
@@ -27,6 +28,7 @@ os.chdir(path)
 
 json_global_settings = None
 min_drive_space = 0
+webhooks = None
 os_name = platform.system()
 
 
@@ -51,11 +53,12 @@ log_error = setup_logger('errors', 'errors.log')
 
 
 def assign_vars(config):
-    global json_global_settings, min_drive_space
+    global json_global_settings, min_drive_space, webhooks
 
     json_config = config
     json_global_settings = json_config["settings"]
     min_drive_space = json_global_settings["min_drive_space"]
+    webhooks = json_global_settings["webhooks"]
 
 
 def rename_duplicates(seen, filename):
@@ -537,3 +540,20 @@ def metadata_fixer(directory):
         os.makedirs(metadata_file, exist_ok=True)
         new = os.path.join(metadata_file, "Archive.json")
         shutil.move(archive_file, new)
+
+
+def send_webhook(item):
+    if item.webhook:
+        for webhook_link in webhooks:
+            message = prepare_webhooks.discord()
+            embed = message.embed()
+            embed.title = f"Downloaded: {item.username}"
+            field = embed.add_field("username", item.username)
+            field = embed.add_field("post_count", item.post_count)
+            field = embed.add_field("link", item.link)
+            embed.image.url = item.image_url
+            message.embeds.append(embed)
+            message = json.loads(json.dumps(
+                message, default=lambda o: o.__dict__))
+            x = requests.post(webhook_link, json=message)
+            print

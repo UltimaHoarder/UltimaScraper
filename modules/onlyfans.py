@@ -13,8 +13,8 @@ import timeit
 import requests
 from requests.adapters import HTTPAdapter
 
-# import extras.OFSorter.ofsorter as ofsorter
 import helpers.main_helper as main_helper
+import classes.prepare_download as prepare_download
 
 log_download = main_helper.setup_logger('downloads', 'downloads.log')
 
@@ -34,12 +34,13 @@ export_metadata = None
 delete_legacy_metadata = None
 sort_free_paid_posts = None
 blacklist_name = None
+webhook = None
 maximum_length = None
 app_token = None
 
 
 def assign_vars(json_auth, config, site_settings, site_name):
-    global json_config, multithreading, proxies, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length, app_token
+    global json_config, multithreading, proxies, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, webhook, maximum_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -59,6 +60,7 @@ def assign_vars(json_auth, config, site_settings, site_name):
     delete_legacy_metadata = json_settings["delete_legacy_metadata"]
     sort_free_paid_posts = json_settings["sort_free_paid_posts"]
     blacklist_name = json_settings["blacklist_name"]
+    webhook = json_settings["webhook"]
     maximum_length = 255
     maximum_length = int(json_settings["text_length"]
                          ) if json_settings["text_length"] else maximum_length
@@ -71,15 +73,17 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
     print("Scrape Processing")
     app_token = app_token2
     info = link_check(sessions[0], identifier)
-    if not info["subbed"]:
-        print(info["user"])
-        print("First time? Did you forget to edit your config.json file?")
-        return [False, []]
     user = info["user"]
     is_me = user["is_me"]
     post_counts = info["count"]
+    post_count = post_counts[0]
     user_id = str(user["id"])
+    avatar = user["avatar"]
     username = user["username"]
+    link = user["link"]
+    if not info["subbed"]:
+        print(f"You are not subbed to {username}")
+        return [False, []]
     print("Name: "+username)
     api_array = scrape_choice(user_id, post_counts, is_me)
     api_array = format_options(api_array, "apis")
@@ -94,7 +98,8 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
         apis = [apis[value]]
     else:
         apis.pop(0)
-    prep_download = []
+    prep_download = prepare_download.start(
+        username=username, link=link, image_url=avatar, post_count=post_count, webhook=webhook)
     for item in apis:
         print("Type: "+item["api_type"])
         only_links = item["api_array"]["only_links"]
@@ -111,7 +116,7 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
                         continue
                     directory = results[1]
                     location = result["type"]
-                    prep_download.append(
+                    prep_download.others.append(
                         [media_set["valid"], sessions, directory, username, post_count, location, api_type])
     print("Scrape Completed"+"\n")
     return [True, prep_download]
@@ -119,6 +124,7 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
 
 # Checks if the model is valid and grabs content count
 def link_check(session, identifier):
+    model_link = f"https://onlyfans.com/{identifier}"
     link = f'https://onlyfans.com/api2/v2/users/{identifier}?app-token={app_token}'
     y = main_helper.json_request(session, link)
     temp_user_id2 = dict()
@@ -154,14 +160,14 @@ def link_check(session, identifier):
         y["is_me"] = True
     if not subbed:
         temp_user_id2["subbed"] = False
-        temp_user_id2["user"] = "You're not subscribed to the user"
-        return temp_user_id2
+        temp_user_id2["user"] = y
     else:
         temp_user_id2["subbed"] = True
         temp_user_id2["user"] = y
         temp_user_id2["count"] = [y["postsCount"], y["archivedPostsCount"], [
             y["photosCount"], y["videosCount"], y["audiosCount"]]]
-        return temp_user_id2
+    temp_user_id2["user"]["link"] = model_link
+    return temp_user_id2
 
 
 # Allows the user to choose which api they want to scrape

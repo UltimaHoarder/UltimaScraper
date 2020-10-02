@@ -1,4 +1,6 @@
 
+from timeit import main
+from classes.prepare_metadata import prepare_metadata
 import json
 import logging
 import os
@@ -12,8 +14,6 @@ import modules.fourchan as fourchan
 import modules.onlyfans as onlyfans
 import modules.patreon as patreon
 import modules.starsavn as starsavn
-
-
 def start_datascraper():
     parser = ArgumentParser()
     parser.add_argument("-m", "--metadata", action='store_true',
@@ -203,7 +203,7 @@ def start_datascraper():
             if names:
                 print("Names: Username = username | "+subscription_array[1])
                 if not auto_scrape_names:
-                    value = "1"
+                    value = "2"
                     value = input().strip()
                     if value.isdigit():
                         if value == "0":
@@ -240,9 +240,13 @@ def start_datascraper():
                     session, username, site_name, app_token, choice_type=value)
                 if not args.metadata:
                     download_list.append(result)
-            for y in download_list:
-                for arg in y[1]:
+            for item in download_list:
+                y = item[1]
+                y.site_name = site_name
+                others = y.others
+                for arg in others:
                     x.download_media(*arg)
+                main_helper.send_webhook(y)
             stop_time = str(
                 int(timeit.default_timer() - archive_time) / 60)[:4]
             print('Archive Completed in ' + stop_time + ' Minutes')

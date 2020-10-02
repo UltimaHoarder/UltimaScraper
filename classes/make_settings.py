@@ -1,11 +1,12 @@
 class config(object):
     def __init__(self, settings={}, supported={}):
         class Settings(object):
-            def __init__(self, auto_site_choice="", export_type="json", multithreading=True, min_drive_space=0, exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy=[], cert="", global_user_agent=""):
+            def __init__(self, auto_site_choice="", export_type="json", multithreading=True, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy=[], cert="", global_user_agent=""):
                 self.auto_site_choice = auto_site_choice
                 self.export_type = export_type
                 self.multithreading = multithreading
                 self.min_drive_space = min_drive_space
+                self.webhooks = webhooks
                 self.exit_on_completion = exit_on_completion
                 self.infinite_loop = infinite_loop
                 self.loop_timeout = loop_timeout
@@ -69,6 +70,8 @@ class config(object):
                             'sort_free_paid_posts', True)
                         self.blacklist_name = option.get(
                             'blacklist_name', "")
+                        self.webhook = option.get(
+                            'webhook', True)
 
                 class ExtraAuthSettings:
                     def __init__(self, option={}):
@@ -118,6 +121,8 @@ class config(object):
                             'sort_free_paid_posts', True)
                         self.blacklist_name = option.get(
                             'blacklist_name', "")
+                        self.webhook = option.get(
+                            'webhook', True)
 
                 class ExtraAuthSettings:
                     def __init__(self, option={}):
@@ -162,6 +167,8 @@ class config(object):
                             'export_metadata', True)
                         self.blacklist_name = option.get(
                             'blacklist_name', "")
+                        self.webhook = option.get(
+                            'webhook', True)
 
                 class ExtraAuthSettings:
                     def __init__(self, option={}):
@@ -196,6 +203,8 @@ class config(object):
                             'boards', [])
                         self.ignored_keywords = option.get(
                             'ignored_keywords', [])
+                        self.webhook = option.get(
+                            'webhook', True)
 
             class BBWChan:
                 def __init__(self, module):
@@ -224,6 +233,8 @@ class config(object):
                             'boards', [])
                         self.ignored_keywords = option.get(
                             'ignored_keywords', [])
+                        self.webhook = option.get(
+                            'webhook', True)
         self.settings = Settings(**settings)
         self.supported = Supported(**supported)
 

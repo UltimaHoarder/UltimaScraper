@@ -1,5 +1,4 @@
 import requests
-from bs4 import BeautifulSoup
 from requests.adapters import HTTPAdapter
 from helpers.main_helper import *
 
@@ -9,7 +8,8 @@ from itertools import product
 import multiprocessing
 from multiprocessing.dummy import Pool as ThreadPool
 from datetime import datetime
-import re
+import random
+import classes.prepare_download as prepare_download
 
 # Open config.json and fill in OPTIONAL information
 json_config = None
@@ -24,13 +24,14 @@ date_format = None
 boards = None
 ignored_keywords = None
 maximum_length = None
+webhook = None
 
 max_threads = multiprocessing.cpu_count()
 log_download = setup_logger('downloads', 'downloads.log')
 
 
 def assign_vars(config, site_settings, site_name):
-    global json_config, multithreading, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, boards, ignored_keywords, maximum_length
+    global json_config, multithreading, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, boards, ignored_keywords, webhook, maximum_length
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -43,6 +44,7 @@ def assign_vars(config, site_settings, site_name):
     date_format = json_settings["date_format"]
     boards = json_settings["boards"]
     ignored_keywords = json_settings["ignored_keywords"]
+    webhook = json_settings["webhook"]
     maximum_length = 255
     maximum_length = int(json_settings["text_length"]
                          ) if json_settings["text_length"] else maximum_length
@@ -51,9 +53,8 @@ def assign_vars(config, site_settings, site_name):
 def start_datascraper(session, board_name, site_name, link_type, choice_type=None):
     print("Scrape Processing")
     user_id = link_check(session, board_name)
-    if not user_id[0]:
-        print(user_id[1])
-        print("First time? Did you forget to edit your config.json file?")
+    if not user_id["status"]:
+        print(user_id["message"])
         return [False]
     print("Board: " + board_name)
     array = scrape_choice(board_name)
@@ -79,22 +80,28 @@ def start_datascraper(session, board_name, site_name, link_type, choice_type=Non
     print("Downloading Media")
     count_results = str(len([x for x in threads if x is None]))
     print("Invalid Count: "+count_results)
-    prep_download = [[threads, session, directory, board_name]]
+    num = random.randrange(0, 200)
+    avatar = f"https://s.4cdn.org/image/title/{num}.png"
+    link = user_id["link"]
+    prep_download = prepare_download.start(
+        username=board_name, link=link, image_url=avatar, post_count=post_count, webhook=webhook)
+    prep_download.others.append([threads, session, directory, board_name])
     # When profile is done scraping, this function will return True
     return [True, prep_download]
 
 
 def link_check(session, username):
-    link = "http://a.4cdn.org/" + username + "/catalog.json"
+    link = f"http://a.4cdn.org/{username}/catalog.json"
     r = session.head(link)
     temp_user_id2 = dict()
+    temp_user_id2["link"] = f"https://boards.4chan.org/{username}/catalog"
     if r.status_code == 404:
-        temp_user_id2[0] = False
-        temp_user_id2[1] = "Incorrect URL Format"
+        temp_user_id2["status"] = False
+        temp_user_id2["message"] = "Incorrect URL Format"
         return temp_user_id2
     else:
-        temp_user_id2[0] = True
-        temp_user_id2[1] = username
+        temp_user_id2["status"] = True
+        temp_user_id2["message"] = username
         return temp_user_id2
 
 

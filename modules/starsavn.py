@@ -14,6 +14,7 @@ import requests
 from requests.adapters import HTTPAdapter
 
 import helpers.main_helper as main_helper
+import classes.prepare_download as prepare_download
 
 log_download = main_helper.setup_logger('downloads', 'downloads.log')
 
@@ -32,11 +33,12 @@ ignore_type = None
 export_metadata = None
 delete_legacy_metadata = None
 blacklist_name = None
+webhook = None
 maximum_length = None
 
 
 def assign_vars(config, site_settings, site_name):
-    global json_config, multithreading, proxies, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, blacklist_name, maximum_length
+    global json_config, multithreading, proxies, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, blacklist_name, webhook, maximum_length
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -54,6 +56,7 @@ def assign_vars(config, site_settings, site_name):
     ignore_type = json_settings["ignore_type"]
     export_metadata = json_settings["export_metadata"]
     blacklist_name = json_settings["blacklist_name"]
+    webhook = json_settings["webhook"]
     maximum_length = 255
     maximum_length = int(json_settings["text_length"]
                          ) if json_settings["text_length"] else maximum_length
@@ -62,15 +65,17 @@ def assign_vars(config, site_settings, site_name):
 def start_datascraper(sessions, identifier, site_name, app_token, choice_type=None):
     print("Scrape Processing")
     info = link_check(sessions[0], identifier)
-    if not info["subbed"]:
-        print(info["user"])
-        print("First time? Did you forget to edit your config.json file?")
-        return [False, []]
     user = info["user"]
     is_me = user["is_me"]
     post_counts = info["count"]
+    post_count = post_counts[0]
     user_id = str(user["id"])
+    avatar = user["avatar"]
     username = user["username"]
+    link = user["publicUrl"]
+    if not info["subbed"]:
+        print(f"You are not subbed to {username}")
+        return [False, []]
     print("Name: "+username)
     api_array = scrape_choice(user_id, post_counts, is_me)
     api_array = format_options(api_array, "apis")
@@ -85,7 +90,8 @@ def start_datascraper(sessions, identifier, site_name, app_token, choice_type=No
         apis = [apis[value]]
     else:
         apis.pop(0)
-    prep_download = []
+    prep_download = prepare_download.start(
+        username=username, link=link, image_url=avatar, post_count=post_count, webhook=webhook)
     for item in apis:
         print("Type: "+item["api_type"])
         only_links = item["api_array"]["only_links"]
@@ -102,7 +108,7 @@ def start_datascraper(sessions, identifier, site_name, app_token, choice_type=No
                         continue
                     directory = results[1]
                     location = result["type"]
-                    prep_download.append(
+                    prep_download.others.append(
                         [media_set["valid"], sessions, directory, username, post_count, location, api_type])
     # When profile is done scraping, this function will return True
     print("Scrape Completed"+"\n")

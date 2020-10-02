@@ -14,6 +14,8 @@ import modules.fourchan as fourchan
 import modules.onlyfans as onlyfans
 import modules.patreon as patreon
 import modules.starsavn as starsavn
+
+
 def start_datascraper():
     parser = ArgumentParser()
     parser.add_argument("-m", "--metadata", action='store_true',
@@ -238,14 +240,15 @@ def start_datascraper():
                 username = main_helper.parse_links(site_name_lower, name)
                 result = x.start_datascraper(
                     session, username, site_name, app_token, choice_type=value)
-                if not args.metadata:
+                if result[0]:
                     download_list.append(result)
             for item in download_list:
                 y = item[1]
                 y.site_name = site_name
                 others = y.others
-                for arg in others:
-                    x.download_media(*arg)
+                if not args.metadata:
+                    for arg in others:
+                        x.download_media(*arg)
                 main_helper.send_webhook(y)
             stop_time = str(
                 int(timeit.default_timer() - archive_time) / 60)[:4]

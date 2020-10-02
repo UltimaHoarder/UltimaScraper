@@ -2,7 +2,7 @@ import math
 import multiprocessing
 import os
 import shutil
-from datetime import datetime
+from datetime import datetime, timedelta
 from itertools import chain, groupby, product
 from multiprocessing.dummy import Pool as ThreadPool
 from urllib.parse import urlparse
@@ -74,6 +74,9 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
     app_token = app_token2
     info = link_check(sessions[0], identifier)
     user = info["user"]
+    if not info["subbed"]:
+        print(f"You are not subbed to {user['username']}")
+        return [False, user]
     is_me = user["is_me"]
     post_counts = info["count"]
     post_count = post_counts[0]
@@ -81,9 +84,6 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
     avatar = user["avatar"]
     username = user["username"]
     link = user["link"]
-    if not info["subbed"]:
-        print(f"You are not subbed to {username}")
-        return [False, []]
     print("Name: "+username)
     api_array = scrape_choice(user_id, post_counts, is_me)
     api_array = format_options(api_array, "apis")
@@ -131,14 +131,17 @@ def link_check(session, identifier):
     y["is_me"] = False
     if not y:
         temp_user_id2["subbed"] = False
-        temp_user_id2["user"] = "No users found"
+        y["username"] = identifier
+        temp_user_id2["user"] = y
         return temp_user_id2
     if "error" in y:
         temp_user_id2["subbed"] = False
-        temp_user_id2["user"] = y["error"]["message"]
+        y["username"] = identifier
+        temp_user_id2["user"] = y
         return temp_user_id2
     now = datetime.utcnow().date()
-    result_date = datetime.utcnow().date()
+    today = datetime.utcnow().date()
+    result_date = today-timedelta(days=1)
     if "email" not in y:
         subscribedByData = y["subscribedByData"]
         if subscribedByData:

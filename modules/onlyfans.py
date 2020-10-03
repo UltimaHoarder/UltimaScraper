@@ -75,11 +75,12 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
     print("Scrape Processing")
     app_token = app_token2
     info = link_check(sessions[0], identifier)
-    if not info["exists"]:
-        return [False]
     user = info["user"]
     user = json.loads(json.dumps(
         user), object_hook=lambda d: SimpleNamespace(**d))
+    if not info["exists"]:
+        info["user"] = user
+        return [False, info]
     is_me = user.is_me
     post_counts = info["count"]
     post_count = post_counts[0]
@@ -87,12 +88,11 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
     avatar = user.avatar
     username = user.username
     link = user.link
-    prep_download = prepare_download.start(
+    info["download"] = prepare_download.start(
         username=username, link=link, image_url=avatar, post_count=post_count, webhook=webhook)
-    prep_download.user = user
     if not info["subbed"]:
         print(f"You are not subbed to {user.username}")
-        return [False, prep_download]
+        return [False, info]
     print("Name: "+username)
     api_array = scrape_choice(user_id, post_counts, is_me)
     api_array = format_options(api_array, "apis")
@@ -123,10 +123,10 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
                         continue
                     directory = results[1]
                     location = result["type"]
-                    prep_download.others.append(
+                    info["download"].others.append(
                         [media_set["valid"], sessions, directory, username, post_count, location, api_type])
     print("Scrape Completed"+"\n")
-    return [True, prep_download]
+    return [True, info]
 
 
 # Checks if the model is valid and grabs content count
@@ -625,9 +625,10 @@ def download_media(media_set, session, directory, username, post_count, location
                             continue
 
                         header = r.headers
-                        content_length = int(header["content-length"])
+                        content_length = header.get('content-length')
                         if not content_length:
                             continue
+                        content_length = int(content_length)
                         return [link, content_length]
                 result = choose_link(session, links)
                 if not result:

@@ -243,13 +243,15 @@ def start_datascraper():
                 if result[0]:
                     download_list.append(result)
             for item in download_list:
-                y = item[1]
-                y.site_name = site_name
-                others = y.others
+                result = item[1]
+                if not result["subbed"]:
+                    continue
+                download = result["download"]
+                others = download.others
                 if not args.metadata:
                     for arg in others:
                         x.download_media(*arg)
-                main_helper.send_webhook(y)
+                main_helper.send_webhook(download)
             stop_time = str(
                 int(timeit.default_timer() - archive_time) / 60)[:4]
             print('Archive Completed in ' + stop_time + ' Minutes')

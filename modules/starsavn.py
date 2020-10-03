@@ -15,6 +15,7 @@ from requests.adapters import HTTPAdapter
 
 import helpers.main_helper as main_helper
 import classes.prepare_download as prepare_download
+from types import SimpleNamespace
 
 log_download = main_helper.setup_logger('downloads', 'downloads.log')
 
@@ -66,16 +67,24 @@ def start_datascraper(sessions, identifier, site_name, app_token, choice_type=No
     print("Scrape Processing")
     info = link_check(sessions[0], identifier)
     user = info["user"]
-    is_me = user["is_me"]
+    user = json.loads(json.dumps(
+        user), object_hook=lambda d: SimpleNamespace(**d))
+    if not info["exists"]:
+        info["user"] = user
+        return [False, info]
+    is_me = user.is_me
     post_counts = info["count"]
     post_count = post_counts[0]
-    user_id = str(user["id"])
-    avatar = user["avatar"]
-    username = user["username"]
-    link = user["publicUrl"]
+    user_id = str(user.id)
+    avatar = user.avatar
+    username = user.username
+    link = user.link
+    info["download"] = prepare_download.start(
+        username=username, link=link, image_url=avatar, post_count=post_count, webhook=webhook)
     if not info["subbed"]:
-        print(f"You are not subbed to {username}")
-        return [False, []]
+        print(f"You are not subbed to {user.username}")
+        return [False, info]
+
     print("Name: "+username)
     api_array = scrape_choice(user_id, post_counts, is_me)
     api_array = format_options(api_array, "apis")
@@ -108,42 +117,35 @@ def start_datascraper(sessions, identifier, site_name, app_token, choice_type=No
                         continue
                     directory = results[1]
                     location = result["type"]
-                    prep_download.others.append(
+                    info["download"].others.append(
                         [media_set["valid"], sessions, directory, username, post_count, location, api_type])
     # When profile is done scraping, this function will return True
     print("Scrape Completed"+"\n")
-    return [True, prep_download]
+    return [True, info]
 
 
 def link_check(session, identifier):
-    link = 'https://stars.avn.com/api2/v2/users/' + str(identifier)
+    model_link = f"https://stars.avn.com/{identifier}"
+    link = f"https://stars.avn.com/api2/v2/users/{identifier}"
     y = main_helper.json_request(session, link)
     temp_user_id2 = dict()
+    temp_user_id2["exists"] = True
     y["is_me"] = False
-    if not y:
-        temp_user_id2["subbed"] = False
-        temp_user_id2["user"] = "No users found"
-        return temp_user_id2
     if "error" in y:
         temp_user_id2["subbed"] = False
-        temp_user_id2["user"] = y["error"]["message"]
+        y["username"] = identifier
+        temp_user_id2["user"] = y
+        temp_user_id2["exists"] = False
         return temp_user_id2
     now = datetime.utcnow().date()
     result_date = datetime.utcnow().date()
     if "email" not in y:
-        subscribedByData = y
-        # if subscribedByData:
-        # expired_at = subscribedByData["expiredAt"]
-        # result_date = datetime.fromisoformat(
-        #     expired_at).replace(tzinfo=None).date()
         if y["followedBy"]:
             subbed = True
         elif y["subscribedBy"]:
             subbed = True
         elif y["subscribedOn"]:
             subbed = True
-        # elif y["subscribedIsExpiredNow"] == False:
-        #     subbed = True
         elif result_date >= now:
             subbed = True
         else:
@@ -153,14 +155,13 @@ def link_check(session, identifier):
         y["is_me"] = True
     if not subbed:
         temp_user_id2["subbed"] = False
-        temp_user_id2["user"] = "You're not subscribed to the user"
-        return temp_user_id2
     else:
         temp_user_id2["subbed"] = True
-        temp_user_id2["user"] = y
-        temp_user_id2["count"] = [y["postsCount"], [
-            y["photosCount"], y["videosCount"]]]
-        return temp_user_id2
+    temp_user_id2["user"] = y
+    temp_user_id2["count"] = [y["postsCount"], [
+        y["photosCount"], y["videosCount"]]]
+    temp_user_id2["user"]["link"] = model_link
+    return temp_user_id2
 
 
 def scrape_choice(user_id, post_counts, is_me):
@@ -433,9 +434,10 @@ def download_media(media_set, session, directory, username, post_count, location
                             continue
 
                         header = r.headers
-                        content_length = int(header["content-length"])
+                        content_length = header.get('content-length')
                         if not content_length:
                             continue
+                        content_length = int(content_length)
                         return [link, content_length]
                 result = choose_link(session, links)
                 if not result:

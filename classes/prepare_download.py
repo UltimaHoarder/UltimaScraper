@@ -4,7 +4,7 @@ class start(object):
         self.username = username
         self.link = link
         self.image_url = image_url
-        self.postsCount = post_count
+        self.post_count = post_count
         self.webhook = webhook
         self.user = {}
         self.others = []

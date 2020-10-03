@@ -9,6 +9,7 @@ import multiprocessing
 from multiprocessing.dummy import Pool as ThreadPool
 from datetime import datetime
 import classes.prepare_download as prepare_download
+from types import SimpleNamespace
 
 json_config = None
 json_global_settings = None
@@ -50,13 +51,12 @@ def assign_vars(config, site_settings, site_name):
 
 def start_datascraper(session, board_name, site_name, link_type, choice_type=None):
     print("Scrape Processing")
-    user_id = link_check(session, board_name)
-    if not user_id["status"]:
-        print(user_id["message"])
-        return [False]
+    info = link_check(session, board_name)
+    if not info["exists"]:
+        return [False, info]
+
     print("Board: " + board_name)
     array = scrape_choice(board_name)
-    link_array = {}
     if multithreading:
         pool = ThreadPool(max_threads)
     else:
@@ -74,31 +74,28 @@ def start_datascraper(session, board_name, site_name, link_type, choice_type=Non
     threads = [x for x in threads if x is not None]
     post_count = len(threads)
     print("Valid Count: "+str(post_count))
-    print("Downloading Media")
     count_results = str(len([x for x in threads if x is None]))
     print("Invalid Count: "+count_results)
     avatar = "https://www.bbw-chan.nl/.static/logo.png"
-    link = user_id["link"]
-    prep_download = prepare_download.start(
+    link = info["link"]
+    info["download"] = prepare_download.start(
         username=board_name, link=link, image_url=avatar, post_count=post_count, webhook=webhook)
-    prep_download.others.append([threads, session, directory, board_name])
+    info["download"].others.append([threads, session, directory, board_name])
     # When profile is done scraping, this function will return True
-    return [True, prep_download]
+    return [True, info]
 
 
-def link_check(session, username):
-    link = f"https://bbw-chan.nl/{username}/catalog.json"
+def link_check(session, identifier):
+    link = f"https://bbw-chan.nl/{identifier}/catalog.json"
     r = session.head(link)
     temp_user_id2 = dict()
-    temp_user_id2["link"] = f"https://bbw-chan.nl/{username}"
+    temp_user_id2["exists"] = True
+    temp_user_id2["subbed"] = True
+    temp_user_id2["link"] = f"https://bbw-chan.nl/{identifier}"
     if r.status_code == 404:
-        temp_user_id2["status"] = False
-        temp_user_id2["message"] = "Incorrect URL Format"
-        return temp_user_id2
-    else:
-        temp_user_id2["status"] = True
-        temp_user_id2["message"] = username
-        return temp_user_id2
+        temp_user_id2["exists"] = False
+        temp_user_id2["subbed"] = False
+    return temp_user_id2
 
 
 def scrape_choice(username):
@@ -203,7 +200,8 @@ def download_media(media_set, session, directory, board_name):
                         continue
 
                     header = r.headers
-                    content_length = int(header["content-length"])
+                    content_length = header.get('content-length')
+                    content_length = int(content_length)
                     download_path = media["download_path"]
                     timestamp = post["creation"]
                     if not overwrite_files:

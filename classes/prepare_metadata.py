@@ -57,7 +57,7 @@ class prepare_metadata(object):
 
 
 class prepare_reformat(object):
-    def __init__(self, directory="", post_id="", media_id="", filename="", text="", ext="", date="", username="", format_path="", date_format="", maximum_length=255):
+    def __init__(self, directory="", post_id="", media_id="", filename="", text="", ext="", date="", username="", file_directory_format="", file_name_format="", date_format="", maximum_length=255):
         self.directory = directory
         self.post_id = post_id
         self.media_id = media_id
@@ -66,14 +66,17 @@ class prepare_reformat(object):
         self.ext = ext
         self.date = date
         self.username = username
-        self.format_path = format_path
+        self.file_directory_format = file_directory_format
+        self.file_name_format = file_name_format
         self.date_format = date_format
         self.maximum_length = int(maximum_length)
+
 
 class obj(object):
     def __init__(self, d):
         for a, b in d.items():
             if isinstance(b, (list, tuple)):
-               setattr(self, a, [obj(x) if isinstance(x, dict) else x for x in b])
+                setattr(self, a, [obj(x) if isinstance(
+                    x, dict) else x for x in b])
             else:
-               setattr(self, a, obj(b) if isinstance(b, dict) else b)
+                setattr(self, a, obj(b) if isinstance(b, dict) else b)

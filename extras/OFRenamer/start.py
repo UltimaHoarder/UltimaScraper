@@ -10,10 +10,22 @@ from multiprocessing.dummy import Pool as ThreadPool
 from itertools import product
 
 
-def fix_metadata(posts, json_settings, username, site_name):
-    def start(post):
+def fix_metadata(posts, json_settings, username, site_name, metadata_categories):
+    def start(post, metadata_categories):
+        model_folder = ""
         for model in post:
             model_folder = model.directory
+            metadata_categories2 = metadata_categories
+            meta_categories = metadata_categories2.split("\\")
+            q = main_helper.find_between(
+                model_folder, *meta_categories).replace("\\", "")
+            if q:
+                meta_categories.insert(-1, q)
+            category = os.path.join(*meta_categories)
+            categories = "\\".join(meta_categories)
+            file_directory_formatted = model.directory.split(category)[1]
+            model.directory = model_folder.replace(
+                file_directory_formatted, "")
             if model.links:
                 path = urlparse.urlparse(model.links[0]).path
             else:
@@ -23,7 +35,19 @@ def fix_metadata(posts, json_settings, username, site_name):
             post_id = str(model.post_id)
             filename, ext = os.path.splitext(filename)
             ext = ext.replace(".", "")
-            format_path = json_settings["file_name_format"]
+            sort_free_paid_posts = json_settings.get(
+                "sort_free_paid_posts", False)
+            if sort_free_paid_posts:
+                q = "Free"
+                if model.paid:
+                    q = "Paid"
+                if q not in meta_categories:
+                    meta_categories.insert(-1, q)
+                metadata_categories2 = "\\".join(meta_categories)
+            model.directory = model.directory.replace(
+                categories, metadata_categories2)
+            file_directory_format = json_settings["file_directory_format"]
+            file_name_format = json_settings["file_name_format"]
             date_format = json_settings["date_format"]
             text_length = json_settings["text_length"]
             download_path = json_settings["download_paths"]
@@ -41,7 +65,8 @@ def fix_metadata(posts, json_settings, username, site_name):
                     self.ext = option.get('ext', ext)
                     self.date = option.get('postedAt', today)
                     self.username = option.get('username', username)
-                    self.format_path = format_path
+                    self.file_directory_format = file_directory_format
+                    self.file_name_format = file_name_format
                     self.date_format = date_format
                     self.maximum_length = int(text_length)
             model2 = json.loads(json.dumps(
@@ -57,15 +82,19 @@ def fix_metadata(posts, json_settings, username, site_name):
                 if filepath != new_format:
                     if not os.path.isfile(new_format):
                         shutil.move(filepath, new_format)
-                return new_format
+                return new_format, filepath
             if os.path.isfile(filepath):
-                filepath = update(filepath)
+                filepath, old_filepath = update(filepath)
             else:
                 folder = os.path.dirname(filepath)
                 folder = os.path.abspath(folder)
                 while not os.path.exists(folder):
                     print(f"NOT FOUND: {folder}\n")
-                    last_path = folder.split(username+"\\")[1]
+                    if os.path.exists(reformat.directory):
+                        folder = reformat.directory
+                        continue
+                    last_path = folder.split(
+                        username+"\\")[1].replace(file_directory_formatted, "")
                     directory = main_helper.get_directory(
                         download_path, site_name)
                     folder = os.path.join(directory, username, last_path)
@@ -76,11 +105,19 @@ def fix_metadata(posts, json_settings, username, site_name):
                 if y:
                     y = y[0]
                     filepath = os.path.join(folder, y)
-                    filepath = update(filepath)
+                    filepath, old_filepath = update(filepath)
             model.filename = os.path.basename(filepath)
+        return model_folder
     pool = ThreadPool()
-    pool.starmap(start, product(
-        posts))
+    old_folders = pool.starmap(start, product(
+        posts, [metadata_categories]))
+    old_folders = list(dict.fromkeys(old_folders))
+    for old_folder in old_folders:
+        if "Posts" in old_folder:
+            print
+        file_directory_format = json_settings.get("file_directory_format", "")
+        if not file_directory_format:
+            main_helper.delete_empty_directories(old_folder)
     return posts
 
 
@@ -88,13 +125,17 @@ def start(metadata_filepath, json_settings):
     if os.path.getsize(metadata_filepath) > 0:
         metadatas = json.load(open(metadata_filepath, encoding='utf-8'))
         metadatas2 = prepare_metadata(metadatas).items
-        username = os.path.basename(up(up(metadata_filepath)))
+        model_path = up(up(metadata_filepath))
+        username = os.path.basename(model_path)
         site_name = os.path.basename(up(up(up(metadata_filepath))))
+        metadata_filename = os.path.basename(metadata_filepath)
+        name = metadata_filename.split(".")[0]
         for metadata in metadatas2:
+            category = os.path.join(name, metadata.type)
             metadata.valid = fix_metadata(
-                metadata.valid, json_settings, username, site_name)
+                metadata.valid, json_settings, username, site_name, category)
             metadata.invalid = fix_metadata(
-                metadata.invalid, json_settings, username, site_name)
+                metadata.invalid, json_settings, username, site_name, category)
         metadatas2 = json.loads(json.dumps(
             metadatas2, default=lambda o: o.__dict__))
         if metadatas != metadatas2:

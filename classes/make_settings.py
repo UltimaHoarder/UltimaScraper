@@ -51,57 +51,8 @@ class config(object):
                             'auto_scrape_apis', True)
                         self.download_paths = option.get(
                             'download_paths', ["{site_name}"])
-                        self.file_name_format = option.get(
-                            'file_name_format', "{file_name}.{ext}")
-                        self.text_length = option.get('text_length', "255")
-                        self.overwrite_files = option.get(
-                            'overwrite_files', False)
-                        self.date_format = option.get(
-                            'date_format', "%d-%m-%Y")
-                        self.ignored_keywords = option.get(
-                            'ignored_keywords', [])
-                        self.ignore_type = option.get(
-                            'ignore_type', "")
-                        self.export_metadata = option.get(
-                            'export_metadata', True)
-                        self.delete_legacy_metadata = option.get(
-                            'delete_legacy_metadata', False)
-                        self.sort_free_paid_posts = option.get(
-                            'sort_free_paid_posts', True)
-                        self.blacklist_name = option.get(
-                            'blacklist_name', "")
-                        self.webhook = option.get(
-                            'webhook', True)
-
-                class ExtraAuthSettings:
-                    def __init__(self, option={}):
-                        self.extra_auth = option.get('extra_auth', False)
-                        self.choose_auth = option.get('choose_auth', False)
-                        self.merge_auth = option.get('merge_auth', False)
-
-            class Patreon:
-                def __init__(self, module):
-                    self.auth = self.Auth(module.get('auth', {}))
-                    self.settings = self.Settings(module.get('settings', {}))
-                    self.extra_auth_settings = self.ExtraAuthSettings(
-                        module.get('extra_auth_settings', {}))
-
-                class Auth:
-                    def __init__(self, option={}):
-                        self.cf_clearance = option.get('cf_clearance', "")
-                        self.session_id = option.get('session_id', "")
-                        self.user_agent = option.get('user_agent', "")
-                        self.support_2fa = option.get('support_2fa', True)
-
-                class Settings:
-                    def __init__(self, option={}):
-                        self.auto_choice = option.get('auto_choice', "")
-                        self.auto_scrape_names = option.get(
-                            'auto_scrape_names', False)
-                        self.auto_scrape_apis = option.get(
-                            'auto_scrape_apis', True)
-                        self.download_paths = option.get(
-                            'download_paths', ["{site_name}"])
+                        self.file_directory_format = option.get(
+                            'file_directory_format', "")
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")
@@ -152,6 +103,8 @@ class config(object):
                             'auto_scrape_apis', True)
                         self.download_paths = option.get(
                             'download_paths', ["{site_name}"])
+                        self.file_directory_format = option.get(
+                            'file_directory_format', "")
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")
@@ -192,6 +145,8 @@ class config(object):
                             'auto_scrape_names', False)
                         self.download_paths = option.get(
                             'download_paths', ["{site_name}"])
+                        self.file_directory_format = option.get(
+                            'file_directory_format', "")
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")
@@ -222,6 +177,8 @@ class config(object):
                             'auto_scrape_names', False)
                         self.download_paths = option.get(
                             'download_paths', ["{site_name}"])
+                        self.file_directory_format = option.get(
+                            'file_directory_format', "")
                         self.file_name_format = option.get(
                             'file_name_format', "{file_name}.{ext}")
                         self.text_length = option.get('text_length', "255")
@@ -235,6 +192,59 @@ class config(object):
                             'ignored_keywords', [])
                         self.webhook = option.get(
                             'webhook', True)
+
+            class Patreon:
+                def __init__(self, module):
+                    self.auth = self.Auth(module.get('auth', {}))
+                    self.settings = self.Settings(module.get('settings', {}))
+                    self.extra_auth_settings = self.ExtraAuthSettings(
+                        module.get('extra_auth_settings', {}))
+
+                class Auth:
+                    def __init__(self, option={}):
+                        self.cf_clearance = option.get('cf_clearance', "")
+                        self.session_id = option.get('session_id', "")
+                        self.user_agent = option.get('user_agent', "")
+                        self.support_2fa = option.get('support_2fa', True)
+
+                class Settings:
+                    def __init__(self, option={}):
+                        self.auto_choice = option.get('auto_choice', "")
+                        self.auto_scrape_names = option.get(
+                            'auto_scrape_names', False)
+                        self.auto_scrape_apis = option.get(
+                            'auto_scrape_apis', True)
+                        self.download_paths = option.get(
+                            'download_paths', ["{site_name}"])
+                        self.file_directory_format = option.get(
+                            'file_directory_format', "")
+                        self.file_name_format = option.get(
+                            'file_name_format', "{file_name}.{ext}")
+                        self.text_length = option.get('text_length', "255")
+                        self.overwrite_files = option.get(
+                            'overwrite_files', False)
+                        self.date_format = option.get(
+                            'date_format', "%d-%m-%Y")
+                        self.ignored_keywords = option.get(
+                            'ignored_keywords', [])
+                        self.ignore_type = option.get(
+                            'ignore_type', "")
+                        self.export_metadata = option.get(
+                            'export_metadata', True)
+                        self.delete_legacy_metadata = option.get(
+                            'delete_legacy_metadata', False)
+                        self.sort_free_paid_posts = option.get(
+                            'sort_free_paid_posts', True)
+                        self.blacklist_name = option.get(
+                            'blacklist_name', "")
+                        self.webhook = option.get(
+                            'webhook', True)
+
+                class ExtraAuthSettings:
+                    def __init__(self, option={}):
+                        self.extra_auth = option.get('extra_auth', False)
+                        self.choose_auth = option.get('choose_auth', False)
+                        self.merge_auth = option.get('merge_auth', False)
         self.settings = Settings(**settings)
         self.supported = Supported(**supported)
 

@@ -25,7 +25,8 @@ multithreading = None
 json_settings = None
 auto_choice = None
 j_directory = None
-format_path = None
+file_directory_format = None
+file_name_format = None
 overwrite_files = None
 proxies = None
 cert = None
@@ -42,7 +43,7 @@ app_token = None
 
 
 def assign_vars(json_auth, config, site_settings, site_name):
-    global json_config, multithreading, proxies, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, webhook, maximum_length, app_token
+    global json_config, multithreading, proxies, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, file_directory_format, file_name_format, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, webhook, maximum_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -53,7 +54,8 @@ def assign_vars(json_auth, config, site_settings, site_name):
     auto_choice = json_settings["auto_choice"]
     j_directory = main_helper.get_directory(
         json_settings['download_paths'], site_name)
-    format_path = json_settings["file_name_format"]
+    file_directory_format = json_settings["file_directory_format"]
+    file_name_format = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
     ignored_keywords = json_settings["ignored_keywords"]
@@ -131,7 +133,6 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
 
 # Checks if the model is valid and grabs content count
 def link_check(session, identifier):
-    model_link = f"https://onlyfans.com/{identifier}"
     link = f'https://onlyfans.com/api2/v2/users/{identifier}?app-token={app_token}'
     y = main_helper.json_request(session, link)
     temp_user_id2 = dict()
@@ -143,6 +144,7 @@ def link_check(session, identifier):
         temp_user_id2["user"] = y
         temp_user_id2["exists"] = False
         return temp_user_id2
+    model_link = f"https://onlyfans.com/{y['username']}"
     now = datetime.utcnow().date()
     today = datetime.utcnow().date()
     result_date = today-timedelta(days=1)
@@ -318,6 +320,7 @@ def prepare_scraper(sessions, site_name, item):
     api_count = api_array["post_count"]
     seperator = " | "
     user_directory = ""
+    api_path = ""
     metadata_directory = ""
     master_set = []
     media_set = []
@@ -331,9 +334,10 @@ def prepare_scraper(sessions, site_name, item):
               "]. Should take less than a minute.")
         array = main_helper.format_directory(
             j_directory, site_name, username, location[0], api_type)
-        user_directory = array[0]
-        metadata_directory = array[1]
-        directories.append(array[2]+[location[1]])
+        user_directory = array["user_directory"]
+        metadata_directory = array["metadata_directory"]
+        api_path = os.path.join(user_directory,api_type)
+        directories.append(array["directories"]+[user_directory]+[location[1]])
     if api_type == "Profile":
         profile_scraper(link, sessions[0], directory, username)
         return
@@ -463,6 +467,7 @@ def prepare_scraper(sessions, site_name, item):
         else:
             print("No "+api_type+" Found.")
             break
+    main_helper.delete_empty_directories(api_path)
     media_set = main_helper.format_media_set(media_set)
 
     metadata_set = media_set
@@ -581,9 +586,8 @@ def media_scraper(result, sessions, locations, username, api_type):
                 file_name = link.rsplit('/', 1)[-1]
                 file_name, ext = os.path.splitext(file_name)
                 ext = ext.__str__().replace(".", "").split('?')[0]
-                file_path = main_helper.reformat(location[0][1], post_id, media_id, file_name,
-                                                 text, ext, date_object, username, format_path, date_format, maximum_length)
-                new_dict["text"] = text
+                user_directory = location[-2]
+                media_directory = os.path.join(user_directory, location[0][1])
                 new_dict["paid"] = False
                 if new_dict["price"]:
                     if api_type in ["Messages", "Mass Messages"]:
@@ -591,11 +595,17 @@ def media_scraper(result, sessions, locations, username, api_type):
                     else:
                         if media["id"] not in media_api["preview"] and media["canView"]:
                             new_dict["paid"] = True
-                new_dict["directory"] = os.path.join(location[0][1])
                 if sort_free_paid_posts:
-                    new_dict["directory"] = os.path.join(location[1][1])
+                    media_directory = os.path.join(
+                        user_directory, location[1][1])
                     if new_dict["paid"]:
-                        new_dict["directory"] = os.path.join(location[2][1])
+                        media_directory = os.path.join(
+                            user_directory, location[2][1])
+                file_path = main_helper.reformat(media_directory, post_id, media_id, file_name,
+                                                 text, ext, date_object, username, file_directory_format, file_name_format, date_format, maximum_length)
+                new_dict["text"] = text
+                file_directory = os.path.dirname(file_path)
+                new_dict["directory"] = os.path.join(file_directory)
                 new_dict["filename"] = os.path.basename(file_path)
                 new_dict["size"] = size
                 if size == 0:

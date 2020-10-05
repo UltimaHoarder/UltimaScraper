@@ -18,6 +18,7 @@ import shutil
 
 import requests
 from bs4 import BeautifulSoup
+from requests.api import delete
 
 import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
@@ -191,35 +192,38 @@ def format_paths(j_directories, site_name):
     return paths
 
 
-def reformat(directory, post_id, media_id, filename, text, ext, date, username, format_path, date_format, maximum_length):
+def reformat(directory, post_id, media_id, filename, text, ext, date, username, file_directory_format, file_name_format, date_format, maximum_length):
     post_id = "" if post_id is None else str(post_id)
     media_id = "" if media_id is None else str(media_id)
     if type(date) is str:
         date = datetime.strptime(
             date, "%d-%m-%Y %H:%M:%S")
-    has_text = False
-    if "{text}" in format_path:
-        has_text = True
-    path = format_path.replace("{post_id}", post_id)
-    path = path.replace("{media_id}", media_id)
-    path = path.replace("{username}", username)
-    filtered_text = text[:maximum_length]
-    directory = directory.replace(text, filtered_text)
-    path = path.replace("{text}", filtered_text)
-    date = date.strftime(date_format)
-    path = path.replace("{date}", date)
-    path = path.replace("{file_name}", filename)
-    path = path.replace("{ext}", ext)
-    directory2 = os.path.join(directory, path)
+    formatted = []
+    formats = [file_directory_format, file_name_format]
+    for unformatted in formats:
+        has_text = False
+        if "{text}" in unformatted:
+            has_text = True
+        path = unformatted.replace("{post_id}", post_id)
+        path = path.replace("{media_id}", media_id)
+        path = path.replace("{username}", username)
+        filtered_text = text[:maximum_length]
+        directory = directory.replace(text, filtered_text)
+        path = path.replace("{text}", filtered_text)
+        date2 = date.strftime(date_format)
+        path = path.replace("{date}", date2)
+        path = path.replace("{file_name}", filename)
+        path = path.replace("{ext}", ext)
 
-    if has_text:
-        count_string = len(path)
-        text_count = len(filtered_text)
-        if count_string > maximum_length:
-            text_limit = count_string - text_count
-            path = path.replace(
-                filtered_text, filtered_text[:text_limit])
-            directory2 = os.path.join(directory, path)
+        if has_text:
+            count_string = len(path)
+            text_count = len(filtered_text)
+            if count_string > maximum_length:
+                text_limit = count_string - text_count
+                path = path.replace(
+                    filtered_text, filtered_text[:text_limit].rstrip())
+        formatted.append(path)
+    directory2 = os.path.join(directory, *formatted)
     return directory2
 
 
@@ -269,9 +273,14 @@ def format_directory(j_directory, site_name, username, location="", api_type="")
     directories = []
     cats = ["", "Free", "Paid"]
     for cat in cats:
+        path = os.path.join(api_type, cat, location)
         directories.append(
-            [location, os.path.join(user_directory, api_type, cat, location)])
-    return [user_directory, metadata_directory, directories]
+            [location, path])
+    x = {}
+    x["user_directory"] = user_directory
+    x["metadata_directory"] = metadata_directory
+    x["directories"] = directories
+    return x
 
 
 def are_long_paths_enabled():
@@ -558,3 +567,21 @@ def send_webhook(item):
                 message, default=lambda o: o.__dict__))
             x = requests.post(webhook_link, json=message)
             print
+
+
+def find_between(s, start, end):
+    return (s.split(start))[1].split(end)[0]
+
+
+def delete_empty_directories(directory):
+    def start(directory):
+        for root, dirnames, files in os.walk(directory, topdown=False):
+
+            for dirname in dirnames:
+                full_path = os.path.realpath(os.path.join(root, dirname))
+                if not os.listdir(full_path):
+                    os.rmdir(full_path)
+    x = start(directory)
+    if os.path.exists(directory):
+        if not os.listdir(directory):
+            os.rmdir(directory)

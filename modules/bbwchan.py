@@ -17,7 +17,8 @@ multithreading = None
 json_settings = None
 auto_choice = None
 j_directory = None
-format_path = None
+file_directory_format = None
+file_name_format = None
 overwrite_files = None
 date_format = None
 boards = None
@@ -30,7 +31,7 @@ log_download = setup_logger('downloads', 'downloads.log')
 
 
 def assign_vars(config, site_settings, site_name):
-    global json_config, multithreading, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, boards, ignored_keywords, webhook, maximum_length
+    global json_config, multithreading, json_settings, auto_choice, j_directory, overwrite_files, date_format, file_directory_format,file_name_format, boards, ignored_keywords, webhook, maximum_length
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -38,7 +39,8 @@ def assign_vars(config, site_settings, site_name):
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
     j_directory = get_directory(json_settings['download_paths'], site_name)
-    format_path = json_settings["file_name_format"]
+    file_directory_format = json_settings["file_directory_format"]
+    file_name_format = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
     boards = json_settings["boards"]
@@ -65,9 +67,11 @@ def start_datascraper(session, board_name, site_name, link_type, choice_type=Non
     archive_threads = []
     threads = threads + archive_threads
     print("Original Count: "+str(len(threads)))
-    directory = format_directory(
+    array = format_directory(
         j_directory, site_name, board_name)
-    directory = directory[0]
+    user_directory = array["user_directory"]
+    metadata_directory = array["metadata_directory"]
+    directory = user_directory
     print("Scraping Threads")
     threads = pool.starmap(thread_scraper,
                            product(threads, [board_name], [session], [directory]))
@@ -166,7 +170,7 @@ def thread_scraper(thread_id, board_name, session, directory):
             if not text:
                 new_directory = new_directory.replace(" - ", "")
             file_path = reformat(new_directory, None, None, file_name,
-                                 text, ext, date_object, post["name"], format_path, date_format, maximum_length)
+                                                text, ext, date_object, post["name"], file_directory_format, file_name_format, date_format, maximum_length)
             media["download_path"] = file_path
             found = True
     if found:

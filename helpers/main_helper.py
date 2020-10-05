@@ -127,7 +127,7 @@ def format_media_set(media_set):
             location_directories = [x["directory"] for x in item2["valid"]
                                     if x["directory"] not in seen and not seen.add(x["directory"])]
             for location_directory in location_directories:
-                os.makedirs(location_directory, exist_ok=True)
+                os.makedirs(location_directory+"\\", exist_ok=True)
             item2["valid"] = [list(g) for k, g in groupby(
                 item2["valid"], key=lambda x: x["post_id"])]
         new_list.append(item2)

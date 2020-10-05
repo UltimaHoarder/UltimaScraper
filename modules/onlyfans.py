@@ -77,11 +77,9 @@ def start_datascraper(sessions, identifier, site_name, app_token2, choice_type=N
     print("Scrape Processing")
     app_token = app_token2
     info = link_check(sessions[0], identifier)
-    user = info["user"]
-    user = json.loads(json.dumps(
-        user), object_hook=lambda d: SimpleNamespace(**d))
+    user = info["user"] = json.loads(json.dumps(
+        info["user"]), object_hook=lambda d: SimpleNamespace(**d))
     if not info["exists"]:
-        info["user"] = user
         return [False, info]
     is_me = user.is_me
     post_counts = info["count"]
@@ -336,7 +334,7 @@ def prepare_scraper(sessions, site_name, item):
             j_directory, site_name, username, location[0], api_type)
         user_directory = array["user_directory"]
         metadata_directory = array["metadata_directory"]
-        api_path = os.path.join(user_directory,api_type)
+        api_path = os.path.join(user_directory, api_type)
         directories.append(array["directories"]+[user_directory]+[location[1]])
     if api_type == "Profile":
         profile_scraper(link, sessions[0], directory, username)

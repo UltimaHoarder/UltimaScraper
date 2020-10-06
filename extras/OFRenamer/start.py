@@ -93,12 +93,12 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
                     if os.path.exists(reformat.directory):
                         folder = reformat.directory
                         continue
-                    os.makedirs(folder, exist_ok=True)
                     last_path = folder.split(
                         username+"\\")[1].replace(file_directory_formatted, "")
                     directory = main_helper.get_directory(
                         download_path, site_name)
                     folder = os.path.join(directory, username, last_path)
+                    os.makedirs(folder, exist_ok=True)
                     reformat.directory = folder
                 print(f"FOUND: {folder}\n")
                 files = os.listdir(folder)

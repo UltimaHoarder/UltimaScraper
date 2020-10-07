@@ -553,6 +553,21 @@ def create_link_group(max_threads):
     print
 
 
+def legacy_metadata(directory):
+    if os.path.exists(directory):
+        items = os.listdir(directory)
+        matches = ["desktop.ini"]
+        metadatas = []
+        items = [x for x in items if x not in matches]
+        if items:
+            for item in items:
+                path = os.path.join(directory, item)
+                metadata = json.load(open(path))
+                metadatas.append(metadata)
+                print
+        print
+
+
 def metadata_fixer(directory):
     archive_file = os.path.join(directory, "archive.json")
     metadata_file = os.path.join(directory, "Metadata")

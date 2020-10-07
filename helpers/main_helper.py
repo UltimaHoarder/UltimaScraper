@@ -23,9 +23,13 @@ from requests.api import delete
 import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
 import extras.OFRenamer.start as ofrenamer
+import warnings
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
+
+warnings.filterwarnings(
+    "ignore", message='.*looks like a URL.*', category=UserWarning, module='bs4')
 
 json_global_settings = None
 min_drive_space = 0

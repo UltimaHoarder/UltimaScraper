@@ -18,7 +18,7 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
             metadata_categories2 = metadata_categories
             meta_categories = metadata_categories2.split("\\")
             q = main_helper.find_between(
-                model_folder, *meta_categories).replace("\\", "", 1)
+                model_folder, *meta_categories).replace("\\", "")
             if q:
                 meta_categories.insert(-1, q)
             categories = os.path.join(*meta_categories)

@@ -248,9 +248,11 @@ def start_datascraper():
                     continue
                 download = result["download"]
                 others = download.others
+                model_directory = os.path.join(others[0][2],others[0][3])
                 if not args.metadata:
                     for arg in others:
                         x.download_media(*arg)
+                main_helper.delete_empty_directories(model_directory)
                 main_helper.send_webhook(download)
             stop_time = str(
                 int(timeit.default_timer() - archive_time) / 60)[:4]

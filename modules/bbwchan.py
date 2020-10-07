@@ -1,6 +1,6 @@
 import requests
 from requests.adapters import HTTPAdapter
-from helpers.main_helper import *
+import helpers.main_helper as main_helper
 
 import os
 import json
@@ -27,7 +27,7 @@ maximum_length = None
 webhook = None
 
 max_threads = multiprocessing.cpu_count()
-log_download = setup_logger('downloads', 'downloads.log')
+log_download = main_helper.setup_logger('downloads', 'downloads.log')
 
 
 def assign_vars(config, site_settings, site_name):
@@ -38,7 +38,7 @@ def assign_vars(config, site_settings, site_name):
     multithreading = json_global_settings["multithreading"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
-    j_directory = get_directory(json_settings['download_paths'], site_name)
+    j_directory = main_helper.get_directory(json_settings['download_paths'], site_name)
     file_directory_format = json_settings["file_directory_format"]
     file_name_format = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
@@ -67,11 +67,12 @@ def start_datascraper(session, board_name, site_name, link_type, choice_type=Non
     archive_threads = []
     threads = threads + archive_threads
     print("Original Count: "+str(len(threads)))
-    array = format_directory(
+    formatted_directories = main_helper.format_directories(
         j_directory, site_name, board_name)
-    user_directory = array["user_directory"]
-    metadata_directory = array["metadata_directory"]
-    directory = user_directory
+    model_directory = formatted_directories["model_directory"]
+    metadata_directory = formatted_directories["metadata_directory"]
+    api_directory = formatted_directories["api_directory"]
+    directory = model_directory
     print("Scraping Threads")
     threads = pool.starmap(thread_scraper,
                            product(threads, [board_name], [session], [directory]))
@@ -165,11 +166,11 @@ def thread_scraper(thread_id, board_name, session, directory):
             ext = media["mime"].split("/")[1]
             media["ext"] = ext
             file_name = os.path.splitext(media["originalName"])[0].strip()
-            text = clean_text(text)
+            text = main_helper.clean_text(text)
             new_directory = directory+"/"+text+" - "+thread_id+"/"
             if not text:
                 new_directory = new_directory.replace(" - ", "")
-            file_path = reformat(new_directory, None, None, file_name,
+            file_path = main_helper.reformat(new_directory, None, None, file_name,
                                                 text, ext, date_object, post["name"], file_directory_format, file_name_format, date_format, maximum_length)
             media["download_path"] = file_path
             found = True
@@ -197,7 +198,7 @@ def download_media(media_set, session, directory, board_name):
                     if "download_path" not in media:
                         continue
                     link = "https://bbw-chan.nl" + media["path"]
-                    r = json_request(session, link, "HEAD", True, False)
+                    r = main_helper.json_request(session, link, "HEAD", True, False)
                     if not isinstance(r, requests.Response):
                         return_bool = False
                         count += 1
@@ -209,10 +210,10 @@ def download_media(media_set, session, directory, board_name):
                     download_path = media["download_path"]
                     timestamp = post["creation"]
                     if not overwrite_files:
-                        if check_for_dupe_file(download_path, content_length):
+                        if main_helper.check_for_dupe_file(download_path, content_length):
                             return_bool = False
                             break
-                    r = json_request(session, link, "GET", True, False)
+                    r = main_helper.json_request(session, link, "GET", True, False)
                     if not isinstance(r, requests.Response):
                         return_bool = False
                         count += 1
@@ -228,7 +229,7 @@ def download_media(media_set, session, directory, board_name):
                     except (ConnectionResetError) as e:
                         if delete:
                             os.unlink(download_path)
-                        log_error.exception(e)
+                        main_helper.log_error.exception(e)
                         count += 1
                         continue
                     except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
@@ -237,11 +238,11 @@ def download_media(media_set, session, directory, board_name):
                     except Exception as e:
                         if delete:
                             os.unlink(download_path)
-                        log_error.exception(
+                        main_helper.log_error.exception(
                             str(e) + "\n Tries: "+str(count))
                         count += 1
                         continue
-                    format_image(download_path, timestamp)
+                    main_helper.format_image(download_path, timestamp)
                     log_download.info("Link: {}".format(link))
                     log_download.info("Path: {}".format(download_path))
                     break

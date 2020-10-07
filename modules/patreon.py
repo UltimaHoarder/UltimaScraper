@@ -14,7 +14,7 @@ from requests.sessions import session
 
 import extras.OFSorter.ofsorter as ofsorter
 from helpers.main_helper import (check_for_dupe_file, clean_text,
-                                 export_archive, format_directory,
+                                 export_archive, format_directories,
                                  format_image, format_media_set, get_directory,
                                  json_request, log_error, reformat,
                                  setup_logger)

@@ -316,26 +316,15 @@ def prepare_scraper(sessions, site_name, item):
     username = api_array["username"]
     directory = api_array["directory"]
     api_count = api_array["post_count"]
-    seperator = " | "
-    user_directory = ""
-    api_path = ""
-    metadata_directory = ""
     master_set = []
     media_set = []
     metadata_set = []
-    original_link = link
-    directories = []
     pool = ThreadPool()
-    for location in locations:
-        link = original_link
-        print("Scraping ["+str(seperator.join(location[1])) +
-              "]. Should take less than a minute.")
-        array = main_helper.format_directory(
-            j_directory, site_name, username, location[0], api_type)
-        user_directory = array["user_directory"]
-        metadata_directory = array["metadata_directory"]
-        api_path = os.path.join(user_directory, api_type)
-        directories.append(array["directories"]+[user_directory]+[location[1]])
+    formatted_directories = main_helper.format_directories(
+        j_directory, site_name, username, locations, api_type)
+    model_directory = formatted_directories["model_directory"]
+    metadata_directory = formatted_directories["metadata_directory"]
+    api_directory = formatted_directories["api_directory"]
     if api_type == "Profile":
         profile_scraper(link, sessions[0], directory, username)
         return
@@ -450,7 +439,7 @@ def prepare_scraper(sessions, site_name, item):
     for attempt in list(range(max_attempts)):
         print("Scrape Attempt: "+str(attempt+1)+"/"+str(max_attempts))
         media_set2 = pool.starmap(media_scraper, product(
-            master_set2, [sessions], [directories], [username], [api_type]))
+            master_set2,[sessions], [formatted_directories], [username], [api_type]))
         media_set.extend(media_set2)
         if count > 1:
             faulty = [x for x in media_set2 if not x]
@@ -465,16 +454,17 @@ def prepare_scraper(sessions, site_name, item):
         else:
             print("No "+api_type+" Found.")
             break
-    main_helper.delete_empty_directories(api_path)
+    main_helper.delete_empty_directories(api_directory)
+    media_set = [x for x in media_set]
     media_set = main_helper.format_media_set(media_set)
 
     metadata_set = media_set
     if export_metadata:
+        print
         metadata_set = [x for x in metadata_set if x["valid"] or x["invalid"]]
         for item in metadata_set:
             if item["valid"] or item["invalid"]:
-                legacy_metadata = os.path.join(
-                    user_directory, api_type, "Metadata")
+                legacy_metadata = formatted_directories["legacy_metadata"]
                 if delete_legacy_metadata:
                     if os.path.isdir(legacy_metadata):
                         shutil.rmtree(legacy_metadata)
@@ -489,7 +479,7 @@ def prepare_scraper(sessions, site_name, item):
 
 
 # Scrapes the API for content
-def media_scraper(result, sessions, locations, username, api_type):
+def media_scraper(result,sessions, formatted_directories, username, api_type):
     link = result["link"]
     session = sessions[result["count"]]
     media_set = []
@@ -503,12 +493,18 @@ def media_scraper(result, sessions, locations, username, api_type):
         y = y["list"]
     if api_type == "Mass Messages":
         y = y["list"]
-    for location in locations:
+    model_directory = formatted_directories["model_directory"]
+    for location in formatted_directories["locations"]:
+        sorted_directories = location["sorted_directories"]
         master_date = "01-01-0001 00:00:00"
-        media_type = location[-1]
-        media_type2 = location[0][0]
+        media_type = location["media_type"]
+        alt_media_type = location["alt_media_type"]
+        if result["count"] == 0:
+            seperator = " | "
+            print("Scraping ["+str(seperator.join(alt_media_type)) +
+                "]. Should take less than a minute.")
         media_set2 = {}
-        media_set2["type"] = media_type2
+        media_set2["type"] = media_type
         media_set2["valid"] = []
         media_set2["invalid"] = []
         for media_api in y:
@@ -567,7 +563,7 @@ def media_scraper(result, sessions, locations, username, api_type):
                         "%d-%m-%Y %H:%M:%S")
                     master_date = date_string
 
-                if media["type"] not in media_type:
+                if media["type"] not in alt_media_type:
                     x += 1
                     continue
                 if "rawText" not in media_api:
@@ -584,8 +580,7 @@ def media_scraper(result, sessions, locations, username, api_type):
                 file_name = link.rsplit('/', 1)[-1]
                 file_name, ext = os.path.splitext(file_name)
                 ext = ext.__str__().replace(".", "").split('?')[0]
-                user_directory = location[-2]
-                media_directory = os.path.join(user_directory, location[0][1])
+                media_directory = os.path.join(model_directory,sorted_directories["unsorted"])
                 new_dict["paid"] = False
                 if new_dict["price"]:
                     if api_type in ["Messages", "Mass Messages"]:
@@ -594,11 +589,9 @@ def media_scraper(result, sessions, locations, username, api_type):
                         if media["id"] not in media_api["preview"] and media["canView"]:
                             new_dict["paid"] = True
                 if sort_free_paid_posts:
-                    media_directory = os.path.join(
-                        user_directory, location[1][1])
+                    media_directory = os.path.join(model_directory,sorted_directories["free"])
                     if new_dict["paid"]:
-                        media_directory = os.path.join(
-                            user_directory, location[2][1])
+                        media_directory = os.path.join(model_directory,sorted_directories["paid"])
                 file_path = main_helper.reformat(media_directory, post_id, media_id, file_name,
                                                  text, ext, date_object, username, file_directory_format, file_name_format, date_format, maximum_length)
                 new_dict["text"] = text

@@ -116,7 +116,7 @@ def format_media_set(media_set):
     new_list = []
     for item in media_set:
         item2 = {k: [d[k] for d in item] for k in item[0]}
-        item2["type"] = item2["type"][0]
+        item2["type"] = item2['type'][0].title()
         item2["valid"] = list(chain(*item2["valid"]))
         item2["invalid"] = list(chain(*item2["invalid"]))
         if item2["valid"]:
@@ -131,7 +131,6 @@ def format_media_set(media_set):
             item2["valid"] = [list(g) for k, g in groupby(
                 item2["valid"], key=lambda x: x["post_id"])]
         new_list.append(item2)
-    print
     return new_list
 
 
@@ -150,11 +149,11 @@ def filter_metadata(datas):
     return datas
 
 
-def export_archive(datas, archive_path, json_settings):
+def export_archive(datas, archive_directory, json_settings):
     # Not Finished
     export_type = json_global_settings["export_type"]
     if export_type == "json":
-        archive_path = os.path.join(archive_path+".json")
+        archive_path = archive_directory+".json"
         if os.path.exists(archive_path):
             datas2 = ofrenamer.start(archive_path, json_settings)
             if datas == datas2:
@@ -162,7 +161,7 @@ def export_archive(datas, archive_path, json_settings):
         with open(archive_path, 'w') as outfile:
             json.dump(datas, outfile)
     if export_type == "csv":
-        archive_path = os.path.join(archive_path+".csv")
+        archive_path = os.path.join(archive_directory+".csv")
         with open(archive_path, mode='w', encoding='utf-8', newline='') as csv_file:
             for data in datas:
                 fieldnames = []
@@ -266,20 +265,27 @@ def check_space(download_paths, min_size=min_drive_space, priority="download"):
     return root
 
 
-def format_directory(j_directory, site_name, username, location="", api_type=""):
-    directory = j_directory
-    user_directory = os.path.join(directory, username)
-    metadata_directory = os.path.join(user_directory, "Metadata")
-    directories = []
-    cats = ["", "Free", "Paid"]
-    for cat in cats:
-        path = os.path.join(api_type, cat, location)
-        directories.append(
-            [location, path])
+def format_directories(directory, site_name, username, locations=[], api_type=""):
     x = {}
-    x["user_directory"] = user_directory
-    x["metadata_directory"] = metadata_directory
-    x["directories"] = directories
+    model_directory = x["model_directory"] = os.path.join(directory, username)
+    x["legacy_metadata"] = os.path.join(model_directory, api_type, "Metadata")
+    x["metadata_directory"] = os.path.join(model_directory, "Metadata")
+    x["api_directory"] = os.path.join(model_directory, api_type)
+    x["locations"] = []
+    for location in locations:
+        directories = {}
+        cats = ["Unsorted", "Free", "Paid"]
+        for cat in cats:
+            cat2 = cat
+            if "Unsorted" in cat2:
+                cat2 = ""
+            path = os.path.join(api_type, cat2, location[0])
+            directories[cat.lower()] = path
+        y = {}
+        y["sorted_directories"] = directories
+        y["media_type"] = location[0]
+        y["alt_media_type"] = location[1]
+        x["locations"].append(y)
     return x
 
 
@@ -570,13 +576,13 @@ def send_webhook(item):
 
 
 def find_between(s, start, end):
-    return (s.split(start))[1].split(end)[0]
+    x = (s.split(start))[1].split(end)[0]
+    return x
 
 
 def delete_empty_directories(directory):
     def start(directory):
         for root, dirnames, files in os.walk(directory, topdown=False):
-
             for dirname in dirnames:
                 full_path = os.path.realpath(os.path.join(root, dirname))
                 if not os.listdir(full_path):

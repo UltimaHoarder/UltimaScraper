@@ -18,14 +18,15 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
             metadata_categories2 = metadata_categories
             meta_categories = metadata_categories2.split("\\")
             q = main_helper.find_between(
-                model_folder, *meta_categories).replace("\\", "")
+                model_folder, *meta_categories).replace("\\", "", 1)
             if q:
                 meta_categories.insert(-1, q)
-            category = os.path.join(*meta_categories)
-            categories = "\\".join(meta_categories)
-            file_directory_formatted = model.directory.split(category)[1]
-            model.directory = model_folder.replace(
-                file_directory_formatted, "")
+            categories = os.path.join(*meta_categories)
+            file_directory_formatted = model.directory.split(categories)
+            if len(file_directory_formatted) > 0:
+                file_directory_formatted = file_directory_formatted[-1]
+                model.directory = model_folder.replace(
+                    file_directory_formatted, "")
             if model.links:
                 path = urlparse.urlparse(model.links[0]).path
             else:
@@ -116,9 +117,6 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
     for old_folder in old_folders:
         if "Posts" in old_folder:
             print
-        file_directory_format = json_settings.get("file_directory_format", "")
-        if not file_directory_format:
-            main_helper.delete_empty_directories(old_folder)
     return posts
 
 

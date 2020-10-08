@@ -16,11 +16,10 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
         for model in post:
             model_folder = model.directory
             metadata_categories2 = metadata_categories
-            meta_categories = metadata_categories2.split("\\")
+            meta_categories = list(os.path.split(metadata_categories2))
             q = main_helper.find_between(
-                model_folder, *meta_categories).replace("\\", "")
-            if q:
-                meta_categories.insert(-1, q)
+                model_folder, *meta_categories).replace(os.sep,"")
+            meta_categories.insert(-1, q)
             categories = os.path.join(*meta_categories)
             file_directory_formatted = model.directory.split(categories)
             if len(file_directory_formatted) > 0:
@@ -44,7 +43,7 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
                     q = "Paid"
                 if q not in meta_categories:
                     meta_categories.insert(-1, q)
-                metadata_categories2 = "\\".join(meta_categories)
+                metadata_categories2 = os.path.join(*meta_categories)
             model.directory = model.directory.replace(
                 categories, metadata_categories2)
             file_directory_format = json_settings["file_directory_format"]
@@ -95,7 +94,8 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
                         folder = reformat.directory
                         continue
                     last_path = folder.split(
-                        username+"\\")[1].replace(file_directory_formatted, "")
+                        username+os.sep)[1]
+                    last_path = last_path.replace(file_directory_formatted, "")
                     directory = main_helper.get_directory(
                         download_path, site_name)
                     folder = os.path.join(directory, username, last_path)

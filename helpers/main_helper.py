@@ -336,6 +336,9 @@ def session_retry_rules(r, link):
             boolean = 1
         elif "Access Denied" in text:
             boolean = 2
+    else:
+        if not r.status_code == 200:
+            boolean = 1
     return boolean
 
 

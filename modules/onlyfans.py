@@ -435,27 +435,31 @@ def prepare_scraper(sessions, site_name, item):
             link2 = f"https://onlyfans.com/api2/v2/stories/highlights/{item['id']}?app-token={app_token}"
             master_set.append(link2)
     master_set2 = main_helper.assign_session(master_set, sessions)
-    media_set = []
+    media_set = {}
+    media_set["set"] = []
+    media_set["found"] = False
     count = len(master_set2)
     max_attempts = 100
     for attempt in list(range(max_attempts)):
         print("Scrape Attempt: "+str(attempt+1)+"/"+str(max_attempts))
         media_set2 = pool.starmap(media_scraper, product(
             master_set2, [sessions], [formatted_directories], [username], [api_type]))
-        media_set.extend(media_set2)
-        if count > 0:
-            faulty = [x for x in media_set2 if not x]
-            if not faulty:
-                print("Found: "+api_type)
-                break
-            else:
-                num = len(faulty)*100
-                print("Missing "+str(num)+" Posts... Retrying...")
-                master_set2 = main_helper.restore_missing_data(
-                    master_set2, media_set2)
-        else:
-            print("No "+api_type+" Found.")
+        media_set["set"].extend(media_set2)
+        faulty = [x for x in media_set2 if not x]
+        if not faulty:
+            print("Found: "+api_type)
+            media_set["found"] = True
             break
+        else:
+            if count < 2:
+                break
+            num = len(faulty)*100
+            print("Missing "+str(num)+" Posts... Retrying...")
+            master_set2 = main_helper.restore_missing_data(
+                master_set2, media_set2)
+    if not media_set["found"]:
+        print("No "+api_type+" Found.")
+    media_set = media_set["set"]
     main_helper.delete_empty_directories(api_directory)
     media_set = [x for x in media_set]
     media_set = main_helper.format_media_set(media_set)

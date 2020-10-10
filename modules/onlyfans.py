@@ -443,7 +443,7 @@ def prepare_scraper(sessions, site_name, item):
         media_set2 = pool.starmap(media_scraper, product(
             master_set2, [sessions], [formatted_directories], [username], [api_type]))
         media_set.extend(media_set2)
-        if count > 1:
+        if count > 0:
             faulty = [x for x in media_set2 if not x]
             if not faulty:
                 print("Found: "+api_type)

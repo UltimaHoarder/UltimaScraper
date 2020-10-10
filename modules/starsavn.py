@@ -40,7 +40,7 @@ maximum_length = None
 
 
 def assign_vars(config, site_settings, site_name):
-    global json_config, multithreading, proxies, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format,file_directory_format, file_name_format, ignored_keywords, ignore_type, export_metadata, blacklist_name, webhook, maximum_length
+    global json_config, multithreading, proxies, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, file_directory_format, file_name_format, ignored_keywords, ignore_type, export_metadata, blacklist_name, webhook, maximum_length
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -184,7 +184,7 @@ def scrape_choice(user_id, post_counts, is_me):
     hightlights_api = "https://stars.avn.com/api2/v2/users/"+user_id + \
         "/stories/collections/?limit=10&marker=&offset=0"
     post_api = "https://stars.avn.com/api2/v2/users/"+user_id + \
-        "/posts/?limit=10&marker=&offset=0"
+        "/posts/?limit=100&marker=&offset=0"
     # ARGUMENTS
     only_links = False
     if "-l" in input_choice:
@@ -295,9 +295,9 @@ def prepare_scraper(sessions, site_name, item):
     for attempt in list(range(max_attempts)):
         print("Scrape Attempt: "+str(attempt+1)+"/"+str(max_attempts))
         media_set2 = pool.starmap(media_scraper, product(
-            master_set2,[sessions], [formatted_directories], [username], [api_type]))
+            master_set2, [sessions], [formatted_directories], [username], [api_type]))
         media_set.extend(media_set2)
-        if count > 1:
+        if count > 0:
             faulty = [x for x in media_set2 if not x]
             if not faulty:
                 print("Found: "+api_type)
@@ -355,7 +355,7 @@ def media_scraper(result, sessions, formatted_directories, username, api_type):
         if result["count"] == 0:
             seperator = " | "
             print("Scraping ["+str(seperator.join(alt_media_type)) +
-                "]. Should take less than a minute.")
+                  "]. Should take less than a minute.")
         media_set2 = {}
         media_set2["type"] = media_type
         media_set2["valid"] = []
@@ -403,7 +403,8 @@ def media_scraper(result, sessions, formatted_directories, username, api_type):
                 file_name = link.rsplit('/', 1)[-1]
                 file_name, ext = os.path.splitext(file_name)
                 ext = ext.__str__().replace(".", "").split('?')[0]
-                media_directory = os.path.join(model_directory,sorted_directories["unsorted"])
+                media_directory = os.path.join(
+                    model_directory, sorted_directories["unsorted"])
                 file_path = main_helper.reformat(media_directory, post_id, media_id, file_name,
                                                  text, ext, date_object, username, file_directory_format, file_name_format, date_format, maximum_length)
                 file_directory = os.path.dirname(file_path)

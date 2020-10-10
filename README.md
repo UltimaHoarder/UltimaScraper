@@ -316,9 +316,7 @@ Does this script violate the Onlyfans.com ToS?
 >No...
 >OnlyFans themselves allow users to download content as stated in their [Terms of Service](https://onlyfans.com/terms)
 
->See:
-
-8.2.2 you may print or download one copy of a reasonable number of pages of the Website for your own personal, non-commercial use and not for further reproduction, publication, or distribution."
+>8.2.2 you may print or download one copy of a reasonable number of pages of the Website for your own personal, non-commercial use and not for further reproduction, publication, or distribution."
 
 Disclaimer:
 >OnlyFans is a registered trademark of Fenix International Limited.

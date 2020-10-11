@@ -1,10 +1,10 @@
 class config(object):
     def __init__(self, settings={}, supported={}):
         class Settings(object):
-            def __init__(self, auto_site_choice="", export_type="json", multithreading=True, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy=[], cert="", global_user_agent=""):
+            def __init__(self, auto_site_choice="", export_type="json", max_threads=-1, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy=[], cert="", global_user_agent=""):
                 self.auto_site_choice = auto_site_choice
                 self.export_type = export_type
-                self.multithreading = multithreading
+                self.max_threads = max_threads
                 self.min_drive_space = min_drive_space
                 self.webhooks = webhooks
                 self.exit_on_completion = exit_on_completion
@@ -245,6 +245,8 @@ class config(object):
                         self.extra_auth = option.get('extra_auth', False)
                         self.choose_auth = option.get('choose_auth', False)
                         self.merge_auth = option.get('merge_auth', False)
+        if "multithreading" in settings:
+            settings.pop("multithreading")
         self.settings = Settings(**settings)
         self.supported = Supported(**supported)
 

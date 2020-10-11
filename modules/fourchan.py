@@ -5,16 +5,18 @@ import helpers.main_helper as main_helper
 import os
 import json
 from itertools import product
-import multiprocessing
-from multiprocessing.dummy import Pool as ThreadPool
 from datetime import datetime
 import random
 import classes.prepare_download as prepare_download
+from multiprocessing import cpu_count
+
+multiprocessing = main_helper.multiprocessing
+log_download = main_helper.setup_logger('downloads', 'downloads.log')
 
 # Open config.json and fill in OPTIONAL information
 json_config = None
 json_global_settings = None
-multithreading = None
+max_threads = -1
 json_settings = None
 auto_choice = None
 j_directory = None
@@ -27,19 +29,17 @@ ignored_keywords = None
 maximum_length = None
 webhook = None
 
-max_threads = multiprocessing.cpu_count()
-log_download = main_helper.setup_logger('downloads', 'downloads.log')
-
 
 def assign_vars(config, site_settings, site_name):
-    global json_config, multithreading, json_settings, auto_choice, j_directory, overwrite_files, date_format, file_directory_format,file_name_format, boards, ignored_keywords, webhook, maximum_length
+    global json_config, max_threads, json_settings, auto_choice, j_directory, overwrite_files, date_format, file_directory_format, file_name_format, boards, ignored_keywords, webhook, maximum_length
 
     json_config = config
     json_global_settings = json_config["settings"]
-    multithreading = json_global_settings["multithreading"]
+    max_threads = json_global_settings["max_threads"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
-    j_directory = main_helper.get_directory(json_settings['download_paths'], site_name)
+    j_directory = main_helper.get_directory(
+        json_settings['download_paths'], site_name)
     file_directory_format = json_settings["file_directory_format"]
     file_name_format = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
@@ -59,10 +59,7 @@ def start_datascraper(session, board_name, site_name, link_type, choice_type=Non
         return [False, info]
     print("Board: " + board_name)
     array = scrape_choice(board_name)
-    if multithreading:
-        pool = ThreadPool()
-    else:
-        pool = ThreadPool(1)
+    pool = multiprocessing()
     threads = board_scraper(session, array[0], "")
     archive_threads = board_scraper(session, array[1], "archive")
     threads = threads + archive_threads
@@ -174,7 +171,7 @@ def thread_scraper(thread_id, board_name, session, directory):
                 new_directory = new_directory.replace(" - ", "")
             date_object = datetime.fromtimestamp(post["time"])
             file_path = main_helper.reformat(new_directory, None, None, file_name,
-                                                text, ext, date_object, post["name"], file_directory_format, file_name_format, date_format, maximum_length)
+                                             text, ext, date_object, post["name"], file_directory_format, file_name_format, date_format, maximum_length)
             post["download_path"] = file_path
             found = True
     if found:
@@ -202,7 +199,8 @@ def download_media(media_set, session, directory, board_name):
                 ext = media["ext"].replace(".", "")
                 filename = str(media["tim"])+"."+ext
                 link = "http://i.4cdn.org/" + board_name + "/" + filename
-                r = main_helper.json_request(session, link, "HEAD", True, False)
+                r = main_helper.json_request(
+                    session, link, "HEAD", True, False)
                 if not isinstance(r, requests.Response):
                     return_bool = False
                     count += 1
@@ -240,7 +238,8 @@ def download_media(media_set, session, directory, board_name):
                 except Exception as e:
                     if delete:
                         os.unlink(download_path)
-                    main_helper.log_error.exception(str(e) + "\n Tries: "+str(count))
+                    main_helper.log_error.exception(
+                        str(e) + "\n Tries: "+str(count))
                     count += 1
                     continue
                 main_helper.format_image(download_path, timestamp)
@@ -252,20 +251,18 @@ def download_media(media_set, session, directory, board_name):
     string += "Name: "+board_name+"\n"
     string += "Directory: " + directory+"\n"
     print(string)
-    if multithreading:
-        pool = ThreadPool()
-    else:
-        pool = ThreadPool(1)
+    pool = multiprocessing()
     os.makedirs(directory, exist_ok=True)
     pool.starmap(download, product(media_set, [session], [directory]))
 
 
 def create_session():
     session = requests.Session()
+    max_threads2 = cpu_count()
     session.mount(
-        'http://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+        'http://', HTTPAdapter(pool_connections=max_threads2, pool_maxsize=max_threads2))
     session.mount(
-        'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+        'https://', HTTPAdapter(pool_connections=max_threads2, pool_maxsize=max_threads2))
     print("Welcome Anon")
     option_string = "board or thread link"
     array = dict()

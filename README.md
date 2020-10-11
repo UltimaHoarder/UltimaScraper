@@ -169,12 +169,12 @@ Open:
 
     "%m-%d-%Y"
 
-[#multithreading](README.md#multithreading):
+[#max_threads](README.md#max_threads):
 
-    Default = true
+    Default = -1
 
-    If set to false, you will download files 1 by 1. (If you don't have fast internet, may god help you.)
-    I'd reccomend leaving it set to true.
+    When number is set below 1, it will use all threads.
+    Set a number higher than 0 to limit threads.
 
 [#min_drive_space](README.md#min_drive_space):
 

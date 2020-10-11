@@ -18,7 +18,7 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
             metadata_categories2 = metadata_categories
             meta_categories = list(os.path.split(metadata_categories2))
             q = main_helper.find_between(
-                model_folder, *meta_categories).replace(os.sep,"")
+                model_folder, *meta_categories).replace(os.sep, "")
             meta_categories.insert(-1, q)
             categories = os.path.join(*meta_categories)
             file_directory_formatted = model.directory.split(categories)
@@ -94,7 +94,9 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
                         folder = reformat.directory
                         continue
                     last_path = folder.split(
-                        username+os.sep)[1]
+                        username+os.sep)
+                    last_path = last_path[1] if len(
+                        last_path) > 1 else last_path[0]
                     last_path = last_path.replace(file_directory_formatted, "")
                     directory = main_helper.get_directory(
                         download_path, site_name)

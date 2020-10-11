@@ -1,10 +1,8 @@
 import math
-import multiprocessing
 import os
 import shutil
 from datetime import datetime, timedelta
 from itertools import chain, groupby, product
-from multiprocessing.dummy import Pool as ThreadPool
 from urllib.parse import urlparse
 import copy
 import timeit
@@ -17,11 +15,13 @@ from requests.adapters import HTTPAdapter
 import helpers.main_helper as main_helper
 import classes.prepare_download as prepare_download
 from types import SimpleNamespace
+from multiprocessing import cpu_count
 
+multiprocessing = main_helper.multiprocessing
 log_download = main_helper.setup_logger('downloads', 'downloads.log')
 
 json_config = None
-multithreading = None
+max_threads = -1
 json_settings = None
 auto_choice = None
 j_directory = None
@@ -43,11 +43,11 @@ app_token = None
 
 
 def assign_vars(json_auth, config, site_settings, site_name):
-    global json_config, multithreading, proxies, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, file_directory_format, file_name_format, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, webhook, maximum_length, app_token
+    global json_config, max_threads, proxies, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, file_directory_format, file_name_format, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, webhook, maximum_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
-    multithreading = json_global_settings["multithreading"]
+    max_threads = json_global_settings["max_threads"]
     proxies = json_global_settings["socks5_proxy"]
     cert = json_global_settings["cert"]
     json_settings = site_settings
@@ -319,7 +319,7 @@ def prepare_scraper(sessions, site_name, item):
     master_set = []
     media_set = []
     metadata_set = []
-    pool = ThreadPool()
+    pool = multiprocessing()
     formatted_directories = main_helper.format_directories(
         j_directory, site_name, username, locations, api_type)
     model_directory = formatted_directories["model_directory"]
@@ -379,7 +379,6 @@ def prepare_scraper(sessions, site_name, item):
         xmessages(link)
     if api_type == "Mass Messages":
         results = []
-        max_threads = multiprocessing.cpu_count()
         offset_count = 0
         offset_count2 = max_threads
         while True:
@@ -691,10 +690,7 @@ def download_media(media_set, session, directory, username, post_count, location
         api_type+" | Directory: " + directory+"\n"
     string += "Downloading "+str(len(media_set))+" "+location+"\n"
     print(string)
-    if multithreading:
-        pool = ThreadPool()
-    else:
-        pool = ThreadPool(1)
+    pool = multiprocessing()
     pool.starmap(download, product(
         media_set, [session], [directory], [username]))
 
@@ -704,8 +700,6 @@ def create_session(custom_proxy="", test_ip=True):
     if not proxies:
         return session
 
-    max_threads = multiprocessing.cpu_count()
-
     def set_sessions(proxy):
         session = requests.Session()
         proxy_type = {'http': 'socks5h://'+proxy,
@@ -714,8 +708,9 @@ def create_session(custom_proxy="", test_ip=True):
             session.proxies = proxy_type
             if cert:
                 session.verify = cert
+        max_threads2 = cpu_count()
         session.mount(
-            'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+            'https://', HTTPAdapter(pool_connections=max_threads2, pool_maxsize=max_threads2))
         if test_ip:
             link = 'https://checkip.amazonaws.com'
             r = main_helper.json_request(
@@ -726,7 +721,7 @@ def create_session(custom_proxy="", test_ip=True):
             ip = r.text.strip()
             print("Session IP: "+ip+"\n")
         return session
-    pool = ThreadPool()
+    pool = multiprocessing()
     sessions = []
     while not sessions:
         proxies2 = [custom_proxy] if custom_proxy else proxies
@@ -876,8 +871,7 @@ def get_subscriptions(session, subscriber_count, me_api, auth_count=0):
             if None != r:
                 r = [r]
         return r
-    link_count = len(offset_array) if len(offset_array) > 0 else 1
-    pool = ThreadPool(link_count)
+    pool = multiprocessing()
     results = pool.starmap(multi, product(
         offset_array, [session]))
     results = [x for x in results if x is not None]
@@ -936,7 +930,6 @@ def get_subscriptions(session, subscriber_count, me_api, auth_count=0):
 # Ah yes, the feature that will probably never be done
 def get_paid_posts(sessions):
     paid_api = f"https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token={app_token}"
-    max_threads = multiprocessing.cpu_count()
     x = main_helper.create_link_group(max_threads)
     print
     result = {}

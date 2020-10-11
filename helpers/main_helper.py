@@ -15,6 +15,7 @@ import random
 import socket
 import psutil
 import shutil
+from multiprocessing.dummy import Pool as ThreadPool
 
 import requests
 from bs4 import BeautifulSoup
@@ -34,6 +35,7 @@ warnings.filterwarnings(
 json_global_settings = None
 min_drive_space = 0
 webhooks = None
+max_threads = -1
 os_name = platform.system()
 
 
@@ -58,12 +60,13 @@ log_error = setup_logger('errors', 'errors.log')
 
 
 def assign_vars(config):
-    global json_global_settings, min_drive_space, webhooks
+    global json_global_settings, min_drive_space, webhooks, max_threads
 
     json_config = config
     json_global_settings = json_config["settings"]
     min_drive_space = json_global_settings["min_drive_space"]
     webhooks = json_global_settings["webhooks"]
+    max_threads = json_global_settings["max_threads"]
 
 
 def rename_duplicates(seen, filename):
@@ -613,3 +616,11 @@ def delete_empty_directories(directory):
     if os.path.exists(directory):
         if not os.listdir(directory):
             os.rmdir(directory)
+
+
+def multiprocessing():
+    if max_threads < 1:
+        pool = ThreadPool()
+    else:
+        pool = ThreadPool(max_threads)
+    return pool

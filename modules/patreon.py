@@ -5,24 +5,20 @@ import os
 import shutil
 from datetime import datetime
 from itertools import chain, groupby, product
-from multiprocessing.dummy import Pool as ThreadPool
 from urllib.parse import urlparse
 
 import requests
 from requests.adapters import HTTPAdapter
 from requests.sessions import session
 
-import extras.OFSorter.ofsorter as ofsorter
-from helpers.main_helper import (check_for_dupe_file, clean_text,
-                                 export_archive, format_directories,
-                                 format_image, format_media_set, get_directory,
-                                 json_request, log_error, reformat,
-                                 setup_logger)
+import helpers.main_helper as main_helper
+from multiprocessing import cpu_count
 
-log_download = setup_logger('downloads', 'downloads.log')
+multiprocessing = main_helper.multiprocessing
+log_download = main_helper.setup_logger('downloads', 'downloads.log')
 
 json_config = None
-multithreading = None
+max_threads = -1
 json_settings = None
 auto_choice = None
 j_directory = None
@@ -41,16 +37,17 @@ maximum_length = None
 
 
 def assign_vars(config, site_settings, site_name):
-    global json_config, multithreading, proxy, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length
+    global json_config, max_threads, proxy, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length
 
     json_config = config
     json_global_settings = json_config["settings"]
-    multithreading = json_global_settings["multithreading"]
+    max_threads = json_global_settings["max_threads"]
     proxy = json_global_settings["socks5_proxy"]
     cert = json_global_settings["cert"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
-    j_directory = get_directory(json_settings['download_paths'], site_name)
+    j_directory = main_helper.get_directory(
+        json_settings['download_paths'], site_name)
     format_path = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
@@ -66,7 +63,6 @@ def assign_vars(config, site_settings, site_name):
 
 
 def create_session(test_ip=True):
-    max_threads = multiprocessing.cpu_count()
     session = requests.Session()
     proxies = {'http': f'socks5h://{proxy}',
                'https': f'socks5h://{proxy}'}
@@ -74,8 +70,9 @@ def create_session(test_ip=True):
         session.proxies = proxies
         if cert:
             session.verify = cert
+    max_threads2 = cpu_count()
     session.mount(
-        'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
+        'https://', HTTPAdapter(pool_connections=max_threads2, pool_maxsize=max_threads2))
     if test_ip:
         ip = session.get('https://checkip.amazonaws.com').text.strip()
         print("Session IP: "+ip)
@@ -117,7 +114,7 @@ def create_auth(session, user_agent, auth_array, max_auth=2):
             while count < 11:
                 print("Auth Attempt "+str(count)+"/"+str(max_count))
                 link = "https://www.patreon.com/api/current_user"
-                r = json_request(session, link)
+                r = main_helper.json_request(session, link)
                 count += 1
                 if not r:
                     auth_cookies = []
@@ -157,7 +154,7 @@ def create_auth(session, user_agent, auth_array, max_auth=2):
                 return array
             auth_count += 1
     except Exception as e:
-        log_error.exception(e)
+        main_helper.log_error.exception(e)
         # input("Enter to continue")
     array = dict()
     array["session"] = None
@@ -167,7 +164,7 @@ def create_auth(session, user_agent, auth_array, max_auth=2):
 
 def get_subscriptions(session, auth_count=0):
     link = "https://www.patreon.com/api/pledges?include=campaign&fields[campaign]=avatar_photo_url,cover_photo_url,is_monthly,is_non_profit,name,pay_per_name,pledge_url,published_at,url&fields[user]=thumb_url,url,full_name&json-api-use-default-includes=false&json-api-version=1.0"
-    r = json_request(session, link)
+    r = main_helper.json_request(session, link)
     if not r:
         return
     datas = r["included"]
@@ -238,7 +235,7 @@ def link_check(session, identifier):
     link = "https://www.patreon.com/api/campaigns/" + \
         str(identifier) + \
         "?include=access_rules.tier.null&fields[access_rule]=access_rule_type%2Camount_cents%2Cpost_count&fields[reward]=title%2Cid%2Camount_cents&json-api-version=1.0"
-    y = json_request(session, link)
+    y = main_helper.json_request(session, link)
     print
     temp_user_id2 = dict()
     if not y:
@@ -265,7 +262,7 @@ def prepare_scraper(session, identifiers):
     directory = os.path.join(str(j_directory), username)
     while True:
         print
-        y = json_request(session, link)
+        y = main_helper.json_request(session, link)
         included = y["included"]
         for x in included:
             att = x["attributes"]
@@ -305,8 +302,9 @@ def prepare_scraper(session, identifiers):
     posts.sort(key=lambda x: x["id"], reverse=True)
     return posts
 
+
 def download_media(media_set, session):
-    def download(media,session):
+    def download(media, session):
         return_bool = True
         count = 0
         while count < 11:
@@ -314,7 +312,8 @@ def download_media(media_set, session):
 
             def choose_link(session, links):
                 for link in links:
-                    r = json_request(session, link, "HEAD", True, False)
+                    r = main_helper.json_request(
+                        session, link, "HEAD", True, False)
                     if not isinstance(r, requests.Response):
                         continue
 
@@ -334,12 +333,12 @@ def download_media(media_set, session):
             download_path = media["download_path"]
             timestamp = date_object.timestamp()
             if not overwrite_files:
-                if check_for_dupe_file(download_path, content_length):
-                    format_image(download_path, timestamp)
+                if main_helper.check_for_dupe_file(download_path, content_length):
+                    main_helper.format_image(download_path, timestamp)
                     return_bool = False
                     count += 1
                     break
-            r = json_request(session, link, "GET", True, False)
+            r = main_helper.json_request(session, link, "GET", True, False)
             if not isinstance(r, requests.Response):
                 return_bool = False
                 count += 1
@@ -362,14 +361,15 @@ def download_media(media_set, session):
             except Exception as e:
                 if delete:
                     os.unlink(download_path)
-                log_error.exception(str(e) + "\n Tries: "+str(count))
+                main_helper.log_error.exception(
+                    str(e) + "\n Tries: "+str(count))
                 count += 1
                 continue
-            format_image(download_path, timestamp)
+            main_helper.format_image(download_path, timestamp)
             log_download.info("Link: {}".format(link))
             log_download.info("Path: {}".format(download_path))
             break
         return return_bool
-    pool = ThreadPool()
+    pool = main_helper.multiprocessing()
     pool.starmap(download_media, product(
         media_set, [session]))

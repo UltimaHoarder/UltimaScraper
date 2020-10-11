@@ -85,7 +85,7 @@ def start_datascraper():
             if extra_auth:
                 choose_auth = extra_auth_settings["choose_auth"]
                 merge_auth = extra_auth_settings["merge_auth"]
-                json_auth_array += extra_auth_config[site_name_lower]["extra_auth"]
+                json_auth_array += extra_auth_config["supported"][site_name_lower]["auths"]
                 if choose_auth:
                     json_auth_array = main_helper.choose_auth(json_auth_array)
             session_array = []
@@ -248,7 +248,7 @@ def start_datascraper():
                     continue
                 download = result["download"]
                 others = download.others
-                model_directory = os.path.join(others[0][2],others[0][3])
+                model_directory = os.path.join(others[0][2], others[0][3])
                 if not args.metadata:
                     for arg in others:
                         x.download_media(*arg)

@@ -248,6 +248,8 @@ def start_datascraper():
                     continue
                 download = result["download"]
                 others = download.others
+                if not others:
+                    continue
                 model_directory = os.path.join(others[0][2], others[0][3])
                 if not args.metadata:
                     for arg in others:

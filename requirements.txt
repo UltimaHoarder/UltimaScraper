@@ -4,3 +4,4 @@ urllib3
 win32-setctime
 pysocks
 psutil
+python-dateutil

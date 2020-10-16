@@ -2,6 +2,7 @@ import math
 import os
 import shutil
 from datetime import datetime, timedelta
+from dateutil.relativedelta import relativedelta
 from itertools import chain, groupby, product
 from urllib.parse import urlparse
 import copy
@@ -465,7 +466,6 @@ def prepare_scraper(sessions, site_name, item):
 
     metadata_set = media_set
     if export_metadata:
-        print
         metadata_set = [x for x in metadata_set if x["valid"] or x["invalid"]]
         for item in metadata_set:
             if item["valid"] or item["invalid"]:
@@ -865,7 +865,10 @@ def get_subscriptions(session, subscriber_count, me_api, auth_count=0):
             if isinstance(r, dict):
                 if not r["subscribedByData"]:
                     r["subscribedByData"] = dict()
-                    r["subscribedByData"]["expiredAt"] = datetime.utcnow().isoformat()
+                    start_date = datetime.utcnow()
+                    end_date = start_date + relativedelta(years=1)
+                    end_date = end_date.isoformat()
+                    r["subscribedByData"]["expiredAt"] = end_date
                     r["subscribedByData"]["price"] = r["subscribePrice"]
                     r["subscribedByData"]["subscribePrice"] = 0
             if None != r:

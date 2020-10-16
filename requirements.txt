@@ -2,6 +2,5 @@ requests
 beautifulsoup4
 urllib3
 win32-setctime
-lxml
 pysocks
 psutil

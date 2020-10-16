@@ -1,4 +1,4 @@
-# OnlyFans DataScraper (Python 3.8.X)
+# OnlyFans DataScraper (Python 3.9.X)
 
 # ![app-token](examples/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 
@@ -275,7 +275,7 @@ Open:
 
 # FAQ
 
-Before troubleshooting, make sure you're using Python 3.8.
+Before troubleshooting, make sure you're using Python 3.9.
 
 Error: Access Denied / Auth Loop
 
@@ -298,11 +298,15 @@ I can't see ".settings" folder'
 
 I'm getting authed into the wrong account
 
-> Enjoy the free content.
+> Enjoy the free content. | This has been patched.
 
 I'm using Linux OS and something isn't working.
 
 > Script was built on Windows 10. If you're using Linux you can still submit an issue and I'll try my best to fix it.
+
+Am I able to bypass paywalls with this script?
+> Hell yeah! My open source script can bypass paywalls for free.
+[Tutorial](https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcS5hTXe02DNlsktpFfkrr--OQ0ScILMibxmpQ&usqp=CAU)
 
 Do OnlyFans or OnlyFans models know I'm using this script?
 

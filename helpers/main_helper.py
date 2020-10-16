@@ -106,7 +106,7 @@ def clean_text(string, remove_spaces=False):
         string = string.replace(
             m, " ").strip()
     string = ' '.join(string.split())
-    string = BeautifulSoup(string, 'lxml').get_text()
+    string = BeautifulSoup(string).get_text()
     SAFE_PTN = "[^0-9a-zA-Z-_.'()]+"
     string = re.sub(SAFE_PTN, ' ',  string.strip()
                     ).strip()

@@ -106,7 +106,7 @@ def clean_text(string, remove_spaces=False):
         string = string.replace(
             m, " ").strip()
     string = ' '.join(string.split())
-    string = BeautifulSoup(string).get_text()
+    string = BeautifulSoup(string,"html.parser").get_text()
     SAFE_PTN = "[^0-9a-zA-Z-_.'()]+"
     string = re.sub(SAFE_PTN, ' ',  string.strip()
                     ).strip()
@@ -391,6 +391,30 @@ def json_request(session, link, method="GET", stream=False, json_format=True, da
             log_error.exception(e)
             continue
     return result
+
+
+def downloader(r, download_path, count=0):
+    delete = False
+    try:
+        with open(download_path, 'wb') as f:
+            delete = True
+            for chunk in r.iter_content(chunk_size=1024):
+                if chunk:  # filter out keep-alive new chunks
+                    f.write(chunk)
+    except (ConnectionResetError) as e:
+        if delete:
+            os.unlink(download_path)
+        return
+    except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
+        return
+    except Exception as e:
+        if delete:
+            os.unlink(download_path)
+        string = f"{e}\n Tries: {count}"
+        log_error.exception(
+            string)
+        return
+    return True
 
 
 def restore_missing_data(master_set2, media_set):

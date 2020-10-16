@@ -190,19 +190,13 @@ def scrape_choice(user_id, post_counts, is_me):
     else:
         print('Scrape: a = Everything | b = Images | c = Videos | d = Audios')
         input_choice = input().strip()
-    user_api_ = "https://onlyfans.com/api2/v2/users/"+user_id + \
-        "?app-token="+app_token+""
-    message_api = "https://onlyfans.com/api2/v2/chats/"+user_id + \
-        "/messages?limit=100&offset=0&order=desc&app-token="+app_token+""
+    user_api_ = f"https://onlyfans.com/api2/v2/users/{user_id}?app-token={app_token}"
+    message_api = f"https://onlyfans.com/api2/v2/chats/{user_id}/messages?limit=100&offset=0&order=desc&app-token={app_token}"
     mass_messages_api = f"https://onlyfans.com/api2/v2/messages/queue/stats?offset=0&limit=30&app-token={app_token}"
-    stories_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
-        "/stories?limit=100&offset=0&order=desc&app-token="+app_token+""
-    hightlights_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
-        "/stories/highlights?limit=100&offset=0&order=desc&app-token="+app_token+""
-    post_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
-        "/posts?limit=0&offset=0&order=publish_date_desc&app-token="+app_token+""
-    archived_api = "https://onlyfans.com/api2/v2/users/"+user_id + \
-        "/posts/archived?limit=100&offset=0&order=publish_date_desc&app-token="+app_token+""
+    stories_api = f"https://onlyfans.com/api2/v2/users/{user_id}/stories?limit=100&offset=0&order=desc&app-token={app_token}"
+    hightlights_api = f"https://onlyfans.com/api2/v2/users/{user_id}/stories/highlights?limit=100&offset=0&order=desc&app-token={app_token}"
+    post_api = f"https://onlyfans.com/api2/v2/users/{user_id}/posts?limit=0&offset=0&order=publish_date_desc&app-token={app_token}"
+    archived_api = f"https://onlyfans.com/api2/v2/users/{user_id}/posts/archived?limit=100&offset=0&order=publish_date_desc&app-token={app_token}"
     # ARGUMENTS
     only_links = False
     if "-l" in input_choice:
@@ -302,10 +296,11 @@ def profile_scraper(link, session, directory, username):
                                      json_format=False, sleep=False)
         if not isinstance(r, requests.Response):
             continue
-        with open(download_path, 'wb') as f:
-            for chunk in r.iter_content(chunk_size=1024):
-                if chunk:  # filter out keep-alive new chunks
-                    f.write(chunk)
+        while True:
+            downloader = main_helper.downloader(r, download_path)
+            if not downloader:
+                continue
+            break
 
 
 # Prepares the API links to be scraped
@@ -658,26 +653,8 @@ def download_media(media_set, session, directory, username, post_count, location
                     return_bool = False
                     count += 1
                     continue
-                delete = False
-                try:
-                    with open(download_path, 'wb') as f:
-                        delete = True
-                        for chunk in r.iter_content(chunk_size=1024):
-                            if chunk:  # filter out keep-alive new chunks
-                                f.write(chunk)
-                except (ConnectionResetError) as e:
-                    if delete:
-                        os.unlink(download_path)
-                    count += 1
-                    continue
-                except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
-                    count += 1
-                    continue
-                except Exception as e:
-                    if delete:
-                        os.unlink(download_path)
-                    main_helper.log_error.exception(
-                        str(e) + "\n Tries: "+str(count))
+                downloader = main_helper.downloader(r, download_path, count)
+                if not downloader:
                     count += 1
                     continue
                 main_helper.format_image(download_path, timestamp)

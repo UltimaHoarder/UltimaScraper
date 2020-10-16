@@ -468,26 +468,8 @@ def download_media(media_set, session, directory, username, post_count, location
                     return_bool = False
                     count += 1
                     continue
-                delete = False
-                try:
-                    with open(download_path, 'wb') as f:
-                        delete = True
-                        for chunk in r.iter_content(chunk_size=1024):
-                            if chunk:  # filter out keep-alive new chunks
-                                f.write(chunk)
-                except (ConnectionResetError) as e:
-                    if delete:
-                        os.unlink(download_path)
-                    count += 1
-                    continue
-                except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
-                    count += 1
-                    continue
-                except Exception as e:
-                    if delete:
-                        os.unlink(download_path)
-                    main_helper.log_error.exception(
-                        str(e) + "\n Tries: "+str(count))
+                downloader = main_helper.downloader(r, download_path, count)
+                if not downloader:
                     count += 1
                     continue
                 main_helper.format_image(download_path, timestamp)
@@ -508,7 +490,6 @@ def create_session(custom_proxy="", test_ip=True):
     session = [requests.Session()]
     if not proxies:
         return session
-
 
     def set_sessions(proxy):
         session = requests.Session()

@@ -18,10 +18,9 @@ import modules.starsavn as starsavn
 
 def start_datascraper():
     parser = ArgumentParser()
-    # number=int(number['--number'])
     parser.add_argument("-m", "--metadata", action='store_true',
                         help="only exports metadata")
-    parser.add_argument("-n", "--number",default="x")
+    parser.add_argument("-n", "--number",default=100000)
     args = parser.parse_args()
     number = int(args.number)
     if args.metadata:
@@ -207,8 +206,8 @@ def start_datascraper():
             names = subscription_array[0]
             if names:
                 print("Names: Username = username | "+subscription_array[1])
-
-                if not auto_scrape_names and number=="x":
+                length=len(names)-1
+                if not auto_scrape_names and number==100000:
                     value = "2"
                     value = input().strip()
                     if value.isdigit():
@@ -218,7 +217,11 @@ def start_datascraper():
                             names = [names[int(value)]]
                     else:
                         names = [name for name in names if value in name[1]]
-                elif number != "x":
+                elif number != 100000 and number-1>length:
+                    print("Number out of Range")
+                    quit()
+
+                elif number != 100000:
                     value = number
                     names = [names[int(value)]]
                 else:

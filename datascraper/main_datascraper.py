@@ -1,4 +1,3 @@
-
 from timeit import main
 from classes.prepare_metadata import prepare_metadata
 import json
@@ -7,7 +6,6 @@ import os
 import time
 import timeit
 from argparse import ArgumentParser
-
 import helpers.main_helper as main_helper
 import modules.bbwchan as bbwchan
 import modules.fourchan as fourchan
@@ -16,11 +14,16 @@ import modules.patreon as patreon
 import modules.starsavn as starsavn
 
 
+
+
 def start_datascraper():
     parser = ArgumentParser()
+    # number=int(number['--number'])
     parser.add_argument("-m", "--metadata", action='store_true',
                         help="only exports metadata")
+    parser.add_argument("-n", "--number",default="x")
     args = parser.parse_args()
+    number = int(args.number)
     if args.metadata:
         print("Exporting Metadata Only")
     log_error = main_helper.setup_logger('errors', 'errors.log')
@@ -204,7 +207,8 @@ def start_datascraper():
             names = subscription_array[0]
             if names:
                 print("Names: Username = username | "+subscription_array[1])
-                if not auto_scrape_names:
+
+                if not auto_scrape_names and number=="x":
                     value = "2"
                     value = input().strip()
                     if value.isdigit():
@@ -214,6 +218,9 @@ def start_datascraper():
                             names = [names[int(value)]]
                     else:
                         names = [name for name in names if value in name[1]]
+                elif number != "x":
+                    value = number
+                    names = [names[int(value)]]
                 else:
                     value = 0
                     names = names[1:]

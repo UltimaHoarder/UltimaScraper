@@ -8,17 +8,20 @@ Watch this video made by Omnipotent of [RaidForums](https://raidforums.com/) or 
 
 https://www.youtube.com/watch?v=3r8SQT7mNHk
 
+
 #For Apple Mac users -
 macOS uses a older version of python by default so you will need to have a newer version installed on your device. Download and install the following version 
 https://www.python.org/ftp/python/3.8.6/python-3.8.6-macosx10.9.pkg if required, as this is a known working version. Once the newer version of python is installed, you can create aliases for python however for the sake of this tutorial simply use 'python3.8' and 'pip3' for the commands below.
 
-Mac Users- 
-Open Terminal and type 'cd /PATH/TO/ONLYFANSFOLER' example 'cd ~/Downloads/OnlyFans-5.5'
-then run the commands below.
+
 
 # Mandatory Tutorial
 
 Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a issue.
+
+Mac Users- 
+Open Terminal and type 'cd /PATH/TO/ONLYFANSFOLER' example 'cd ~/Downloads/OnlyFans-5.5'
+then run the commands below.
 
 
 From the project folder open CMD/Terminal and run the command below:

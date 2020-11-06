@@ -1,3 +1,6 @@
+from os import rename
+from typing import Any
+from classes.prepare_metadata import prepare_metadata
 import copy
 import csv
 import hashlib
@@ -7,7 +10,7 @@ import os
 import platform
 import re
 from datetime import datetime
-from itertools import chain, zip_longest, groupby
+from itertools import chain, zip_longest, groupby, product
 from os.path import dirname as up
 from urllib.parse import urlparse
 import time
@@ -18,6 +21,7 @@ import shutil
 from multiprocessing.dummy import Pool as ThreadPool
 
 import requests
+from requests.adapters import HTTPAdapter
 from bs4 import BeautifulSoup
 from requests.api import delete
 
@@ -25,6 +29,9 @@ import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
 import extras.OFRenamer.start as ofrenamer
 import warnings
+from multiprocessing import cpu_count
+from mergedeep import merge, Strategy
+
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
@@ -37,6 +44,8 @@ min_drive_space = 0
 webhooks = None
 max_threads = -1
 os_name = platform.system()
+proxies = None
+cert = None
 
 
 def setup_logger(name, log_file, level=logging.INFO):
@@ -60,13 +69,15 @@ log_error = setup_logger('errors', 'errors.log')
 
 
 def assign_vars(config):
-    global json_global_settings, min_drive_space, webhooks, max_threads
+    global json_global_settings, min_drive_space, webhooks, max_threads, proxies, cert
 
     json_config = config
     json_global_settings = json_config["settings"]
     min_drive_space = json_global_settings["min_drive_space"]
     webhooks = json_global_settings["webhooks"]
     max_threads = json_global_settings["max_threads"]
+    proxies = json_global_settings["socks5_proxy"]
+    cert = json_global_settings["cert"]
 
 
 def rename_duplicates(seen, filename):
@@ -106,7 +117,7 @@ def clean_text(string, remove_spaces=False):
         string = string.replace(
             m, " ").strip()
     string = ' '.join(string.split())
-    string = BeautifulSoup(string,"html.parser").get_text()
+    string = BeautifulSoup(string, "lxml").get_text()
     SAFE_PTN = "[^0-9a-zA-Z-_.'()]+"
     string = re.sub(SAFE_PTN, ' ',  string.strip()
                     ).strip()
@@ -116,6 +127,12 @@ def clean_text(string, remove_spaces=False):
 
 
 def format_media_set(media_set):
+    merged = merge({}, *media_set, strategy=Strategy.ADDITIVE)
+    if "directories" in merged:
+        for directory in merged["directories"]:
+            os.makedirs(directory, exist_ok=True)
+        merged.pop("directories")
+    return merged
     media_set = list(chain(*media_set))
     media_set.sort(key=lambda x: x["type"])
     media_set = [list(g) for k, g in groupby(
@@ -149,44 +166,56 @@ def format_image(directory, timestamp):
 
 
 def filter_metadata(datas):
-    for data in datas:
-        for items in data["valid"]:
-            for item in items:
-                item.pop("session")
+    for key, item in datas.items():
+        for items in item["valid"]:
+            for item2 in items:
+                item2.pop("session")
     return datas
 
 
-def export_archive(datas, archive_directory, json_settings):
-    # Not Finished
-    export_type = json_global_settings["export_type"]
-    if export_type == "json":
-        archive_path = archive_directory+".json"
-        if os.path.exists(archive_path):
-            datas2 = ofrenamer.start(archive_path, json_settings)
-            if datas == datas2:
-                return
-        with open(archive_path, 'w') as outfile:
-            json.dump(datas, outfile)
-    if export_type == "csv":
-        archive_path = os.path.join(archive_directory+".csv")
-        with open(archive_path, mode='w', encoding='utf-8', newline='') as csv_file:
-            for data in datas:
-                fieldnames = []
-                media_type = data["type"].lower()
-                valid = list(chain.from_iterable(data["valid"]))
-                invalid = list(chain.from_iterable(data["invalid"]))
-                if valid:
-                    fieldnames.extend(valid[0].keys())
-                elif invalid:
-                    fieldnames.extend(invalid[0].keys())
-                header = [media_type]+fieldnames
-                if len(fieldnames) > 1:
-                    writer = csv.DictWriter(csv_file, fieldnames=header)
-                    writer.writeheader()
-                    for item in valid:
-                        writer.writerow({**{media_type: "valid"}, **item})
-                    for item in invalid:
-                        writer.writerow({**{media_type: "invalid"}, **item})
+def import_archive(archive_path) -> Any:
+    metadata = []
+    if os.path.exists(archive_path):
+        metadata = json.load(open(archive_path))
+    return metadata
+
+
+def export_archive(datas, archive_directory, json_settings, rename=True, legacy_directory=""):
+    if os.path.exists(legacy_directory):
+        shutil.rmtree(legacy_directory)
+    if json_settings["export_metadata"]:
+        export_type = json_global_settings["export_type"]
+        if export_type == "json":
+            os.makedirs(os.path.dirname(archive_directory), exist_ok=True)
+            archive_path = archive_directory+".json"
+            if ".json" in archive_directory:
+                archive_path = archive_directory
+            if os.path.exists(archive_path) and rename:
+                datas2 = ofrenamer.start(archive_path, json_settings)
+                if datas == datas2:
+                    return
+            with open(archive_path, 'w') as outfile:
+                json.dump(datas, outfile)
+        # if export_type == "csv":
+        #     archive_path = os.path.join(archive_directory+".csv")
+        #     with open(archive_path, mode='w', encoding='utf-8', newline='') as csv_file:
+        #         for data in datas:
+        #             fieldnames = []
+        #             media_type = data["type"].lower()
+        #             valid = list(chain.from_iterable(data["valid"]))
+        #             invalid = list(chain.from_iterable(data["invalid"]))
+        #             if valid:
+        #                 fieldnames.extend(valid[0].keys())
+        #             elif invalid:
+        #                 fieldnames.extend(invalid[0].keys())
+        #             header = [media_type]+fieldnames
+        #             if len(fieldnames) > 1:
+        #                 writer = csv.DictWriter(csv_file, fieldnames=header)
+        #                 writer.writeheader()
+        #                 for item in valid:
+        #                     writer.writerow({**{media_type: "valid"}, **item})
+        #                 for item in invalid:
+        #                     writer.writerow({**{media_type: "invalid"}, **item})
 
 
 def format_paths(j_directories, site_name):
@@ -210,6 +239,7 @@ def reformat(directory, post_id, media_id, filename, text, ext, date, username, 
         has_text = False
         if "{text}" in unformatted:
             has_text = True
+            text = clean_text(text)
         path = unformatted.replace("{post_id}", post_id)
         path = path.replace("{media_id}", media_id)
         path = path.replace("{username}", username)
@@ -321,78 +351,6 @@ def check_for_dupe_file(download_path, content_length):
     return found
 
 
-def session_rules(session, link):
-    if "https://onlyfans.com/api2/v2/" in link:
-        sess = session.headers["access-token"]
-        user_agent = session.headers["user-agent"]
-        a = [session, link, sess, user_agent]
-        session = create_sign(*a)
-    return session
-
-
-def session_retry_rules(r, link):
-    # 0 Fine, 1 Continue, 2 Break
-    boolean = 0
-    if "https://onlyfans.com/api2/v2/" in link:
-        text = r.text
-        if "Invalid request sign" in text:
-            boolean = 1
-        elif "Access Denied" in text:
-            boolean = 2
-    else:
-        if not r.status_code == 200:
-            boolean = 1
-    return boolean
-
-
-def json_request(session, link, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20):
-    session = session_rules(session, link)
-    count = 0
-    sleep_number = 0.5
-    result = {}
-    while count < 11:
-        try:
-            count += 1
-            headers = session.headers
-            if json_format:
-                headers["accept"] = "application/json, text/plain, */*"
-            if data:
-                r = session.request(method, link, json=data,
-                                    stream=stream, timeout=timeout)
-            else:
-                r = session.request(
-                    method, link, stream=stream, timeout=timeout)
-            rule = session_retry_rules(r, link)
-            if rule == 1:
-                continue
-            elif rule == 2:
-                break
-            if json_format:
-                content_type = r.headers['Content-Type']
-                matches = ["application/json;", "application/vnd.api+json"]
-                if all(match not in content_type for match in matches):
-                    continue
-                text = r.text
-                if not text:
-                    message = "ERROR: 100 Posts skipped. Please post the username you're trying to scrape on the issue "'100 Posts Skipped'""
-                    log_error.exception(message)
-                    return result
-                return json.loads(text)
-            else:
-                return r
-        except (ConnectionResetError) as e:
-            continue
-        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout, socket.timeout) as e:
-            if sleep:
-                time.sleep(sleep_number)
-                sleep_number += 0.5
-            continue
-        except Exception as e:
-            log_error.exception(e)
-            continue
-    return result
-
-
 def downloader(r, download_path, count=0):
     delete = False
     try:
@@ -416,15 +374,6 @@ def downloader(r, download_path, count=0):
         return
     return True
 
-
-def restore_missing_data(master_set2, media_set):
-    count = 0
-    new_set = []
-    for item in media_set:
-        if not item:
-            new_set.append(master_set2[count])
-        count += 1
-    return new_set
 
 # def restore_missing_data2(master_set2, media_set):
 #     count = 0
@@ -519,6 +468,42 @@ def choose_auth(array):
     return names
 
 
+def choose_option(subscription_list, auto_scrape_names):
+    names = subscription_list[0]
+    if names:
+        print("Names: Username = username | "+subscription_list[1])
+        if not auto_scrape_names:
+            value = "1"
+            value = input().strip()
+            if value.isdigit():
+                if value == "0":
+                    names = names[1:]
+                else:
+                    names = [names[int(value)]]
+            else:
+                names = [name for name in names if value in name[1]]
+        else:
+            value = 0
+            names = names[1:]
+    return names
+
+def process_names(module,subscription_list,auto_scrape_names,json_auth_array,session_array,json_config,site_name_lower,site_name):
+    names = choose_option(
+        subscription_list, auto_scrape_names)
+    if not names:
+        print("There's nothing to scrape.")
+        return
+    app_token = ""
+    for name in names:
+        # Extra Auth Support
+        auth_count = name[0]
+        api = session_array[auth_count]
+        name = name[-1]
+        assign_vars(json_config)
+        username = parse_links(site_name_lower, name)
+        result = module.start_datascraper(
+            api, username, site_name)
+
 def is_me(user_api):
     if "email" in user_api:
         return True
@@ -532,50 +517,9 @@ def update_metadata(path, metadata):
     print
 
 
-def create_sign(session, link, sess, user_agent, text="onlyfans"):
-    # Users: 300000 | Creators: 301000
-    time2 = str(int(round(time.time() * 1000-301000)))
-    path = urlparse(link).path
-    query = urlparse(link).query
-    path = path+"?"+query
-    a = [sess, time2, path, user_agent, text]
-    msg = "\n".join(a)
-    message = msg.encode("utf-8")
-    hash_object = hashlib.sha1(message)
-    sha_1 = hash_object.hexdigest()
-    session.headers["access-token"] = sess
-    session.headers["sign"] = sha_1
-    session.headers["time"] = time2
-    return session
-
-
 def grouper(n, iterable, fillvalue=None):
     args = [iter(iterable)] * n
     return list(zip_longest(fillvalue=fillvalue, *args))
-
-
-def assign_session(medias, item, key_one="link", key_two="count", capped=False):
-    count = 0
-    activate_cap = False
-    number = len(item)
-    medias2 = []
-    for auth in medias:
-        media2 = {}
-        media2[key_one] = auth
-        if not number:
-            count = -1
-        if activate_cap:
-            media2[key_two] = -1
-        else:
-            media2[key_two] = count
-
-        medias2.append(media2)
-        count += 1
-        if count >= number:
-            count = 0
-            if capped:
-                activate_cap = True
-    return medias2
 
 
 def create_link_group(max_threads):
@@ -608,20 +552,20 @@ def metadata_fixer(directory):
 
 
 def send_webhook(item):
-    if item.webhook:
+    download_info = item.download_info
+    if download_info["webhook"]:
         for webhook_link in webhooks:
             message = prepare_webhooks.discord()
             embed = message.embed()
             embed.title = f"Downloaded: {item.username}"
             field = embed.add_field("username", item.username)
-            field = embed.add_field("post_count", item.post_count)
+            field = embed.add_field("post_count", item.postsCount)
             field = embed.add_field("link", item.link)
-            embed.image.url = item.image_url
+            embed.image.url = item.avatar
             message.embeds.append(embed)
             message = json.loads(json.dumps(
                 message, default=lambda o: o.__dict__))
             x = requests.post(webhook_link, json=message)
-            print
 
 
 def find_between(s, start, end):
@@ -648,3 +592,29 @@ def multiprocessing():
     else:
         pool = ThreadPool(max_threads)
     return pool
+
+
+def module_chooser(domain, json_sites):
+    string = "Site: "
+    site_names = []
+    wl = ["onlyfans"]
+    bl = ["patreon"]
+    site_count = len(json_sites)
+    count = 0
+    for x in json_sites:
+        if not wl:
+            if x in bl:
+                continue
+        elif x not in wl:
+            continue
+        string += str(count)+" = "+x
+        site_names.append(x)
+        if count+1 != site_count:
+            string += " | "
+
+        count += 1
+    string += "x = Exit"
+    if domain and domain not in site_names:
+        string = f"{domain} not supported"
+        site_names = []
+    return string, site_names

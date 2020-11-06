@@ -1,20 +1,20 @@
-import json
-import logging
-import math
+from classes.prepare_metadata import prepare_metadata
 import os
 from datetime import datetime
-from itertools import chain, count, product
-from random import randrange
-import shutil
+from itertools import chain, groupby, product
+from urllib.parse import urlparse
 import copy
+import json
+import jsonpickle
+from deepdiff import DeepHash
 
 import requests
-from requests.adapters import HTTPAdapter
 
 import helpers.main_helper as main_helper
 import classes.prepare_download as prepare_download
 from types import SimpleNamespace
-from multiprocessing import cpu_count
+
+from helpers.main_helper import import_archive, export_archive
 
 multiprocessing = main_helper.multiprocessing
 log_download = main_helper.setup_logger('downloads', 'downloads.log')
@@ -64,8 +64,16 @@ def assign_vars(config, site_settings, site_name):
     maximum_length = int(json_settings["text_length"]
                          ) if json_settings["text_length"] else maximum_length
 
+def account_setup(api):
+    status = False
+    auth = api.login()
+    if auth:
+        # chats = api.get_chats()
+        subscriptions = api.get_subscriptions()
+        status = True
+    return status
 
-def start_datascraper(sessions, identifier, site_name, app_token, choice_type=None):
+def start_datascraper(sessions, identifier, site_name, choice_type=None):
     print("Scrape Processing")
     info = link_check(sessions[0], identifier)
     user = info["user"]
@@ -424,8 +432,8 @@ def media_scraper(result, sessions, formatted_directories, username, api_type):
     return media_set
 
 
-def download_media(media_set, session, directory, username, post_count, location, api_type):
-    def download(medias, session, directory, username):
+def download_media(api,subscription):
+    def download(medias):
         return_bool = True
         for media in medias:
             count = 0
@@ -477,13 +485,20 @@ def download_media(media_set, session, directory, username, post_count, location
                 log_download.info("Path: {}".format(download_path))
                 break
         return return_bool
-    string = "Download Processing\n"
-    string += "Name: "+username+" | Directory: " + directory+"\n"
-    string += "Downloading "+str(len(media_set))+" "+location+"\n"
-    print(string)
-    pool = multiprocessing()
-    pool.starmap(download, product(
-        media_set, [session], [directory], [username]))
+    username = subscription.username
+    download_info = subscription.download_info
+    directory = download_info["directory"]
+    for api_type, value in subscription.scraped:
+        if not value:
+            continue
+        for location, v in value.items():
+            media_set = v.valid
+            string = "Download Processing\n"
+            string += f"Name: {username} | Type: {api_type} | Count: {len(media_set)} {location} | Directory: {directory}\n"
+            print(string)
+            pool = multiprocessing()
+            pool.starmap(download, product(
+                media_set, [directory], [username]))
 
 
 def create_session(custom_proxy="", test_ip=True):

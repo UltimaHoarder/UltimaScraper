@@ -28,7 +28,7 @@ Start:
 
 `python start_ofd.py` or double click `start_ofd.py`
 
-----
+---
 
 Open and edit:
 
@@ -77,8 +77,8 @@ Open:
 [settings]
 
 [#download_paths](README#download_paths):
-  
- Default = ["{site_name}"]
+
+Default = ["{site_name}"]
 
     {site_name} = The site's name you're scraping
     Leave directory empty if you want files to be downloaded in the script folder.
@@ -86,8 +86,8 @@ Open:
     If you're going to fill, please remember to use forward ("/") slashes only.
 
 [#file_directory_format](README#file_directory_format):
-  
- Default = ""
+
+Default = ""
 
     This puts each media file into a folder.
     See file_name_format below for a list of options to use.
@@ -126,23 +126,20 @@ Open:
 
     Default = ""
 
-    When you start the script you will be presented with the following scraping choices:
-    onlyfans = onlyfans
-    justforfans = justforfans
+    OnlyFans = "onlyfans"
 
-    You can automatically choose what you want to scrape if you add it in the config file.
+    You can automatically choose which site you want to scrape.
 
 [#auto_choice](README.md#auto_choice):
 
     Default = ""
 
-    When you start the script you will be presented with the following scraping choices:
     Everything = "a"
     Images = "b"
     Videos = "c"
     Audios = "d"
 
-    You can automatically choose what you want to scrape if you add it in the config file.
+    You can automatically choose which type of media you want to scrape.
 
 [#auto_scrape_names](README.md#auto_scrape_names):
 
@@ -156,14 +153,19 @@ Open:
 
     If set to false, you'll be given the option to scrape individual apis.
 
+[#jobs](#jobs):
+
+    Default = true
+
+    If set to false, you'll be given the option to scrape individual apis.
+
 [#export_type](README.md#export_type):
 
     Default = "json"
 
-    a = "json"
-    b = "csv"
+    JSON = "json"
 
-    You can export an archive to different formats.
+    You can export an archive to different formats (not anymore lol).
 
 [#overwrite_files](README.md#overwrite_files):
 
@@ -315,8 +317,9 @@ I'm using Linux OS and something isn't working.
 > Script was built on Windows 10. If you're using Linux you can still submit an issue and I'll try my best to fix it.
 
 Am I able to bypass paywalls with this script?
+
 > Hell yeah! My open source script can bypass paywalls for free.
-[Tutorial](https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcS5hTXe02DNlsktpFfkrr--OQ0ScILMibxmpQ&usqp=CAU)
+> [Tutorial](https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcS5hTXe02DNlsktpFfkrr--OQ0ScILMibxmpQ&usqp=CAU)
 
 Do OnlyFans or OnlyFans models know I'm using this script?
 
@@ -327,15 +330,16 @@ Do you collect session information?
 > No. The code is on Github which allows you to audit the codebase yourself. You can use wireshark or any other network analysis program to verify the outgoing connections are respective to the modules you chose.
 
 Does this script violate the Onlyfans.com ToS?
->No...
->OnlyFans themselves allow users to download content as stated in their [Terms of Service](https://onlyfans.com/terms)
 
->8.2.2 you may print or download one copy of a reasonable number of pages of the Website for your own personal, non-commercial use and not for further reproduction, publication, or distribution."
+> No...
+> OnlyFans themselves allow users to download content as stated in their [Terms of Service](https://onlyfans.com/terms)
+
+> 8.2.2 you may print or download one copy of a reasonable number of pages of the Website for your own personal, non-commercial use and not for further reproduction, publication, or distribution."
 
 Disclaimer:
->OnlyFans is a registered trademark of Fenix International Limited.
 
->The contributors of this script isn't in any way affiliated with, sponsored by, or endorsed by Fenix International Limited.
+> OnlyFans is a registered trademark of Fenix International Limited.
 
->The contributors of this script are not responsible for the end users' actions.
+> The contributors of this script isn't in any way affiliated with, sponsored by, or endorsed by Fenix International Limited.
 
+> The contributors of this script are not responsible for the end users' actions.

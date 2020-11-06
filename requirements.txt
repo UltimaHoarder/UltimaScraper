@@ -5,3 +5,7 @@ win32-setctime
 pysocks
 psutil
 python-dateutil
+lxml
+mergedeep
+jsonpickle
+deepdiff[murmur]

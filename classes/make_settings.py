@@ -1,7 +1,10 @@
+import uuid as uuid
+
+
 class config(object):
     def __init__(self, settings={}, supported={}):
         class Settings(object):
-            def __init__(self, auto_site_choice="", export_type="json", max_threads=-1, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy=[], cert="", global_user_agent=""):
+            def __init__(self, auto_site_choice="", export_type="json", max_threads=-1, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy=[], cert="", global_user_agent="", random_string=""):
                 self.auto_site_choice = auto_site_choice
                 self.export_type = export_type
                 self.max_threads = max_threads
@@ -12,6 +15,7 @@ class config(object):
                 self.loop_timeout = loop_timeout
                 self.socks5_proxy = socks5_proxy
                 self.cert = cert
+                self.random_string = random_string if random_string else uuid.uuid1().hex
                 self.global_user_agent = global_user_agent
 
         class Supported(object):
@@ -36,19 +40,26 @@ class config(object):
                         self.auth_hash = option.get('auth_hash', "")
                         self.auth_uniq_ = option.get('auth_uniq_', "")
                         self.sess = option.get('sess', "")
-                        self.fp = option.get('fp', "")
                         self.app_token = option.get(
                             'app_token', '33d57ade8c02dbc5a333db99ff9ae26a')
                         self.user_agent = option.get('user_agent', "")
                         self.support_2fa = option.get('support_2fa', True)
 
-                class Settings:
+                class Settings():
                     def __init__(self, option={}):
+                        class jobs:
+                            def __init__(self, option={}) -> None:
+                                self.scrape_names = option.get(
+                                    'scrape_names', True)
+                                self.scrape_paid_content = option.get(
+                                    'scrape_paid_content', True)
                         self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
+                        self.jobs = jobs(option.get(
+                            'jobs', {}))
                         self.download_paths = option.get(
                             'download_paths', ["{site_name}"])
                         self.file_directory_format = option.get(
@@ -96,11 +107,19 @@ class config(object):
 
                 class Settings:
                     def __init__(self, option={}):
+                        class jobs:
+                            def __init__(self, option={}) -> None:
+                                self.scrape_names = option.get(
+                                    'scrape_names', True)
+                                self.scrape_paid_content = option.get(
+                                    'scrape_paid_content', True)
                         self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
+                        self.jobs = jobs(option.get(
+                            'jobs', {}))
                         self.download_paths = option.get(
                             'download_paths', ["{site_name}"])
                         self.file_directory_format = option.get(
@@ -275,7 +294,6 @@ class extra_auth(object):
                         self.auth_hash = option.get('auth_hash', "")
                         self.auth_uniq_ = option.get('auth_uniq_', "")
                         self.sess = option.get('sess', "")
-                        self.fp = option.get('fp', "")
                         self.app_token = option.get(
                             'app_token', '33d57ade8c02dbc5a333db99ff9ae26a')
                         self.user_agent = option.get('user_agent', "")

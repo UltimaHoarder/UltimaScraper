@@ -14,12 +14,15 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
     def start(post, metadata_categories):
         model_folder = ""
         for model in post:
+            delattr(model, "session")
             model_folder = model.directory
             metadata_categories2 = metadata_categories
             meta_categories = list(os.path.split(metadata_categories2))
             q = main_helper.find_between(
-                model_folder, *meta_categories).replace(os.sep, "")
-            meta_categories.insert(-1, q)
+                model_folder, *meta_categories)
+            q = q.split(os.sep)
+            for r in q:
+                meta_categories.insert(-1, r)
             categories = os.path.join(*meta_categories)
             file_directory_formatted = model.directory.split(categories)
             if len(file_directory_formatted) > 0:
@@ -61,7 +64,7 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
                     self.post_id = option.get('post_id', "")
                     self.media_id = option.get('media_id', "")
                     self.filename = filename
-                    self.text = main_helper.clean_text(option.get('text', ""))
+                    self.text = option.get('text', "")
                     self.ext = option.get('ext', ext)
                     self.date = option.get('postedAt', today)
                     self.username = option.get('username', username)
@@ -111,6 +114,9 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
                     filepath = os.path.join(folder, y)
                     filepath, old_filepath = update(filepath)
             model.filename = os.path.basename(filepath)
+            # if model.size == 1 or not model.size:
+            #     model.size = os.path.getsize(filepath)
+            #     print
         return model_folder
     pool = ThreadPool()
     old_folders = pool.starmap(start, product(
@@ -125,14 +131,16 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
 def start(metadata_filepath, json_settings):
     if os.path.getsize(metadata_filepath) > 0:
         metadatas = json.load(open(metadata_filepath, encoding='utf-8'))
-        metadatas2 = prepare_metadata(metadatas).items
+        metadatas2 = prepare_metadata(metadatas).metadata
         model_path = up(up(metadata_filepath))
         username = os.path.basename(model_path)
         site_name = os.path.basename(up(up(up(metadata_filepath))))
         metadata_filename = os.path.basename(metadata_filepath)
         name = metadata_filename.split(".")[0]
-        for metadata in metadatas2:
-            category = os.path.join(name, metadata.type)
+        for key, metadata in metadatas2.items():
+            if key == "Texts":
+                continue
+            category = os.path.join(name, key)
             metadata.valid = fix_metadata(
                 metadata.valid, json_settings, username, site_name, category)
             metadata.invalid = fix_metadata(

@@ -1,0 +1,5 @@
+.git
+.logs
+.settings
+.sites
+__pycache__

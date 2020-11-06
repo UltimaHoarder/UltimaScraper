@@ -12,6 +12,14 @@ https://www.youtube.com/watch?v=3r8SQT7mNHk
 
 Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a issue.
 
+## Running the app via docker
+
+Build and run the image, mounting the appropriate directories:
+
+`docker build -t only-fans . && docker run -it --rm --name onlyfans -v ${PWD}/.settings:/usr/src/app/.settings -v ${PWD}/.sites:/usr/src/app/.sites only-fans`
+
+## Running the app locally
+
 From the project folder open CMD/Terminal and run the command below:
 
 `pip install -r requirements.txt`
@@ -19,6 +27,8 @@ From the project folder open CMD/Terminal and run the command below:
 Start:
 
 `python start_ofd.py` or double click `start_ofd.py`
+
+----
 
 Open and edit:
 

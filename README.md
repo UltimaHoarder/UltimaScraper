@@ -76,7 +76,7 @@ Open:
 
 [settings]
 
-[#download_paths](README#download_paths):
+[#download_paths](README.md#download_paths):
 
 Default = ["{site_name}"]
 
@@ -85,7 +85,7 @@ Default = ["{site_name}"]
 
     If you're going to fill, please remember to use forward ("/") slashes only.
 
-[#file_directory_format](README#file_directory_format):
+[#file_directory_format](README.md#file_directory_format):
 
 Default = ""
 
@@ -93,7 +93,7 @@ Default = ""
     See file_name_format below for a list of options to use.
     You don't need to use a unique identifier for file_directory_format.
 
-[#file_name_format](README#file_name_format):
+[#file_name_format](README.md#file_name_format):
 
     Default = "{file_name}.{ext}"
 
@@ -114,7 +114,7 @@ Default = ""
     Example: {date}/{text}-{file_name}.{ext}
     Warning: It's important to keep a unique identifier next to .{ext}. By default it's {file_name}.
 
-[#text_length](README#text_length):
+[#text_length](README.md#text_length):
 
     Default = ""
     Ideal = "50"
@@ -153,11 +153,12 @@ Default = ""
 
     If set to false, you'll be given the option to scrape individual apis.
 
-[#jobs](#jobs):
+[#jobs](README.md#jobs):
 
-    Default = true
+    "scrape_names" - This will scrape your standard content
+    "scrape_paid_content" - This will scrape paid content
 
-    If set to false, you'll be given the option to scrape individual apis.
+    If set to false, it won't do the job.
 
 [#export_type](README.md#export_type):
 

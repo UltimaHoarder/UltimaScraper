@@ -890,18 +890,18 @@ class download_media():
         return return_bool
 
 
-def manage_subscriptions(api,auth_count=0):
+def manage_subscriptions(api, auth_count=0):
     results = api.get_subscriptions(refresh=False)
     if blacklist_name:
         r = api.get_lists()
         if not r:
             return [False, []]
-        x = [c for c in r if blacklist_name == c["name"]]
-        if x:
-            x = x[0]
-            list_users = x["users"]
-            if x["usersCount"] > 2:
-                list_id = str(x["id"])
+        new_results = [c for c in r if blacklist_name == c["name"]]
+        if new_results:
+            item = new_results[0]
+            list_users = item["users"]
+            if item["usersCount"] > 2:
+                list_id = str(item["id"])
                 list_users = api.get_lists_users(list_id)
             users = list_users
             bl_ids = [x["username"] for x in users]

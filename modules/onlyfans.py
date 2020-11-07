@@ -267,7 +267,8 @@ def paid_content_scraper(api):
     paid_contents = api.get_paid_content()
     results = []
     for paid_content in paid_contents:
-        author = paid_content["author"]
+        author = paid_content.get("author")
+        author = paid_content.get("fromUser",author)
         subscription = create_subscription(author)
         subscription.sessions = api.sessions
         subscription.download_info["directory"] = j_directory

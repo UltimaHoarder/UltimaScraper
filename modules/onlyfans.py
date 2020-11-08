@@ -264,7 +264,7 @@ def profile_scraper(api, directory, username):
 
 
 def paid_content_scraper(api):
-    paid_contents = api.get_paid_content()
+    paid_contents = api.get_paid_content(refresh=False)
     results = []
     for paid_content in paid_contents:
         author = paid_content.get("author")

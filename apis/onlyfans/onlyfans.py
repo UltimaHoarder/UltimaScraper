@@ -236,8 +236,8 @@ class start():
             {'name': 'auth_id', 'value': auth_id},
             {'name': 'sess', 'value': auth_items.sess},
             {'name': 'auth_hash', 'value': auth_items.auth_hash},
-            {'name': 'auth_uniq_'+auth_id, 'value': auth_items.auth_uniq_},
-            {'name': 'auth_uid_'+auth_id, 'value': None},
+            {'name': f'auth_uniq_{auth_id}', 'value': auth_items.auth_uniq_},
+            {'name': f'auth_uid_{auth_id}', 'value': None},
         ]
         for session in self.sessions:
             a = [session, link, auth_items.sess, user_agent]
@@ -552,7 +552,7 @@ class start():
         if not authed:
             return
         if not refresh:
-            result = self.handle_refresh(self, api_type)
+            result = self.handle_refresh(authed, api_type)
             if result:
                 return result
         link = links(global_limit=limit,
@@ -577,12 +577,12 @@ class create_subscription(start):
         self.subscribedByData = subscribedByData(
             option.get("subscribedByData", {}))
         self.is_me = option.get("is_me", False)
-        self.postsCount = option.get("postsCount",0)
-        self.archivedPostsCount = option.get("archivedPostsCount",0)
-        self.photosCount = option.get("photosCount",0)
-        self.videosCount = option.get("videosCount",0)
-        self.audiosCount = option.get("audiosCount",0)
-        self.favoritesCount = option.get("favoritesCount",0)
+        self.postsCount = option.get("postsCount", 0)
+        self.archivedPostsCount = option.get("archivedPostsCount", 0)
+        self.photosCount = option.get("photosCount", 0)
+        self.videosCount = option.get("videosCount", 0)
+        self.audiosCount = option.get("audiosCount", 0)
+        self.favoritesCount = option.get("favoritesCount", 0)
         self.avatar = option.get("avatar")
         self.header = option.get("header")
         self.hasStories = option.get("hasStories")

@@ -169,6 +169,7 @@ class links(object):
 
 class start():
     def __init__(self, sessions=[], custom_request=callable) -> None:
+        sessions = api_helper.copy_sessions(sessions)
         self.sessions = sessions
         self.auth = None
         self.custom_request = custom_request

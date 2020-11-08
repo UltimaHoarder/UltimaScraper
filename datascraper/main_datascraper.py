@@ -93,9 +93,8 @@ def start_datascraper():
                 subscription_array = []
                 auth_count = -1
                 for json_auth in json_auth_array:
-                    sessions = api_helper.copy_sessions(original_sessions)
                     api = OnlyFans.start(
-                        sessions)
+                        original_sessions)
                     auth_count += 1
                     user_agent = global_user_agent if not json_auth[
                         'user_agent'] else json_auth['user_agent']

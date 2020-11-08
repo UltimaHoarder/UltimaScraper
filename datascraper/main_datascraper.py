@@ -82,8 +82,9 @@ def start_datascraper():
             module = m_onlyfans
             subscription_array = []
             legacy = True
-            sessions = api_helper.create_session(settings=json_settings)
-            if not sessions:
+            original_sessions = api_helper.create_session(
+                settings=json_settings)
+            if not original_sessions:
                 print("Unable to create session")
                 continue
             archive_time = timeit.default_timer()
@@ -92,7 +93,7 @@ def start_datascraper():
                 subscription_array = []
                 auth_count = -1
                 for json_auth in json_auth_array:
-                    sessions = copy.deepcopy(sessions)
+                    sessions = api_helper.copy_sessions(original_sessions)
                     api = OnlyFans.start(
                         sessions)
                     auth_count += 1
@@ -125,7 +126,7 @@ def start_datascraper():
                 subscription_array = []
                 auth_count = -1
                 for json_auth in json_auth_array:
-                    sessions = copy.deepcopy(sessions)
+                    sessions = api_helper.copy_sessions(original_sessions)
                     api = StarsAVN.start(
                         sessions)
                     auth_count += 1

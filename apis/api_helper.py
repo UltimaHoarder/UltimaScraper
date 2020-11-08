@@ -1,3 +1,4 @@
+import copy
 import time
 from typing import Any
 
@@ -112,8 +113,6 @@ def create_session(settings={}, custom_proxy="", test_ip=True):
     proxies = settings.proxies
     cert = settings.cert
     if not proxies:
-        for session in sessions:
-            setattr(session, "ip", "")
         return sessions
 
     def set_sessions(proxy):
@@ -155,6 +154,16 @@ def multiprocessing():
     else:
         pool = ThreadPool(max_threads)
     return pool
+
+
+def copy_sessions(original_sessions):
+    sessions = []
+    for original_session in original_sessions:
+        original_session2 = copy.deepcopy(original_session)
+        ip = getattr(original_session, "ip", "")
+        setattr(original_session2, "ip", ip)
+        sessions.append(original_session2)
+    return sessions
 
 
 def assign_session(medias, item, key_one="link", key_two="count", show_item=False, capped=False):

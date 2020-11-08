@@ -107,13 +107,14 @@ def json_request(link, session, method="GET", stream=False, json_format=True, da
 
 
 def create_session(settings={}, custom_proxy="", test_ip=True):
-    session = [requests.Session()]
+    sessions = [requests.Session()]
     settings = set_settings(settings)
     proxies = settings.proxies
     cert = settings.cert
     if not proxies:
-        setattr(session, "ip", "")
-        return session
+        for session in sessions:
+            setattr(session, "ip", "")
+        return sessions
 
     def set_sessions(proxy):
         session = requests.Session()

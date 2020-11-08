@@ -112,6 +112,7 @@ def create_session(settings={}, custom_proxy="", test_ip=True):
     proxies = settings.proxies
     cert = settings.cert
     if not proxies:
+        setattr(session, "ip", "")
         return session
 
     def set_sessions(proxy):

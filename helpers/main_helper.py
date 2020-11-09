@@ -176,7 +176,8 @@ def filter_metadata(datas):
 def import_archive(archive_path) -> Any:
     metadata = []
     if os.path.exists(archive_path):
-        metadata = json.load(open(archive_path))
+        with open(archive_path, 'r') as outfile:
+            metadata = json.load(outfile)
     return metadata
 
 

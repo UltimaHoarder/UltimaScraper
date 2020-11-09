@@ -107,6 +107,15 @@ def json_request(link, session, method="GET", stream=False, json_format=True, da
     return result
 
 
+def multiprocessing():
+    max_threads = global_settings["max_threads"]
+    if max_threads < 1:
+        pool = ThreadPool()
+    else:
+        pool = ThreadPool(max_threads)
+    return pool
+
+
 def create_session(settings={}, custom_proxy="", test_ip=True):
     sessions = [requests.Session()]
     settings = set_settings(settings)
@@ -145,15 +154,6 @@ def create_session(settings={}, custom_proxy="", test_ip=True):
             proxies2))
         sessions = [x for x in sessions if x]
     return sessions
-
-
-def multiprocessing():
-    max_threads = global_settings["max_threads"]
-    if max_threads < 1:
-        pool = ThreadPool()
-    else:
-        pool = ThreadPool(max_threads)
-    return pool
 
 
 def copy_sessions(original_sessions):

@@ -148,7 +148,6 @@ def scrape_choice(api, subscription):
     user_id = subscription.id
     post_count = subscription.postsCount
     archived_count = subscription.archivedPostsCount
-    s = subscription
     media_types = ["Images", "Videos", "Audios", "Texts"]
     if auto_choice:
         input_choice = auto_choice
@@ -268,7 +267,7 @@ def paid_content_scraper(api):
     results = []
     for paid_content in paid_contents:
         author = paid_content.get("author")
-        author = paid_content.get("fromUser",author)
+        author = paid_content.get("fromUser", author)
         subscription = create_subscription(author)
         subscription.sessions = api.sessions
         subscription.download_info["directory"] = j_directory

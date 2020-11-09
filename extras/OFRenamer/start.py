@@ -130,7 +130,7 @@ def fix_metadata(posts, json_settings, username, site_name, metadata_categories)
 
 def start(metadata_filepath, json_settings):
     if os.path.getsize(metadata_filepath) > 0:
-        metadatas = json.load(open(metadata_filepath, encoding='utf-8'))
+        metadatas = main_helper.import_archive(metadata_filepath)
         metadatas2 = prepare_metadata(metadatas).metadata
         model_path = up(up(metadata_filepath))
         username = os.path.basename(model_path)

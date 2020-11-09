@@ -174,9 +174,9 @@ def filter_metadata(datas):
 
 
 def import_archive(archive_path) -> Any:
-    metadata = []
+    metadata = {}
     if os.path.exists(archive_path):
-        with open(archive_path, 'r') as outfile:
+        with open(archive_path, 'r', encoding='utf-8') as outfile:
             metadata = json.load(outfile)
     return metadata
 
@@ -195,8 +195,8 @@ def export_archive(datas, archive_directory, json_settings, rename=True, legacy_
                 datas2 = ofrenamer.start(archive_path, json_settings)
                 if datas == datas2:
                     return
-            with open(archive_path, 'w') as outfile:
-                json.dump(datas, outfile)
+            with open(archive_path, 'w', encoding='utf-8') as outfile:
+                json.dump(datas, outfile, indent=2)
         # if export_type == "csv":
         #     archive_path = os.path.join(archive_directory+".csv")
         #     with open(archive_path, mode='w', encoding='utf-8', newline='') as csv_file:

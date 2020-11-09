@@ -592,6 +592,7 @@ def metadata_fixer(directory="", metadata_types=[], export=True):
                 continue
             for post in posts:
                 for media in post:
+                    media["media_id"] = media.get("media_id",None)
                     if "link" in media:
                         media["links"] = [media["link"]]
                         media.pop("link")

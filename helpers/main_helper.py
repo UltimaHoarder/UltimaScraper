@@ -19,6 +19,7 @@ import socket
 import psutil
 import shutil
 from multiprocessing.dummy import Pool as ThreadPool
+import ujson
 
 import requests
 from requests.adapters import HTTPAdapter
@@ -158,11 +159,17 @@ def format_media_set(media_set):
     return new_list
 
 
-def format_image(directory, timestamp):
+def format_image(filepath, timestamp):
     if os_name == "Windows":
         from win32_setctime import setctime
-        setctime(directory, timestamp)
-    os.utime(directory, (timestamp, timestamp))
+        while True:
+            try:
+                setctime(filepath, timestamp)
+            except Exception as e:
+                print(filepath)
+                continue
+            break
+    os.utime(filepath, (timestamp, timestamp))
 
 
 def filter_metadata(datas):
@@ -175,28 +182,26 @@ def filter_metadata(datas):
 
 def import_archive(archive_path) -> Any:
     metadata = {}
-    if os.path.exists(archive_path):
+    if os.path.exists(archive_path) and os.path.getsize(archive_path):
         with open(archive_path, 'r', encoding='utf-8') as outfile:
-            metadata = json.load(outfile)
+            metadata = ujson.load(outfile)
     return metadata
 
 
-def export_archive(datas, archive_directory, json_settings, rename=True, legacy_directory=""):
+def export_archive(datas, archive_path, json_settings, rename=True, legacy_directory=""):
     if os.path.exists(legacy_directory):
         shutil.rmtree(legacy_directory)
+    archive_directory = os.path.dirname(archive_path)
     if json_settings["export_metadata"]:
         export_type = json_global_settings["export_type"]
         if export_type == "json":
-            os.makedirs(os.path.dirname(archive_directory), exist_ok=True)
-            archive_path = archive_directory+".json"
-            if ".json" in archive_directory:
-                archive_path = archive_directory
+            os.makedirs(archive_directory, exist_ok=True)
             if os.path.exists(archive_path) and rename:
                 datas2 = ofrenamer.start(archive_path, json_settings)
                 if datas == datas2:
                     return
             with open(archive_path, 'w', encoding='utf-8') as outfile:
-                json.dump(datas, outfile, indent=2)
+                ujson.dump(datas, outfile, indent=2)
         # if export_type == "csv":
         #     archive_path = os.path.join(archive_directory+".csv")
         #     with open(archive_path, mode='w', encoding='utf-8', newline='') as csv_file:
@@ -474,7 +479,7 @@ def choose_option(subscription_list, auto_scrape_names):
     if names:
         print("Names: Username = username | "+subscription_list[1])
         if not auto_scrape_names:
-            value = "1"
+            value = "155"
             value = input().strip()
             if value.isdigit():
                 if value == "0":
@@ -488,7 +493,8 @@ def choose_option(subscription_list, auto_scrape_names):
             names = names[1:]
     return names
 
-def process_names(module,subscription_list,auto_scrape_names,json_auth_array,session_array,json_config,site_name_lower,site_name):
+
+def process_names(module, subscription_list, auto_scrape_names, json_auth_array, session_array, json_config, site_name_lower, site_name):
     names = choose_option(
         subscription_list, auto_scrape_names)
     if not names:
@@ -504,6 +510,19 @@ def process_names(module,subscription_list,auto_scrape_names,json_auth_array,ses
         username = parse_links(site_name_lower, name)
         result = module.start_datascraper(
             api, username, site_name)
+
+
+def process_downloads(apis, module):
+    for api in apis:
+        subscriptions = api.get_subscriptions(refresh=False)
+        for subscription in subscriptions:
+            download_info = subscription.download_info
+            if download_info:
+                module.download_media(api, subscription)
+                delete_empty_directories(
+                    download_info["model_directory"])
+                send_webhook(subscription)
+
 
 def is_me(user_api):
     if "email" in user_api:

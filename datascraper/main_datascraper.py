@@ -119,6 +119,7 @@ def start_datascraper():
                     subscription_array, "usernames")
                 x = main_helper.process_names(
                     module, subscription_list, auto_scrape_names, json_auth_array, apis, json_config, site_name_lower, site_name)
+                x = main_helper.process_downloads(apis,module)
                 print
             elif site_name_lower == "starsavn":
                 site_name = "StarsAVN"
@@ -149,15 +150,6 @@ def start_datascraper():
                     apis.append(api)
                 subscription_array = module.format_options(
                     subscription_array, "usernames")
-            for api in apis:
-                subscriptions = api.get_subscriptions(refresh=False)
-                for subscription in subscriptions:
-                    download_info = subscription.download_info
-                    if download_info:
-                        module.download_media(api, subscription)
-                        main_helper.delete_empty_directories(
-                            download_info["model_directory"])
-                        main_helper.send_webhook(subscription)
             stop_time = str(
                 int(timeit.default_timer() - archive_time) / 60)[:4]
             print('Archive Completed in ' + stop_time + ' Minutes')

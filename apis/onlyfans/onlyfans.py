@@ -88,10 +88,6 @@ class content_types:
     def __init__(self, option={}) -> None:
         class archived_types():
             Posts = []
-
-        def __iter__(self):
-            for attr, value in self.__dict__.items():
-                yield attr, value
         self.Stories = []
         self.Posts = []
         self.Archived = archived_types()

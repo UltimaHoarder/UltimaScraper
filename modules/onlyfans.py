@@ -118,6 +118,7 @@ def start_datascraper(api, identifier, site_name, choice_type=None):
         apis = [apis[value]]
     else:
         apis.pop(0)
+    metadata_locations = {}
     for item in apis:
         print("Type: "+item["api_type"])
         only_links = item["api_array"]["only_links"]
@@ -127,12 +128,13 @@ def start_datascraper(api, identifier, site_name, choice_type=None):
         api_type = item["api_type"]
         results = prepare_scraper(
             api, site_name, item)
-        print
+        metadata_locations[api_type] = results
     if any(x for x in subscription.scraped):
         subscription.download_info["directory"] = j_directory
         subscription.download_info["model_directory"] = os.path.join(
             j_directory, username)
         subscription.download_info["webhook"] = webhook
+        subscription.download_info["metadata_locations"] = metadata_locations
     print("Scrape Completed"+"\n")
     return [True, info]
 
@@ -540,12 +542,12 @@ def prepare_scraper(api, site_name, item):
             metadata_set2 = legacy_metadata_fixer(
                 legacy_metadata_directory, metadata_set2)
             main_helper.export_archive(
-                metadata_set2, archive_directory, json_settings, legacy_directory=legacy_metadata_directory)
+                metadata_set2, archive_path, json_settings, legacy_directory=legacy_metadata_directory)
         else:
             metadata_set = prepare_metadata(metadata_set).metadata
         subscription = api.get_subscription(username)
         subscription.set_scraped(api_type, metadata_set)
-    return [subscription.scraped]
+    return archive_path
 
 
 def legacy_metadata_fixer(legacy_directory, new_metadata):
@@ -592,7 +594,7 @@ def metadata_fixer(directory="", metadata_types=[], export=True):
                 continue
             for post in posts:
                 for media in post:
-                    media["media_id"] = media.get("media_id",None)
+                    media["media_id"] = media.get("media_id", None)
                     if "link" in media:
                         media["links"] = [media["link"]]
                         media.pop("link")
@@ -815,6 +817,7 @@ class download_media():
         if api:
             username = subscription.username
             download_info = subscription.download_info
+            metadata_locations = download_info["metadata_locations"]
             directory = download_info["directory"]
             for api_type, value in subscription.scraped:
                 if not value or api_type == "Texts":
@@ -822,6 +825,8 @@ class download_media():
                 if not isinstance(value, dict):
                     continue
                 for location, v in value.items():
+                    if location == "Texts":
+                        continue
                     media_set = v.valid
                     string = "Download Processing\n"
                     string += f"Name: {username} | Type: {api_type} | Count: {len(media_set)} {location} | Directory: {directory}\n"
@@ -829,6 +834,20 @@ class download_media():
                     pool = multiprocessing()
                     pool.starmap(self.download, product(
                         media_set, [api]))
+                metadata_path = metadata_locations.get(api_type)
+                if metadata_path:
+                    value = jsonpickle.encode(
+                        value, unpicklable=False)
+                    value = jsonpickle.decode(value)
+                    new_metadata = prepare_metadata(
+                        value, export=True).metadata
+                    value = jsonpickle.encode(
+                        new_metadata, unpicklable=False)
+                    value = jsonpickle.decode(value)
+                    export_archive(value, metadata_path,
+                                   json_settings, rename=False)
+                else:
+                    print
 
     def download(self, medias, api):
         return_bool = True

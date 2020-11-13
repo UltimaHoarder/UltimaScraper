@@ -112,6 +112,7 @@ def start_datascraper():
                         array = module.manage_subscriptions(api, auth_count)
                         subscription_array += array
                     if jobs["scrape_paid_content"]:
+                        pass
                         paid_contents = api.get_paid_content()
                         paid_content = module.paid_content_scraper(api)
                     apis.append(api)

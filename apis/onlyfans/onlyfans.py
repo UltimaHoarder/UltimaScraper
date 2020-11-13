@@ -662,6 +662,8 @@ class create_subscription(start):
                         else:
                             resume.append(item)
                 unmerged.append(result)
+            if "hasMore" not in result:
+                continue
             if not result["hasMore"]:
                 break
             offset += limit

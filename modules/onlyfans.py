@@ -268,6 +268,7 @@ def paid_content_scraper(api):
     paid_contents = api.get_paid_content(refresh=False)
     results = []
     for paid_content in paid_contents:
+        metadata_locations = {}
         author = paid_content.get("author")
         author = paid_content.get("fromUser", author)
         subscription = create_subscription(author)
@@ -277,35 +278,35 @@ def paid_content_scraper(api):
         model_directory = os.path.join(j_directory, username)
         metadata_folder = os.path.join(model_directory, "Metadata")
         api_type = paid_content["responseType"].capitalize()+"s"
+        subscription.download_info["metadata_locations"] = j_directory
         metadata_path = os.path.join(
             metadata_folder, api_type+".json")
+        metadata_locations[api_type] = metadata_path
+        subscription.download_info["metadata_locations"] = metadata_locations
         site_name = "OnlyFans"
         media_type = format_media_types()
         formatted_directories = main_helper.format_directories(
             j_directory, site_name, username, media_type, api_type)
-        new_item = media_scraper([paid_content], api,
-                                 formatted_directories, username, api_type)
-        for directory in new_item["directories"]:
+        metadata_set = media_scraper([paid_content], api,
+                                     formatted_directories, username, api_type)
+        for directory in metadata_set["directories"]:
             os.makedirs(directory, exist_ok=True)
-        download_metadata = prepare_metadata(new_item).metadata
-        subscription.set_scraped(api_type, download_metadata)
-        metadata = prepare_metadata(new_item, export=True).metadata
-        metadata = jsonpickle.encode(
-            metadata, unpicklable=False)
-        new_metadata = jsonpickle.decode(metadata)
         old_metadata = import_archive(metadata_path)
         if old_metadata:
             old_metadata = metadata_fixer(directory=metadata_path.replace(
                 ".json", ""), metadata_types=old_metadata)
-            unrefined = compare_metadata(
-                new_metadata, old_metadata, new_chain=True)
-            unrefined = prepare_metadata(unrefined, export=True).metadata
-            new_metadata = jsonpickle.encode(
-                unrefined, unpicklable=False)
-            new_metadata = jsonpickle.decode(new_metadata)
-            results.append(new_metadata)
+            old_metadata_set = prepare_metadata(old_metadata).metadata
+            old_metadata_set2 = jsonpickle.encode(
+                old_metadata_set, unpicklable=False)
+            old_metadata_set2 = jsonpickle.decode(old_metadata_set2)
+            metadata_set = compare_metadata(metadata_set, old_metadata_set2)
+            metadata_set = prepare_metadata(metadata_set).metadata
+            metadata_set2 = jsonpickle.encode(metadata_set, unpicklable=False)
+            metadata_set2 = jsonpickle.decode(metadata_set2)
+            metadata_set2 = main_helper.filter_metadata(metadata_set2)
+        subscription.set_scraped(api_type, metadata_set)
         os.makedirs(model_directory, exist_ok=True)
-        a = export_archive(new_metadata, metadata_path, json_settings)
+        a = export_archive(metadata_set2, metadata_path, json_settings)
         x = download_media(api, subscription)
     return results
 

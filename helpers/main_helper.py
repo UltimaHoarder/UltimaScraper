@@ -578,9 +578,9 @@ def send_webhook(item):
             message = prepare_webhooks.discord()
             embed = message.embed()
             embed.title = f"Downloaded: {item.username}"
-            field = embed.add_field("username", item.username)
-            field = embed.add_field("post_count", item.postsCount)
-            field = embed.add_field("link", item.link)
+            embed.add_field("username", item.username)
+            embed.add_field("post_count", item.postsCount)
+            embed.add_field("link", item.link)
             embed.image.url = item.avatar
             message.embeds.append(embed)
             message = json.loads(json.dumps(

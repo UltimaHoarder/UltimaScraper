@@ -292,22 +292,22 @@ def paid_content_scraper(api):
         for directory in metadata_set["directories"]:
             os.makedirs(directory, exist_ok=True)
         old_metadata = import_archive(metadata_path)
-        if old_metadata:
-            old_metadata = metadata_fixer(directory=metadata_path.replace(
-                ".json", ""), metadata_types=old_metadata)
-            old_metadata_set = prepare_metadata(old_metadata).metadata
-            old_metadata_set2 = jsonpickle.encode(
-                old_metadata_set, unpicklable=False)
-            old_metadata_set2 = jsonpickle.decode(old_metadata_set2)
-            metadata_set = compare_metadata(metadata_set, old_metadata_set2)
-            metadata_set = prepare_metadata(metadata_set).metadata
-            metadata_set2 = jsonpickle.encode(metadata_set, unpicklable=False)
-            metadata_set2 = jsonpickle.decode(metadata_set2)
-            metadata_set2 = main_helper.filter_metadata(metadata_set2)
+        old_metadata = metadata_fixer(directory=metadata_path.replace(
+            ".json", ""), metadata_types=old_metadata)
+        old_metadata_set = prepare_metadata(old_metadata).metadata
+        old_metadata_set2 = jsonpickle.encode(
+            old_metadata_set, unpicklable=False)
+        old_metadata_set2 = jsonpickle.decode(old_metadata_set2)
+        metadata_set = compare_metadata(metadata_set, old_metadata_set2)
+        metadata_set = prepare_metadata(metadata_set).metadata
+        metadata_set2 = jsonpickle.encode(metadata_set, unpicklable=False)
+        metadata_set2 = jsonpickle.decode(metadata_set2)
+        metadata_set2 = main_helper.filter_metadata(metadata_set2)
         subscription.set_scraped(api_type, metadata_set)
         os.makedirs(model_directory, exist_ok=True)
-        a = export_archive(metadata_set2, metadata_path, json_settings)
-        x = download_media(api, subscription)
+        if export_metadata:
+            export_archive(metadata_set2, metadata_path, json_settings)
+        download_media(api, subscription)
     return results
 
 
@@ -846,8 +846,9 @@ class download_media():
                     value = jsonpickle.encode(
                         new_metadata, unpicklable=False)
                     value = jsonpickle.decode(value)
-                    export_archive(value, metadata_path,
-                                   json_settings, rename=False)
+                    if export_metadata:
+                        export_archive(value, metadata_path,
+                                       json_settings, rename=False)
                 else:
                     print
 

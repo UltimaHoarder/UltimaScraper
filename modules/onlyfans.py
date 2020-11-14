@@ -10,6 +10,7 @@ import json
 import jsonpickle
 from deepdiff import DeepHash
 import html
+import shutil
 
 import requests
 
@@ -519,6 +520,7 @@ def prepare_scraper(api, site_name, item):
                 results, [api], [formatted_directories], [username], [api_type], [parent_type]))
             unrefined_set.append(unrefined_result)
         unrefined_set = list(chain(*unrefined_set))
+        print
     else:
         unrefined_set = pool.starmap(media_scraper, product(
             master_set2, [api], [formatted_directories], [username], [api_type], [parent_type]))
@@ -689,6 +691,21 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                 x = value.split(os.sep)
                 x.insert(1, parent_type)
                 sorted_directories[key] = os.path.join(*x)
+                if parent_type == "Posts":
+                    old_archive = os.path.join(model_directory, value)
+                    new_archive = os.path.join(
+                        model_directory, sorted_directories[key])
+                    if os.path.exists(old_archive):
+                        file_list = os.listdir(old_archive)
+                        if file_list:
+                            for file_name in file_list:
+                                old_filepath = os.path.join(
+                                    old_archive, file_name)
+                                new_filepath = os.path.join(
+                                    new_archive, file_name)
+                                shutil.move(old_filepath, new_filepath)
+                                print
+                            print
                 print
         seperator = " | "
         print(
@@ -797,7 +814,6 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                 file_directory = os.path.dirname(file_path)
                 new_dict["directory"] = os.path.join(file_directory)
                 new_dict["filename"] = os.path.basename(file_path)
-                new_dict["size"] = size
                 new_dict["session"] = session
                 if size == 0:
                     media_set2["invalid"].append(new_dict)

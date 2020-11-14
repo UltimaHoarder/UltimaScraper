@@ -479,7 +479,7 @@ def choose_option(subscription_list, auto_scrape_names):
     if names:
         print("Names: Username = username | "+subscription_list[1])
         if not auto_scrape_names:
-            value = "155"
+            value = "157"
             value = input().strip()
             if value.isdigit():
                 if value == "0":

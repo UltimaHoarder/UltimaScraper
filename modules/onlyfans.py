@@ -643,10 +643,11 @@ def compare_metadata(new_metadata, old_metadata, new_chain=False):
                     if not found:
                         new_valid.append(old_item)
                 else:
-                    if any(d["media_id"] == old_item["media_id"] for d in new_valid):
-                        print
-                        pass
-                    else:
+                    for x in new_valid:
+                        if old_item["media_id"] == x["media_id"]:
+                            x["downloaded"] = old_item["downloaded"]
+                            print
+                    if not any(d["media_id"] == old_item["media_id"] for d in new_valid):
                         new_valid.append(old_item)
         new_valid.sort(key=lambda x: x["post_id"], reverse=True)
         new_metadata[key]["valid"] = new_valid

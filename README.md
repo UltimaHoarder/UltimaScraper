@@ -49,7 +49,6 @@ If you're using 2FA or have these cookies:
 
 Optional change:
 
-- `{"fp":"your_fp"}`
 - `{"app-token":"your_token"}`
 
 Only enter in cookies that reflect your OnlyFans account otherwise, you'll get auth errors.

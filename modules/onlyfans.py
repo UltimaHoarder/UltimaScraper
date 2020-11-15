@@ -667,7 +667,7 @@ def compare_metadata(new_metadata, old_metadata, new_chain=False):
                     for x in new_valid:
                         if old_item["media_id"] == x["media_id"]:
                             x["downloaded"] = old_item["downloaded"]
-                            print
+                            x["size"] = old_item["size"]
                     if not any(d["media_id"] == old_item["media_id"] for d in new_valid):
                         new_valid.append(old_item)
         new_valid.sort(key=lambda x: x["post_id"], reverse=True)

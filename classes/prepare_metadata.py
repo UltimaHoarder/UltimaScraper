@@ -7,6 +7,8 @@ class prepare_metadata(object):
         def valid_invalid(valid, invalid, export):
             if all(isinstance(x, list) for x in valid):
                 valid = list(chain.from_iterable(valid))
+            if all(isinstance(x, list) for x in invalid):
+                invalid = list(chain.from_iterable(invalid))
             valid = [self.media(x, export) for x in valid]
             valid = [list(g) for k, g in groupby(
                 valid, key=lambda x: x.post_id)]

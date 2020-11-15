@@ -612,8 +612,6 @@ def metadata_fixer(directory="", metadata_types=[], export=True):
     new_format_copied = copy.deepcopy(new_format)
     for key, value in new_format.items():
         for key2, posts in value.items():
-            if key2 != "valid":
-                continue
             for post in posts:
                 for media in post:
                     media["media_id"] = media.get("media_id", None)

@@ -698,6 +698,7 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                     if os.path.exists(old_archive):
                         file_list = os.listdir(old_archive)
                         if file_list:
+                            os.makedirs(new_archive,exist_ok=True)
                             for file_name in file_list:
                                 old_filepath = os.path.join(
                                     old_archive, file_name)

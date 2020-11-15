@@ -520,7 +520,26 @@ def prepare_scraper(api, site_name, item):
                 results, [api], [formatted_directories], [username], [api_type], [parent_type]))
             unrefined_set.append(unrefined_result)
         unrefined_set = list(chain(*unrefined_set))
-        print
+        for location in formatted_directories["locations"]:
+            sorted_directories = copy.copy(location["sorted_directories"])
+            for key, value in sorted_directories.items():
+                x = value.split(os.sep)
+                x.insert(1, parent_type)
+                sorted_directories[key] = os.path.join(*x)
+                if parent_type == "Posts":
+                    old_archive = os.path.join(model_directory, value)
+                    new_archive = os.path.join(
+                        model_directory, sorted_directories[key])
+                    if os.path.exists(old_archive):
+                        file_list = os.listdir(old_archive)
+                        if file_list:
+                            os.makedirs(new_archive, exist_ok=True)
+                            for file_name in file_list:
+                                old_filepath = os.path.join(
+                                    old_archive, file_name)
+                                new_filepath = os.path.join(
+                                    new_archive, file_name)
+                                shutil.move(old_filepath, new_filepath)
     else:
         unrefined_set = pool.starmap(media_scraper, product(
             master_set2, [api], [formatted_directories], [username], [api_type], [parent_type]))
@@ -691,23 +710,6 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                 x = value.split(os.sep)
                 x.insert(1, parent_type)
                 sorted_directories[key] = os.path.join(*x)
-                if parent_type == "Posts":
-                    old_archive = os.path.join(model_directory, value)
-                    new_archive = os.path.join(
-                        model_directory, sorted_directories[key])
-                    if os.path.exists(old_archive):
-                        file_list = os.listdir(old_archive)
-                        if file_list:
-                            os.makedirs(new_archive,exist_ok=True)
-                            for file_name in file_list:
-                                old_filepath = os.path.join(
-                                    old_archive, file_name)
-                                new_filepath = os.path.join(
-                                    new_archive, file_name)
-                                shutil.move(old_filepath, new_filepath)
-                                print
-                            print
-                print
         seperator = " | "
         print(
             f"Scraping [{seperator.join(alt_media_type)}]. Should take less than a minute.")

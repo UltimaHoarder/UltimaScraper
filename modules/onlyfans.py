@@ -84,13 +84,11 @@ def account_setup(api):
         metadata_filepath = os.path.join(
             profile_metadata_directory, "Mass Messages.json")
         print
-        if auth["isPerformer"] or True:
-            print
+        if auth["isPerformer"]:
             imported = import_archive(metadata_filepath)
             mass_messages = api.get_mass_messages(resume=imported)
             export_archive(mass_messages, metadata_filepath,
                            json_settings)
-            print
         # chats = api.get_chats()
         subscriptions = api.get_subscriptions()
         status = True
@@ -574,8 +572,8 @@ def prepare_scraper(api, site_name, item):
         unrefined_set = subscription.get_messages()
         if "list" in unrefined_set:
             unrefined_set = unrefined_set["list"]
-        if subscription.is_me:
-            mass_messages = authed["mass_messages"]
+        mass_messages = authed.get("mass_messages",None)
+        if mass_messages:
             unrefined_set2 = process_mass_message(api,
                                                   subscription, metadata_directory, mass_messages)
             unrefined_set += unrefined_set2

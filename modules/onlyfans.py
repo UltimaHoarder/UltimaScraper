@@ -572,7 +572,7 @@ def prepare_scraper(api, site_name, item):
         unrefined_set = subscription.get_messages()
         if "list" in unrefined_set:
             unrefined_set = unrefined_set["list"]
-        mass_messages = authed.get("mass_messages",None)
+        mass_messages = authed.get("mass_messages", None)
         if mass_messages:
             unrefined_set2 = process_mass_message(api,
                                                   subscription, metadata_directory, mass_messages)
@@ -923,29 +923,33 @@ class download_media():
         if api:
             username = subscription.username
             download_info = subscription.download_info
-            metadata_locations = download_info["metadata_locations"]
-            directory = download_info["directory"]
-            for api_type, value in subscription.scraped:
-                if not value or api_type == "Texts":
-                    continue
-                for location, v in value:
-                    if location == "Texts":
+            if download_info:
+                self.downloaded = True
+                metadata_locations = download_info["metadata_locations"]
+                directory = download_info["directory"]
+                for api_type, value in subscription.scraped:
+                    if not value or api_type == "Texts":
                         continue
-                    media_set = v.valid
-                    string = "Download Processing\n"
-                    string += f"Name: {username} | Type: {api_type} | Count: {len(media_set)} {location} | Directory: {directory}\n"
-                    print(string)
-                    pool = multiprocessing()
-                    pool.starmap(self.download, product(
-                        media_set, [api]))
-                metadata_path = metadata_locations.get(api_type)
-                if metadata_path:
-                    value = value.convert()
-                    if export_metadata:
-                        export_archive(value, metadata_path,
-                                       json_settings)
-                else:
-                    print
+                    for location, v in value:
+                        if location == "Texts":
+                            continue
+                        media_set = v.valid
+                        string = "Download Processing\n"
+                        string += f"Name: {username} | Type: {api_type} | Count: {len(media_set)} {location} | Directory: {directory}\n"
+                        print(string)
+                        pool = multiprocessing()
+                        pool.starmap(self.download, product(
+                            media_set, [api]))
+                    metadata_path = metadata_locations.get(api_type)
+                    if metadata_path:
+                        value = value.convert()
+                        if export_metadata:
+                            export_archive(value, metadata_path,
+                                           json_settings)
+                    else:
+                        print
+            else:
+                self.downloaded = False
 
     def download(self, medias, api):
         return_bool = True

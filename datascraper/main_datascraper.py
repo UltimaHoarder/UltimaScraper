@@ -41,7 +41,8 @@ def start_datascraper():
     global_user_agent = json_settings['global_user_agent']
     domain = json_settings["auto_site_choice"]
     path = os.path.join('.settings', 'extra_auth.json')
-    extra_auth_config, extra_auth_config2 = main_helper.get_config(path)
+    # extra_auth_config, extra_auth_config2 = main_helper.get_config(path)
+    extra_auth_config = {}
     exit_on_completion = json_settings['exit_on_completion']
     loop_timeout = json_settings['loop_timeout']
     main_helper.assign_vars(json_config)
@@ -119,7 +120,7 @@ def start_datascraper():
                     subscription_array, "usernames")
                 x = main_helper.process_names(
                     module, subscription_list, auto_scrape_names, json_auth_array, apis, json_config, site_name_lower, site_name)
-                x = main_helper.process_downloads(apis,module)
+                x = main_helper.process_downloads(apis, module)
                 print
             elif site_name_lower == "starsavn":
                 site_name = "StarsAVN"
@@ -146,6 +147,7 @@ def start_datascraper():
                         array = module.manage_subscriptions(api, auth_count)
                         subscription_array += array
                     if jobs["scrape_paid_content"]:
+                        paid_contents = api.get_paid_content()
                         paid_content = module.paid_content_scraper(api)
                     apis.append(api)
                 subscription_array = module.format_options(

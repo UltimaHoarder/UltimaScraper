@@ -1,6 +1,6 @@
 import hashlib
-from apis.onlyfans.onlyfans import create_subscription
-from classes.prepare_metadata import prepare_metadata
+from apis.onlyfans.onlyfans import create_subscription, media_types
+from classes.prepare_metadata import format_types, prepare_metadata, prepare_reformat
 import os
 from datetime import datetime, timedelta
 from itertools import chain, groupby, product
@@ -11,6 +11,7 @@ import jsonpickle
 from deepdiff import DeepHash
 import html
 import shutil
+import extras.OFRenamer.start as ofrenamer
 
 import requests
 
@@ -18,7 +19,7 @@ import helpers.main_helper as main_helper
 import classes.prepare_download as prepare_download
 from types import SimpleNamespace
 
-from helpers.main_helper import import_archive, export_archive
+from helpers.main_helper import import_archive, export_archive, remove_mandatory_files
 
 multiprocessing = main_helper.multiprocessing
 log_download = main_helper.setup_logger('downloads', 'downloads.log')
@@ -29,15 +30,15 @@ max_threads = -1
 json_settings = None
 auto_choice = None
 j_directory = ""
+metadata_directory_format = ""
 file_directory_format = None
-file_name_format = None
+filename_format = None
 overwrite_files = None
 date_format = None
 ignored_keywords = None
 ignore_type = None
 export_metadata = None
 delete_legacy_metadata = None
-sort_free_paid_posts = None
 blacklist_name = None
 webhook = None
 maximum_length = None
@@ -45,7 +46,7 @@ app_token = None
 
 
 def assign_vars(json_auth, config, site_settings, site_name):
-    global json_config, json_global_settings, max_threads, json_settings, auto_choice, j_directory, overwrite_files, date_format, file_directory_format, file_name_format, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, webhook, maximum_length, app_token
+    global json_config, json_global_settings, max_threads, json_settings, auto_choice, j_directory, metadata_directory_format, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, blacklist_name, webhook, maximum_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -53,16 +54,16 @@ def assign_vars(json_auth, config, site_settings, site_name):
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
     j_directory = main_helper.get_directory(
-        json_settings['download_paths'], site_name)
+        json_settings['download_directories'], site_name)
+    metadata_directory_format = json_settings["metadata_directory_format"]
     file_directory_format = json_settings["file_directory_format"]
-    file_name_format = json_settings["file_name_format"]
+    filename_format = json_settings["filename_format"]
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
     ignored_keywords = json_settings["ignored_keywords"]
     ignore_type = json_settings["ignore_type"]
     export_metadata = json_settings["export_metadata"]
     delete_legacy_metadata = json_settings["delete_legacy_metadata"]
-    sort_free_paid_posts = json_settings["sort_free_paid_posts"]
     blacklist_name = json_settings["blacklist_name"]
     webhook = json_settings["webhook"]
     maximum_length = 255
@@ -75,6 +76,21 @@ def account_setup(api):
     status = False
     auth = api.login()
     if auth:
+        profile_directory = json_global_settings["profile_directories"][0]
+        profile_directory = os.path.abspath(profile_directory)
+        profile_directory = os.path.join(profile_directory, auth["username"])
+        profile_metadata_directory = os.path.join(
+            profile_directory, "Metadata")
+        metadata_filepath = os.path.join(
+            profile_metadata_directory, "Mass Messages.json")
+        print
+        if auth["isPerformer"] or True:
+            print
+            imported = import_archive(metadata_filepath)
+            mass_messages = api.get_mass_messages(resume=imported)
+            export_archive(mass_messages, metadata_filepath,
+                           json_settings)
+            print
         # chats = api.get_chats()
         subscriptions = api.get_subscriptions()
         status = True
@@ -93,15 +109,6 @@ def start_datascraper(api, identifier, site_name, choice_type=None):
     avatar = subscription.avatar
     username = subscription.username
     link = subscription.link
-    formatted_directories = main_helper.format_directories(
-        j_directory, site_name, username)
-    metadata_directory = formatted_directories["metadata_directory"]
-    archive_path = os.path.join(metadata_directory, "Mass Messages.json")
-    if subscription.is_me:
-        imported = import_archive(archive_path)
-        mass_messages = api.get_mass_messages(resume=imported)
-        export_archive(mass_messages, archive_path,
-                       json_settings, rename=False)
     info = {}
     info["download"] = prepare_download.start(
         username=username, link=link, image_url=avatar, post_count=post_count, webhook=webhook)
@@ -129,13 +136,6 @@ def start_datascraper(api, identifier, site_name, choice_type=None):
         api_type = item["api_type"]
         results = prepare_scraper(
             api, site_name, item)
-        metadata_locations[api_type] = results
-    if any(x for x in subscription.scraped):
-        subscription.download_info["directory"] = j_directory
-        subscription.download_info["model_directory"] = os.path.join(
-            j_directory, username)
-        subscription.download_info["webhook"] = webhook
-        subscription.download_info["metadata_locations"] = metadata_locations
     print("Scrape Completed"+"\n")
     return [True, info]
 
@@ -186,6 +186,7 @@ def scrape_choice(api, subscription):
     array = [u_array, s_array, p_array, a_array, m_array]
     # array = [u_array, s_array, p_array, a_array, m_array]
     # array = [s_array, h_array, p_array, a_array, m_array]
+    # array = [s_array]
     # array = [u_array]
     # array = [p_array]
     # array = [a_array]
@@ -232,21 +233,36 @@ def scrape_choice(api, subscription):
 
 
 # Downloads the model's avatar and header
-def profile_scraper(api, directory, username):
+def profile_scraper(api, site_name, api_type, username, text_length, base_directory):
+    reformats = {}
+    reformats["metadata_directory_format"] = json_settings["metadata_directory_format"]
+    reformats["file_directory_format"] = json_settings["file_directory_format"]
+    reformats["file_directory_format"] = reformats["file_directory_format"].replace(
+        "{value}", "")
+    reformats["filename_format"] = json_settings["filename_format"]
+    option = {}
+    option["site_name"] = site_name
+    option["api_type"] = api_type
+    option["username"] = username
+    option["date_format"] = date_format
+    option["maximum_length"] = text_length
+    option["directory"] = base_directory
+    a, b, c = prepare_reformat(option, keep_vars=True).reformat(reformats)
+    print
     y = api.get_subscription(username)
-    q = []
+    override_media_types = []
     avatar = y.avatar
     header = y.header
     if avatar:
-        q.append(["Avatars", avatar])
+        override_media_types.append(["Avatars", avatar])
     if header:
-        q.append(["Headers", header])
-    for x in q:
+        override_media_types.append(["Headers", header])
+    for override_media_type in override_media_types:
         new_dict = dict()
-        media_type = x[0]
-        media_link = x[1]
+        media_type = override_media_type[0]
+        media_link = override_media_type[1]
         new_dict["links"] = [media_link]
-        directory2 = os.path.join(directory, username, "Profile", media_type)
+        directory2 = os.path.join(b, media_type)
         os.makedirs(directory2, exist_ok=True)
         download_path = os.path.join(
             directory2, media_link.split("/")[-2]+".jpg")
@@ -277,37 +293,27 @@ def paid_content_scraper(api):
         subscription.download_info["directory"] = j_directory
         username = subscription.username
         model_directory = os.path.join(j_directory, username)
-        metadata_folder = os.path.join(model_directory, "Metadata")
         api_type = paid_content["responseType"].capitalize()+"s"
         subscription.download_info["metadata_locations"] = j_directory
-        metadata_path = os.path.join(
-            metadata_folder, api_type+".json")
-        metadata_locations[api_type] = metadata_path
         subscription.download_info["metadata_locations"] = metadata_locations
         site_name = "OnlyFans"
         media_type = format_media_types()
-        formatted_directories = main_helper.format_directories(
-            j_directory, site_name, username, media_type, api_type)
-        metadata_set = media_scraper([paid_content], api,
+        formatted_directories = format_directories(
+            j_directory, site_name, username, metadata_directory_format, media_type, api_type)
+        metadata_directory = formatted_directories["metadata_directory"]
+        metadata_path = os.path.join(
+            metadata_directory, api_type+".json")
+        metadata_locations[api_type] = metadata_path
+        new_metadata = media_scraper([paid_content], api,
                                      formatted_directories, username, api_type)
-        for directory in metadata_set["directories"]:
+        for directory in new_metadata["directories"]:
             os.makedirs(directory, exist_ok=True)
-        old_metadata = import_archive(metadata_path)
-        old_metadata = metadata_fixer(directory=metadata_path.replace(
-            ".json", ""), metadata_types=old_metadata)
-        old_metadata_set = prepare_metadata(old_metadata).metadata
-        old_metadata_set2 = jsonpickle.encode(
-            old_metadata_set, unpicklable=False)
-        old_metadata_set2 = jsonpickle.decode(old_metadata_set2)
-        metadata_set = compare_metadata(metadata_set, old_metadata_set2)
-        metadata_set = prepare_metadata(metadata_set).metadata
-        metadata_set2 = jsonpickle.encode(metadata_set, unpicklable=False)
-        metadata_set2 = jsonpickle.decode(metadata_set2)
-        metadata_set2 = main_helper.filter_metadata(metadata_set2)
-        subscription.set_scraped(api_type, metadata_set)
-        os.makedirs(model_directory, exist_ok=True)
+        api_path = os.path.join(api_type, "")
+        new_metadata_object = process_metadata(
+            api, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
+        new_metadata_set = new_metadata_object.convert()
         if export_metadata:
-            export_archive(metadata_set2, metadata_path, json_settings)
+            export_archive(new_metadata_set, metadata_path, json_settings)
         download_media(api, subscription)
     return results
 
@@ -343,8 +349,13 @@ def process_mass_message(api, subscription, metadata_directory, mass_messages):
     encoded = f"{session.ip}{salt}"
     encoded = encoded.encode('utf-8')
     hash = hashlib.md5(encoded).hexdigest()
-    mass_message_path = os.path.join(metadata_directory, "Mass Messages.json")
-    chats_path = os.path.join(metadata_directory, "Chats.json")
+    profile_directory = json_global_settings["profile_directories"][0]
+    profile_directory = os.path.abspath(profile_directory)
+    profile_directory = os.path.join(profile_directory, subscription.username)
+    profile_metadata_directory = os.path.join(profile_directory, "Metadata")
+    mass_message_path = os.path.join(
+        profile_metadata_directory, "Mass Messages.json")
+    chats_path = os.path.join(profile_metadata_directory, "Chats.json")
     if os.path.exists(chats_path):
         chats = import_archive(chats_path)
     date_object = datetime.today()
@@ -427,8 +438,7 @@ def process_mass_message(api, subscription, metadata_directory, mass_messages):
             print
         if not mass_found:
             mass_message["status"] = False
-    main_helper.export_archive(
-        chats, chats_path, json_settings, rename=False)
+    export_archive(chats, chats_path, json_settings)
     for mass_message in mass_messages:
         found = mass_message["found"]
         if found and found["media"]:
@@ -452,8 +462,73 @@ def process_mass_message(api, subscription, metadata_directory, mass_messages):
         print
     print
     main_helper.export_archive(
-        mass_messages, mass_message_path, json_settings, rename=False)
+        mass_messages, mass_message_path, json_settings)
     return global_found
+
+
+def process_metadata(api, new_metadata, formatted_directories, subscription, api_type, api_path, archive_path, site_name):
+    new_metadata_object = prepare_metadata(
+        new_metadata, api=api).metadata
+    old_metadata_set = import_archive(archive_path)
+    old_metadata_object = prepare_metadata(
+        old_metadata_set, api=api).metadata
+    new_metadata_object = compare_metadata(
+        new_metadata_object, old_metadata_object)
+    legacy_metadata_object = legacy_metadata_fixer(
+        formatted_directories, api)
+    if legacy_metadata_object:
+        new_metadata_object = compare_metadata(
+            new_metadata_object, legacy_metadata_object)
+    if not subscription.download_info:
+        subscription.download_info["directory"] = j_directory
+        subscription.download_info["model_directory"] = os.path.join(
+            j_directory, subscription.username)
+        subscription.download_info["webhook"] = webhook
+        subscription.download_info["metadata_locations"] = {}
+    subscription.download_info["metadata_locations"][api_type] = archive_path
+    subscription.set_scraped(api_type, new_metadata_object)
+    new_metadata_object = ofrenamer.start(
+        subscription, api_type, api_path, site_name, json_settings)
+    subscription.set_scraped(api_type, new_metadata_object)
+    return new_metadata_object
+
+
+def format_directories(directory, site_name, username, unformatted, locations=[], api_type="") -> dict:
+    x = {}
+    option = {}
+    option["site_name"] = site_name
+    option["username"] = username
+    option["directory"] = directory
+    option["postedAt"] = datetime.today()
+    option["date_format"] = date_format
+    option["maximum_length"] = maximum_length
+    prepared_format = prepare_reformat(option)
+    legacy_model_directory = x["legacy_model_directory"] = os.path.join(
+        directory, site_name, username)
+    x["legacy_metadatas"] = {}
+    x["legacy_metadatas"]["legacy_metadata"] = os.path.join(
+        legacy_model_directory, api_type, "Metadata")
+    x["legacy_metadatas"]["legacy_metadata2"] = os.path.join(
+        legacy_model_directory, "Metadata")
+    x["metadata_directory"] = main_helper.reformat(
+        prepared_format, unformatted)
+    x["download_directory"] = directory
+    x["locations"] = []
+    for location in locations:
+        directories = {}
+        cats = ["Unsorted", "Free", "Paid"]
+        for cat in cats:
+            cat2 = cat
+            if "Unsorted" in cat2:
+                cat2 = ""
+            path = os.path.join(api_type, cat2, location[0])
+            directories[cat.lower()] = path
+        y = {}
+        y["sorted_directories"] = directories
+        y["media_type"] = location[0]
+        y["alt_media_type"] = location[1]
+        x["locations"].append(y)
+    return x
 # Prepares the API links to be scraped
 
 
@@ -464,7 +539,7 @@ def prepare_scraper(api, site_name, item):
     api_array = item["api_array"]
     link = api_array["api_link"]
     subscription = api_array["subscription"]
-    locations = api_array["media_types"]
+    media_type = api_array["media_types"]
     username = api_array["username"]
     directory = api_array["directory"]
     api_count = api_array["post_count"]
@@ -472,18 +547,15 @@ def prepare_scraper(api, site_name, item):
     media_set = []
     metadata_set = []
     pool = multiprocessing()
-    formatted_directories = main_helper.format_directories(
-        j_directory, site_name, username, locations, api_type)
-    model_directory = formatted_directories["model_directory"]
-    api_directory = formatted_directories["api_directory"]
+    formatted_directories = format_directories(
+        j_directory, site_name, username, metadata_directory_format, media_type, api_type)
+    legacy_model_directory = formatted_directories["legacy_model_directory"]
     metadata_directory = formatted_directories["metadata_directory"]
-    archive_directory = os.path.join(metadata_directory, api_type)
-    archive_path = archive_directory+".json"
-    imported = import_archive(archive_path)
-    legacy_metadata_directory = os.path.join(api_directory, "Metadata")
+    download_directory = formatted_directories["download_directory"]
     if api_type == "Profile":
-        profile_scraper(api, directory, username)
-        return
+        profile_scraper(api, site_name, api_type, username,
+                        maximum_length, download_directory)
+        return True
     if api_type == "Stories":
         master_set = subscription.get_stories()
         highlights = subscription.get_highlights()
@@ -520,156 +592,149 @@ def prepare_scraper(api, site_name, item):
                 results, [api], [formatted_directories], [username], [api_type], [parent_type]))
             unrefined_set.append(unrefined_result)
         unrefined_set = list(chain(*unrefined_set))
-        for location in formatted_directories["locations"]:
-            sorted_directories = copy.copy(location["sorted_directories"])
-            for key, value in sorted_directories.items():
-                x = value.split(os.sep)
-                x.insert(1, parent_type)
-                sorted_directories[key] = os.path.join(*x)
-                if parent_type == "Posts":
-                    old_archive = os.path.join(model_directory, value)
-                    new_archive = os.path.join(
-                        model_directory, sorted_directories[key])
-                    if os.path.exists(old_archive):
-                        file_list = os.listdir(old_archive)
-                        if file_list:
-                            os.makedirs(new_archive, exist_ok=True)
-                            for file_name in file_list:
-                                old_filepath = os.path.join(
-                                    old_archive, file_name)
-                                new_filepath = os.path.join(
-                                    new_archive, file_name)
-                                shutil.move(old_filepath, new_filepath)
     else:
         unrefined_set = pool.starmap(media_scraper, product(
             master_set2, [api], [formatted_directories], [username], [api_type], [parent_type]))
         unrefined_set = [x for x in unrefined_set]
-    metadata_set = main_helper.format_media_set(unrefined_set)
-    if not metadata_set:
+    new_metadata = main_helper.format_media_set(unrefined_set)
+    if not new_metadata:
         print("No "+api_type+" Found.")
         delattr(subscription.scraped, api_type)
-    if metadata_set:
+    if new_metadata:
+        metadata_path = os.path.join(
+            metadata_directory, api_type+".json")
+        api_path = os.path.join(api_type, parent_type)
+        new_metadata_object = process_metadata(
+            api, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
+        new_metadata_set = new_metadata_object.convert()
         if export_metadata:
-            os.makedirs(metadata_directory, exist_ok=True)
-            old_metadata = metadata_fixer(archive_directory)
-            old_metadata_set = prepare_metadata(old_metadata).metadata
-            old_metadata_set2 = jsonpickle.encode(
-                old_metadata_set, unpicklable=False)
-            old_metadata_set2 = jsonpickle.decode(old_metadata_set2)
-            metadata_set = compare_metadata(metadata_set, old_metadata_set2)
-            metadata_set = prepare_metadata(metadata_set).metadata
-            metadata_set2 = jsonpickle.encode(metadata_set, unpicklable=False)
-            metadata_set2 = jsonpickle.decode(metadata_set2)
-            metadata_set2 = main_helper.filter_metadata(metadata_set2)
-            metadata_set2 = legacy_metadata_fixer(
-                legacy_metadata_directory, metadata_set2)
-            main_helper.export_archive(
-                metadata_set2, archive_path, json_settings, legacy_directory=legacy_metadata_directory)
-        else:
-            metadata_set = prepare_metadata(metadata_set).metadata
-        subscription = api.get_subscription(username)
-        subscription.set_scraped(api_type, metadata_set)
-    return archive_path
+            export_archive(new_metadata_set, metadata_path, json_settings)
+    return True
 
 
-def legacy_metadata_fixer(legacy_directory, new_metadata):
-    if os.path.exists(legacy_directory):
-        folders = os.listdir(legacy_directory)
-        new_format = []
-        for folder in (x for x in folders if "desktop.ini" not in folders):
-            legacy_metadata_path = os.path.join(legacy_directory, folder)
-            metadata_type = import_archive(legacy_metadata_path)
-            valid = metadata_type["valid"]
-            valid.sort(key=lambda x: x["post_id"], reverse=False)
-            metadata_type["valid"] = [list(g) for k, g in groupby(
-                valid, key=lambda x: x["post_id"])]
-            new_format.append(metadata_type)
-        old_metadata = metadata_fixer(metadata_types=new_format, export=False)
-        old_metadata = prepare_metadata(old_metadata).metadata
-        old_metadata = jsonpickle.encode(old_metadata, unpicklable=False)
-        old_metadata = jsonpickle.decode(old_metadata)
-        new_metadata = compare_metadata(
-            new_metadata, old_metadata, new_chain=True)
-        new_metadata = prepare_metadata(new_metadata).metadata
-        new_metadata = jsonpickle.encode(new_metadata, unpicklable=False)
-        new_metadata = jsonpickle.decode(new_metadata)
-    return new_metadata
-
-
-def metadata_fixer(directory="", metadata_types=[], export=True):
-    metadata_path = directory+".json"
-    if not metadata_types:
-        metadata_types = import_archive(metadata_path)
-    new_format = {}
-    if isinstance(metadata_types, list):
-        force = True
-        for metadata_type in metadata_types:
-            new_format[metadata_type["type"]] = metadata_type
-            metadata_type.pop("type")
-    else:
-        force = False
-        new_format = metadata_types
-    new_format_copied = copy.deepcopy(new_format)
-    for key, value in new_format.items():
-        for key2, posts in value.items():
-            for post in posts:
-                for media in post:
-                    media["media_id"] = media.get("media_id", None)
-                    if "link" in media:
-                        media["links"] = [media["link"]]
-                        media.pop("link")
-                        print
-                    directory = media["directory"]
-                    if directory:
-                        media["directory"] = os.path.realpath(
-                            media["directory"])
-                print
+def legacy_metadata_fixer(formatted_directories: dict, api: object) -> media_types:
+    legacy_metadatas = formatted_directories["legacy_metadatas"]
+    new_metadata_directory = formatted_directories["metadata_directory"]
+    old_metadata_directory = os.path.dirname(
+        legacy_metadatas["legacy_metadata"])
+    metadata_name = os.path.basename(f"{old_metadata_directory}.json")
+    q = []
+    for key, legacy_directory in legacy_metadatas.items():
+        if legacy_directory == formatted_directories["metadata_directory"]:
+            continue
+        if os.path.exists(legacy_directory):
+            folders = os.listdir(legacy_directory)
+            metadata_names = media_types()
+            metadata_names = [f"{k}.json" for k, v in metadata_names]
+            print
+            type_one_files = main_helper.remove_mandatory_files(
+                folders, keep=metadata_names)
+            new_format = []
+            for type_one_file in type_one_files:
+                legacy_metadata_path = os.path.join(
+                    legacy_directory, type_one_file)
+                legacy_metadata = import_archive(legacy_metadata_path)
+                for key, status in legacy_metadata.items():
+                    if key == "type":
+                        continue
+                    status.sort(key=lambda x: x["post_id"], reverse=False)
+                    legacy_metadata[key] = [list(g) for k, g in groupby(
+                        status, key=lambda x: x["post_id"])]
+                    status = legacy_metadata[key]
+                new_format.append(legacy_metadata)
+            old_metadata_object = prepare_metadata(
+                new_format, api=api).metadata
+            if legacy_directory != new_metadata_directory:
+                import_path = os.path.join(legacy_directory, metadata_name)
+                new_metadata_set = import_archive(
+                    import_path)
+                if new_metadata_set:
+                    new_metadata_object = prepare_metadata(
+                        new_metadata_set, api=api).metadata
+                    print
+                    old_metadata_object = compare_metadata(
+                        new_metadata_object, old_metadata_object)
+                    print
+            q.append(old_metadata_object)
             print
         print
+    results = media_types()
+    for merge_into in q:
+        print
+        results = compare_metadata(
+            results, merge_into)
+        print
     print
-    hashed = DeepHash(new_format)[new_format]
-    hashed2 = DeepHash(new_format_copied)[new_format_copied]
-    if (force or hashed != hashed2) and export:
-        with open(metadata_path, 'w') as outfile:
-            json.dump(new_format, outfile)
-    return new_format
+    return results
 
 
-def compare_metadata(new_metadata, old_metadata, new_chain=False):
-    new_metadata = old_metadata | new_metadata
-    for key, value in old_metadata.items():
-        old_valid = value["valid"]
-        old_valid = list(chain.from_iterable(old_valid))
-        new_type = new_metadata.get(key)
-        new_valid = new_type["valid"]
-        if all(isinstance(item, list) for item in new_valid):
-            new_valid = list(chain.from_iterable(new_valid))
-        for old_item in old_valid:
-            if key == "Texts":
-                if any(d["post_id"] == old_item["post_id"] for d in new_valid):
-                    pass
+def test(new_item, old_item):
+    new_found = None
+    if old_item.media_id == None:
+        for link in old_item.links:
+            link = link.split("?")[0]
+            if any(link in new_link for new_link in new_item.links):
+                new_found = new_item
+                break
+            print
+    elif old_item.media_id == new_item.media_id:
+        new_found = new_item
+    return new_found
+
+
+def compare_metadata(new_metadata: media_types, old_metadata: media_types) -> media_types:
+    for key, value in old_metadata:
+        new_value = getattr(new_metadata, key)
+        if not new_value:
+            continue
+        if not value:
+            setattr(old_metadata, key, new_value)
+        for key2, value2 in value:
+            new_value2 = getattr(new_value, key2)
+            old_status = list(chain.from_iterable(value2))
+            new_status = list(chain.from_iterable(new_value2))
+            for old_item in old_status:
+                new_found = None
+                new_items = [
+                    x for x in new_status if old_item.post_id == x.post_id]
+                if new_items:
+                    for new_item in (x for x in new_items if not new_found):
+                        new_found = test(new_item, old_item)
+                        print
+                    print
                 else:
-                    new_valid.append(old_item)
-            else:
-                if old_item["media_id"] == None:
-                    found = []
-                    for link in old_item["links"]:
-                        link = link.split("?")[0]
-                        for new_item in new_valid:
-                            if any(link in new_link for new_link in new_item["links"]):
-                                found.append(old_item)
-                                break
-                    if not found:
-                        new_valid.append(old_item)
+                    print
+                if new_found:
+                    for key3, v in new_found:
+                        if key3 in ["directory", "downloaded", "size", "filename"]:
+                            continue
+                        setattr(old_item, key3, v)
+                        print
+                    print
                 else:
-                    for x in new_valid:
-                        if old_item["media_id"] == x["media_id"]:
-                            x["downloaded"] = old_item["downloaded"]
-                            x["size"] = old_item["size"]
-                    if not any(d["media_id"] == old_item["media_id"] for d in new_valid):
-                        new_valid.append(old_item)
-        new_valid.sort(key=lambda x: x["post_id"], reverse=True)
-        new_metadata[key]["valid"] = new_valid
+                    print
+                print
+            for new_item in new_status:
+                new_found = None
+                old_items = [x for x in old_status if x.media_id ==
+                             new_item.media_id and x.media_id != None]
+                if not old_items:
+                    for a in old_status:
+                        new_found = test(new_item, a)
+                        print
+                        break
+                    if not new_found:
+                        old_status.append(new_item)
+                        print
+                    print
+                print
+            print
+            old_status.sort(key=lambda x: x.post_id, reverse=False)
+            lmao = [list(g) for k, g in groupby(
+                old_status, key=lambda x: x.post_id)]
+            setattr(value, key2, lmao)
+        print
+    new_metadata = old_metadata
     return new_metadata
 
 # Scrapes the API for content
@@ -697,17 +762,24 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
     if "result" in results:
         session = results["session"]
         results = results["result"]
-    model_directory = formatted_directories["model_directory"]
+    download_path = formatted_directories["download_directory"]
     for location in formatted_directories["locations"]:
         sorted_directories = copy.copy(location["sorted_directories"])
         master_date = "01-01-0001 00:00:00"
         media_type = location["media_type"]
         alt_media_type = location["alt_media_type"]
+        file_directory_format = json_settings["file_directory_format"]
         if api_type == "Archived":
-            for key, value in sorted_directories.items():
-                x = value.split(os.sep)
-                x.insert(1, parent_type)
-                sorted_directories[key] = os.path.join(*x)
+            x = file_directory_format.split(os.sep)
+            for y in x:
+                substr = "{api_type}"
+                if substr == y:
+                    new_path = os.path.join(substr, parent_type)
+                    file_directory_format = file_directory_format.replace(
+                        substr, new_path)
+                    break
+                print
+            print
         seperator = " | "
         print(
             f"Scraping [{seperator.join(alt_media_type)}]. Should take less than a minute.")
@@ -791,28 +863,45 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                 new_dict["postedAt"] = date_string
                 post_id = new_dict["post_id"]
                 media_id = new_dict["media_id"]
-                file_name = link.rsplit('/', 1)[-1]
-                file_name, ext = os.path.splitext(file_name)
+                filename = link.rsplit('/', 1)[-1]
+                filename, ext = os.path.splitext(filename)
                 ext = ext.__str__().replace(".", "").split('?')[0]
-                media_directory = os.path.join(
-                    model_directory, sorted_directories["unsorted"])
-                new_dict["paid"] = False
-                if new_dict["price"]:
-                    if api_type in ["Messages", "Mass Messages"]:
-                        new_dict["paid"] = True
-                    else:
-                        if media["id"] not in media_api["preview"] and media["canView"]:
-                            new_dict["paid"] = True
-                if sort_free_paid_posts:
-                    media_directory = os.path.join(
-                        model_directory, sorted_directories["free"])
-                    if new_dict["paid"]:
-                        media_directory = os.path.join(
-                            model_directory, sorted_directories["paid"])
-                file_path = main_helper.reformat(media_directory, post_id, media_id, file_name,
-                                                 text, ext, date_object, username, file_directory_format, file_name_format, date_format, maximum_length)
+                price = new_dict["price"]
+                # media_directory = os.path.join(
+                #     model_directory, sorted_directories["unsorted"])
+                # new_dict["paid"] = False
+                # if new_dict["price"]:
+                #     if api_type in ["Messages", "Mass Messages"]:
+                #         new_dict["paid"] = True
+                #     else:
+                #         if media["id"] not in media_api["preview"] and media["canView"]:
+                #             new_dict["paid"] = True
+                # if sort_free_paid_posts:
+                #     media_directory = os.path.join(
+                #         model_directory, sorted_directories["free"])
+                #     if new_dict["paid"]:
+                #         media_directory = os.path.join(
+                #             model_directory, sorted_directories["paid"])
                 new_dict["text"] = text
-                file_directory = os.path.dirname(file_path)
+
+                option = {}
+                option = option | new_dict
+                option["site_name"] = "OnlyFans"
+                option["filename"] = filename
+                option["api_type"] = api_type
+                option["media_type"] = media_type
+                option["ext"] = ext
+                option["username"] = username
+                option["date_format"] = date_format
+                option["maximum_length"] = maximum_length
+                option["directory"] = download_path
+
+                prepared_format = prepare_reformat(option)
+                file_directory = main_helper.reformat(
+                    prepared_format, file_directory_format)
+                prepared_format.directory = file_directory
+                file_path = main_helper.reformat(
+                    prepared_format, filename_format)
                 new_dict["directory"] = os.path.join(file_directory)
                 new_dict["filename"] = os.path.basename(file_path)
                 new_dict["session"] = session
@@ -841,9 +930,7 @@ class download_media():
             for api_type, value in subscription.scraped:
                 if not value or api_type == "Texts":
                     continue
-                if not isinstance(value, dict):
-                    continue
-                for location, v in value.items():
+                for location, v in value:
                     if location == "Texts":
                         continue
                     media_set = v.valid
@@ -855,17 +942,10 @@ class download_media():
                         media_set, [api]))
                 metadata_path = metadata_locations.get(api_type)
                 if metadata_path:
-                    value = jsonpickle.encode(
-                        value, unpicklable=False)
-                    value = jsonpickle.decode(value)
-                    new_metadata = prepare_metadata(
-                        value, export=True).metadata
-                    value = jsonpickle.encode(
-                        new_metadata, unpicklable=False)
-                    value = jsonpickle.decode(value)
+                    value = value.convert()
                     if export_metadata:
                         export_archive(value, metadata_path,
-                                       json_settings, rename=False)
+                                       json_settings)
                 else:
                     print
 

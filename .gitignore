@@ -142,6 +142,7 @@ $RECYCLE.BIN/
 # End of https://www.gitignore.io/api/code,linux,python,pycharm,windows
 
 # Project Specific
+.profiles
 .sites
 *.log
 .settings/*

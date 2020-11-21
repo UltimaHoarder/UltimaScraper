@@ -14,6 +14,8 @@ from types import SimpleNamespace
 import json
 from .. import api_helper
 from mergedeep import merge, Strategy
+import jsonpickle
+import copy
 
 
 # Zero reason to do this lmao
@@ -62,22 +64,57 @@ def session_retry_rules(r, link):
 
 class media_types():
     def __init__(self, option={}) -> None:
-        self.Images = option.get("Images")
-        self.Videos = option.get("Videos")
-        self.Audios = option.get("Audios")
-        self.Texts = option.get("Texts")
+        self.Images = option.get("Images", [])
+        self.Videos = option.get("Videos", [])
+        self.Audios = option.get("Audios", [])
+        self.Texts = option.get("Texts", [])
 
-    def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
+    def convert(self, convert_type="json", keep_empty_items=False) -> dict:
+        if not keep_empty_items:
+            self.remove_empty()
+        value = {}
+        if convert_type == "json":
+            new_format_copied = copy.deepcopy(self)
+            for key, item in new_format_copied:
+                for key2, item2 in item:
+                    new_status = list(chain.from_iterable(item2))
+                    for x in new_status:
+                        delattr(x, "session")
+                        if getattr(x, "old_filepath", None) != None:
+                            delattr(x, "old_filepath")
+                        if getattr(x, "new_filepath", None) != None:
+                            delattr(x, "new_filepath")
+                        print
+                    print
+                print
+            value = jsonpickle.encode(
+                new_format_copied, unpicklable=False)
+            value = jsonpickle.decode(value)
+            if not isinstance(value, dict):
+                return {}
+        return value
 
+    def remove_empty(self):
+        copied = copy.deepcopy(self)
+        for k, v in copied:
+            if not v:
+                delattr(self, k)
+            print
+        return self
 
-class media_types2():
-    def __init__(self, option={}) -> None:
-        self.Images = option.get("Images")
-        self.Videos = option.get("Videos")
-        self.Audios = option.get("Audios")
-        self.Texts = option.get("Texts")
+    def get_status(self) -> list:
+        x = []
+        for key, item in self:
+            for key2, item2 in item:
+                new_status = list(chain.from_iterable(item2))
+                x.extend(new_status)
+        return x
+
+    def extract(self, string: str) -> list:
+        a = self.get_status()
+        source_list = [getattr(x, string, None) for x in a]
+        x = list(set(source_list))
+        return x
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
@@ -88,6 +125,10 @@ class content_types:
     def __init__(self, option={}) -> None:
         class archived_types():
             Posts = []
+
+            def __iter__(self):
+                for attr, value in self.__dict__.items():
+                    yield attr, value
         self.Stories = []
         self.Posts = []
         self.Archived = archived_types()
@@ -178,6 +219,9 @@ class start():
             session.headers["time"] = ""
         api_helper.request_parameters(session_rules, session_retry_rules)
         self.json_request = api_helper.json_request
+
+    def get_media_types(self):
+        return media_types()
 
     def request(self, link="", session=None, format=False) -> Any:
         link2 = link
@@ -522,7 +566,9 @@ class start():
         link = links(global_limit=limit,
                      global_offset=offset).mass_messages_api
         results = self.request(link=link)
-        items = results["list"]
+        items = results.get("list",[])
+        if not items:
+            return items
         if resume:
             for item in items:
                 if any(x["id"] == item["id"] for x in resume):
@@ -721,5 +767,5 @@ class create_subscription(start):
         results = self.request(link=link)
         return results
 
-    def set_scraped(self, name, scraped):
+    def set_scraped(self, name, scraped: media_types):
         setattr(self.scraped, name, scraped)

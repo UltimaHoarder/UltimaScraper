@@ -1,6 +1,8 @@
 from os import rename
 from typing import Any
-from classes.prepare_metadata import prepare_metadata
+
+from deepdiff.deephash import DeepHash
+from classes.prepare_metadata import format_variables, prepare_metadata, prepare_reformat
 import copy
 import csv
 import hashlib
@@ -119,7 +121,7 @@ def clean_text(string, remove_spaces=False):
             m, " ").strip()
     string = ' '.join(string.split())
     string = BeautifulSoup(string, "lxml").get_text()
-    SAFE_PTN = "[^0-9a-zA-Z-_.'()]+"
+    SAFE_PTN = r"[|\^&+\-%*/=!>]"
     string = re.sub(SAFE_PTN, ' ',  string.strip()
                     ).strip()
     if remove_spaces:
@@ -160,16 +162,16 @@ def format_media_set(media_set):
 
 
 def format_image(filepath, timestamp):
-    if os_name == "Windows":
-        from win32_setctime import setctime
-        while True:
-            try:
+    while True:
+        try:
+            if os_name == "Windows":
+                from win32_setctime import setctime
                 setctime(filepath, timestamp)
-            except Exception as e:
                 print(filepath)
-                continue
-            break
-    os.utime(filepath, (timestamp, timestamp))
+            os.utime(filepath, (timestamp, timestamp))
+        except Exception as e:
+            continue
+        break
 
 
 def filter_metadata(datas):
@@ -188,18 +190,14 @@ def import_archive(archive_path) -> Any:
     return metadata
 
 
-def export_archive(datas, archive_path, json_settings, rename=True, legacy_directory=""):
-    if os.path.exists(legacy_directory):
-        shutil.rmtree(legacy_directory)
+def export_archive(datas, archive_path, json_settings):
+    if not datas:
+        return
     archive_directory = os.path.dirname(archive_path)
     if json_settings["export_metadata"]:
         export_type = json_global_settings["export_type"]
         if export_type == "json":
             os.makedirs(archive_directory, exist_ok=True)
-            if os.path.exists(archive_path) and rename:
-                datas2 = ofrenamer.start(archive_path, json_settings)
-                if datas == datas2:
-                    return
             with open(archive_path, 'w', encoding='utf-8') as outfile:
                 ujson.dump(datas, outfile, indent=2)
         # if export_type == "csv":
@@ -227,46 +225,60 @@ def export_archive(datas, archive_path, json_settings, rename=True, legacy_direc
 def format_paths(j_directories, site_name):
     paths = []
     for j_directory in j_directories:
-        format_path = j_directory
-        path = format_path.replace("{site_name}", site_name)
-        paths.append(path)
+        paths.append(j_directory)
     return paths
 
 
-def reformat(directory, post_id, media_id, filename, text, ext, date, username, file_directory_format, file_name_format, date_format, maximum_length):
+def reformat(prepared_format, unformatted):
+    post_id = prepared_format.post_id
+    media_id = prepared_format.media_id
+    date = prepared_format.date
+    text = prepared_format.text
+    value = "Free"
+    maximum_length = prepared_format.maximum_length
     post_id = "" if post_id is None else str(post_id)
     media_id = "" if media_id is None else str(media_id)
+    extra_count = 0
     if type(date) is str:
-        date = datetime.strptime(
-            date, "%d-%m-%Y %H:%M:%S")
-    formatted = []
-    formats = [file_directory_format, file_name_format]
-    for unformatted in formats:
-        has_text = False
-        if "{text}" in unformatted:
-            has_text = True
-            text = clean_text(text)
-        path = unformatted.replace("{post_id}", post_id)
-        path = path.replace("{media_id}", media_id)
-        path = path.replace("{username}", username)
-        filtered_text = text[:maximum_length]
-        directory = directory.replace(text, filtered_text)
-        path = path.replace("{text}", filtered_text)
-        date2 = date.strftime(date_format)
-        path = path.replace("{date}", date2)
-        path = path.replace("{file_name}", filename)
-        path = path.replace("{ext}", ext)
+        format_variables2 = format_variables()
+        if date != format_variables2.date and date != "":
+            date = datetime.strptime(
+                date, "%d-%m-%Y %H:%M:%S")
+            date = date.strftime(prepared_format.date_format)
+    else:
+        if date != None:
+            date = date.strftime(prepared_format.date_format)
+    has_text = False
+    if "{text}" in unformatted:
+        has_text = True
+        text = clean_text(text)
+        extra_count = len("{text}")
+    if "{value}" in unformatted:
+        if prepared_format.price:
+            value = "Paid"
+    directory = prepared_format.directory
+    path = unformatted.replace("{site_name}", prepared_format.site_name)
+    path = path.replace("{post_id}", post_id)
+    path = path.replace("{media_id}", media_id)
+    path = path.replace("{username}", prepared_format.username)
+    path = path.replace("{api_type}", prepared_format.api_type)
+    path = path.replace("{media_type}", prepared_format.media_type)
+    path = path.replace("{filename}", prepared_format.filename)
+    path = path.replace("{ext}", prepared_format.ext)
+    path = path.replace("{value}", value)
+    path = path.replace("{date}", date)
+    directory_count = len(directory)
+    path_count = len(path)
+    maximum_length = maximum_length - (directory_count+path_count+extra_count)
 
-        if has_text:
-            count_string = len(path)
-            text_count = len(filtered_text)
-            if count_string > maximum_length:
-                text_limit = count_string - text_count
-                path = path.replace(
-                    filtered_text, filtered_text[:text_limit].rstrip())
-        formatted.append(path)
-    directory2 = os.path.join(directory, *formatted)
-    return directory2
+    if has_text:
+        filtered_text = text[:maximum_length]
+        path = path.replace("{text}", filtered_text)
+    else:
+        path = path.replace("{text}", "")
+    directory2 = os.path.join(directory, path)
+    directory3 = os.path.abspath(directory2)
+    return directory3
 
 
 def get_directory(directories, site_name):
@@ -275,8 +287,7 @@ def get_directory(directories, site_name):
     for directory in directories:
         if not os.path.isabs(directory):
             fp = os.path.abspath(".sites")
-            x = os.path.join(fp, directory)
-            directory = os.path.abspath(x)
+            directory = os.path.abspath(fp)
         os.makedirs(directory, exist_ok=True)
         new_directories.append(directory)
     directory = check_space(new_directories, min_size=min_drive_space)
@@ -306,30 +317,6 @@ def check_space(download_paths, min_size=min_drive_space, priority="download"):
             item = paths[0]
             root = item["path"]
     return root
-
-
-def format_directories(directory, site_name, username, locations=[], api_type=""):
-    x = {}
-    model_directory = x["model_directory"] = os.path.join(directory, username)
-    x["legacy_metadata"] = os.path.join(model_directory, api_type, "Metadata")
-    x["metadata_directory"] = os.path.join(model_directory, "Metadata")
-    x["api_directory"] = os.path.join(model_directory, api_type)
-    x["locations"] = []
-    for location in locations:
-        directories = {}
-        cats = ["Unsorted", "Free", "Paid"]
-        for cat in cats:
-            cat2 = cat
-            if "Unsorted" in cat2:
-                cat2 = ""
-            path = os.path.join(api_type, cat2, location[0])
-            directories[cat.lower()] = path
-        y = {}
-        y["sorted_directories"] = directories
-        y["media_type"] = location[0]
-        y["alt_media_type"] = location[1]
-        x["locations"].append(y)
-    return x
 
 
 def are_long_paths_enabled():
@@ -381,62 +368,21 @@ def downloader(r, download_path, count=0):
     return True
 
 
-# def restore_missing_data2(master_set2, media_set):
-#     count = 0
-#     new_set = []
-#     for item in media_set:
-#         if not item:
-#             link_item = master_set2[count]
-#             link = link_item["link"]
-#             offset = int(link.split('?')[-1].split('&')[1].split("=")[1])
-#             limit = int(link.split("?")[-1].split("&")[0].split("=")[1])
-#             num = 2
-#             x = []
-#             limit2 = int(limit/num)
-#             offset2 = offset
-#             for item in range(1, num+1):
-#                 link2 = link.replace("limit="+str(limit), "limit="+str(limit2))
-#                 link2 = link2.replace(
-#                     "offset="+str(offset), "offset="+str(offset2))
-#                 offset2 += limit2
-#                 i = {}
-#                 i["link"] = link2
-#                 i["count"] = link_item["count"]
-#                 new_set.append(i)
-#                 print(link2)
-#             print
-#         print(master_set2[count]["link"])
-#         count += 1
-#     return new_set
-
-
 def get_config(config_path):
-    if os.path.isfile(config_path):
-        if os.stat(config_path).st_size > 0:
-            json_config = json.load(open(config_path))
-        else:
-            json_config = {}
-    else:
-        json_config = {}
+    json_config = json.load(open(config_path))
+    json_config2 = copy.deepcopy(json_config)
+    json_config, string = make_settings.fix(json_config)
     file_name = os.path.basename(config_path)
-    if file_name == "config.json":
-        json_config2 = json.loads(json.dumps(make_settings.config(
-            **json_config), default=lambda o: o.__dict__))
-    else:
-        if "onlyfans" in json_config:
-            new = {}
-            new["supported"] = json_config
-            json_config = new
-        json_config2 = json.loads(json.dumps(make_settings.extra_auth(
-            **json_config), default=lambda o: o.__dict__))
-    if json_config != json_config2:
-        update_config(json_config2, file_name=file_name)
+    json_config = json.loads(json.dumps(make_settings.config(
+        **json_config), default=lambda o: o.__dict__))
+    hashed = DeepHash(json_config)[json_config]
+    hashed2 = DeepHash(json_config2)[json_config2]
+    if hashed != hashed2:
+        update_config(json_config, file_name=file_name)
     if not json_config:
         input(
             f"The .settings\\{file_name} file has been created. Fill in whatever you need to fill in and then press enter when done.\n")
-        json_config2 = json.load(open(config_path))
-
-    json_config = copy.deepcopy(json_config2)
+        json_config = json.load(open(config_path))
     return json_config, json_config2
 
 
@@ -479,7 +425,7 @@ def choose_option(subscription_list, auto_scrape_names):
     if names:
         print("Names: Username = username | "+subscription_list[1])
         if not auto_scrape_names:
-            value = "2"
+            value = "1"
             value = input().strip()
             if value.isdigit():
                 if value == "0":
@@ -547,6 +493,13 @@ def create_link_group(max_threads):
     print
 
 
+def remove_mandatory_files(files, keep=[]):
+    matches = ["desktop.ini"]
+    folders = [x for x in files if x not in matches]
+    folders = [x for x in files if x in keep]
+    return folders
+
+
 def legacy_metadata(directory):
     if os.path.exists(directory):
         items = os.listdir(directory)
@@ -589,7 +542,11 @@ def send_webhook(item):
 
 
 def find_between(s, start, end):
-    x = (s.split(start))[1].split(end)[0]
+    x = re.search(f'{start}(.+?){end}', s)
+    if x:
+        x = x.group(1)
+    else:
+        x = s
     return x
 
 

@@ -1,4 +1,6 @@
 #!/usr/bin/env python3
+from classes.prepare_metadata import format_types, format_variables, prepare_reformat
+from hashlib import new
 from os.path import dirname as up
 import urllib.parse as urlparse
 import shutil
@@ -9,258 +11,128 @@ import sys
 from multiprocessing.dummy import Pool as ThreadPool
 from itertools import product
 
+import jsonpickle
 
-def fix_metadata(posts, json_settings, username, site_name, metadata_categories):
-    def start(post, metadata_categories):
-        model_folder = ""
-        for model in post:
-            delattr(model, "session")
-            model_folder = model.directory
-            metadata_categories2 = metadata_categories
-            meta_categories = list(os.path.split(metadata_categories2))
-            q = main_helper.find_between(
-                model_folder, *meta_categories)
-            q = q.split(os.sep)
-            for r in q:
-                meta_categories.insert(-1, r)
-            categories = os.path.join(*meta_categories)
-            file_directory_formatted = model.directory.split(categories)
-            if len(file_directory_formatted) > 0:
-                file_directory_formatted = file_directory_formatted[-1]
-                model.directory = model_folder.replace(
-                    file_directory_formatted, "")
-            if model.links:
-                path = urlparse.urlparse(model.links[0]).path
+
+def fix_directories(post_item, base_directory, site_name, api_type, media_type, username, all_files, json_settings):
+    new_directories = []
+    for posts in post_item:
+        for media in posts:
+            if media.links:
+                path = urlparse.urlparse(media.links[0]).path
             else:
-                path = model.filename
-            filename = os.path.basename(path)
-            filepath = os.path.join(model_folder, filename)
-            post_id = str(model.post_id)
-            filename, ext = os.path.splitext(filename)
+                path = media.filename
+            new_filename = os.path.basename(path)
+            filename, ext = os.path.splitext(new_filename)
             ext = ext.replace(".", "")
-            sort_free_paid_posts = json_settings.get(
-                "sort_free_paid_posts", False)
-            if sort_free_paid_posts:
-                q = "Free"
-                if model.paid:
-                    q = "Paid"
-                if q not in meta_categories:
-                    meta_categories.insert(-1, q)
-                metadata_categories2 = os.path.join(*meta_categories)
-            model.directory = model.directory.replace(
-                categories, metadata_categories2)
             file_directory_format = json_settings["file_directory_format"]
-            file_name_format = json_settings["file_name_format"]
+            filename_format = json_settings["filename_format"]
             date_format = json_settings["date_format"]
             text_length = json_settings["text_length"]
-            download_path = json_settings["download_paths"]
+            download_path = base_directory
             today = datetime.today()
             today = today.strftime("%d-%m-%Y %H:%M:%S")
-
-            class prepare_reformat(object):
-                def __init__(self, option):
-                    self.directory = option.get(
-                        'directory')
-                    self.post_id = option.get('post_id', "")
-                    self.media_id = option.get('media_id', "")
-                    self.filename = filename
-                    self.text = option.get('text', "")
-                    self.ext = option.get('ext', ext)
-                    self.date = option.get('postedAt', today)
-                    self.username = option.get('username', username)
-                    self.file_directory_format = file_directory_format
-                    self.file_name_format = file_name_format
-                    self.date_format = date_format
-                    self.maximum_length = int(text_length)
-            model2 = json.loads(json.dumps(
-                model, default=lambda o: o.__dict__))
-            reformat = prepare_reformat(model2)
-
-            def update(filepath):
-                temp = json.loads(json.dumps(
-                    reformat, default=lambda o: o.__dict__))
-                filepath = os.path.abspath(filepath)
-                new_format = main_helper.reformat(**temp)
-                new_format = os.path.abspath(new_format)
-                if filepath != new_format:
-                    if not os.path.isfile(new_format):
-                        if os.path.exists(filepath):
-                            shutil.move(filepath, new_format)
-                return new_format, filepath
-            if os.path.isfile(filepath):
-                filepath, old_filepath = update(filepath)
-            else:
-                folder = os.path.dirname(filepath)
-                folder = os.path.abspath(folder)
-                while not os.path.exists(folder):
-                    print(f"NOT FOUND: {folder}\n")
-                    if os.path.exists(reformat.directory):
-                        folder = reformat.directory
-                        continue
-                    last_path = folder.split(
-                        username+os.sep)
-                    last_path = last_path[1] if len(
-                        last_path) > 1 else last_path[0]
-                    last_path = last_path.replace(file_directory_formatted, "")
-                    directory = main_helper.get_directory(
-                        download_path, site_name)
-                    folder = os.path.join(directory, username, last_path)
-                    os.makedirs(folder, exist_ok=True)
-                    reformat.directory = folder
-                print(f"FOUND: {folder}\n")
-                files = os.listdir(folder)
-                y = [file_ for file_ in files if filename in file_]
-                if y:
-                    y = y[0]
-                    filepath = os.path.join(folder, y)
-                    filepath, old_filepath = update(filepath)
-            model.filename = os.path.basename(filepath)
-            # if model.size == 1 or not model.size:
-            #     model.size = os.path.getsize(filepath)
-            #     print
-        return model_folder
-    pool = ThreadPool()
-    old_folders = pool.starmap(start, product(
-        posts, [metadata_categories]))
-    old_folders = list(dict.fromkeys(old_folders))
-    for old_folder in old_folders:
-        if "Posts" in old_folder:
+            new_dict = media.convert(keep_empty_items=True)
+            option = {}
+            option = option | new_dict
+            option["site_name"] = site_name
+            option["filename"] = filename
+            option["api_type"] = api_type
+            option["media_type"] = media_type
+            option["ext"] = ext
+            option["username"] = username
+            option["date_format"] = date_format
+            option["maximum_length"] = text_length
+            option["directory"] = download_path
+            prepared_format = prepare_reformat(option)
+            file_directory = main_helper.reformat(
+                prepared_format, file_directory_format)
+            prepared_format.directory = file_directory
+            old_filepath = ""
+            x = [x for x in all_files if media.filename in x]
+            if x:
+                # media.downloaded = True
+                old_filepath = x[0]
+                old_filepath = os.path.abspath(old_filepath)
             print
-    return posts
+            new_filepath = main_helper.reformat(
+                prepared_format, filename_format)
+            setattr(media, "old_filepath", old_filepath)
+            setattr(media, "new_filepath", new_filepath)
+            new_directories.append(os.path.dirname(new_filepath))
+    new_directories = list(set(new_directories))
+    return post_item, new_directories
 
 
-def start(metadata_filepath, json_settings):
-    if os.path.getsize(metadata_filepath) > 0:
-        metadatas = main_helper.import_archive(metadata_filepath)
-        metadatas2 = prepare_metadata(metadatas).metadata
-        model_path = up(up(metadata_filepath))
-        username = os.path.basename(model_path)
-        site_name = os.path.basename(up(up(up(metadata_filepath))))
-        metadata_filename = os.path.basename(metadata_filepath)
-        name = metadata_filename.split(".")[0]
-        for key, metadata in metadatas2.items():
-            if key == "Texts":
-                continue
-            category = os.path.join(name, key)
-            metadata.valid = fix_metadata(
-                metadata.valid, json_settings, username, site_name, category)
-            metadata.invalid = fix_metadata(
-                metadata.invalid, json_settings, username, site_name, category)
-        metadatas2 = json.loads(json.dumps(
-            metadatas2, default=lambda o: o.__dict__))
-        if metadatas != metadatas2:
-            main_helper.update_metadata(metadata_filepath, metadatas2)
-        return metadatas2
+def fix_metadata(post_item):
+    for posts in post_item:
+        for media in posts:
+            def update(old_filepath, new_filepath):
+                if old_filepath != new_filepath:
+                    if os.path.exists(new_filepath):
+                        os.remove(new_filepath)
+                    if os.path.exists(old_filepath):
+                        shutil.move(old_filepath, new_filepath)
+                return old_filepath, new_filepath
+            old_filepath = media.old_filepath
+            new_filepath = media.new_filepath
+            old_filepath, new_filepath = update(old_filepath, new_filepath)
+            media.directory = os.path.dirname(new_filepath)
+            media.filename = os.path.basename(new_filepath)
+    return post_item
+
+
+def start(subscription, api_type, api_path, site_name, json_settings):
+    metadata = getattr(subscription.scraped, api_type)
+    download_info = subscription.download_info
+    base_directory = download_info["directory"]
+    date_format = json_settings["date_format"]
+    text_length = json_settings["text_length"]
+    reformats = {}
+    reformats["metadata_directory_format"] = json_settings["metadata_directory_format"]
+    reformats["file_directory_format"] = json_settings["file_directory_format"]
+    reformats["filename_format"] = json_settings["filename_format"]
+    username = subscription.username
+    option = {}
+    option["site_name"] = site_name
+    option["api_type"] = api_type
+    option["username"] = username
+    option["date_format"] = date_format
+    option["maximum_length"] = text_length
+    option["directory"] = base_directory
+    formatted = format_types(reformats).check_unique()
+    unique = formatted["unique"]
+    for key, value in reformats.items():
+        key2 = getattr(unique, key)[0]
+        reformats[key] = value.split(key2, 1)[0]+key2
+        print
+    print
+    a, b, c = prepare_reformat(option, keep_vars=True).reformat(reformats)
+    print
+    all_files = []
+    for root, subdirs, files in os.walk(b):
+        x = [os.path.join(root, x) for x in files]
+        all_files.extend(x)
+    for media_type, value in metadata:
+        if media_type == "Texts":
+            continue
+        for status, value2 in value:
+            fixed, new_directories = fix_directories(
+                value2, base_directory, site_name, api_path, media_type, username, all_files, json_settings)
+            for new_directory in new_directories:
+                directory = os.path.abspath(new_directory)
+                os.makedirs(directory, exist_ok=True)
+            fixed2 = fix_metadata(
+                fixed)
+            setattr(value, status, fixed2)
+        setattr(metadata, media_type, value,)
+    return metadata
 
 
 if __name__ == "__main__":
     # WORK IN PROGRESS
-    import extra_helpers.main_helper as main_helper2
-    directory = os.path.abspath(os.path.join(
-        os.pardir, os.pardir))
-    settings_directory = os.path.join(directory, ".settings")
-    if os.path.exists(settings_directory):
-        print
-    else:
-        while not os.path.exists(settings_directory):
-            config = os.path.join('.settings', 'config.json')
-            json_config, json_config2 = main_helper2.get_config(config)
-            directory = json_config["ofd_directory"]
-            if not directory:
-                input(
-                    "Add the OnlyFans Datascraper directory to .settings/config.json and press enter\n")
-                continue
-            settings_directory = os.path.join(directory, ".settings")
-    while True:
-        config = os.path.join(settings_directory, 'config.json')
-        sys.path.append(directory)
-        import helpers.main_helper as main_helper
-        from classes.prepare_metadata import prepare_metadata
-        json_config, json_config = main_helper.get_config(config)
-        if not json_config:
-            input(
-                "Add the OnlyFans Datascraper config filepath to .settings/config.json and press enter\n")
-            continue
-
-        print
-        json_config = json_config["supported"]
-        choices = ["All"] + list(json_config.keys())
-        count = 0
-        max_count = len(choices)
-        string = ""
-        for choice in choices:
-            string += str(count) + " = "+choice
-            count += 1
-            if count < max_count:
-                string += " | "
-        print(string)
-        match = ["All", "OnlyFans", "Patreon", "StarsAVN", "4Chan", "BBWChan"]
-        choices = list(zip(choices, match))
-        x = 1
-        x = int(input())
-        if x == 0:
-            del choices[0]
-        else:
-            choices = [choices[x]]
-        for choice in choices:
-            name = choice[1]
-            choice = choice[0]
-            json_settings = json_config[choice]["settings"]
-            download_paths = json_settings["download_paths"]
-            directory = main_helper.get_directory(download_paths, name)
-            content_folders = os.listdir(directory)
-            # content_folders = ["queenarri"]
-            models_folders2 = []
-            if name in ["4Chan", "BBWChan"]:
-                for models_folder in content_folders:
-                    directory2 = os.path.join(directory, models_folder)
-                    content_list = os.listdir(directory2)
-                    for content in content_list:
-                        content = os.path.join(directory2, content)
-                        x = main_helper.metadata_fixer(content)
-                        models_folders2.append(content)
-                continue
-            else:
-                for models_folder in content_folders:
-                    directory2 = os.path.join(directory, models_folder)
-                    models_folders2.append(directory2)
-            content_folders = models_folders2
-            for content_folder in content_folders:
-                metadata_directory = os.path.join(content_folder, "Metadata")
-                folders = []
-                if os.path.exists(metadata_directory):
-                    folders = os.listdir(metadata_directory)
-                    matches = ["desktop.ini"]
-                    folders = [x for x in folders if x not in matches]
-                if not folders:
-                    folders2 = os.listdir(content_folder)
-                    matches = ["Metadata", "desktop.ini"]
-                    folders2 = [x for x in folders2 if x not in matches]
-                    for folder in folders2:
-                        type_metadata = os.path.join(
-                            content_folder, folder, "Metadata")
-                        if not os.path.exists(type_metadata):
-                            continue
-                        os.makedirs(metadata_directory, exist_ok=True)
-                        l = os.listdir(type_metadata)
-                        x = []
-                        ext = ".json"
-                        for item in l:
-                            if ext in item:
-                                path = os.path.join(type_metadata, item)
-                                filename, ext = os.path.splitext(item)
-                                metadata = json.load(open(path))
-                                x.append(metadata)
-                        filename = folder+ext
-                        metadata_filepath = os.path.join(
-                            metadata_directory, filename)
-                        main_helper.update_metadata(metadata_filepath, x)
-                        folders.append(filename)
-                # folders = list(reversed(folders))
-                for metadata_file in folders:
-                    metadata_filepath = os.path.join(
-                        metadata_directory, metadata_file)
-                    start(metadata_filepath, json_settings)
+    input("You can't use this manually yet lmao xqcl")
+    exit()
 else:
     import helpers.main_helper as main_helper
     from classes.prepare_metadata import prepare_metadata

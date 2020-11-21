@@ -20,15 +20,15 @@ multiprocessing = main_helper.multiprocessing
 log_download = main_helper.setup_logger('downloads', 'downloads.log')
 
 json_config = None
+json_global_settings = None
 max_threads = -1
 json_settings = None
 auto_choice = None
-j_directory = None
+j_directory = ""
+metadata_directory_format = ""
 file_directory_format = None
 file_name_format = None
 overwrite_files = None
-proxies = None
-cert = None
 date_format = None
 ignored_keywords = None
 ignore_type = None
@@ -37,20 +37,20 @@ delete_legacy_metadata = None
 blacklist_name = None
 webhook = None
 maximum_length = None
+app_token = None
 
 
-def assign_vars(config, site_settings, site_name):
-    global json_config, max_threads, proxies, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, file_directory_format, file_name_format, ignored_keywords, ignore_type, export_metadata, blacklist_name, webhook, maximum_length
+def assign_vars(json_auth, config, site_settings, site_name):
+    global json_config, json_global_settings, max_threads, json_settings, auto_choice, j_directory, metadata_directory_format, overwrite_files, date_format, file_directory_format, file_name_format, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, blacklist_name, webhook, maximum_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
     max_threads = json_global_settings["max_threads"]
-    proxies = json_global_settings["socks5_proxy"]
-    cert = json_global_settings["cert"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
     j_directory = main_helper.get_directory(
-        json_settings['download_paths'], site_name)
+        json_settings['download_directories'], site_name)
+    metadata_directory_format = json_settings["metadata_directory_format"]
     file_directory_format = json_settings["file_directory_format"]
     file_name_format = json_settings["file_name_format"]
     overwrite_files = json_settings["overwrite_files"]
@@ -58,22 +58,39 @@ def assign_vars(config, site_settings, site_name):
     ignored_keywords = json_settings["ignored_keywords"]
     ignore_type = json_settings["ignore_type"]
     export_metadata = json_settings["export_metadata"]
+    delete_legacy_metadata = json_settings["delete_legacy_metadata"]
     blacklist_name = json_settings["blacklist_name"]
     webhook = json_settings["webhook"]
     maximum_length = 255
     maximum_length = int(json_settings["text_length"]
                          ) if json_settings["text_length"] else maximum_length
+    app_token = json_auth['app_token']
 
 def account_setup(api):
     status = False
     auth = api.login()
     if auth:
+        profile_directory = json_global_settings["profile_directories"][0]
+        profile_directory = os.path.abspath(profile_directory)
+        profile_directory = os.path.join(profile_directory, auth["username"])
+        profile_metadata_directory = os.path.join(
+            profile_directory, "Metadata")
+        metadata_filepath = os.path.join(
+            profile_metadata_directory, "Mass Messages.json")
+        print
+        if auth["isPerformer"] or True:
+            print
+            imported = import_archive(metadata_filepath)
+            mass_messages = api.get_mass_messages(resume=imported)
+            export_archive(mass_messages, metadata_filepath,
+                           json_settings)
+            print
         # chats = api.get_chats()
         subscriptions = api.get_subscriptions()
         status = True
     return status
 
-def start_datascraper(sessions, identifier, site_name, choice_type=None):
+def start_datascraper(api, identifier, site_name, choice_type=None):
     print("Scrape Processing")
     info = link_check(sessions[0], identifier)
     user = info["user"]

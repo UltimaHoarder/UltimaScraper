@@ -31,13 +31,12 @@ ignored_keywords = None
 ignore_type = None
 export_metadata = None
 delete_legacy_metadata = None
-sort_free_paid_posts = None
 blacklist_name = None
 maximum_length = None
 
 
 def assign_vars(config, site_settings, site_name):
-    global json_config, max_threads, proxy, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, sort_free_paid_posts, blacklist_name, maximum_length
+    global json_config, max_threads, proxy, cert, json_settings, auto_choice, j_directory, overwrite_files, date_format, format_path, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, blacklist_name, maximum_length
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -55,7 +54,6 @@ def assign_vars(config, site_settings, site_name):
     ignore_type = json_settings["ignore_type"]
     export_metadata = json_settings["export_metadata"]
     delete_legacy_metadata = json_settings["delete_legacy_metadata"]
-    sort_free_paid_posts = json_settings["sort_free_paid_posts"]
     blacklist_name = json_settings["blacklist_name"]
     maximum_length = 255
     maximum_length = int(json_settings["text_length"]

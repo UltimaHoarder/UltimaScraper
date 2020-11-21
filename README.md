@@ -75,43 +75,87 @@ Open:
 
 [settings]
 
-[#download_paths](README.md#download_paths):
+[#profile_directories](README.md#profile_directories):
 
-Default = ["{site_name}"]
+Where your account information is stored.
 
-    {site_name} = The site's name you're scraping
-    Leave directory empty if you want files to be downloaded in the script folder.
+    Default = [".profiles"]
 
     If you're going to fill, please remember to use forward ("/") slashes only.
 
+[#download_paths](README.md#download_paths):
+
+Where downloaded content is stored.
+
+    Default = [".sites"]
+
+    If you're going to fill, please remember to use forward ("/") slashes only.
+
+[#path_formatting](README.md#path_formatting):
+
+    {site_name} = The site you're scraping.
+
+    {post_id} = The posts' ID.
+
+    {media_id} = The media's ID.
+
+    {username} = The account's username.
+
+    {api_type} = Posts, Messages, etc.
+
+    {media_type} = Images, Videos, etc.
+
+    {filename} = The media's filename.
+
+    {value} = Value of the content. Paid or Free.
+
+    {text} = The media's text.
+
+    {date} = The post's creation date.
+
+    {ext} = The media's file extension.
+
+    Don't use the text variable. If you do, enjoy emojis in your filepaths and errors lmao.
+
 [#file_directory_format](README.md#file_directory_format):
 
-Default = ""
+This puts each media file into a folder.
 
-    This puts each media file into a folder.
-    See file_name_format below for a list of options to use.
-    You don't need to use a unique identifier for file_directory_format.
+The list below are unique identifiers that you must include.
 
-[#file_name_format](README.md#file_name_format):
+You can choose one or more.
 
-    Default = "{file_name}.{ext}"
+    Default = "{site_name}/{username}/{api_type}/{value}/{media_type}"
+    Default Translated = "OnlyFans/belledelphine/Posts/Free/Images"
 
-    {post_id} = The posts's ID
+    {username}
 
-    {media_id} = The media's ID [UNIQUE]
+[#filename_format](README.md#filename_format):
 
-    {file_name} = The media's file name [UNIQUE]
+Literally a filename.
 
-    {username} = The account's username
+The list below are unique identifiers that you must include.
 
-    {date} = The post's creation date
+You can choose one or more.
 
-    {text} = The media's text (You will get errors; don't use this)
+    Default = "{filename}.{ext}"
+    Default Translated = "5fb5a5e4b4ce6c47ce2b4_source.mp4"
 
-    {ext} = The media's file extension
+    {media_id}
+    {filename}
 
-    Example: {date}/{text}-{file_name}.{ext}
-    Warning: It's important to keep a unique identifier next to .{ext}. By default it's {file_name}.
+[#metadata_directory_format](README.md#metadata_directory_format):
+
+Filepath for metadata. It's tied with download_directories so ignore metadata_directories in the config.
+
+The list below are unique identifiers that you must include.
+
+You can choose one or more.
+
+    Default = "{site_name}/{username}/Metadata"
+    Default Translated = "OnlyFans/belledelphine/Metadata"
+
+    {username}
 
 [#text_length](README.md#text_length):
 
@@ -119,7 +163,8 @@ Default = ""
     Ideal = "50"
     Max = "255"
 
-    When you use {text} in file_name_format, a limit of how many characters can be set by inputting a number.
+    The ideal is actually 0.
+    When you use {text} in filename_format, a limit of how many characters can be set by inputting a number.
 
 [#auto_site_choice](README.md#auto_site_choice):
 
@@ -257,13 +302,6 @@ Default = ""
     Default = true
 
     Set to false if you don't want to save metadata.
-
-[#sort_free_paid_posts](README.md#sort_free_paid_posts):
-
-    Default = true
-
-    Set to false if you want to use the old file structure.
-    If you do set to false, it'll be incompatable.
 
 [#blacklist_name](README.md#blacklist_name):
 

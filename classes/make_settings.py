@@ -1,12 +1,79 @@
+import os
+from classes.prepare_metadata import format_types
 import uuid as uuid
+
+
+def fix(config={}):
+    added = []
+    changed = []
+    fix = []
+    for key, value in config.items():
+        if key == "supported":
+            for key2, value2 in value.items():
+                for key3, settings in value2.items():
+                    if key3 == "settings":
+                        re = settings.pop("download_paths", None)
+                        if re:
+                            settings["download_directories"] = re
+                            string = f"download_paths to download_directories in {key2}"
+                            changed.append(string)
+                        re = settings.get("metadata_directory_format", None)
+                        if not re:
+                            settings["metadata_directory_format"] = "{site_name}/{username}/Metadata"
+                            string = f"metadata_directory_format in {key2}"
+                            added.append(string)
+                        filename_format = settings.pop(
+                            "file_name_format",None)
+                        if filename_format:
+                            settings["filename_format"] = filename_format
+                        reformats = {k: v for k,
+                                     v in settings.items() if "_format" in k}
+                        bl = ["date_format"]
+                        reformats = {k: v for k,
+                                     v in reformats.items() if k not in bl}
+                        for re_name, re_value in reformats.items():
+                            top = ["{id}", "{file_name}"]
+                            bottom = ["{media_id}", "{filename}"]
+                            z = list(zip(top, bottom))
+                            for x in z:
+                                if x[0] in re_value:
+                                    settings[re_name] = settings[re_name].replace(
+                                        x[0], x[1])
+                                    reformats[re_name] = settings[re_name]
+                        x = format_types(reformats)
+                        q = x.check_rules()
+                        if not q[1]:
+                            fix.append(f"{q[0]}")
+                        c = x.check_unique()
+                        if not c["bool_status"]:
+                            s = c["string"]
+                            s_list = s.split("\n")
+                            fix.extend(s_list)
+                        print
+    added = "\n".join([f"Added {x}" for x in added if x])
+    changed = "\n".join([f"Changed {x}" for x in changed if x])
+    fix = "\n".join([f"Fix: {x}" for x in fix if x])
+    seperator = "\n"*2
+    changed2 = seperator.join([added, changed, fix])
+    if not all(x for x in changed2.split("\n") if not x):
+        changed2 = changed2.strip()
+        if changed2:
+            print(f"\n{changed2}")
+        if fix:
+            string = "\nFix the problems above and then restart the script."
+            print(string.upper())
+            input()
+            exit(0)
+    return config, changed2
 
 
 class config(object):
     def __init__(self, settings={}, supported={}):
         class Settings(object):
-            def __init__(self, auto_site_choice="", export_type="json", max_threads=-1, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy=[], cert="", global_user_agent="", random_string=""):
+            def __init__(self, auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy=[], cert="", global_user_agent="", random_string=""):
                 self.auto_site_choice = auto_site_choice
                 self.export_type = export_type
+                self.profile_directories = profile_directories
                 self.max_threads = max_threads
                 self.min_drive_space = min_drive_space
                 self.webhooks = webhooks
@@ -60,13 +127,18 @@ class config(object):
                             'auto_scrape_apis', True)
                         self.jobs = jobs(option.get(
                             'jobs', {}))
-                        self.download_paths = option.get(
-                            'download_paths', ["{site_name}"])
-                        self.file_directory_format = option.get(
-                            'file_directory_format', "")
-                        self.file_name_format = option.get(
-                            'file_name_format', "{file_name}.{ext}")
-                        self.text_length = option.get('text_length', "255")
+                        self.download_directories = option.get(
+                            'download_directories', [".sites"])
+                        normpath = os.path.normpath
+                        self.file_directory_format = normpath(option.get(
+                            'file_directory_format', "{site_name}/{username}/{api_type}/{value}/{media_type}"))
+                        self.filename_format = normpath(option.get(
+                            'filename_format', "{filename}.{ext}"))
+                        self.metadata_directories = option.get(
+                            'metadata_directories', [".sites"])
+                        self.metadata_directory_format = normpath(option.get(
+                            'metadata_directory_format', "{site_name}/{username}/Metadata"))
+                        self.text_length = option.get('text_length', 255)
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
                         self.date_format = option.get(
@@ -79,8 +151,6 @@ class config(object):
                             'export_metadata', True)
                         self.delete_legacy_metadata = option.get(
                             'delete_legacy_metadata', False)
-                        self.sort_free_paid_posts = option.get(
-                            'sort_free_paid_posts', True)
                         self.blacklist_name = option.get(
                             'blacklist_name', "")
                         self.webhook = option.get(
@@ -120,12 +190,16 @@ class config(object):
                             'auto_scrape_apis', True)
                         self.jobs = jobs(option.get(
                             'jobs', {}))
-                        self.download_paths = option.get(
-                            'download_paths', ["{site_name}"])
+                        self.download_directories = option.get(
+                            'download_directories', ["{site_name}"])
                         self.file_directory_format = option.get(
                             'file_directory_format', "")
-                        self.file_name_format = option.get(
-                            'file_name_format', "{file_name}.{ext}")
+                        self.filename_format = option.get(
+                            'filename_format', "{file_name}.{ext}")
+                        self.metadata_directories = option.get(
+                            'metadata_directories', [".sites"])
+                        self.metadata_directory_format = option.get(
+                            'metadata_directory_format', "{site_name}/{username}/Metadata")
                         self.text_length = option.get('text_length', "255")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
@@ -162,12 +236,16 @@ class config(object):
                         self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
-                        self.download_paths = option.get(
-                            'download_paths', ["{site_name}"])
+                        self.download_directories = option.get(
+                            'download_directories', ["{site_name}"])
                         self.file_directory_format = option.get(
                             'file_directory_format', "")
-                        self.file_name_format = option.get(
-                            'file_name_format', "{file_name}.{ext}")
+                        self.filename_format = option.get(
+                            'filename_format', "{file_name}.{ext}")
+                        self.metadata_directories = option.get(
+                            'metadata_directories', [".sites"])
+                        self.metadata_directory_format = option.get(
+                            'metadata_directory_format', "{site_name}/{username}/Metadata")
                         self.text_length = option.get('text_length', "255")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
@@ -194,12 +272,16 @@ class config(object):
                         self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
-                        self.download_paths = option.get(
-                            'download_paths', ["{site_name}"])
+                        self.download_directories = option.get(
+                            'download_directories', ["{site_name}"])
                         self.file_directory_format = option.get(
                             'file_directory_format', "")
-                        self.file_name_format = option.get(
-                            'file_name_format', "{file_name}.{ext}")
+                        self.filename_format = option.get(
+                            'filename_format', "{file_name}.{ext}")
+                        self.metadata_directories = option.get(
+                            'metadata_directories', [".sites"])
+                        self.metadata_directory_format = option.get(
+                            'metadata_directory_format', "{site_name}/{username}/Metadata")
                         self.text_length = option.get('text_length', "255")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
@@ -233,12 +315,16 @@ class config(object):
                             'auto_scrape_names', False)
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
-                        self.download_paths = option.get(
-                            'download_paths', ["{site_name}"])
+                        self.download_directories = option.get(
+                            'download_directories', [".sites"])
                         self.file_directory_format = option.get(
                             'file_directory_format', "")
-                        self.file_name_format = option.get(
-                            'file_name_format', "{file_name}.{ext}")
+                        self.filename_format = option.get(
+                            'filename_format', "{file_name}.{ext}")
+                        self.metadata_directories = option.get(
+                            'metadata_directories', [".sites"])
+                        self.metadata_directory_format = option.get(
+                            'metadata_directory_format', "{site_name}/{username}/Metadata")
                         self.text_length = option.get('text_length', "255")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
@@ -252,8 +338,6 @@ class config(object):
                             'export_metadata', True)
                         self.delete_legacy_metadata = option.get(
                             'delete_legacy_metadata', False)
-                        self.sort_free_paid_posts = option.get(
-                            'sort_free_paid_posts', True)
                         self.blacklist_name = option.get(
                             'blacklist_name', "")
                         self.webhook = option.get(
@@ -264,8 +348,6 @@ class config(object):
                         self.extra_auth = option.get('extra_auth', False)
                         self.choose_auth = option.get('choose_auth', False)
                         self.merge_auth = option.get('merge_auth', False)
-        if "multithreading" in settings:
-            settings.pop("multithreading")
         self.settings = Settings(**settings)
         self.supported = Supported(**supported)
 

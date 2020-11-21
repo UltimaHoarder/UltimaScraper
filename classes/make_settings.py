@@ -43,10 +43,10 @@ def fix(config={}):
                         x = format_types(reformats)
                         q = x.check_rules()
                         if not q[1]:
-                            fix.append(f"{q[0]}")
+                            fix.append(f"{key2} - {q[0]}")
                         c = x.check_unique()
                         if not c["bool_status"]:
-                            s = c["string"]
+                            s = f"{key2} - {c['string']}"
                             s_list = s.split("\n")
                             fix.extend(s_list)
                         print

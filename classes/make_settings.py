@@ -191,15 +191,16 @@ class config(object):
                         self.jobs = jobs(option.get(
                             'jobs', {}))
                         self.download_directories = option.get(
-                            'download_directories', ["{site_name}"])
-                        self.file_directory_format = option.get(
-                            'file_directory_format', "")
-                        self.filename_format = option.get(
-                            'filename_format', "{file_name}.{ext}")
+                            'download_directories', [".sites"])
+                        normpath = os.path.normpath
+                        self.file_directory_format = normpath(option.get(
+                            'file_directory_format', "{site_name}/{username}/{api_type}/{value}/{media_type}"))
+                        self.filename_format = normpath(option.get(
+                            'filename_format', "{filename}.{ext}"))
                         self.metadata_directories = option.get(
                             'metadata_directories', [".sites"])
-                        self.metadata_directory_format = option.get(
-                            'metadata_directory_format', "{site_name}/{username}/Metadata")
+                        self.metadata_directory_format = normpath(option.get(
+                            'metadata_directory_format', "{site_name}/{username}/Metadata"))
                         self.text_length = option.get('text_length', "255")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
@@ -237,15 +238,16 @@ class config(object):
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
                         self.download_directories = option.get(
-                            'download_directories', ["{site_name}"])
-                        self.file_directory_format = option.get(
-                            'file_directory_format', "")
-                        self.filename_format = option.get(
-                            'filename_format', "{file_name}.{ext}")
+                            'download_directories', [".sites"])
+                        normpath = os.path.normpath
+                        self.file_directory_format = normpath(option.get(
+                            'file_directory_format', "{site_name}/{username}/{api_type}/{value}/{media_type}"))
+                        self.filename_format = normpath(option.get(
+                            'filename_format', "{filename}.{ext}"))
                         self.metadata_directories = option.get(
                             'metadata_directories', [".sites"])
-                        self.metadata_directory_format = option.get(
-                            'metadata_directory_format', "{site_name}/{username}/Metadata")
+                        self.metadata_directory_format = normpath(option.get(
+                            'metadata_directory_format', "{site_name}/{username}/Metadata"))
                         self.text_length = option.get('text_length', "255")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
@@ -273,15 +275,16 @@ class config(object):
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
                         self.download_directories = option.get(
-                            'download_directories', ["{site_name}"])
-                        self.file_directory_format = option.get(
-                            'file_directory_format', "")
-                        self.filename_format = option.get(
-                            'filename_format', "{file_name}.{ext}")
+                            'download_directories', [".sites"])
+                        normpath = os.path.normpath
+                        self.file_directory_format = normpath(option.get(
+                            'file_directory_format', "{site_name}/{username}/{api_type}/{value}/{media_type}"))
+                        self.filename_format = normpath(option.get(
+                            'filename_format', "{filename}.{ext}"))
                         self.metadata_directories = option.get(
                             'metadata_directories', [".sites"])
-                        self.metadata_directory_format = option.get(
-                            'metadata_directory_format', "{site_name}/{username}/Metadata")
+                        self.metadata_directory_format = normpath(option.get(
+                            'metadata_directory_format', "{site_name}/{username}/Metadata"))
                         self.text_length = option.get('text_length', "255")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
@@ -317,14 +320,15 @@ class config(object):
                             'auto_scrape_apis', True)
                         self.download_directories = option.get(
                             'download_directories', [".sites"])
-                        self.file_directory_format = option.get(
-                            'file_directory_format', "")
-                        self.filename_format = option.get(
-                            'filename_format', "{file_name}.{ext}")
+                        normpath = os.path.normpath
+                        self.file_directory_format = normpath(option.get(
+                            'file_directory_format', "{site_name}/{username}/{api_type}/{value}/{media_type}"))
+                        self.filename_format = normpath(option.get(
+                            'filename_format', "{filename}.{ext}"))
                         self.metadata_directories = option.get(
                             'metadata_directories', [".sites"])
-                        self.metadata_directory_format = option.get(
-                            'metadata_directory_format', "{site_name}/{username}/Metadata")
+                        self.metadata_directory_format = normpath(option.get(
+                            'metadata_directory_format', "{site_name}/{username}/Metadata"))
                         self.text_length = option.get('text_length', "255")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)

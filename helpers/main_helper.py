@@ -369,7 +369,10 @@ def downloader(r, download_path, count=0):
 
 
 def get_config(config_path):
-    json_config = json.load(open(config_path))
+    if os.path.exists(config_path):
+        json_config = json.load(open(config_path))
+    else:
+        json_config = {}
     json_config2 = copy.deepcopy(json_config)
     json_config, string = make_settings.fix(json_config)
     file_name = os.path.basename(config_path)

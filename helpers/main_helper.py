@@ -235,7 +235,7 @@ def reformat(prepared_format, unformatted):
     date = prepared_format.date
     text = prepared_format.text
     value = "Free"
-    maximum_length = int(prepared_format.maximum_length)
+    maximum_length = prepared_format.maximum_length
     post_id = "" if post_id is None else str(post_id)
     media_id = "" if media_id is None else str(media_id)
     extra_count = 0

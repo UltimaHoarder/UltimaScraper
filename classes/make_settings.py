@@ -12,6 +12,7 @@ def fix(config={}):
             for key2, value2 in value.items():
                 for key3, settings in value2.items():
                     if key3 == "settings":
+                        settings["text_length"] = int(settings["text_length"])
                         re = settings.pop("download_paths", None)
                         if re:
                             settings["download_directories"] = re

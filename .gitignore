@@ -120,6 +120,9 @@ Thumbs.db:encryptable
 ehthumbs.db
 ehthumbs_vista.db
 
+### Mac ###
+.DS_Store
+
 # Dump file
 *.stackdump
 

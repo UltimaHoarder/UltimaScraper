@@ -76,6 +76,7 @@ def account_setup(api):
     status = False
     auth = api.login()
     if auth:
+        jobs = json_settings["jobs"]
         profile_directory = json_global_settings["profile_directories"][0]
         profile_directory = os.path.abspath(profile_directory)
         profile_directory = os.path.join(profile_directory, auth["username"])
@@ -90,7 +91,8 @@ def account_setup(api):
             export_archive(mass_messages, metadata_filepath,
                            json_settings)
         # chats = api.get_chats()
-        subscriptions = api.get_subscriptions()
+        if jobs["scrape_names"]:
+            subscriptions = api.get_subscriptions()
         status = True
     return status
 
@@ -279,41 +281,45 @@ def profile_scraper(api, site_name, api_type, username, text_length, base_direct
             break
 
 
-def paid_content_scraper(api):
-    paid_contents = api.get_paid_content(refresh=False)
-    results = []
-    for paid_content in paid_contents:
-        metadata_locations = {}
-        author = paid_content.get("author")
-        author = paid_content.get("fromUser", author)
-        subscription = create_subscription(author)
-        subscription.sessions = api.sessions
-        subscription.download_info["directory"] = j_directory
-        username = subscription.username
-        model_directory = os.path.join(j_directory, username)
-        api_type = paid_content["responseType"].capitalize()+"s"
-        subscription.download_info["metadata_locations"] = j_directory
-        subscription.download_info["metadata_locations"] = metadata_locations
-        site_name = "OnlyFans"
-        media_type = format_media_types()
-        formatted_directories = format_directories(
-            j_directory, site_name, username, metadata_directory_format, media_type, api_type)
-        metadata_directory = formatted_directories["metadata_directory"]
-        metadata_path = os.path.join(
-            metadata_directory, api_type+".json")
-        metadata_locations[api_type] = metadata_path
-        new_metadata = media_scraper([paid_content], api,
-                                     formatted_directories, username, api_type)
-        for directory in new_metadata["directories"]:
-            os.makedirs(directory, exist_ok=True)
-        api_path = os.path.join(api_type, "")
-        new_metadata_object = process_metadata(
-            api, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
-        new_metadata_set = new_metadata_object.convert()
-        if export_metadata:
-            export_archive(new_metadata_set, metadata_path, json_settings)
-        download_media(api, subscription)
-    return results
+def paid_content_scraper(apis):
+    for api in apis:
+        paid_contents = api.get_paid_content(check=True)
+        authed = api.auth
+        authed["subscriptions"] = authed.get("subscriptions", [])
+        for paid_content in paid_contents:
+            author = paid_content.get("author")
+            author = paid_content.get("fromUser", author)
+            subscription = api.get_subscription(author["id"])
+            if not subscription:
+                subscription = create_subscription(author)
+                authed["subscriptions"].append(subscription)
+            api_type = paid_content["responseType"].capitalize()+"s"
+            api_media = getattr(subscription.scraped, api_type)
+            api_media.append(paid_content)
+            print
+        for subscription in authed["subscriptions"]:
+            string = f"Scraping - {subscription.username}"
+            print(string)
+            subscription.sessions = api.sessions
+            username = subscription.username
+            site_name = "OnlyFans"
+            media_type = format_media_types()
+            for api_type, paid_content in subscription.scraped:
+                formatted_directories = format_directories(
+                    j_directory, site_name, username, metadata_directory_format, media_type, api_type)
+                metadata_directory = formatted_directories["metadata_directory"]
+                metadata_path = os.path.join(
+                    metadata_directory, api_type+".json")
+                new_metadata = media_scraper(paid_content, api,
+                                             formatted_directories, username, api_type)
+                if new_metadata:
+                    api_path = os.path.join(api_type, "")
+                    new_metadata_object = process_metadata(
+                        api, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
+                    new_metadata_set = new_metadata_object.convert()
+                    if export_metadata:
+                        export_archive(new_metadata_set,
+                                       metadata_path, json_settings)
 
 
 def format_media_types():
@@ -477,12 +483,10 @@ def process_metadata(api, new_metadata, formatted_directories, subscription, api
     if legacy_metadata_object:
         new_metadata_object = compare_metadata(
             new_metadata_object, legacy_metadata_object)
-    if not subscription.download_info:
-        subscription.download_info["directory"] = j_directory
-        subscription.download_info["model_directory"] = os.path.join(
-            j_directory, subscription.username)
-        subscription.download_info["webhook"] = webhook
-        subscription.download_info["metadata_locations"] = {}
+        if not subscription.download_info:
+            subscription.download_info["metadata_locations"] = {}
+    subscription.download_info["directory"] = j_directory
+    subscription.download_info["webhook"] = webhook
     subscription.download_info["metadata_locations"][api_type] = archive_path
     subscription.set_scraped(api_type, new_metadata_object)
     new_metadata_object = ofrenamer.start(
@@ -670,8 +674,17 @@ def test(new_item, old_item):
     new_found = None
     if old_item.media_id == None:
         for link in old_item.links:
-            link = link.split("?")[0]
-            if any(link in new_link for new_link in new_item.links):
+            # Handle Links
+            if "?" in link:
+                link2 = link.split("?")[0]
+            elif ";ip=" in link:
+                a = urlparse(link)
+                link2 = os.path.basename(a.path)
+            else:
+                link2 = link
+                input(
+                    f"NEW LINK DETECTED, PLEASE OPEN AN ISSUE ON GITHUB AND PASTE THE NEW LINK THERE SO I CAN HANDLE THE LINK, THANKS.\nLINK: {link}")
+            if any(link2 in new_link for new_link in new_item.links):
                 new_found = new_item
                 break
             print
@@ -719,8 +732,8 @@ def compare_metadata(new_metadata: media_types, old_metadata: media_types) -> me
                 if not old_items:
                     for a in old_status:
                         new_found = test(new_item, a)
-                        print
-                        break
+                        if new_found:
+                            break
                     if not new_found:
                         old_status.append(new_item)
                         print
@@ -865,21 +878,6 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                 filename, ext = os.path.splitext(filename)
                 ext = ext.__str__().replace(".", "").split('?')[0]
                 price = new_dict["price"]
-                # media_directory = os.path.join(
-                #     model_directory, sorted_directories["unsorted"])
-                # new_dict["paid"] = False
-                # if new_dict["price"]:
-                #     if api_type in ["Messages", "Mass Messages"]:
-                #         new_dict["paid"] = True
-                #     else:
-                #         if media["id"] not in media_api["preview"] and media["canView"]:
-                #             new_dict["paid"] = True
-                # if sort_free_paid_posts:
-                #     media_directory = os.path.join(
-                #         model_directory, sorted_directories["free"])
-                #     if new_dict["paid"]:
-                #         media_directory = os.path.join(
-                #             model_directory, sorted_directories["paid"])
                 new_dict["text"] = text
 
                 option = {}
@@ -1072,6 +1070,7 @@ def format_options(f_list, choice_type):
     count = 0
     names = []
     string = ""
+    seperator = " | "
     if name_count > 1:
         if "usernames" == choice_type:
             for x in f_list:
@@ -1079,7 +1078,7 @@ def format_options(f_list, choice_type):
                 string += str(count)+" = "+name
                 names.append([x.auth_count, name])
                 if count+1 != name_count:
-                    string += " | "
+                    string += seperator
                 count += 1
         if "apis" == choice_type:
             names = f_list
@@ -1090,6 +1089,6 @@ def format_options(f_list, choice_type):
                     name = api["api_type"]
                 string += str(count)+" = "+name
                 if count+1 != name_count:
-                    string += " | "
+                    string += seperator
                 count += 1
     return [names, string]

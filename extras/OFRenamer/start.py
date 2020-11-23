@@ -85,7 +85,7 @@ def fix_metadata(post_item):
 def start(subscription, api_type, api_path, site_name, json_settings):
     metadata = getattr(subscription.scraped, api_type)
     download_info = subscription.download_info
-    base_directory = download_info["directory"]
+    root_directory = download_info["directory"]
     date_format = json_settings["date_format"]
     text_length = json_settings["text_length"]
     reformats = {}
@@ -99,7 +99,7 @@ def start(subscription, api_type, api_path, site_name, json_settings):
     option["username"] = username
     option["date_format"] = date_format
     option["maximum_length"] = text_length
-    option["directory"] = base_directory
+    option["directory"] = root_directory
     formatted = format_types(reformats).check_unique()
     unique = formatted["unique"]
     for key, value in reformats.items():
@@ -107,10 +107,11 @@ def start(subscription, api_type, api_path, site_name, json_settings):
         reformats[key] = value.split(key2, 1)[0]+key2
         print
     print
-    a, b, c = prepare_reformat(option, keep_vars=True).reformat(reformats)
+    a, base_directory, c = prepare_reformat(option, keep_vars=True).reformat(reformats)
+    download_info["base_directory"] = base_directory
     print
     all_files = []
-    for root, subdirs, files in os.walk(b):
+    for root, subdirs, files in os.walk(base_directory):
         x = [os.path.join(root, x) for x in files]
         all_files.extend(x)
     for media_type, value in metadata:
@@ -118,7 +119,7 @@ def start(subscription, api_type, api_path, site_name, json_settings):
             continue
         for status, value2 in value:
             fixed, new_directories = fix_directories(
-                value2, base_directory, site_name, api_path, media_type, username, all_files, json_settings)
+                value2, root_directory, site_name, api_path, media_type, username, all_files, json_settings)
             for new_directory in new_directories:
                 directory = os.path.abspath(new_directory)
                 os.makedirs(directory, exist_ok=True)

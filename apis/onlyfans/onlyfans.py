@@ -208,7 +208,7 @@ class start():
     def __init__(self, sessions=[], custom_request=callable) -> None:
         sessions = api_helper.copy_sessions(sessions)
         self.sessions = sessions
-        self.auth = None
+        self.auth = {}
         self.custom_request = custom_request
         self.auth_details = None
         self.max_threads = -1
@@ -381,7 +381,7 @@ class start():
         if not refresh:
             subscriptions = authed.get(
                 "subscriptions")
-            if subscriptions:
+            if subscriptions != None:
                 return subscriptions
         link = links(global_limit=limit, global_offset=offset).subscriptions
         session = self.sessions[0]
@@ -433,6 +433,7 @@ class start():
             return valid_subscriptions
         pool = api_helper.multiprocessing()
         # offset_array = api_helper.assign_session(offset_array, self.sessions,key_two="session",show_item=True)
+        # offset_array= offset_array[:16]
         results += pool.starmap(multi, product(
             offset_array, [session]))
 
@@ -566,7 +567,7 @@ class start():
         link = links(global_limit=limit,
                      global_offset=offset).mass_messages_api
         results = self.request(link=link)
-        items = results.get("list",[])
+        items = results.get("list", [])
         if not items:
             return items
         if resume:

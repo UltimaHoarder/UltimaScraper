@@ -93,6 +93,7 @@ def start_datascraper():
                 site_name = "OnlyFans"
                 subscription_array = []
                 auth_count = -1
+                jobs = json_site_settings["jobs"]
                 for json_auth in json_auth_array:
                     api = OnlyFans.start(
                         original_sessions)
@@ -108,18 +109,17 @@ def start_datascraper():
                     setup = module.account_setup(api)
                     if not setup:
                         continue
-                    jobs = json_site_settings["jobs"]
                     if jobs["scrape_names"]:
                         array = module.manage_subscriptions(api, auth_count)
                         subscription_array += array
-                    if jobs["scrape_paid_content"]:
-                        paid_contents = api.get_paid_content()
-                        paid_content = module.paid_content_scraper(api)
                     apis.append(api)
                 subscription_list = module.format_options(
                     subscription_array, "usernames")
-                x = main_helper.process_names(
-                    module, subscription_list, auto_scrape_names, json_auth_array, apis, json_config, site_name_lower, site_name)
+                if jobs["scrape_paid_content"]:
+                    paid_content = module.paid_content_scraper(apis)
+                if jobs["scrape_names"]:
+                    x = main_helper.process_names(
+                        module, subscription_list, auto_scrape_names, json_auth_array, apis, json_config, site_name_lower, site_name)
                 x = main_helper.process_downloads(apis, module)
                 print
             elif site_name_lower == "starsavn":

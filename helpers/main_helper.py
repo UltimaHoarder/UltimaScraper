@@ -167,8 +167,9 @@ def format_image(filepath, timestamp):
             if os_name == "Windows":
                 from win32_setctime import setctime
                 setctime(filepath, timestamp)
-                print(filepath)
+                print(f"Updated Creation Time {filepath}")
             os.utime(filepath, (timestamp, timestamp))
+            print(f"Updated Modification Time {filepath}")
         except Exception as e:
             continue
         break
@@ -398,9 +399,10 @@ def update_config(json_config, file_name="config.json"):
 
 
 def choose_auth(array):
-    string = ""
     names = []
     array = [{"auth_count": -1, "username": "All"}]+array
+    string = ""
+    seperator = " | "
     name_count = len(array)
     if name_count > 1:
 
@@ -410,7 +412,7 @@ def choose_auth(array):
             string += str(count)+" = "+name
             names.append(x)
             if count+1 != name_count:
-                string += " | "
+                string += seperator
 
             count += 1
 
@@ -426,7 +428,8 @@ def choose_auth(array):
 def choose_option(subscription_list, auto_scrape_names):
     names = subscription_list[0]
     if names:
-        print("Names: Username = username | "+subscription_list[1])
+        seperator = " | "
+        print(f"Names: Username = username {seperator} {subscription_list[1]}")
         if not auto_scrape_names:
             value = "1"
             value = input().strip()
@@ -469,7 +472,7 @@ def process_downloads(apis, module):
             if download_info:
                 module.download_media(api, subscription)
                 delete_empty_directories(
-                    download_info["model_directory"])
+                    download_info["base_directory"])
                 send_webhook(subscription)
 
 
@@ -558,8 +561,13 @@ def delete_empty_directories(directory):
         for root, dirnames, files in os.walk(directory, topdown=False):
             for dirname in dirnames:
                 full_path = os.path.realpath(os.path.join(root, dirname))
-                if not os.listdir(full_path):
-                    os.rmdir(full_path)
+                contents = os.listdir(full_path)
+                if not contents:
+                    shutil.rmtree(full_path, ignore_errors=True)
+                else:
+                    content_count = len(contents)
+                    if content_count ==1 and "desktop.ini" in contents:
+                        shutil.rmtree(full_path, ignore_errors=True)
     x = start(directory)
     if os.path.exists(directory):
         if not os.listdir(directory):
@@ -576,6 +584,7 @@ def multiprocessing():
 
 def module_chooser(domain, json_sites):
     string = "Site: "
+    seperator = " | "
     site_names = []
     wl = ["onlyfans"]
     bl = ["patreon"]
@@ -590,7 +599,7 @@ def module_chooser(domain, json_sites):
         string += str(count)+" = "+x
         site_names.append(x)
         if count+1 != site_count:
-            string += " | "
+            string += seperator
 
         count += 1
     string += "x = Exit"

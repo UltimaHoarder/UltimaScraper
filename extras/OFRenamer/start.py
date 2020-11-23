@@ -68,10 +68,15 @@ def fix_metadata(post_item):
     for posts in post_item:
         for media in posts:
             def update(old_filepath, new_filepath):
+                # if os.path.exists(old_filepath):
+                #     if not media.session:
+                #         media.downloaded = True
                 if old_filepath != new_filepath:
                     if os.path.exists(new_filepath):
                         os.remove(new_filepath)
                     if os.path.exists(old_filepath):
+                        if not media.session:
+                            media.downloaded = True
                         shutil.move(old_filepath, new_filepath)
                 return old_filepath, new_filepath
             old_filepath = media.old_filepath

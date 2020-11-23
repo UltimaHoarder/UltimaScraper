@@ -431,7 +431,7 @@ def choose_option(subscription_list, auto_scrape_names):
         seperator = " | "
         print(f"Names: Username = username {seperator} {subscription_list[1]}")
         if not auto_scrape_names:
-            value = "1"
+            value = "andreatv"
             value = input().strip()
             if value.isdigit():
                 if value == "0":
@@ -566,7 +566,7 @@ def delete_empty_directories(directory):
                     shutil.rmtree(full_path, ignore_errors=True)
                 else:
                     content_count = len(contents)
-                    if content_count ==1 and "desktop.ini" in contents:
+                    if content_count == 1 and "desktop.ini" in contents:
                         shutil.rmtree(full_path, ignore_errors=True)
     x = start(directory)
     if os.path.exists(directory):

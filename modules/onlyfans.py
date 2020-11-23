@@ -471,20 +471,19 @@ def process_mass_message(api, subscription, metadata_directory, mass_messages):
 
 
 def process_metadata(api, new_metadata, formatted_directories, subscription, api_type, api_path, archive_path, site_name):
+    legacy_metadata_object = legacy_metadata_fixer(
+        formatted_directories, api)
     new_metadata_object = prepare_metadata(
         new_metadata, api=api).metadata
+    new_metadata_object = compare_metadata(
+        new_metadata_object, legacy_metadata_object)
     old_metadata_set = import_archive(archive_path)
     old_metadata_object = prepare_metadata(
         old_metadata_set, api=api).metadata
     new_metadata_object = compare_metadata(
         new_metadata_object, old_metadata_object)
-    legacy_metadata_object = legacy_metadata_fixer(
-        formatted_directories, api)
-    if legacy_metadata_object:
-        new_metadata_object = compare_metadata(
-            new_metadata_object, legacy_metadata_object)
-        if not subscription.download_info:
-            subscription.download_info["metadata_locations"] = {}
+    if not subscription.download_info:
+        subscription.download_info["metadata_locations"] = {}
     subscription.download_info["directory"] = j_directory
     subscription.download_info["webhook"] = webhook
     subscription.download_info["metadata_locations"][api_type] = archive_path
@@ -651,11 +650,11 @@ def legacy_metadata_fixer(formatted_directories: dict, api: object) -> media_typ
                 new_metadata_set = import_archive(
                     import_path)
                 if new_metadata_set:
-                    new_metadata_object = prepare_metadata(
+                    new_metadata_object2 = prepare_metadata(
                         new_metadata_set, api=api).metadata
                     print
                     old_metadata_object = compare_metadata(
-                        new_metadata_object, old_metadata_object)
+                        new_metadata_object2, old_metadata_object)
                     print
             q.append(old_metadata_object)
             print
@@ -704,42 +703,25 @@ def compare_metadata(new_metadata: media_types, old_metadata: media_types) -> me
             new_value2 = getattr(new_value, key2)
             old_status = list(chain.from_iterable(value2))
             new_status = list(chain.from_iterable(new_value2))
+            l = False
             for old_item in old_status:
+                # if old_item.post_id == 9606680:
+                #     l = True
                 new_found = None
                 new_items = [
                     x for x in new_status if old_item.post_id == x.post_id]
                 if new_items:
                     for new_item in (x for x in new_items if not new_found):
                         new_found = test(new_item, old_item)
-                        print
-                    print
-                else:
-                    print
                 if new_found:
                     for key3, v in new_found:
                         if key3 in ["directory", "downloaded", "size", "filename"]:
                             continue
                         setattr(old_item, key3, v)
-                        print
-                    print
-                else:
-                    print
-                print
-            for new_item in new_status:
-                new_found = None
-                old_items = [x for x in old_status if x.media_id ==
-                             new_item.media_id and x.media_id != None]
-                if not old_items:
-                    for a in old_status:
-                        new_found = test(new_item, a)
-                        if new_found:
-                            break
-                    if not new_found:
-                        old_status.append(new_item)
-                        print
-                    print
-                print
-            print
+                    setattr(new_found, "found", True)
+            not_found = [
+                x for x in new_status if not getattr(x, "found", None)]
+            old_status += not_found
             old_status.sort(key=lambda x: x.post_id, reverse=False)
             lmao = [list(g) for k, g in groupby(
                 old_status, key=lambda x: x.post_id)]

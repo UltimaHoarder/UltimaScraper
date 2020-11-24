@@ -91,7 +91,7 @@ def account_setup(api: start, identifier=""):
             export_archive(mass_messages, metadata_filepath,
                            json_settings)
         # chats = api.get_chats()
-        if not identifier:
+        if not identifier and jobs["scrape_names"]:
             # metadata_filepath = os.path.join(
             #     profile_metadata_directory, "Subscriptions.json")
             # imported = import_archive(metadata_filepath)
@@ -299,13 +299,13 @@ def profile_scraper(api: start, site_name, api_type, username, text_length, base
 
 def paid_content_scraper(apis: list[start]):
     for api in apis:
-        paid_contents = api.get_paid_content(check=True)
+        paid_contents = api.get_paid_content()
         authed = api.auth
         authed.subscriptions = authed.subscriptions
         for paid_content in paid_contents:
             author = paid_content.get("author")
             author = paid_content.get("fromUser", author)
-            subscription = api.get_subscription(author["id"])
+            subscription = api.get_subscription(check=True,identifier=author["id"])
             if not subscription:
                 subscription = create_subscription(author)
                 authed.subscriptions.append(subscription)
@@ -322,7 +322,7 @@ def paid_content_scraper(apis: list[start]):
             username = subscription.username
             site_name = "OnlyFans"
             media_type = format_media_types()
-            count+=1
+            count += 1
             for api_type, paid_content in subscription.scraped:
                 formatted_directories = format_directories(
                     j_directory, site_name, username, metadata_directory_format, media_type, api_type)

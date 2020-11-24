@@ -651,14 +651,14 @@ class start():
         self.auth.subscriptions = results
         return results
 
-    def get_subscription(self, identifier, limit=100, offset=0) -> Union[create_subscription, None]:
+    def get_subscription(self, check:bool=False,identifier="", limit=100, offset=0) -> Union[create_subscription, None]:
         subscriptions = self.get_subscriptions(refresh=False)
         valid = None
         for subscription in subscriptions:
             if identifier == subscription.username or identifier == subscription.id:
                 valid = subscription
                 break
-        if not valid:
+        if not valid and not check:
             link = links(identifier=identifier, global_limit=limit,
                          global_offset=offset).users
             session = self.sessions[0]

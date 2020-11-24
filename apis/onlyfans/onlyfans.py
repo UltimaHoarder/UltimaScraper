@@ -374,15 +374,14 @@ class start():
         r = self.request(link=link)
         return r
 
-    def get_subscriptions(self, refresh=True, extra_info=True, limit=20, offset=0):
+    def get_subscriptions(self, resume=None, refresh=True, extra_info=True, limit=20, offset=0):
         authed = self.auth_check()
         if not authed:
             return
         if not refresh:
             subscriptions = authed.get(
-                "subscriptions")
-            if subscriptions != None:
-                return subscriptions
+                "subscriptions", [])
+            return subscriptions
         link = links(global_limit=limit, global_offset=offset).subscriptions
         session = self.sessions[0]
         ceil = math.ceil(authed["subscribesCount"] / limit)
@@ -439,33 +438,7 @@ class start():
 
         def meh(subscriptions):
             for subscription in subscriptions:
-                valid_counts = ["postsCount", "archivedPostsCount"]
-
-                identifier = subscription.id
-                args = [identifier, False, False]
-                link_info = self.links(*args).full
-                x2 = [link_info["post_api"],
-                      link_info["archived_posts"]]
-                items = dict(zip(valid_counts, x2))
-                for key, value in items.items():
-                    if key in items:
-                        placement = ""
-                        key_name = ""
-                        if key == "postsCount":
-                            key_name = "Posts"
-                            placement = subscription.links
-                        elif key == "archivedPostsCount":
-                            key_name = "Posts"
-                            placement = subscription.links.Archived
-                        link = value["link"]
-                        max_limit = value["max_limit"]
-                        api_count = getattr(subscription, key)
-                        ceil = math.ceil(api_count / max_limit)
-                        a = list(range(ceil))
-                        for b in a:
-                            b = b * max_limit
-                            getattr(placement, key_name).append(link.replace(
-                                "offset=0", "offset=" + str(b)))
+                break
             return subscriptions
         results = [x for x in results if x is not None]
         results = list(chain(*results))
@@ -473,13 +446,21 @@ class start():
         self.auth["subscriptions"] = results
         return results
 
-    def get_subscription(self, identifier):
+    def get_subscription(self, identifier, limit=100, offset=0):
         subscriptions = self.get_subscriptions(refresh=False)
         valid = {}
         for subscription in subscriptions:
             if identifier == subscription.username or identifier == subscription.id:
                 valid = subscription
                 break
+        if not valid:
+            link = links(identifier=identifier, global_limit=limit,
+                         global_offset=offset).users
+            result = self.request(link=link)
+            result["sessions"] = self.sessions
+            subscription = create_subscription(result)
+            valid = subscription
+            subscriptions.append(subscription)
         return valid
 
     def get_lists(self, refresh=True, limit=100, offset=0):
@@ -635,6 +616,34 @@ class create_subscription(start):
         self.scraped = content_types()
         self.sessions = option.get("sessions")
         self.download_info = {}
+
+        valid_counts = ["postsCount", "archivedPostsCount"]
+
+        identifier = self.id
+        args = [identifier, False, False]
+        link_info = links(*args).full
+        x2 = [link_info["post_api"],
+              link_info["archived_posts"]]
+        items = dict(zip(valid_counts, x2))
+        for key, value in items.items():
+            if key in items:
+                placement = ""
+                key_name = ""
+                if key == "postsCount":
+                    key_name = "Posts"
+                    placement = self.links
+                elif key == "archivedPostsCount":
+                    key_name = "Posts"
+                    placement = self.links.Archived
+                link = value["link"]
+                max_limit = value["max_limit"]
+                api_count = getattr(self, key)
+                ceil = math.ceil(api_count / max_limit)
+                a = list(range(ceil))
+                for b in a:
+                    b = b * max_limit
+                    getattr(placement, key_name).append(link.replace(
+                        "offset=0", "offset=" + str(b)))
 
     def get_stories(self, refresh=True, limit=100, offset=0):
         api_type = "stories"

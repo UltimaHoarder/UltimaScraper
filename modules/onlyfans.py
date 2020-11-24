@@ -72,7 +72,7 @@ def assign_vars(json_auth, config, site_settings, site_name):
     app_token = json_auth['app_token']
 
 
-def account_setup(api):
+def account_setup(api, identifier=""):
     status = False
     auth = api.login()
     if auth:
@@ -91,8 +91,24 @@ def account_setup(api):
             export_archive(mass_messages, metadata_filepath,
                            json_settings)
         # chats = api.get_chats()
-        if jobs["scrape_names"]:
+        if not identifier:
+            # metadata_filepath = os.path.join(
+            #     profile_metadata_directory, "Subscriptions.json")
+            # imported = import_archive(metadata_filepath)
             subscriptions = api.get_subscriptions()
+        # collection = []
+        # for subscription in subscriptions:
+        #     delattr(subscription,"download_info")
+        #     delattr(subscription,"sessions")
+        #     delattr(subscription,"scraped")
+        #     delattr(subscription,"is_me")
+        #     delattr(subscription,"links")
+        #     collection.append(subscription)
+        # collection = jsonpickle.encode(
+        #     collection, unpicklable=False)
+        # collection = jsonpickle.decode(collection)
+        # export_archive(collection, metadata_filepath,
+        #                 json_settings)
         status = True
     return status
 
@@ -985,8 +1001,12 @@ class download_media():
         return return_bool
 
 
-def manage_subscriptions(api, auth_count=0):
-    results = api.get_subscriptions(refresh=False)
+def manage_subscriptions(api, auth_count=0, identifier=""):
+    if identifier:
+        results = api.get_subscription(identifier=identifier)
+        results = [results]
+    else:
+        results = api.get_subscriptions(refresh=False)
     if blacklist_name:
         r = api.get_lists()
         if not r:

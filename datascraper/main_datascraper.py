@@ -106,11 +106,13 @@ def start_datascraper():
                                        json_site_settings, site_name)
                     api.set_auth_details(
                         **json_auth, global_user_agent=user_agent)
-                    setup = module.account_setup(api)
+                    identifier = ""
+                    setup = module.account_setup(api, identifier=identifier)
                     if not setup:
                         continue
                     if jobs["scrape_names"]:
-                        array = module.manage_subscriptions(api, auth_count)
+                        array = module.manage_subscriptions(
+                            api, auth_count, identifier=identifier)
                         subscription_array += array
                     apis.append(api)
                 subscription_list = module.format_options(

@@ -674,15 +674,8 @@ def test(new_item, old_item):
     if old_item.media_id == None:
         for link in old_item.links:
             # Handle Links
-            if "?" in link:
-                link2 = link.split("?")[0]
-            elif ";ip=" in link:
-                a = urlparse(link)
-                link2 = os.path.basename(a.path)
-            else:
-                link2 = link
-                input(
-                    f"NEW LINK DETECTED, PLEASE OPEN AN ISSUE ON GITHUB AND PASTE THE NEW LINK THERE SO I CAN HANDLE THE LINK, THANKS.\nLINK: {link}")
+            a = urlparse(link)
+            link2 = os.path.basename(a.path)
             if any(link2 in new_link for new_link in new_item.links):
                 new_found = new_item
                 break

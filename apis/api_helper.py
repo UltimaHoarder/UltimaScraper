@@ -57,7 +57,7 @@ def request_parameters(session_rules2, session_retry_rules2):
     session_retry_rules = session_retry_rules2
 
 
-def json_request(link, session, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20):
+def json_request(link, session, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20) -> Any:
     if session_rules:
         session = session_rules(session, link)
     count = 0

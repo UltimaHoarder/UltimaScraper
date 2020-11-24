@@ -1,5 +1,5 @@
 import hashlib
-from apis.onlyfans.onlyfans import create_subscription, media_types
+from apis.onlyfans.onlyfans import create_auth, media_types, start
 from classes.prepare_metadata import format_types, prepare_metadata, prepare_reformat
 import os
 from datetime import datetime, timedelta
@@ -72,20 +72,20 @@ def assign_vars(json_auth, config, site_settings, site_name):
     app_token = json_auth['app_token']
 
 
-def account_setup(api, identifier=""):
+def account_setup(api: start, identifier=""):
     status = False
-    auth = api.login()
-    if auth:
+    authed = api.login()
+    if isinstance(authed, create_auth):
         jobs = json_settings["jobs"]
         profile_directory = json_global_settings["profile_directories"][0]
         profile_directory = os.path.abspath(profile_directory)
-        profile_directory = os.path.join(profile_directory, auth["username"])
+        profile_directory = os.path.join(profile_directory, authed.username)
         profile_metadata_directory = os.path.join(
             profile_directory, "Metadata")
         metadata_filepath = os.path.join(
             profile_metadata_directory, "Mass Messages.json")
         print
-        if auth["isPerformer"]:
+        if authed.isPerformer:
             imported = import_archive(metadata_filepath)
             mass_messages = api.get_mass_messages(resume=imported)
             export_archive(mass_messages, metadata_filepath,
@@ -115,7 +115,7 @@ def account_setup(api, identifier=""):
 # The start lol
 
 
-def start_datascraper(api, identifier, site_name, choice_type=None):
+def start_datascraper(api: start, identifier, site_name, choice_type=None):
     print("Scrape Processing")
     subscription = api.get_subscription(identifier)
     if not subscription:
@@ -157,13 +157,13 @@ def start_datascraper(api, identifier, site_name, choice_type=None):
 
 
 # Checks if the model is valid and grabs content count
-def link_check(api, identifier):
+def link_check(api: start, identifier):
     y = api.get_user(identifier)
     return y
 
 
 # Allows the user to choose which api they want to scrape
-def scrape_choice(api, subscription):
+def scrape_choice(api: start, subscription):
     user_id = subscription.id
     post_count = subscription.postsCount
     archived_count = subscription.archivedPostsCount
@@ -249,7 +249,7 @@ def scrape_choice(api, subscription):
 
 
 # Downloads the model's avatar and header
-def profile_scraper(api, site_name, api_type, username, text_length, base_directory):
+def profile_scraper(api: start, site_name, api_type, username, text_length, base_directory):
     reformats = {}
     reformats["metadata_directory_format"] = json_settings["metadata_directory_format"]
     reformats["file_directory_format"] = json_settings["file_directory_format"]
@@ -307,7 +307,7 @@ def paid_content_scraper(apis):
             author = paid_content.get("fromUser", author)
             subscription = api.get_subscription(author["id"])
             if not subscription:
-                subscription = create_subscription(author)
+                subscription = api.create_subscription(author)
                 authed["subscriptions"].append(subscription)
             api_type = paid_content["responseType"].capitalize()+"s"
             api_media = getattr(subscription.scraped, api_type)
@@ -354,7 +354,17 @@ def format_media_types():
     return new_list
 
 
-def process_mass_message(api, subscription, metadata_directory, mass_messages):
+def process_messages(api: start, subscription, messages) -> list:
+    if "list" in messages:
+        unrefined_set = messages["list"]
+    elif not messages:
+        unrefined_set = []
+    else:
+        unrefined_set = [messages]
+    return unrefined_set
+
+
+def process_mass_messages(api: start, subscription, metadata_directory, mass_messages) -> list:
     def compare_message(queue_id, remote_messages):
         for message in remote_messages:
             if "isFromQueue" in message and message["isFromQueue"]:
@@ -486,7 +496,7 @@ def process_mass_message(api, subscription, metadata_directory, mass_messages):
     return global_found
 
 
-def process_metadata(api, new_metadata, formatted_directories, subscription, api_type, api_path, archive_path, site_name):
+def process_metadata(api: start, new_metadata, formatted_directories, subscription, api_type, api_path, archive_path, site_name):
     legacy_metadata_object = legacy_metadata_fixer(
         formatted_directories, api)
     new_metadata_object = prepare_metadata(
@@ -549,20 +559,14 @@ def format_directories(directory, site_name, username, unformatted, locations=[]
 # Prepares the API links to be scraped
 
 
-def prepare_scraper(api, site_name, item):
+def prepare_scraper(api: start, site_name, item):
     authed = api.auth
-    sessions = api.sessions
     api_type = item["api_type"]
     api_array = item["api_array"]
-    link = api_array["api_link"]
     subscription = api_array["subscription"]
     media_type = api_array["media_types"]
     username = api_array["username"]
-    directory = api_array["directory"]
-    api_count = api_array["post_count"]
     master_set = []
-    media_set = []
-    metadata_set = []
     pool = multiprocessing()
     formatted_directories = format_directories(
         j_directory, site_name, username, metadata_directory_format, media_type, api_type)
@@ -589,20 +593,21 @@ def prepare_scraper(api, site_name, item):
         master_set = subscription.get_archived(api)
     if api_type == "Messages":
         unrefined_set = subscription.get_messages()
-        if "list" in unrefined_set:
-            unrefined_set = unrefined_set["list"]
-        mass_messages = authed.get("mass_messages", None)
-        if mass_messages:
-            unrefined_set2 = process_mass_message(api,
-                                                  subscription, metadata_directory, mass_messages)
+        unrefined_set = process_messages(api, subscription, unrefined_set)
+        mass_messages = getattr(authed, "mass_messages")
+        if subscription.is_me and mass_messages:
+            mass_messages = getattr(authed, "mass_messages")
+            unrefined_set2 = process_mass_messages(api,
+                                                   subscription, metadata_directory, mass_messages)
             unrefined_set += unrefined_set2
-            print
         master_set = [unrefined_set]
     master_set2 = master_set
     parent_type = ""
     if "Archived" == api_type:
         unrefined_set = []
         for master_set3 in master_set2:
+            if not isinstance(master_set3, dict):
+                continue
             parent_type = master_set3["type"]
             results = master_set3["results"]
             unrefined_result = pool.starmap(media_scraper, product(
@@ -764,6 +769,8 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
     if "result" in results:
         session = results["session"]
         results = results["result"]
+        if "error" in results:
+            return media_set
     download_path = formatted_directories["download_directory"]
     for location in formatted_directories["locations"]:
         sorted_directories = copy.copy(location["sorted_directories"])
@@ -1001,7 +1008,7 @@ class download_media():
         return return_bool
 
 
-def manage_subscriptions(api, auth_count=0, identifier=""):
+def manage_subscriptions(api: start, auth_count=0, identifier=""):
     if identifier:
         results = api.get_subscription(identifier=identifier)
         results = [results]
@@ -1031,7 +1038,6 @@ def manage_subscriptions(api, auth_count=0, identifier=""):
     results2 = []
     for result in results:
         result.auth_count = auth_count
-        result.self = False
         username = result.username
         now = datetime.utcnow().date()
         # subscribedBy = result["subscribedBy"]
@@ -1049,7 +1055,7 @@ def manage_subscriptions(api, auth_count=0, identifier=""):
             if subscribePrice == 0:
                 continue
         results2.append(result)
-    api.auth["subscriptions"] = results2
+    api.auth.subscriptions = results2
     return results2
 
 

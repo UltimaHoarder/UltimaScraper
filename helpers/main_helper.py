@@ -431,7 +431,8 @@ def choose_option(subscription_list, auto_scrape_names):
         seperator = " | "
         print(f"Names: Username = username {seperator} {subscription_list[1]}")
         if not auto_scrape_names:
-            value = "andreatv"
+            value = "chloelove_"
+            value = "1"
             value = input().strip()
             if value.isdigit():
                 if value == "0":

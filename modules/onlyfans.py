@@ -1,5 +1,5 @@
 import hashlib
-from apis.onlyfans.onlyfans import create_auth, media_types, start
+from apis.onlyfans.onlyfans import create_auth, create_subscription, media_types, start
 from classes.prepare_metadata import format_types, prepare_metadata, prepare_reformat
 import os
 from datetime import datetime, timedelta
@@ -297,23 +297,23 @@ def profile_scraper(api: start, site_name, api_type, username, text_length, base
             break
 
 
-def paid_content_scraper(apis):
+def paid_content_scraper(apis: list[start]):
     for api in apis:
         paid_contents = api.get_paid_content(check=True)
         authed = api.auth
-        authed["subscriptions"] = authed.get("subscriptions", [])
+        authed.subscriptions = authed.subscriptions
         for paid_content in paid_contents:
             author = paid_content.get("author")
             author = paid_content.get("fromUser", author)
             subscription = api.get_subscription(author["id"])
             if not subscription:
-                subscription = api.create_subscription(author)
-                authed["subscriptions"].append(subscription)
+                subscription = create_subscription(author)
+                authed.subscriptions.append(subscription)
             api_type = paid_content["responseType"].capitalize()+"s"
             api_media = getattr(subscription.scraped, api_type)
             api_media.append(paid_content)
             print
-        for subscription in authed["subscriptions"]:
+        for subscription in authed.subscriptions:
             string = f"Scraping - {subscription.username}"
             print(string)
             subscription.sessions = api.sessions

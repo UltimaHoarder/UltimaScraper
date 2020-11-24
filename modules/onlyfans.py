@@ -313,13 +313,16 @@ def paid_content_scraper(apis: list[start]):
             api_media = getattr(subscription.scraped, api_type)
             api_media.append(paid_content)
             print
+        count = 0
+        max_count = len(authed.subscriptions)
         for subscription in authed.subscriptions:
-            string = f"Scraping - {subscription.username}"
+            string = f"Scraping - {subscription.username} | {count} / {max_count}"
             print(string)
             subscription.sessions = api.sessions
             username = subscription.username
             site_name = "OnlyFans"
             media_type = format_media_types()
+            count+=1
             for api_type, paid_content in subscription.scraped:
                 formatted_directories = format_directories(
                     j_directory, site_name, username, metadata_directory_format, media_type, api_type)

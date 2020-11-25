@@ -248,13 +248,14 @@ class create_auth():
 
 
 class create_subscription():
-    def __init__(self, option={}, authed=False) -> None:
+    def __init__(self, option={}) -> None:
         class subscribedByData():
             def __init__(self, option={}) -> None:
                 self.expiredAt = option.get("expiredAt")
                 self.price = option.get("price")
                 self.subscribePrice = option.get("subscribePrice")
-        if authed:
+        # Authed Creator Accounts Logic
+        if "email" in option:
             option["is_me"] = True
             option["subscribedByData"] = dict()
             start_date = datetime.utcnow()
@@ -618,7 +619,7 @@ class start():
             json_authed = jsonpickle.decode(json_authed)
             json_authed = json_authed | self.get_user(authed.username)
 
-            subscription = create_subscription(json_authed, True)
+            subscription = create_subscription(json_authed)
             subscription.sessions = self.sessions
             subscription = [subscription]
             results.append(subscription)

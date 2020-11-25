@@ -585,6 +585,8 @@ def prepare_scraper(api: start, site_name, item):
         highlights = subscription.get_highlights()
         valid_highlights = []
         for highlight in highlights:
+            if "error" == highlight:
+                continue
             highlight = subscription.get_highlights(
                 hightlight_id=highlight["id"])
             valid_highlights.append(highlight)

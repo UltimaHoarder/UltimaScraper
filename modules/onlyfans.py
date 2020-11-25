@@ -117,7 +117,7 @@ def account_setup(api: start, identifier=""):
 
 def start_datascraper(api: start, identifier, site_name, choice_type=None):
     print("Scrape Processing")
-    subscription = api.get_subscription(identifier)
+    subscription = api.get_subscription(identifier=identifier)
     if not subscription:
         return [False, subscription]
     post_count = subscription.postsCount
@@ -265,7 +265,7 @@ def profile_scraper(api: start, site_name, api_type, username, text_length, base
     option["directory"] = base_directory
     a, b, c = prepare_reformat(option, keep_vars=True).reformat(reformats)
     print
-    y = api.get_subscription(username)
+    y = api.get_subscription(identifier=username)
     override_media_types = []
     avatar = y.avatar
     header = y.header

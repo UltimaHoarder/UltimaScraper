@@ -118,8 +118,10 @@ def start_datascraper():
                 subscription_list = module.format_options(
                     subscription_array, "usernames")
                 if jobs["scrape_paid_content"]:
+                    print("Scraping Paid Content")
                     paid_content = module.paid_content_scraper(apis)
                 if jobs["scrape_names"]:
+                    print("Scraping Subscriptions")
                     x = main_helper.process_names(
                         module, subscription_list, auto_scrape_names, json_auth_array, apis, json_config, site_name_lower, site_name)
                 x = main_helper.process_downloads(apis, module)

@@ -637,9 +637,7 @@ class start():
                 if extra_info:
                     subscription2 = self.get_user(subscription["username"])
                     subscription = subscription | subscription2
-                    subscription = create_subscription(subscription)
-                else:
-                    subscription = create_subscription(subscription)
+                subscription = create_subscription(subscription)
                 subscription.link = f"https://onlyfans.com/{subscription.username}"
                 valid_subscriptions.append(subscription)
             return valid_subscriptions

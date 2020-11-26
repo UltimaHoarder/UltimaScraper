@@ -125,9 +125,6 @@ def start_datascraper(api: start, identifier, site_name, choice_type=None):
     avatar = subscription.avatar
     username = subscription.username
     link = subscription.link
-    info = {}
-    info["download"] = prepare_download.start(
-        username=username, link=link, image_url=avatar, post_count=post_count, webhook=webhook)
     print("Name: "+username)
     api_array = scrape_choice(api, subscription)
     api_array = format_options(api_array, "apis")
@@ -153,7 +150,7 @@ def start_datascraper(api: start, identifier, site_name, choice_type=None):
         results = prepare_scraper(
             api, site_name, item)
     print("Scrape Completed"+"\n")
-    return [True, info]
+    return [True, subscription]
 
 
 # Checks if the model is valid and grabs content count

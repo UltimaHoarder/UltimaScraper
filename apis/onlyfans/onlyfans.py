@@ -410,6 +410,19 @@ class create_subscription():
         item["result"] = results
         return item
 
+    def get_archived_stories(self, refresh=True, limit=100, offset=0):
+        api_type = "archived_stories"
+        if not refresh:
+            result = handle_refresh(self, api_type)
+            if result:
+                return result
+        link = links(global_limit=limit,
+                     global_offset=offset).archived_stories
+        session = self.sessions[0]
+        results = api_helper.json_request(link=link, session=session)
+        self.archived_stories = results
+        return results
+
     def get_archived_posts(self, refresh=True, limit=99, offset=0) -> list:
         api_type = "archived_posts"
         if not refresh:
@@ -425,12 +438,11 @@ class create_subscription():
 
     def get_archived(self, api):
         items = []
-        item = {}
-        item["type"] = "Stories"
-        # test = self.get_archived_posts()
-        # item["results"] = test
-        item["results"] = [api.get_archived_stories()]
-        items.append(item)
+        if self.is_me:
+            item = {}
+            item["type"] = "Stories"
+            item["results"] = [self.get_archived_stories()]
+            items.append(item)
         item = {}
         item["type"] = "Posts"
         # item["results"] = test
@@ -736,19 +748,6 @@ class start():
         items.sort(key=lambda x: x["withUser"]["id"], reverse=True)
         self.auth.chats = items
         return items
-
-    def get_archived_stories(self, refresh=True, limit=100, offset=0):
-        api_type = "archived_stories"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
-        link = links(global_limit=limit,
-                     global_offset=offset).archived_stories
-        session = self.sessions[0]
-        results = api_helper.json_request(link=link, session=session)
-        self.auth.archived_stories = results
-        return results
 
     def get_mass_messages(self, resume=None, refresh=True, limit=10, offset=0):
         api_type = "mass_messages"

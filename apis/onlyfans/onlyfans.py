@@ -212,6 +212,7 @@ def handle_refresh(argument, argument2):
 
 class create_auth():
     def __init__(self, option={}, init=False) -> None:
+        self.id = option.get("id")
         self.username = option.get("username")
         self.name = option.get("name")
         self.lists = {}
@@ -685,9 +686,10 @@ class start():
                     exit()
             else:
                 results["sessions"] = self.sessions
-                subscription = create_subscription(results)
-                valid = subscription
-                subscriptions.append(subscription)
+                if results["subscribedBy"]:
+                    subscription = create_subscription(results)
+                    valid = subscription
+                    subscriptions.append(subscription)
         return valid
 
     def get_lists(self, refresh=True, limit=100, offset=0):

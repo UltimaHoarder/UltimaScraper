@@ -662,10 +662,20 @@ class start():
                          global_offset=offset).users
             session = self.sessions[0]
             results = api_helper.json_request(link=link, session=session)
-            results["sessions"] = self.sessions
-            subscription = create_subscription(results)
-            valid = subscription
-            subscriptions.append(subscription)
+            error = results.get("error",None)
+            if error:
+                if error["message"] == "User not found":
+                    pass
+                else:
+                    string = "ERROR MESSAGE NOT HANDLED, PLEASE OPEN AN ISSUE ON GITHUB\n"
+                    string+=f"{error['message']}"
+                    input()
+                    exit()
+            else:
+                results["sessions"] = self.sessions
+                subscription = create_subscription(results)
+                valid = subscription
+                subscriptions.append(subscription)
         return valid
 
     def get_lists(self, refresh=True, limit=100, offset=0):

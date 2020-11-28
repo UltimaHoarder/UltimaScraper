@@ -193,13 +193,26 @@ def assign_session(medias, item, key_one="link", key_two="count", show_item=Fals
     return medias2
 
 
-def restore_missing_data(master_set2, media_set):
+def restore_missing_data(master_set2, media_set, split_by):
     count = 0
     new_set = []
     for item in media_set:
         if not item:
-            new_set.append(master_set2[count])
+            link = master_set2[count]
+            offset = int(link.split('?')[-1].split('&')[1].split("=")[1])
+            limit = int(link.split("?")[-1].split("&")[0].split("=")[1])
+            if limit == split_by+1:
+                break
+            offset2 = offset
+            limit2 = int(limit/split_by)
+            for item in range(1, split_by+1):
+                link2 = link.replace("limit="+str(limit), "limit="+str(limit2))
+                link2 = link2.replace(
+                    "offset="+str(offset), "offset="+str(offset2))
+                offset2 += limit2
+                new_set.append(link2)
         count += 1
+    new_set = new_set if new_set else master_set2
     return new_set
 
 
@@ -209,6 +222,10 @@ def scrape_check(links, sessions, api_type):
         session = sessions[item["count"]]
         item = {}
         result = json_request(link, session)
+        if result:
+            print(f"Found: {link}")
+        else:
+            print(f"Not Found: {link}")
         if result:
             item["session"] = session
             item["result"] = result
@@ -233,9 +250,11 @@ def scrape_check(links, sessions, api_type):
         else:
             if count < 2:
                 break
-            num = len(faulty)*100
+            attempt = attempt if attempt > 1 else attempt + 1
+            num = int(len(faulty)*(100/attempt))
+            split_by = 2
             print("Missing "+str(num)+" Posts... Retrying...")
             links = restore_missing_data(
-                links, result)
+                links, result, split_by)
     media_set = [x for x in media_set]
     return media_set

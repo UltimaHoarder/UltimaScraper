@@ -307,12 +307,15 @@ class create_subscription():
                 link = value["link"]
                 max_limit = value["max_limit"]
                 api_count = getattr(self, key)
+                if api_count > 1500:
+                    max_limit = 10
                 ceil = math.ceil(api_count / max_limit)
                 a = list(range(ceil))
                 for b in a:
                     b = b * max_limit
                     getattr(placement, key_name).append(link.replace(
                         "offset=0", "offset=" + str(b)))
+        print
 
     def get_stories(self, refresh=True, limit=100, offset=0) -> list:
         api_type = "stories"

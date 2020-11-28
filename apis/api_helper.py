@@ -222,10 +222,10 @@ def scrape_check(links, sessions, api_type):
         session = sessions[item["count"]]
         item = {}
         result = json_request(link, session)
-        if result:
-            print(f"Found: {link}")
-        else:
-            print(f"Not Found: {link}")
+        # if result:
+        #     print(f"Found: {link}")
+        # else:
+        #     print(f"Not Found: {link}")
         if result:
             item["session"] = session
             item["result"] = result

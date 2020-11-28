@@ -1010,12 +1010,12 @@ class download_media():
         return return_bool
 
 
-def manage_subscriptions(api: start, auth_count=0, identifier=""):
+def manage_subscriptions(api: start, auth_count=0, identifier="",refresh:bool=False):
     if identifier:
         results = api.get_subscription(identifier=identifier)
         results = [results]
     else:
-        results = api.get_subscriptions(refresh=False)
+        results = api.get_subscriptions(refresh=refresh)
     if blacklist_name:
         r = api.get_lists()
         if not r:

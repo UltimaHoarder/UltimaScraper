@@ -289,8 +289,7 @@ class create_subscription():
         # Modify self
         valid_counts = ["postsCount", "archivedPostsCount"]
         identifier = self.id
-        args = [identifier, False, False]
-        link_info = links(*args).full
+        link_info = links(identifier=identifier).full
         x2 = [link_info["post_api"],
               link_info["archived_posts"]]
         items = dict(zip(valid_counts, x2))
@@ -313,8 +312,11 @@ class create_subscription():
                 a = list(range(ceil))
                 for b in a:
                     b = b * max_limit
-                    getattr(placement, key_name).append(link.replace(
-                        "offset=0", "offset=" + str(b)))
+                    link = link.replace(
+                        f"limit={value['max_limit']}", f"limit={max_limit}")
+                    new_link = link.replace(
+                        "offset=0", f"offset={b}")
+                    getattr(placement, key_name).append(new_link)
         print
 
     def get_stories(self, refresh=True, limit=100, offset=0) -> list:
@@ -666,7 +668,7 @@ class start():
         self.auth.subscriptions = results
         return results
 
-    def get_subscription(self, check:bool=False,identifier="", limit=100, offset=0) -> Union[create_subscription, None]:
+    def get_subscription(self, check: bool = False, identifier="", limit=100, offset=0) -> Union[create_subscription, None]:
         subscriptions = self.get_subscriptions(refresh=False)
         valid = None
         for subscription in subscriptions:
@@ -678,13 +680,13 @@ class start():
                          global_offset=offset).users
             session = self.sessions[0]
             results = api_helper.json_request(link=link, session=session)
-            error = results.get("error",None)
+            error = results.get("error", None)
             if error:
                 if error["message"] == "User not found":
                     pass
                 else:
                     string = "ERROR MESSAGE NOT HANDLED, PLEASE OPEN AN ISSUE ON GITHUB\n"
-                    string+=f"{error['message']}"
+                    string += f"{error['message']}"
                     input()
                     exit()
             else:

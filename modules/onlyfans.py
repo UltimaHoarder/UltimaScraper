@@ -1024,7 +1024,7 @@ def manage_subscriptions(api: start, auth_count=0, identifier="",refresh:bool=Fa
         if new_results:
             item = new_results[0]
             list_users = item["users"]
-            if item["usersCount"] > 2:
+            if int(item["usersCount"]) > 2:
                 list_id = str(item["id"])
                 list_users = api.get_lists_users(list_id)
             users = list_users

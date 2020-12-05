@@ -1,7 +1,5 @@
 import sys
 import os
-import json
-import helpers.main_helper as main_helper
 
 
 def version_check():
@@ -19,6 +17,7 @@ def version_check():
 def check_config():
     file_name = "config.json"
     path = os.path.join('.settings', file_name)
+    import helpers.main_helper as main_helper
     json_config, json_config2 = main_helper.get_config(path)
     if json_config != json_config2:
         input(

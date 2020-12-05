@@ -3,7 +3,7 @@ import time
 from typing import Any
 
 import requests
-import json
+import ujson
 import socket
 import logging
 import os
@@ -92,7 +92,7 @@ def json_request(link, session, method="GET", stream=False, json_format=True, da
                     message = "ERROR: 100 Posts skipped. Please post the username you're trying to scrape on the issue "'100 Posts Skipped'""
                     log_error.exception(message)
                     return result
-                return json.loads(text)
+                return ujson.loads(text)
             else:
                 return r
         except (ConnectionResetError) as e:

@@ -79,7 +79,7 @@ def assign_vars(config):
     min_drive_space = json_global_settings["min_drive_space"]
     webhooks = json_global_settings["webhooks"]
     max_threads = json_global_settings["max_threads"]
-    proxies = json_global_settings["socks5_proxy"]
+    proxies = json_global_settings["proxies"]
     cert = json_global_settings["cert"]
 
 

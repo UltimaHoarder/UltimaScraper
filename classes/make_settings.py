@@ -8,6 +8,16 @@ def fix(config={}):
     changed = []
     fix = []
     for key, value in config.items():
+        if key == "settings":
+            settings = value
+            socks5_proxies = settings.pop(
+                "socks5_proxy",None)
+            if socks5_proxies:
+                fixed_socks5_proxies = []
+                for socks5_proxy in socks5_proxies:
+                    fixed_socks5_proxy = f"socks5://{socks5_proxy}"
+                    fixed_socks5_proxies.append(fixed_socks5_proxy)
+                settings["proxies"] = fixed_socks5_proxies
         if key == "supported":
             for key2, value2 in value.items():
                 for key3, settings in value2.items():
@@ -71,7 +81,7 @@ def fix(config={}):
 class config(object):
     def __init__(self, settings={}, supported={}):
         class Settings(object):
-            def __init__(self, auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", socks5_proxy=[], cert="", global_user_agent="", random_string=""):
+            def __init__(self, auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", proxies=[], cert="", global_user_agent="", random_string=""):
                 self.auto_site_choice = auto_site_choice
                 self.export_type = export_type
                 self.profile_directories = profile_directories
@@ -81,7 +91,7 @@ class config(object):
                 self.exit_on_completion = exit_on_completion
                 self.infinite_loop = infinite_loop
                 self.loop_timeout = loop_timeout
-                self.socks5_proxy = socks5_proxy
+                self.proxies = proxies
                 self.cert = cert
                 self.random_string = random_string if random_string else uuid.uuid1().hex
                 self.global_user_agent = global_user_agent

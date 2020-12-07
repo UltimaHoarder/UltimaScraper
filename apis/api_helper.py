@@ -41,7 +41,7 @@ session_retry_rules = None
 class set_settings():
     def __init__(self, option={}):
         global global_settings
-        self.proxies = option.get("socks5_proxy")
+        self.proxies = option.get("proxies")
         self.cert = option.get("cert")
         self.json_global_settings = option
         global_settings = self.json_global_settings
@@ -118,17 +118,11 @@ def multiprocessing():
 
 
 def create_session(settings={}, custom_proxy="", test_ip=True):
-    sessions = [requests.Session()]
-    settings = set_settings(settings)
-    proxies = settings.proxies
-    cert = settings.cert
-    if not proxies:
-        return sessions
 
-    def set_sessions(proxy):
+    def test_session(proxy=None, cert=None):
         session = requests.Session()
-        proxy_type = {'http': 'socks5h://'+proxy,
-                      'https': 'socks5h://'+proxy}
+        proxy_type = {'http': proxy,
+                      'https': proxy}
         if proxy:
             session.proxies = proxy_type
             if cert:
@@ -147,13 +141,19 @@ def create_session(settings={}, custom_proxy="", test_ip=True):
             print("Session IP: "+ip+"\n")
             setattr(session, "ip", ip)
         return session
-    pool = multiprocessing()
     sessions = []
+    settings = set_settings(settings)
+    proxies = settings.proxies
+    cert = settings.cert
     while not sessions:
-        proxies2 = [custom_proxy] if custom_proxy else proxies
-        sessions = pool.starmap(set_sessions, product(
-            proxies2))
-        sessions = [x for x in sessions if x]
+        proxies = [custom_proxy] if custom_proxy else proxies
+        if proxies:
+            pool = multiprocessing()
+            sessions = pool.starmap(test_session, product(
+                proxies, [cert]))
+        else:
+            session = test_session()
+            sessions.append(session)
     return sessions
 
 

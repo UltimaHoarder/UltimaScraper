@@ -1,12 +1,23 @@
 import copy
 from enum import unique
 import os
+from typing import Dict
 
 from requests.api import get
 from helpers import main_helper
 from itertools import groupby, chain
 from math import exp
 import jsonpickle
+
+
+class create_metadata(object):
+    def __init__(self, content=None) -> None:
+        self.version = 1
+        self.content = None
+
+    def convert(self) -> Dict:
+        print
+        return {}
 
 
 class prepare_metadata(object):
@@ -37,8 +48,12 @@ class prepare_metadata(object):
         if isinstance(metadata_types, list):
             new_format = {}
             for metadata_type in metadata_types:
-                new_format[metadata_type["type"]] = metadata_type
-                metadata_type.pop("type")
+                if "type" in metadata_type:
+                    new_format[metadata_type["type"]] = metadata_type
+                    metadata_type.pop("type")
+                else:
+                    # Sigh :(
+                    input("NEW METADATA FORMAT FOUND")
             metadata_types = new_format
         metadata_types.pop("directories", None)
         collection = api.get_media_types()

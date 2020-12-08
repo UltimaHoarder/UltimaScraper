@@ -658,6 +658,10 @@ def legacy_metadata_fixer(formatted_directories: dict, api: object) -> media_typ
                 legacy_metadata_path = os.path.join(
                     legacy_directory, type_one_file)
                 legacy_metadata = import_archive(legacy_metadata_path)
+                if "type" not in legacy_metadata:
+                    legacy_type_key = type_one_file.removesuffix(".json")
+                    legacy_metadata["type"] = legacy_type_key
+                    print
                 for key, status in legacy_metadata.items():
                     if key == "type":
                         continue

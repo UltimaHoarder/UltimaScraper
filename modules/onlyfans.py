@@ -497,6 +497,7 @@ def process_mass_messages(api: start, subscription, metadata_directory, mass_mes
 
 
 def process_metadata(api: start, new_metadata, formatted_directories, subscription, api_type, api_path, archive_path, site_name):
+    print("Processing Metadata")
     legacy_metadata_object = legacy_metadata_fixer(
         formatted_directories, api)
     new_metadata_object = prepare_metadata(
@@ -517,6 +518,7 @@ def process_metadata(api: start, new_metadata, formatted_directories, subscripti
     new_metadata_object = ofrenamer.start(
         subscription, api_type, api_path, site_name, json_settings)
     subscription.set_scraped(api_type, new_metadata_object)
+    print("Finished Processing Metadata")
     return new_metadata_object
 
 

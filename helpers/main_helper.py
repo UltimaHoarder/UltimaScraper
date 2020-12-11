@@ -2,7 +2,7 @@ from os import rename
 from typing import Any
 
 from deepdiff.deephash import DeepHash
-from classes.prepare_metadata import format_variables, prepare_metadata, prepare_reformat
+from classes.prepare_metadata import format_variables, prepare_reformat
 import copy
 import csv
 import hashlib

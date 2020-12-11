@@ -1,6 +1,6 @@
 import hashlib
 from apis.onlyfans.onlyfans import create_auth, create_subscription, media_types, start
-from classes.prepare_metadata import format_types, prepare_metadata, prepare_reformat
+from classes.prepare_metadata import create_metadata, format_content, format_types, prepare_reformat
 import os
 from datetime import datetime, timedelta
 from itertools import chain, groupby, product
@@ -18,6 +18,7 @@ import requests
 import helpers.main_helper as main_helper
 import classes.prepare_download as prepare_download
 from types import SimpleNamespace
+from mergedeep import merge, Strategy
 
 from helpers.main_helper import import_archive, export_archive, remove_mandatory_files
 
@@ -149,6 +150,7 @@ def start_datascraper(api: start, identifier, site_name, choice_type=None):
         api_type = item["api_type"]
         results = prepare_scraper(
             api, site_name, item)
+        print
     print("Scrape Completed"+"\n")
     return [True, subscription]
 
@@ -302,7 +304,8 @@ def paid_content_scraper(apis: list[start]):
         for paid_content in paid_contents:
             author = paid_content.get("author")
             author = paid_content.get("fromUser", author)
-            subscription = api.get_subscription(check=True,identifier=author["id"])
+            subscription = api.get_subscription(
+                check=True, identifier=author["id"])
             if not subscription:
                 subscription = create_subscription(author)
                 authed.subscriptions.append(subscription)
@@ -500,13 +503,13 @@ def process_metadata(api: start, new_metadata, formatted_directories, subscripti
     print("Processing Metadata")
     legacy_metadata_object = legacy_metadata_fixer(
         formatted_directories, api)
-    new_metadata_object = prepare_metadata(
-        new_metadata, api=api).metadata
+    new_metadata_object = create_metadata(
+        api, new_metadata, new=True)
     new_metadata_object = compare_metadata(
         new_metadata_object, legacy_metadata_object)
     old_metadata_set = import_archive(archive_path)
-    old_metadata_object = prepare_metadata(
-        old_metadata_set, api=api).metadata
+    old_metadata_object = create_metadata(
+        api, old_metadata_set)
     new_metadata_object = compare_metadata(
         new_metadata_object, old_metadata_object)
     if not subscription.download_info:
@@ -632,13 +635,14 @@ def prepare_scraper(api: start, site_name, item):
         api_path = os.path.join(api_type, parent_type)
         new_metadata_object = process_metadata(
             api, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
-        new_metadata_set = new_metadata_object.convert()
+        new_metadata_set = new_metadata_object.export()
         if export_metadata:
             export_archive(new_metadata_set, metadata_path, json_settings)
+            print
     return True
 
 
-def legacy_metadata_fixer(formatted_directories: dict, api: object) -> media_types:
+def legacy_metadata_fixer(formatted_directories: dict, api: object) -> create_metadata:
     legacy_metadatas = formatted_directories["legacy_metadatas"]
     new_metadata_directory = formatted_directories["metadata_directory"]
     old_metadata_directory = os.path.dirname(
@@ -657,38 +661,29 @@ def legacy_metadata_fixer(formatted_directories: dict, api: object) -> media_typ
                 folders, keep=metadata_names)
             new_format = []
             for type_one_file in type_one_files:
+                api_type = type_one_file.removesuffix(".json")
                 legacy_metadata_path = os.path.join(
                     legacy_directory, type_one_file)
                 legacy_metadata = import_archive(legacy_metadata_path)
-                if "type" not in legacy_metadata:
-                    legacy_type_key = type_one_file.removesuffix(".json")
-                    legacy_metadata["type"] = legacy_type_key
-                    print
-                for key, status in legacy_metadata.items():
-                    if key == "type":
-                        continue
-                    status.sort(key=lambda x: x["post_id"], reverse=False)
-                    legacy_metadata[key] = [list(g) for k, g in groupby(
-                        status, key=lambda x: x["post_id"])]
-                    status = legacy_metadata[key]
+                legacy_metadata = create_metadata(
+                    api, legacy_metadata, api_type=api_type).convert()
                 new_format.append(legacy_metadata)
-            old_metadata_object = prepare_metadata(
-                new_format, api=api).metadata
+            new_format = dict(
+                merge({}, *new_format, strategy=Strategy.ADDITIVE))
+            old_metadata_object = create_metadata(api, new_format)
             if legacy_directory != new_metadata_directory:
                 import_path = os.path.join(legacy_directory, metadata_name)
                 new_metadata_set = import_archive(
                     import_path)
                 if new_metadata_set:
-                    new_metadata_object2 = prepare_metadata(
-                        new_metadata_set, api=api).metadata
-                    print
+                    new_metadata_object2 = create_metadata(
+                        api, new_metadata_set)
                     old_metadata_object = compare_metadata(
                         new_metadata_object2, old_metadata_object)
-                    print
             q.append(old_metadata_object)
             print
         print
-    results = media_types()
+    results = create_metadata()
     for merge_into in q:
         print
         results = compare_metadata(
@@ -714,41 +709,69 @@ def test(new_item, old_item):
     return new_found
 
 
-def compare_metadata(new_metadata: media_types, old_metadata: media_types) -> media_types:
-    for key, value in old_metadata:
-        new_value = getattr(new_metadata, key)
+def compare_metadata(new_metadata: create_metadata, old_metadata: create_metadata) -> create_metadata:
+    for key, value in old_metadata.content:
+        new_value = getattr(new_metadata.content, key, None)
         if not new_value:
             continue
         if not value:
             setattr(old_metadata, key, new_value)
         for key2, value2 in value:
             new_value2 = getattr(new_value, key2)
-            old_status = list(chain.from_iterable(value2))
-            new_status = list(chain.from_iterable(new_value2))
-            l = False
-            for old_item in old_status:
-                # if old_item.post_id == 9606680:
-                #     l = True
-                new_found = None
-                new_items = [
-                    x for x in new_status if old_item.post_id == x.post_id]
-                if new_items:
-                    for new_item in (x for x in new_items if not new_found):
-                        new_found = test(new_item, old_item)
-                if new_found:
-                    for key3, v in new_found:
-                        if key3 in ["directory", "downloaded", "size", "filename"]:
-                            continue
-                        setattr(old_item, key3, v)
-                    setattr(new_found, "found", True)
-            not_found = [
-                x for x in new_status if not getattr(x, "found", None)]
-            old_status += not_found
-            old_status.sort(key=lambda x: x.post_id, reverse=False)
-            lmao = [list(g) for k, g in groupby(
-                old_status, key=lambda x: x.post_id)]
-            setattr(value, key2, lmao)
-        print
+            seen = set()
+            old_status = []
+            for d in value2:
+                if d.post_id not in seen:
+                    seen.add(d.post_id)
+                    old_status.append(d)
+                else:
+                    print
+            setattr(value, key2, old_status)
+            value2 = old_status
+            new_status = new_value2
+            for post in old_status:
+                if key != "Texts":
+                    for old_media in post.medias:
+                        # if old_item.post_id == 1646808:
+                        #     l = True
+                        new_found = None
+                        new_items = [
+                            x for x in new_status if post.post_id == x.post_id]
+                        if new_items:
+                            for new_item in (x for x in new_items if not new_found):
+                                for new_media in (x for x in new_item.medias if not new_found):
+                                    new_found = test(new_media, old_media)
+                                    print
+                        if new_found:
+                            for key3, v in new_found:
+                                if key3 in ["directory", "downloaded", "size", "filename"]:
+                                    continue
+                                setattr(old_media, key3, v)
+                            setattr(new_found, "found", True)
+                else:
+                    new_items = [
+                        x for x in new_status if post.post_id == x.post_id]
+                    if new_items:
+                        new_found = new_items[0]
+                        for key3, v in new_found:
+                            if key3 in ["directory", "downloaded", "size", "filename"]:
+                                continue
+                            setattr(post, key3, v)
+                        setattr(new_found, "found", True)
+                    print
+            for new_post in new_status:
+                not_found = []
+                if key != "Texts":
+                    not_found = [
+                        new_post for media in new_post.medias if not getattr(media, "found", None)][:1]
+                else:
+                    found = getattr(new_post, "found", None)
+                    if not found:
+                        not_found.append(new_post)
+
+                if not_found:
+                    old_status += not_found
+            old_status.sort(key=lambda x: x.post_id, reverse=True)
     new_metadata = old_metadata
     return new_metadata
 
@@ -811,11 +834,22 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                 media_username = media_user["username"]
                 if media_username != username:
                     continue
+            date = media_api["postedAt"] if "postedAt" in media_api else media_api["createdAt"]
+            if date == "-001-11-30T00:00:00+00:00":
+                date_string = master_date
+                date_object = datetime.strptime(
+                    master_date, "%d-%m-%Y %H:%M:%S")
+            else:
+                date_object = datetime.fromisoformat(date)
+                date_string = date_object.replace(tzinfo=None).strftime(
+                    "%d-%m-%Y %H:%M:%S")
+                master_date = date_string
             if not media_api["media"] and "rawText" in media_api:
                 if media_type == "Texts":
                     new_dict = dict()
                     new_dict["post_id"] = media_api["id"]
                     new_dict["text"] = media_api["rawText"]
+                    new_dict["postedAt"] = date_string
                     media_set2["valid"].append(new_dict)
                     print
                 print
@@ -827,7 +861,6 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                     source = media["source"]
                     link = source["source"]
                     size = media["info"]["preview"]["size"] if "info" in media_api else 1
-                    date = media_api["postedAt"] if "postedAt" in media_api else media_api["createdAt"]
                 if "src" in media:
                     link = media["src"]
                     size = media["info"]["preview"]["size"] if "info" in media_api else 1
@@ -858,15 +891,6 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                         new_dict["links"].append(xlink)
                         break
                 new_dict["price"] = media_api["price"]if "price" in media_api else None
-                if date == "-001-11-30T00:00:00+00:00":
-                    date_string = master_date
-                    date_object = datetime.strptime(
-                        master_date, "%d-%m-%Y %H:%M:%S")
-                else:
-                    date_object = datetime.fromisoformat(date)
-                    date_string = date_object.replace(tzinfo=None).strftime(
-                        "%d-%m-%Y %H:%M:%S")
-                    master_date = date_string
 
                 if media["type"] not in alt_media_type:
                     continue
@@ -932,9 +956,9 @@ class download_media():
                 metadata_locations = download_info["metadata_locations"]
                 directory = download_info["directory"]
                 for api_type, value in subscription.scraped:
-                    if not value or api_type == "Texts":
+                    if not value or not isinstance(value, create_metadata):
                         continue
-                    for location, v in value:
+                    for location, v in value.content:
                         if location == "Texts":
                             continue
                         media_set = v.valid
@@ -946,7 +970,7 @@ class download_media():
                             media_set, [api]))
                     metadata_path = metadata_locations.get(api_type)
                     if metadata_path:
-                        value = value.convert()
+                        value = value.export()
                         if export_metadata:
                             export_archive(value, metadata_path,
                                            json_settings)
@@ -955,9 +979,9 @@ class download_media():
             else:
                 self.downloaded = False
 
-    def download(self, medias, api):
+    def download(self, post: format_content.post_item, api):
         return_bool = True
-        for media in medias:
+        for media in post.medias:
             if not overwrite_files and media.downloaded:
                 continue
             count = 0
@@ -988,7 +1012,7 @@ class download_media():
                 content_length = result[1]
                 media.size = content_length
                 date_object = datetime.strptime(
-                    media.postedAt, "%d-%m-%Y %H:%M:%S")
+                    post.postedAt, "%d-%m-%Y %H:%M:%S")
                 download_path = os.path.join(
                     media.directory, media.filename)
                 timestamp = date_object.timestamp()
@@ -1016,7 +1040,7 @@ class download_media():
         return return_bool
 
 
-def manage_subscriptions(api: start, auth_count=0, identifier="",refresh:bool=False):
+def manage_subscriptions(api: start, auth_count=0, identifier="", refresh: bool = False):
     if identifier:
         results = api.get_subscription(identifier=identifier)
         results = [results]

@@ -1,3 +1,4 @@
+from apis.onlyfans.onlyfans import media_types
 import copy
 from enum import unique
 import os
@@ -9,73 +10,192 @@ from itertools import groupby, chain
 from math import exp
 import jsonpickle
 
+global_version = 2
+
 
 class create_metadata(object):
-    def __init__(self, content=None) -> None:
-        self.version = 1
-        self.content = None
+    def __init__(self, api=None, metadata: dict = {}, new=False, api_type: str = "") -> None:
+        self.version = global_version
+        fixed_metadata = self.fix_metadata(metadata, new, api_type)
+        self.content = format_content(
+            api, fixed_metadata["version"], fixed_metadata["content"]).content
 
-    def convert(self) -> Dict:
+    def fix_metadata(self, metadata, new=False, api_type: str = "") -> dict:
+        new_format = {}
+        new_format["version"] = 1
+        new_format["content"] = {}
+        if isinstance(metadata, list):
+            version = 0.3
+            for m in metadata:
+                new_format["content"] |= self.fix_metadata(m)["content"]
+                print
+            metadata = new_format
+        else:
+            version = metadata.get("version", None)
+        if not version and not new and metadata:
+            legacy_metadata = metadata
+            media_type = legacy_metadata.get("type", None)
+            if not media_type:
+                version = 0.1
+                media_type = api_type if api_type else media_type
+            else:
+                version = 0.2
+            if version == 0.2:
+                legacy_metadata.pop("type")
+            new_format["content"][media_type] = {}
+            for key, posts in legacy_metadata.items():
+                if all(isinstance(x, list) for x in posts):
+                    posts = list(chain(*posts))
+                new_format["content"][media_type][key] = posts
+                print
+            print
+        elif new:
+            new_format["content"] = metadata
+            print
+        else:
+            if global_version == version:
+                new_format = metadata
+            else:
+                print
         print
-        return {}
+        if "content" not in new_format:
+            print
+        return new_format
+
+    def export(self, convert_type="json", keep_empty_items=False) -> dict:
+        if not keep_empty_items:
+            self.remove_empty()
+        value = {}
+        if convert_type == "json":
+            new_format_copied = copy.deepcopy(self)
+            for key, status in new_format_copied.content:
+                for key2, posts in status:
+                    for post in posts:
+                        for media in post.medias:
+                            delattr(media, "session")
+                            if getattr(media, "old_filepath", None) != None:
+                                delattr(media, "old_filepath")
+                            if getattr(media, "new_filepath", None) != None:
+                                delattr(media, "new_filepath")
+                            print
+                        print
+                print
+            value = jsonpickle.encode(
+                new_format_copied, unpicklable=False)
+            value = jsonpickle.decode(value)
+            if not isinstance(value, dict):
+                return {}
+        return value
+
+    def convert(self, convert_type="json", keep_empty_items=False) -> dict:
+        if not keep_empty_items:
+            self.remove_empty()
+        value = {}
+        if convert_type == "json":
+            new_format_copied = copy.deepcopy(self)
+            value = jsonpickle.encode(
+                new_format_copied, unpicklable=False)
+            value = jsonpickle.decode(value)
+            if not isinstance(value, dict):
+                return {}
+        return value
+
+    def remove_empty(self):
+        copied = copy.deepcopy(self)
+        for k, v in copied:
+            if not v:
+                delattr(self, k)
+            print
+        return self
+
+    def __iter__(self):
+        for attr, value in self.__dict__.items():
+            yield attr, value
 
 
-class prepare_metadata(object):
-    def __init__(self, metadata_types={}, export=False, reformat=False, args={}, api=None):
-        def valid_invalid(valid, invalid, export):
-            if all(isinstance(x, list) for x in valid):
-                valid = list(chain.from_iterable(valid))
-            if all(isinstance(x, list) for x in invalid):
-                invalid = list(chain.from_iterable(invalid))
-            valid = [self.media(x, export) for x in valid]
-            valid = [list(g) for k, g in groupby(
-                valid, key=lambda x: x.post_id)]
-            invalid = [self.media(x, export) for x in invalid]
-            invalid = [list(g) for k, g in groupby(
-                invalid, key=lambda x: x.post_id)]
-            return valid, invalid
+class format_content(object):
+    def __init__(self, api=None, version=None, old_content: dict = {}, export=False, reformat=False, args={}):
 
         class assign_state(object):
-            def __init__(self, valid, invalid, export) -> None:
-                valid, invalid = valid_invalid(valid, invalid, export)
-                self.valid = valid
-                self.invalid = invalid
+            def __init__(self) -> None:
+                self.valid = []
+                self.invalid = []
 
             def __iter__(self):
                 for attr, value in self.__dict__.items():
                     yield attr, value
-
-        if isinstance(metadata_types, list):
-            new_format = {}
-            for metadata_type in metadata_types:
-                if "type" in metadata_type:
-                    new_format[metadata_type["type"]] = metadata_type
-                    metadata_type.pop("type")
-                else:
-                    # Sigh :(
-                    input("NEW METADATA FORMAT FOUND")
-            metadata_types = new_format
-        metadata_types.pop("directories", None)
-        collection = api.get_media_types()
-        for key, item in metadata_types.items():
-            if not item:
+        old_content.pop("directories", None)
+        new_content = media_types(assign_states=assign_state)
+        for key, new_item in new_content:
+            old_item = old_content.get(key)
+            if not old_item:
                 continue
-            x = assign_state(**item, export=export)
-            setattr(collection, key, x)
-        self.metadata = collection
+            for old_key, old_item2 in old_item.items():
+                new_posts = []
+                if global_version == version:
+                    posts = old_item2
+                    for old_post in posts:
+                        post = self.post_item(old_post)
+                        new_medias = []
+                        for media in post.medias:
+                            if "Texts" == key:
+                                continue
+                            media2 = self.media_item(media)
+                            new_medias.append(media2)
+                        post.medias = new_medias
+                        new_posts.append(post)
+                        print
 
-    class media(object):
-        def __init__(self, option={}, export=False, reformat=False):
+                elif version == 1:
+                    old_item2.sort(key=lambda x: x["post_id"])
+                    media_list = [list(g) for k, g in groupby(
+                        old_item2, key=lambda x: x["post_id"])]
+                    for media_list2 in media_list:
+                        old_post = media_list2[0]
+                        post = self.post_item(old_post)
+                        for item in media_list2:
+                            if "Texts" == key:
+                                continue
+                            media = self.media_item(item)
+                            post.medias.append(media)
+                        new_posts.append(post)
+                else:
+                    media_list = []
+                    input("METADATA VERSION: INVALID")
+                setattr(new_item, old_key, new_posts)
+        self.content = new_content
+
+    class post_item(create_metadata, object):
+        def __init__(self, option={}):
             self.post_id = option.get("post_id", None)
+            self.text = option.get("text", "")
+            self.price = option.get("price", 0)
+            self.paid = option.get("paid", False)
+            self.medias = option.get("medias", [])
+            self.postedAt = option.get("postedAt", "")
+
+        def convert(self, convert_type="json", keep_empty_items=False) -> dict:
+            if not keep_empty_items:
+                self.remove_empty()
+            value = {}
+            if convert_type == "json":
+                new_format_copied = copy.deepcopy(self)
+                for media in new_format_copied.medias:
+                    media.convert()
+                value = jsonpickle.encode(
+                    new_format_copied, unpicklable=False)
+                value = jsonpickle.decode(value)
+                if not isinstance(value, dict):
+                    return {}
+            return value
+
+    class media_item(create_metadata):
+        def __init__(self, option={}):
             self.media_id = option.get("media_id", None)
             link = option.get("link", [])
             if link:
                 link = [link]
             self.links = option.get("links", link)
-            self.price = option.get("price", 0)
-            self.text = option.get("text", "")
-            self.postedAt = option.get("postedAt", "")
-            self.paid = option.get("paid", False)
             self.directory = option.get("directory", "")
             self.filename = option.get("filename", "")
             self.size = option.get("size", None)
@@ -87,26 +207,14 @@ class prepare_metadata(object):
                 self.remove_empty()
             value = {}
             if convert_type == "json":
+                value.pop("session", None)
                 new_format_copied = copy.deepcopy(self)
-                delattr(new_format_copied, "session")
                 value = jsonpickle.encode(
                     new_format_copied, unpicklable=False)
                 value = jsonpickle.decode(value)
                 if not isinstance(value, dict):
                     return {}
             return value
-
-        def remove_empty(self):
-            copied = copy.deepcopy(self)
-            for k, v in copied:
-                if not v:
-                    delattr(self, k)
-                print
-            return self
-
-        def __iter__(self):
-            for attr, value in self.__dict__.items():
-                yield attr, value
 
     def __iter__(self):
         for attr, value in self.__dict__.items():

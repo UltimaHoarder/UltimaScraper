@@ -63,36 +63,14 @@ def session_retry_rules(r, link):
 
 
 class media_types():
-    def __init__(self, option={}) -> None:
+    def __init__(self, option={}, assign_states=False) -> None:
         self.Images = option.get("Images", [])
         self.Videos = option.get("Videos", [])
         self.Audios = option.get("Audios", [])
         self.Texts = option.get("Texts", [])
-
-    def convert(self, convert_type="json", keep_empty_items=False) -> dict:
-        if not keep_empty_items:
-            self.remove_empty()
-        value = {}
-        if convert_type == "json":
-            new_format_copied = copy.deepcopy(self)
-            for key, item in new_format_copied:
-                for key2, item2 in item:
-                    new_status = list(chain.from_iterable(item2))
-                    for x in new_status:
-                        delattr(x, "session")
-                        if getattr(x, "old_filepath", None) != None:
-                            delattr(x, "old_filepath")
-                        if getattr(x, "new_filepath", None) != None:
-                            delattr(x, "new_filepath")
-                        print
-                    print
-                print
-            value = jsonpickle.encode(
-                new_format_copied, unpicklable=False)
-            value = jsonpickle.decode(value)
-            if not isinstance(value, dict):
-                return {}
-        return value
+        if assign_states:
+            for k, v in self:
+                setattr(self, k, assign_states())
 
     def remove_empty(self):
         copied = copy.deepcopy(self)
@@ -123,12 +101,9 @@ class media_types():
 
 class content_types:
     def __init__(self, option={}) -> None:
-        class archived_types():
-            Posts = []
-
-            def __iter__(self):
-                for attr, value in self.__dict__.items():
-                    yield attr, value
+        class archived_types(content_types):
+            def __init__(self) -> None:
+                self.Posts = []
         self.Stories = []
         self.Posts = []
         self.Archived = archived_types()
@@ -494,9 +469,6 @@ class start():
             session.headers["time"] = ""
         api_helper.request_parameters(session_rules, session_retry_rules)
         self.json_request = api_helper.json_request
-
-    def get_media_types(self):
-        return media_types()
 
     # def auth_check(self):
     #     result = False

@@ -14,10 +14,11 @@ from itertools import product
 import jsonpickle
 
 
-def fix_directories(post_item, base_directory, site_name, api_type, media_type, username, all_files, json_settings):
+def fix_directories(posts, base_directory, site_name, api_type, media_type, username, all_files, json_settings):
     new_directories = []
-    for posts in post_item:
-        for media in posts:
+    for post in posts:
+        new_post_dict = post.convert(keep_empty_items=True)
+        for media in post.medias:
             if media.links:
                 path = urlparse.urlparse(media.links[0]).path
             else:
@@ -32,9 +33,9 @@ def fix_directories(post_item, base_directory, site_name, api_type, media_type, 
             download_path = base_directory
             today = datetime.today()
             today = today.strftime("%d-%m-%Y %H:%M:%S")
-            new_dict = media.convert(keep_empty_items=True)
+            new_media_dict = media.convert(keep_empty_items=True)
             option = {}
-            option = option | new_dict
+            option = option | new_post_dict | new_media_dict
             option["site_name"] = site_name
             option["filename"] = filename
             option["api_type"] = api_type
@@ -49,7 +50,7 @@ def fix_directories(post_item, base_directory, site_name, api_type, media_type, 
                 prepared_format, file_directory_format)
             prepared_format.directory = file_directory
             old_filepath = ""
-            x = [x for x in all_files if media.filename in x]
+            x = [x for x in all_files if media.filename == os.path.basename(x)]
             if x:
                 # media.downloaded = True
                 old_filepath = x[0]
@@ -61,12 +62,12 @@ def fix_directories(post_item, base_directory, site_name, api_type, media_type, 
             setattr(media, "new_filepath", new_filepath)
             new_directories.append(os.path.dirname(new_filepath))
     new_directories = list(set(new_directories))
-    return post_item, new_directories
+    return posts, new_directories
 
 
-def fix_metadata(post_item):
-    for posts in post_item:
-        for media in posts:
+def fix_metadata(posts):
+    for post in posts:
+        for media in post.medias:
             def update(old_filepath, new_filepath):
                 # if os.path.exists(old_filepath):
                 #     if not media.session:
@@ -84,7 +85,7 @@ def fix_metadata(post_item):
             old_filepath, new_filepath = update(old_filepath, new_filepath)
             media.directory = os.path.dirname(new_filepath)
             media.filename = os.path.basename(new_filepath)
-    return post_item
+    return posts
 
 
 def start(subscription, api_type, api_path, site_name, json_settings):
@@ -112,14 +113,15 @@ def start(subscription, api_type, api_path, site_name, json_settings):
         reformats[key] = value.split(key2, 1)[0]+key2
         print
     print
-    a, base_directory, c = prepare_reformat(option, keep_vars=True).reformat(reformats)
+    a, base_directory, c = prepare_reformat(
+        option, keep_vars=True).reformat(reformats)
     download_info["base_directory"] = base_directory
     print
     all_files = []
     for root, subdirs, files in os.walk(base_directory):
         x = [os.path.join(root, x) for x in files]
         all_files.extend(x)
-    for media_type, value in metadata:
+    for media_type, value in metadata.content:
         if media_type == "Texts":
             continue
         for status, value2 in value:
@@ -131,7 +133,7 @@ def start(subscription, api_type, api_path, site_name, json_settings):
             fixed2 = fix_metadata(
                 fixed)
             setattr(value, status, fixed2)
-        setattr(metadata, media_type, value,)
+        setattr(metadata.content, media_type, value,)
     return metadata
 
 
@@ -141,4 +143,4 @@ if __name__ == "__main__":
     exit()
 else:
     import helpers.main_helper as main_helper
-    from classes.prepare_metadata import prepare_metadata
+    from classes.prepare_metadata import create_metadata

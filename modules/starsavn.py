@@ -1,4 +1,3 @@
-from classes.prepare_metadata import prepare_metadata
 import os
 from datetime import datetime
 from itertools import chain, groupby, product

@@ -98,6 +98,7 @@ class media_types():
         for attr, value in self.__dict__.items():
             yield attr, value
 
+
 class content_types:
     def __init__(self, option={}) -> None:
         class archived_types(content_types):
@@ -187,6 +188,7 @@ def handle_refresh(argument, argument2):
 class create_auth():
     def __init__(self, option={}, init=False) -> None:
         self.id = option.get("id")
+        self.username = option.get("username")
         if not self.username:
             self.username = f"u{self.id}"
         self.name = option.get("name")

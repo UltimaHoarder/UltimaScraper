@@ -14,13 +14,13 @@ global_version = 2
 
 
 class create_metadata(object):
-    def __init__(self, api=None, metadata: dict = {}, new=False, api_type: str = "") -> None:
+    def __init__(self, api=None, metadata: dict = {}, standard_format=False, api_type: str = "") -> None:
         self.version = global_version
-        fixed_metadata = self.fix_metadata(metadata, new, api_type)
+        fixed_metadata = self.fix_metadata(metadata, standard_format, api_type)
         self.content = format_content(
             api, fixed_metadata["version"], fixed_metadata["content"]).content
 
-    def fix_metadata(self, metadata, new=False, api_type: str = "") -> dict:
+    def fix_metadata(self, metadata, standard_format=False, api_type: str = "") -> dict:
         new_format = {}
         new_format["version"] = 1
         new_format["content"] = {}
@@ -32,7 +32,10 @@ class create_metadata(object):
             metadata = new_format
         else:
             version = metadata.get("version", None)
-        if not version and not new and metadata:
+        if any(x for x in metadata if x in media_types().__dict__.keys()):
+            standard_format = True
+            print
+        if not version and not standard_format and metadata:
             legacy_metadata = metadata
             media_type = legacy_metadata.get("type", None)
             if not media_type:
@@ -49,7 +52,17 @@ class create_metadata(object):
                 new_format["content"][media_type][key] = posts
                 print
             print
-        elif new:
+        elif standard_format:
+            if any(x for x in metadata if x in media_types().__dict__.keys()):
+                metadata.pop("directories", None)
+                for key, status in metadata.items():
+                    for key2, posts in status.items():
+                        if all(x and isinstance(x, list) for x in posts):
+                            posts = list(chain(*posts))
+                            metadata[key][key2] = posts
+                        print
+                    print
+                print
             new_format["content"] = metadata
             print
         else:

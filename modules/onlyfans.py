@@ -309,6 +309,13 @@ def paid_content_scraper(apis: list[start]):
             if not subscription:
                 subscription = create_subscription(author)
                 authed.subscriptions.append(subscription)
+            if paid_content["responseType"] == "post":
+                if paid_content["isArchived"]:
+                    print(f"Model: {author['username']}")
+                    # print(
+                    #     "ERROR, PLEASE REPORT THIS AS AN ISSUE AND TELL ME WHICH MODEL YOU'RE SCRAPIMG, THANKS")
+                    # input()
+                    # exit()
             api_type = paid_content["responseType"].capitalize()+"s"
             api_media = getattr(subscription.scraped, api_type)
             api_media.append(paid_content)
@@ -324,6 +331,8 @@ def paid_content_scraper(apis: list[start]):
             media_type = format_media_types()
             count += 1
             for api_type, paid_content in subscription.scraped:
+                if api_type == "Archived":
+                    continue
                 formatted_directories = format_directories(
                     j_directory, site_name, username, metadata_directory_format, media_type, api_type)
                 metadata_directory = formatted_directories["metadata_directory"]
@@ -500,16 +509,18 @@ def process_mass_messages(api: start, subscription, metadata_directory, mass_mes
 
 
 def process_metadata(api: start, new_metadata, formatted_directories, subscription, api_type, api_path, archive_path, site_name):
-    print("Processing Metadata")
+    print("Processing metadata.")
     legacy_metadata_object = legacy_metadata_fixer(
         formatted_directories, api)
     new_metadata_object = create_metadata(
-        api, new_metadata, new=True)
+        api, new_metadata, standard_format=True)
+    print("Merging new metadata with legacy metadata.")
     new_metadata_object = compare_metadata(
         new_metadata_object, legacy_metadata_object)
     old_metadata_set = import_archive(archive_path)
     old_metadata_object = create_metadata(
-        api, old_metadata_set)
+        api, old_metadata_set, api_type=api_type)
+    print("Merging new metadata with old metadata.")
     new_metadata_object = compare_metadata(
         new_metadata_object, old_metadata_object)
     if not subscription.download_info:
@@ -518,10 +529,11 @@ def process_metadata(api: start, new_metadata, formatted_directories, subscripti
     subscription.download_info["webhook"] = webhook
     subscription.download_info["metadata_locations"][api_type] = archive_path
     subscription.set_scraped(api_type, new_metadata_object)
+    print("Renaming files.")
     new_metadata_object = ofrenamer.start(
         subscription, api_type, api_path, site_name, json_settings)
     subscription.set_scraped(api_type, new_metadata_object)
-    print("Finished Processing Metadata")
+    print("Finished processing metadata.")
     return new_metadata_object
 
 
@@ -827,6 +839,9 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
         media_set2["valid"] = []
         media_set2["invalid"] = []
         for media_api in results:
+            if media_api["responseType"] == "post":
+                if media_api["isArchived"]:
+                    pass
             if api_type == "Messages":
                 media_api["rawText"] = media_api["text"]
             if api_type == "Mass Messages":

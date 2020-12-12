@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from apis.api_helper import multiprocessing
 from classes.prepare_metadata import format_types, format_variables, prepare_reformat
 from hashlib import new
 from os.path import dirname as up
@@ -16,7 +17,8 @@ import jsonpickle
 
 def fix_directories(posts, base_directory, site_name, api_type, media_type, username, all_files, json_settings):
     new_directories = []
-    for post in posts:
+
+    def fix_directory(post):
         new_post_dict = post.convert(keep_empty_items=True)
         for media in post.medias:
             if media.links:
@@ -61,6 +63,9 @@ def fix_directories(posts, base_directory, site_name, api_type, media_type, user
             setattr(media, "old_filepath", old_filepath)
             setattr(media, "new_filepath", new_filepath)
             new_directories.append(os.path.dirname(new_filepath))
+    pool = multiprocessing()
+    pool.starmap(fix_directory, product(
+        posts))
     new_directories = list(set(new_directories))
     return posts, new_directories
 

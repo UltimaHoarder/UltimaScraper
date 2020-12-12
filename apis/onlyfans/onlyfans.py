@@ -98,7 +98,6 @@ class media_types():
         for attr, value in self.__dict__.items():
             yield attr, value
 
-
 class content_types:
     def __init__(self, option={}) -> None:
         class archived_types(content_types):

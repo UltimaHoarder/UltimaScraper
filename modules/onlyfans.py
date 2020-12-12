@@ -839,9 +839,9 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
         media_set2["valid"] = []
         media_set2["invalid"] = []
         for media_api in results:
-            if media_api["responseType"] == "post":
-                if media_api["isArchived"]:
-                    pass
+            # if media_api["responseType"] == "post":
+            #     if media_api["isArchived"]:
+            #         pass
             if api_type == "Messages":
                 media_api["rawText"] = media_api["text"]
             if api_type == "Mass Messages":

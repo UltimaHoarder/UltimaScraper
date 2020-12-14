@@ -11,6 +11,7 @@ from multiprocessing import cpu_count
 from requests.adapters import HTTPAdapter
 from multiprocessing.dummy import Pool as ThreadPool
 from itertools import chain, zip_longest, groupby, product
+from os.path import dirname as up
 
 
 def setup_logger(name, log_file, level=logging.INFO):
@@ -30,6 +31,9 @@ def setup_logger(name, log_file, level=logging.INFO):
 
     return logger
 
+
+path = up(up(os.path.realpath(__file__)))
+os.chdir(path)
 
 log_error = setup_logger('errors', 'errors.log')
 

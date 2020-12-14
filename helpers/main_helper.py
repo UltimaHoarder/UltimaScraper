@@ -13,7 +13,6 @@ import platform
 import re
 from datetime import datetime
 from itertools import chain, zip_longest, groupby, product
-from os.path import dirname as up
 from urllib.parse import urlparse
 import time
 import random
@@ -35,9 +34,6 @@ import warnings
 from multiprocessing import cpu_count
 from mergedeep import merge, Strategy
 
-
-path = up(up(os.path.realpath(__file__)))
-os.chdir(path)
 
 warnings.filterwarnings(
     "ignore", message='.*looks like a URL.*', category=UserWarning, module='bs4')

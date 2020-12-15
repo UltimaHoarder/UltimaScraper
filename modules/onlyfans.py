@@ -514,13 +514,15 @@ def process_metadata(api: start, new_metadata, formatted_directories, subscripti
         formatted_directories, api)
     new_metadata_object = create_metadata(
         api, new_metadata, standard_format=True)
-    print("Merging new metadata with legacy metadata.")
+    if legacy_metadata_object:
+        print("Merging new metadata with legacy metadata.")
     new_metadata_object = compare_metadata(
         new_metadata_object, legacy_metadata_object)
     old_metadata_set = import_archive(archive_path)
     old_metadata_object = create_metadata(
         api, old_metadata_set, api_type=api_type)
-    print("Merging new metadata with old metadata.")
+    if old_metadata_object:
+        print("Merging new metadata with old metadata.")
     new_metadata_object = compare_metadata(
         new_metadata_object, old_metadata_object)
     if not subscription.download_info:

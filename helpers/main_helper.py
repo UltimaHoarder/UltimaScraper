@@ -443,7 +443,7 @@ def choose_option(subscription_list, auto_scrape_names):
     return names
 
 
-def process_names(module, subscription_list, auto_scrape_names, json_auth_array, session_array, json_config, site_name_lower, site_name):
+def process_names(module, subscription_list, auto_scrape_names, session_array, json_config, site_name_lower, site_name):
     names = choose_option(
         subscription_list, auto_scrape_names)
     if not names:
@@ -480,10 +480,13 @@ def is_me(user_api):
         return False
 
 
-def update_metadata(path, metadata):
-    with open(path, 'w') as outfile:
-        json.dump(metadata, outfile)
-    print
+def export_json(path, metadata):
+    if "auth" not in metadata:
+        auth = {}
+        auth["auth"] = metadata
+        metadata = auth
+    with open(path, 'w', encoding='utf-8') as outfile:
+        ujson.dump(metadata, outfile, indent=2)
 
 
 def grouper(n, iterable, fillvalue=None):

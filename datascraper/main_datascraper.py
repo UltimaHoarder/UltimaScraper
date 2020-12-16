@@ -5,8 +5,10 @@ import timeit
 import copy
 from argparse import ArgumentParser
 
+import ujson
+
 import helpers.main_helper as main_helper
-from helpers.main_helper import module_chooser
+from helpers.main_helper import choose_option, module_chooser
 import modules.bbwchan as m_bbwchan
 import modules.fourchan as m_fourchan
 import modules.onlyfans as m_onlyfans
@@ -38,7 +40,7 @@ def start_datascraper():
     json_settings = json_config["settings"]
     json_sites = json_config["supported"]
     infinite_loop = json_settings["infinite_loop"]
-    global_user_agent = json_settings['global_user_agent']
+    auto_profile_choice = json_settings["auto_profile_choice"]
     domain = json_settings["auto_site_choice"]
     path = os.path.join('.settings', 'extra_auth.json')
     # extra_auth_config, extra_auth_config2 = main_helper.get_config(path)
@@ -65,24 +67,13 @@ def start_datascraper():
                 site_name = site_names[x]
             site_name_lower = site_name.lower()
 
-            json_auth_array = [json_sites[site_name_lower]
-                               ["auth"]]
-
             json_site_settings = json_sites[site_name_lower]["settings"]
+
             auto_scrape_names = json_site_settings["auto_scrape_names"]
-            extra_auth_settings = json_sites[site_name_lower]["extra_auth_settings"] if "extra_auth_settings" in json_sites[site_name_lower] else {
-                "extra_auth": False}
-            extra_auth = extra_auth_settings["extra_auth"]
-            if extra_auth:
-                choose_auth = extra_auth_settings["choose_auth"]
-                merge_auth = extra_auth_settings["merge_auth"]
-                json_auth_array += extra_auth_config["supported"][site_name_lower]["auths"]
-                if choose_auth:
-                    json_auth_array = main_helper.choose_auth(json_auth_array)
             apis = []
             module = m_onlyfans
             subscription_array = []
-            legacy = True
+            original_sessions = []
             original_sessions = api_helper.create_session(
                 settings=json_settings)
             if not original_sessions:
@@ -91,30 +82,66 @@ def start_datascraper():
             archive_time = timeit.default_timer()
             if site_name_lower == "onlyfans":
                 site_name = "OnlyFans"
+                profile_directories = json_settings["profile_directories"]
+                profile_directories2 = []
+                for profile_directory in profile_directories:
+                    sessions = copy.deepcopy(original_sessions)
+                    x = os.path.join(profile_directory, site_name)
+                    x = os.path.abspath(x)
+                    temp_users = os.listdir(x)
+                    for user in temp_users:
+                        user_profile = os.path.join(x, user)
+                        user_auth_filepath = os.path.join(
+                            user_profile, "auth.json")
+                        temp_json_auth = {}
+                        if os.path.exists(user_auth_filepath):
+                            temp_json_auth = ujson.load(
+                                open(user_auth_filepath))
+                            json_auth = temp_json_auth["auth"]
+                            if not json_auth.get("active", None):
+                                continue
+                            json_auth["username"] = user
+                            api = OnlyFans.start(
+                                sessions)
+                            api.auth.profile_directory = user_profile
+                            api.set_auth_details(
+                                json_auth)
+                            apis.append(api)
+                        if temp_json_auth:
+                            main_helper.export_json(
+                                user_auth_filepath, temp_json_auth)
+                            print
+                        print
+                    print
+                    profile_directories2.append(x)
                 subscription_array = []
                 auth_count = -1
                 jobs = json_site_settings["jobs"]
-                for json_auth in json_auth_array:
-                    api = OnlyFans.start(
-                        original_sessions)
-                    auth_count += 1
-                    user_agent = global_user_agent if not json_auth[
-                        'user_agent'] else json_auth['user_agent']
-
+                subscription_list = module.format_options(
+                    apis, "users")
+                apis = choose_option(
+                    subscription_list, auto_profile_choice)
+                apis = [x.pop(0) for x in apis]
+                print
+                for api in apis:
                     module = m_onlyfans
-                    module.assign_vars(json_auth, json_config,
+                    module.assign_vars(api.auth_details, json_config,
                                        json_site_settings, site_name)
-                    api.set_auth_details(
-                        **json_auth, global_user_agent=user_agent)
                     identifier = ""
+                    setup = False
                     setup = module.account_setup(api, identifier=identifier)
                     if not setup:
+                        api.auth_details.active = False
+                        auth_details = api.auth_details.__dict__
+                        user_auth_filepath = os.path.join(
+                            api.auth.profile_directory, "auth.json")
+                        main_helper.export_json(
+                            user_auth_filepath, auth_details)
                         continue
                     if jobs["scrape_names"]:
                         array = module.manage_subscriptions(
                             api, auth_count, identifier=identifier)
                         subscription_array += array
-                    apis.append(api)
                 subscription_list = module.format_options(
                     subscription_array, "usernames")
                 if jobs["scrape_paid_content"]:
@@ -123,7 +150,7 @@ def start_datascraper():
                 if jobs["scrape_names"]:
                     print("Scraping Subscriptions")
                     x = main_helper.process_names(
-                        module, subscription_list, auto_scrape_names, json_auth_array, apis, json_config, site_name_lower, site_name)
+                        module, subscription_list, auto_scrape_names, apis, json_config, site_name_lower, site_name)
                 x = main_helper.process_downloads(apis, module)
                 print
             elif site_name_lower == "starsavn":

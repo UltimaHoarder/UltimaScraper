@@ -1,5 +1,5 @@
 import hashlib
-from apis.onlyfans.onlyfans import create_auth, create_subscription, media_types, start
+from apis.onlyfans.onlyfans import auth_details, create_auth, create_subscription, media_types, start
 from classes.prepare_metadata import create_metadata, format_content, format_types, prepare_reformat
 import os
 from datetime import datetime, timedelta
@@ -46,7 +46,7 @@ maximum_length = None
 app_token = None
 
 
-def assign_vars(json_auth, config, site_settings, site_name):
+def assign_vars(json_auth: auth_details, config, site_settings, site_name):
     global json_config, json_global_settings, max_threads, json_settings, auto_choice, j_directory, metadata_directory_format, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, blacklist_name, webhook, maximum_length, app_token
 
     json_config = config
@@ -70,7 +70,7 @@ def assign_vars(json_auth, config, site_settings, site_name):
     maximum_length = 255
     maximum_length = int(json_settings["text_length"]
                          ) if json_settings["text_length"] else maximum_length
-    app_token = json_auth['app_token']
+    app_token = json_auth.app_token
 
 
 def account_setup(api: start, identifier=""):
@@ -1122,6 +1122,17 @@ def format_options(f_list, choice_type):
     string = ""
     seperator = " | "
     if name_count > 1:
+        if "users" == choice_type:
+            for api in f_list:
+                if hasattr(api, "username"):
+                    name = api.username
+                else:
+                    name = api.auth_details.username
+                names.append([api, name])
+                string += str(count)+" = "+name
+                if count+1 != name_count:
+                    string += seperator
+                count += 1
         if "usernames" == choice_type:
             for x in f_list:
                 name = x.username

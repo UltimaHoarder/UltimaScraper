@@ -1,25 +1,65 @@
+from apis.onlyfans.onlyfans import auth_details
 import os
+
+import ujson
 from classes.prepare_metadata import format_types
 import uuid as uuid
+
+
+def export_json(path, metadata):
+    if "auth" not in metadata:
+        auth = {}
+        auth["auth"] = metadata
+        metadata = auth
+    with open(path, 'w', encoding='utf-8') as outfile:
+        ujson.dump(metadata, outfile, indent=2)
 
 
 def fix(config={}):
     added = []
     changed = []
     fix = []
+    settings = {}
+    global_user_agent = ""
     for key, value in config.items():
         if key == "settings":
             settings = value
             socks5_proxies = settings.pop(
-                "socks5_proxy",None)
+                "socks5_proxy", None)
             if socks5_proxies:
                 fixed_socks5_proxies = []
                 for socks5_proxy in socks5_proxies:
                     fixed_socks5_proxy = f"socks5://{socks5_proxy}"
                     fixed_socks5_proxies.append(fixed_socks5_proxy)
                 settings["proxies"] = fixed_socks5_proxies
+            global_user_agent = settings.pop(
+                "global_user_agent", None)
         if key == "supported":
             for key2, value2 in value.items():
+                temp_auth = value2.pop("auth", None)
+                if temp_auth:
+                    q = os.path.abspath(".settings")
+                    backup_config_filepath = os.path.join(
+                        q, "config_backup.json")
+                    print(
+                        f"LEGACY CONFIG FOUND, BACKING IT UP AND CREATING A NEW ONE. ({backup_config_filepath})")
+                    export_json(backup_config_filepath, config)
+                    print
+                    temp_auth["user_agent"] = global_user_agent
+                    auth = {}
+                    temp_auth = auth_details(temp_auth).__dict__
+                    auth["auth"] = temp_auth
+                    if "profile_directories" in settings:
+                        dpd = settings["profile_directories"][0]
+                        default_profile_directory = os.path.join(
+                            os.path.abspath(dpd), key2, "default")
+                        os.makedirs(default_profile_directory, exist_ok=True)
+                        profile_auth_filepath = os.path.join(
+                            default_profile_directory, "auth.json")
+                        export_json(profile_auth_filepath, auth)
+                        print(
+                            f"{profile_auth_filepath} HAS BEEN CREATED, CHECK IF IT'S CORRECT.")
+                print
                 for key3, settings in value2.items():
                     if key3 == "settings":
                         settings["text_length"] = int(settings["text_length"])
@@ -34,7 +74,7 @@ def fix(config={}):
                             string = f"metadata_directory_format in {key2}"
                             added.append(string)
                         filename_format = settings.pop(
-                            "file_name_format",None)
+                            "file_name_format", None)
                         if filename_format:
                             settings["filename_format"] = filename_format
                         reformats = {k: v for k,
@@ -61,6 +101,8 @@ def fix(config={}):
                             s_list = s.split("\n")
                             fix.extend(s_list)
                         print
+            value.pop("fourchan", None)
+            value.pop("bbwchan", None)
     added = "\n".join([f"Added {x}" for x in added if x])
     changed = "\n".join([f"Changed {x}" for x in changed if x])
     fix = "\n".join([f"Fix: {x}" for x in fix if x])
@@ -81,7 +123,8 @@ def fix(config={}):
 class config(object):
     def __init__(self, settings={}, supported={}):
         class Settings(object):
-            def __init__(self, auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", proxies=[], cert="", global_user_agent="", random_string=""):
+            def __init__(self, auto_profile_choice="", auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", proxies=[], cert="",  random_string=""):
+                self.auto_profile_choice = auto_profile_choice
                 self.auto_site_choice = auto_site_choice
                 self.export_type = export_type
                 self.profile_directories = profile_directories
@@ -94,34 +137,16 @@ class config(object):
                 self.proxies = proxies
                 self.cert = cert
                 self.random_string = random_string if random_string else uuid.uuid1().hex
-                self.global_user_agent = global_user_agent
 
         class Supported(object):
-            def __init__(self, onlyfans={}, patreon={}, starsavn={}, fourchan={}, bbwchan={}):
+            def __init__(self, onlyfans={}, patreon={}, starsavn={}):
                 self.onlyfans = self.OnlyFans(onlyfans)
                 self.patreon = self.Patreon(patreon)
                 self.starsavn = self.StarsAvn(starsavn)
-                self.fourchan = self.FourChan(fourchan)
-                self.bbwchan = self.BBWChan(bbwchan)
 
             class OnlyFans:
                 def __init__(self, module):
-                    self.auth = self.Auth(module.get('auth', {}))
                     self.settings = self.Settings(module.get('settings', {}))
-                    self.extra_auth_settings = self.ExtraAuthSettings(
-                        module.get('extra_auth_settings', {}))
-
-                class Auth:
-                    def __init__(self, option={}):
-                        self.username = option.get('username', "")
-                        self.auth_id = option.get('auth_id', "")
-                        self.auth_hash = option.get('auth_hash', "")
-                        self.auth_uniq_ = option.get('auth_uniq_', "")
-                        self.sess = option.get('sess', "")
-                        self.app_token = option.get(
-                            'app_token', '33d57ade8c02dbc5a333db99ff9ae26a')
-                        self.user_agent = option.get('user_agent', "")
-                        self.support_2fa = option.get('support_2fa', True)
 
                 class Settings():
                     def __init__(self, option={}):
@@ -167,18 +192,9 @@ class config(object):
                         self.webhook = option.get(
                             'webhook', True)
 
-                class ExtraAuthSettings:
-                    def __init__(self, option={}):
-                        self.extra_auth = option.get('extra_auth', False)
-                        self.choose_auth = option.get('choose_auth', False)
-                        self.merge_auth = option.get('merge_auth', False)
-
             class StarsAvn:
                 def __init__(self, module):
-                    self.auth = self.Auth(module.get('auth', {}))
                     self.settings = self.Settings(module.get('settings', {}))
-                    self.extra_auth_settings = self.ExtraAuthSettings(
-                        module.get('extra_auth_settings', {}))
 
                 class Auth:
                     def __init__(self, option={}):
@@ -186,7 +202,7 @@ class config(object):
                         self.sess = option.get('sess', "")
                         self.user_agent = option.get('user_agent', "")
 
-                class Settings:
+                class Settings():
                     def __init__(self, option={}):
                         class jobs:
                             def __init__(self, option={}) -> None:
@@ -212,7 +228,7 @@ class config(object):
                             'metadata_directories', [".sites"])
                         self.metadata_directory_format = normpath(option.get(
                             'metadata_directory_format', "{site_name}/{username}/Metadata"))
-                        self.text_length = option.get('text_length', "255")
+                        self.text_length = option.get('text_length', 255)
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
                         self.date_format = option.get(
@@ -223,97 +239,16 @@ class config(object):
                             'ignore_type', "")
                         self.export_metadata = option.get(
                             'export_metadata', True)
+                        self.delete_legacy_metadata = option.get(
+                            'delete_legacy_metadata', False)
                         self.blacklist_name = option.get(
                             'blacklist_name', "")
                         self.webhook = option.get(
                             'webhook', True)
 
-                class ExtraAuthSettings:
-                    def __init__(self, option={}):
-                        self.extra_auth = option.get('extra_auth', False)
-                        self.choose_auth = option.get('choose_auth', False)
-                        self.merge_auth = option.get('merge_auth', False)
-
-            class FourChan:
-                def __init__(self, module):
-                    self.auth = self.Auth(module.get('auth', {}))
-                    self.settings = self.Settings(module.get('settings', {}))
-
-                class Auth:
-                    def __init__(self, option={}):
-                        pass
-
-                class Settings:
-                    def __init__(self, option={}):
-                        self.auto_choice = option.get('auto_choice', "")
-                        self.auto_scrape_names = option.get(
-                            'auto_scrape_names', False)
-                        self.download_directories = option.get(
-                            'download_directories', [".sites"])
-                        normpath = os.path.normpath
-                        self.file_directory_format = normpath(option.get(
-                            'file_directory_format', "{site_name}/{username}/{api_type}/{value}/{media_type}"))
-                        self.filename_format = normpath(option.get(
-                            'filename_format', "{filename}.{ext}"))
-                        self.metadata_directories = option.get(
-                            'metadata_directories', [".sites"])
-                        self.metadata_directory_format = normpath(option.get(
-                            'metadata_directory_format', "{site_name}/{username}/Metadata"))
-                        self.text_length = option.get('text_length', "255")
-                        self.overwrite_files = option.get(
-                            'overwrite_files', False)
-                        self.date_format = option.get(
-                            'date_format', "%d-%m-%Y")
-                        self.boards = option.get(
-                            'boards', [])
-                        self.ignored_keywords = option.get(
-                            'ignored_keywords', [])
-                        self.webhook = option.get(
-                            'webhook', True)
-
-            class BBWChan:
-                def __init__(self, module):
-                    self.auth = self.Auth(module.get('auth', {}))
-                    self.settings = self.Settings(module.get('settings', {}))
-
-                class Auth:
-                    def __init__(self, option={}):
-                        pass
-
-                class Settings:
-                    def __init__(self, option={}):
-                        self.auto_choice = option.get('auto_choice', "")
-                        self.auto_scrape_names = option.get(
-                            'auto_scrape_names', False)
-                        self.download_directories = option.get(
-                            'download_directories', [".sites"])
-                        normpath = os.path.normpath
-                        self.file_directory_format = normpath(option.get(
-                            'file_directory_format', "{site_name}/{username}/{api_type}/{value}/{media_type}"))
-                        self.filename_format = normpath(option.get(
-                            'filename_format', "{filename}.{ext}"))
-                        self.metadata_directories = option.get(
-                            'metadata_directories', [".sites"])
-                        self.metadata_directory_format = normpath(option.get(
-                            'metadata_directory_format', "{site_name}/{username}/Metadata"))
-                        self.text_length = option.get('text_length', "255")
-                        self.overwrite_files = option.get(
-                            'overwrite_files', False)
-                        self.date_format = option.get(
-                            'date_format', "%d-%m-%Y")
-                        self.boards = option.get(
-                            'boards', [])
-                        self.ignored_keywords = option.get(
-                            'ignored_keywords', [])
-                        self.webhook = option.get(
-                            'webhook', True)
-
             class Patreon:
                 def __init__(self, module):
-                    self.auth = self.Auth(module.get('auth', {}))
                     self.settings = self.Settings(module.get('settings', {}))
-                    self.extra_auth_settings = self.ExtraAuthSettings(
-                        module.get('extra_auth_settings', {}))
 
                 class Auth:
                     def __init__(self, option={}):
@@ -357,73 +292,5 @@ class config(object):
                             'blacklist_name', "")
                         self.webhook = option.get(
                             'webhook', True)
-
-                class ExtraAuthSettings:
-                    def __init__(self, option={}):
-                        self.extra_auth = option.get('extra_auth', False)
-                        self.choose_auth = option.get('choose_auth', False)
-                        self.merge_auth = option.get('merge_auth', False)
         self.settings = Settings(**settings)
-        self.supported = Supported(**supported)
-
-
-class extra_auth(object):
-    def __init__(self, supported={}):
-        class Supported(object):
-            def __init__(self, onlyfans={}, patreon={}, starsavn={}):
-                self.onlyfans = self.OnlyFans(onlyfans)
-                self.patreon = self.Patreon(patreon)
-                self.starsavn = self.StarsAvn(starsavn)
-
-            class OnlyFans:
-                def __init__(self, module):
-                    if "extra_auth" in module:
-                        module["auths"] = module["extra_auth"]
-                    auths = module.get("auths", [{}])
-                    self.auths = []
-                    for auth in auths:
-                        self.auths.append(self.Auths(auth))
-
-                class Auths:
-                    def __init__(self, option={}):
-                        self.username = option.get('username', "")
-                        self.auth_id = option.get('auth_id', "")
-                        self.auth_hash = option.get('auth_hash', "")
-                        self.auth_uniq_ = option.get('auth_uniq_', "")
-                        self.sess = option.get('sess', "")
-                        self.app_token = option.get(
-                            'app_token', '33d57ade8c02dbc5a333db99ff9ae26a')
-                        self.user_agent = option.get('user_agent', "")
-                        self.support_2fa = option.get('support_2fa', True)
-
-            class Patreon:
-                def __init__(self, module):
-                    if "extra_auth" in module:
-                        module["auths"] = module["extra_auth"]
-                    auths = module.get("auths", [{}])
-                    self.auths = []
-                    for auth in auths:
-                        self.auths.append(self.Auths(auth))
-
-                class Auths:
-                    def __init__(self, option={}):
-                        self.cf_clearance = option.get('cf_clearance', "")
-                        self.session_id = option.get('session_id', "")
-                        self.user_agent = option.get('user_agent', "")
-                        self.support_2fa = option.get('support_2fa', True)
-
-            class StarsAvn:
-                def __init__(self, module):
-                    if "extra_auth" in module:
-                        module["auths"] = module["extra_auth"]
-                    auths = module.get("auths", [{}])
-                    self.auths = []
-                    for auth in auths:
-                        self.auths.append(self.Auths(auth))
-
-                class Auths:
-                    def __init__(self, option={}):
-                        self.username = option.get('username', "")
-                        self.sess = option.get('sess', "")
-                        self.user_agent = option.get('user_agent', "")
         self.supported = Supported(**supported)

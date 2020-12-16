@@ -32,7 +32,7 @@ Start:
 
 Open and edit:
 
-`config.json`
+`.profiles/default/auth.json`
 
 [auth]
 

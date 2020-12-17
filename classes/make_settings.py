@@ -24,6 +24,7 @@ def fix(config={}):
     for key, value in config.items():
         if key == "settings":
             settings = value
+            auto_profile_choice = settings.pop("auto_profile_choice",None)
             socks5_proxies = settings.pop(
                 "socks5_proxy", None)
             if socks5_proxies:

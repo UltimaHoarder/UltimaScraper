@@ -432,6 +432,7 @@ def choose_option(subscription_list, auto_scrape_names):
             values = "1"
             values = input().strip().split(",")
         else:
+            auto_scrape_names = str(auto_scrape_names)
             values = auto_scrape_names.split(",")
         for value in values:
             if value.isdigit():

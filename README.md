@@ -5,6 +5,7 @@
 # Video Tutorial
 
 Watch this video made by Omnipotent of [RaidForums](https://raidforums.com/) or follow the tutorial below (Thanks):
+(Authentication is no longer inside config.json)
 
 https://www.youtube.com/watch?v=3r8SQT7mNHk
 

@@ -132,8 +132,8 @@ def start_datascraper():
                     setup = False
                     setup = module.account_setup(api, identifier=identifier)
                     if not setup:
-                        api.auth_details.active = False
-                        auth_details = api.auth_details.__dict__
+                        api.auth.auth_details.active = False
+                        auth_details = api.auth.auth_details.__dict__
                         user_auth_filepath = os.path.join(
                             api.auth.profile_directory, "auth.json")
                         main_helper.export_json(

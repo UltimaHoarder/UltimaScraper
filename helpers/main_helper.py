@@ -117,13 +117,12 @@ def clean_text(string, remove_spaces=False):
             m, " ").strip()
     string = ' '.join(string.split())
     string = BeautifulSoup(string, "lxml").get_text()
-    SAFE_PTN = r"[|\^&+\-%*/=!>]"
+    SAFE_PTN = r"[|\^&+\-%*/=!?>]"
     string = re.sub(SAFE_PTN, ' ',  string.strip()
                     ).strip()
     if remove_spaces:
         string = string.replace(' ', '_')
     return string
-
 
 def format_media_set(media_set):
     merged = merge({}, *media_set, strategy=Strategy.ADDITIVE)

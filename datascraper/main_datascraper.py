@@ -75,7 +75,7 @@ def start_datascraper():
             original_sessions = []
             original_sessions = api_helper.create_session(
                 settings=json_settings)
-            original_sessions = [x for x in original_sessions]
+            original_sessions = [x for x in original_sessions if x]
             if not original_sessions:
                 print("Unable to create session")
                 continue

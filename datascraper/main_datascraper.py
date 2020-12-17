@@ -76,6 +76,7 @@ def start_datascraper():
             original_sessions = []
             original_sessions = api_helper.create_session(
                 settings=json_settings)
+            original_sessions = [x for x in original_sessions]
             if not original_sessions:
                 print("Unable to create session")
                 continue
@@ -125,7 +126,7 @@ def start_datascraper():
                 print
                 for api in apis:
                     module = m_onlyfans
-                    module.assign_vars(api.auth_details, json_config,
+                    module.assign_vars(api.auth.auth_details, json_config,
                                        json_site_settings, site_name)
                     identifier = ""
                     setup = False

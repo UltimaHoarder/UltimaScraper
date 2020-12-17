@@ -1,4 +1,5 @@
 import hashlib
+from typing import Union
 from apis.onlyfans.onlyfans import auth_details, create_auth, create_subscription, media_types, start
 from classes.prepare_metadata import create_metadata, format_content, format_types, prepare_reformat
 import os
@@ -1108,7 +1109,7 @@ def manage_subscriptions(api: start, auth_count=0, identifier="", refresh: bool 
     return results2
 
 
-def format_options(f_list, choice_type):
+def format_options(f_list:list[Union[start,create_subscription,dict]], choice_type):
     new_item = {}
     new_item["auth_count"] = -1
     new_item["username"] = "All"
@@ -1124,10 +1125,10 @@ def format_options(f_list, choice_type):
     if name_count > 1:
         if "users" == choice_type:
             for api in f_list:
-                if hasattr(api, "username"):
-                    name = api.username
+                if not isinstance(api, start):
+                    name = getattr(api, "username", None)
                 else:
-                    name = api.auth_details.username
+                    name = api.auth.auth_details.username
                 names.append([api, name])
                 string += str(count)+" = "+name
                 if count+1 != name_count:
@@ -1135,6 +1136,8 @@ def format_options(f_list, choice_type):
                 count += 1
         if "usernames" == choice_type:
             for x in f_list:
+                if isinstance(x, start) or isinstance(x,dict):
+                    continue
                 name = x.username
                 string += str(count)+" = "+name
                 names.append([x.auth_count, name])
@@ -1144,11 +1147,13 @@ def format_options(f_list, choice_type):
         if "apis" == choice_type:
             names = f_list
             for api in f_list:
-                if hasattr(api, "username"):
-                    name = api.username
+                if isinstance(api,SimpleNamespace):
+                    name = getattr(api, "username", None)
                 else:
-                    name = api["api_type"]
-                string += str(count)+" = "+name
+                    if isinstance(api,start) or isinstance(api,create_subscription):
+                        continue
+                    name = api.get("api_type")
+                string += f"{count} = name"
                 if count+1 != name_count:
                     string += seperator
                 count += 1

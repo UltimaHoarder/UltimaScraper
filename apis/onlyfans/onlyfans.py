@@ -204,7 +204,9 @@ class create_auth():
         self.mass_messages = []
         self.paid_content = {}
         self.sessions = option.get("sessions")
+        self.auth_details = auth_details()
         self.profile_directory = option.get("profile_directory", "")
+        self.active = False
         valid_counts = ["chatMessagesCount"]
         args = [self.username, False, False]
         link_info = links(*args).full
@@ -463,7 +465,6 @@ class start():
         self.sessions = sessions
         self.auth = create_auth(init=True)
         self.custom_request = custom_request
-        self.auth_details = auth_details()
         self.max_threads = -1
         self.lists = None
         self.links = links
@@ -491,23 +492,22 @@ class start():
     def set_auth_details(self, option):
         if not option["active"]:
             return
-        self.auth_details.username = option["username"]
-        self.auth_details.auth_id = option["auth_id"]
-        self.auth_details.auth_hash = option["auth_hash"]
-        self.auth_details.auth_uniq_ = option["auth_uniq_"]
-        self.auth_details.sess = option["sess"]
-        self.auth_details.app_token = option["app_token"]
+        self.auth.auth_details.username = option["username"]
+        self.auth.auth_details.auth_id = option["auth_id"]
+        self.auth.auth_details.auth_hash = option["auth_hash"]
+        self.auth.auth_details.auth_uniq_ = option["auth_uniq_"]
+        self.auth.auth_details.sess = option["sess"]
+        self.auth.auth_details.app_token = option["app_token"]
         if not option["user_agent"]:
-            input(f"user_agent required for: {self.auth_details.username}")
+            input(f"user_agent required for: {self.auth.auth_details.username}")
             exit()
-        self.auth_details.user_agent = option["user_agent"]
-        self.auth_details.support_2fa = option["support_2fa"]
-        self.auth_details.active = option["active"]
+        self.auth.auth_details.user_agent = option["user_agent"]
+        self.auth.auth_details.support_2fa = option["support_2fa"]
+        self.auth.auth_details.active = option["active"]
 
     def login(self, full=False, max_attempts=10) -> Union[create_auth, None]:
         auth_version = "(V1)"
-        auth_items = self.auth_details
-        self.auth = None
+        auth_items = self.auth.auth_details
         link = links().customer
         user_agent = auth_items.user_agent
         auth_id = auth_items.auth_id
@@ -534,6 +534,7 @@ class start():
             count += 1
             if me_api and not "error" in me_api:
                 me_api = create_auth(me_api)
+                me_api.active = True
             else:
                 continue
 
@@ -580,7 +581,7 @@ class start():
             return self.auth
 
     def get_authed(self):
-        if not self.auth:
+        if not self.auth.active:
             link = links().customer
             r = api_helper.json_request(link, self.sessions[0],  sleep=False)
             if r:

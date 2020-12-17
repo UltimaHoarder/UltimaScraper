@@ -40,7 +40,6 @@ def start_datascraper():
     json_settings = json_config["settings"]
     json_sites = json_config["supported"]
     infinite_loop = json_settings["infinite_loop"]
-    auto_profile_choice = json_settings["auto_profile_choice"]
     domain = json_settings["auto_site_choice"]
     path = os.path.join('.settings', 'extra_auth.json')
     # extra_auth_config, extra_auth_config2 = main_helper.get_config(path)
@@ -84,6 +83,7 @@ def start_datascraper():
             if site_name_lower == "onlyfans":
                 site_name = "OnlyFans"
                 profile_directories = json_settings["profile_directories"]
+                auto_profile_choice = json_site_settings["auto_profile_choice"]
                 profile_directories2 = []
                 for profile_directory in profile_directories:
                     sessions = copy.deepcopy(original_sessions)

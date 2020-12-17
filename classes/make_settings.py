@@ -123,8 +123,7 @@ def fix(config={}):
 class config(object):
     def __init__(self, settings={}, supported={}):
         class Settings(object):
-            def __init__(self, auto_profile_choice="", auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", proxies=[], cert="",  random_string=""):
-                self.auto_profile_choice = auto_profile_choice
+            def __init__(self, auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", proxies=[], cert="",  random_string=""):
                 self.auto_site_choice = auto_site_choice
                 self.export_type = export_type
                 self.profile_directories = profile_directories
@@ -156,6 +155,8 @@ class config(object):
                                     'scrape_names', True)
                                 self.scrape_paid_content = option.get(
                                     'scrape_paid_content', True)
+                        self.auto_profile_choice = option.get(
+                            'auto_profile_choice', "")
                         self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
@@ -210,6 +211,8 @@ class config(object):
                                     'scrape_names', True)
                                 self.scrape_paid_content = option.get(
                                     'scrape_paid_content', True)
+                        self.auto_profile_choice = option.get(
+                            'auto_profile_choice', "")
                         self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
@@ -259,6 +262,8 @@ class config(object):
 
                 class Settings:
                     def __init__(self, option={}):
+                        self.auto_profile_choice = option.get(
+                            'auto_profile_choice', "")
                         self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)

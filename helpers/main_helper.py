@@ -124,6 +124,7 @@ def clean_text(string, remove_spaces=False):
         string = string.replace(' ', '_')
     return string
 
+
 def format_media_set(media_set):
     merged = merge({}, *media_set, strategy=Strategy.ADDITIVE)
     if "directories" in merged:
@@ -422,24 +423,28 @@ def choose_auth(array):
 
 def choose_option(subscription_list, auto_scrape_names):
     names = subscription_list[0]
+    new_names = []
     if names:
         seperator = " | "
         print(f"Names: Username = username {seperator} {subscription_list[1]}")
         if not auto_scrape_names:
-            value = "chloelove_"
-            value = "1"
-            value = input().strip()
+            values = "chloelove_"
+            values = "1"
+            values = input().strip().split(",")
+        else:
+            values = auto_scrape_names.split(",")
+        for value in values:
             if value.isdigit():
                 if value == "0":
-                    names = names[1:]
+                    new_names = names[1:]
+                    break
                 else:
-                    names = [names[int(value)]]
+                    new_name = names[int(value)]
+                    new_names.append(new_name)
             else:
-                names = [name for name in names if value in name[1]]
-        else:
-            value = 0
-            names = names[1:]
-    return names
+                new_name = [name for name in names if value == name[1]]
+                new_names.extend(new_name)
+    return new_names
 
 
 def process_names(module, subscription_list, auto_scrape_names, session_array, json_config, site_name_lower, site_name):

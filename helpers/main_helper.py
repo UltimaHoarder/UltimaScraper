@@ -282,6 +282,8 @@ def reformat(prepared_format, unformatted):
 def get_directory(directories, site_name):
     directories = format_paths(directories, site_name)
     new_directories = []
+    if not directories:
+        directories = [""]
     for directory in directories:
         if not os.path.isabs(directory):
             fp = os.path.abspath(".sites")

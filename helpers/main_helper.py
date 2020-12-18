@@ -1,5 +1,6 @@
 from os import rename
-from typing import Any
+from types import SimpleNamespace
+from typing import Any, Union
 
 from deepdiff.deephash import DeepHash
 from classes.prepare_metadata import format_variables, prepare_reformat
@@ -421,19 +422,22 @@ def choose_auth(array):
     return names
 
 
-def choose_option(subscription_list, auto_scrape_names):
+def choose_option(subscription_list, auto_scrape: Union[str, bool]):
     names = subscription_list[0]
     new_names = []
     if names:
         seperator = " | "
         print(f"Names: Username = username {seperator} {subscription_list[1]}")
-        if not auto_scrape_names:
-            values = "chloelove_"
-            values = "1"
-            values = input().strip().split(",")
+        if isinstance(auto_scrape, bool):
+            if auto_scrape:
+                values = [x[1] for x in names]
+            else:
+                values = input().strip().split(",")
         else:
-            auto_scrape_names = str(auto_scrape_names)
-            values = auto_scrape_names.split(",")
+            if not auto_scrape:
+                values = input().strip().split(",")
+            else:
+                values = auto_scrape.split(",")
         for value in values:
             if value.isdigit():
                 if value == "0":
@@ -445,12 +449,13 @@ def choose_option(subscription_list, auto_scrape_names):
             else:
                 new_name = [name for name in names if value == name[1]]
                 new_names.extend(new_name)
+    new_names = [x for x in new_names if not isinstance(x[0], SimpleNamespace)]
     return new_names
 
 
-def process_names(module, subscription_list, auto_scrape_names, session_array, json_config, site_name_lower, site_name):
+def process_names(module, subscription_list, auto_scrape, session_array, json_config, site_name_lower, site_name):
     names = choose_option(
-        subscription_list, auto_scrape_names)
+        subscription_list, auto_scrape)
     if not names:
         print("There's nothing to scrape.")
         return

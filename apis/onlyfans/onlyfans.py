@@ -10,7 +10,6 @@ from datetime import datetime, timedelta
 from dateutil.relativedelta import relativedelta
 from itertools import chain, groupby, product
 from multiprocessing.dummy import Pool as ThreadPool
-from types import SimpleNamespace
 import json
 from .. import api_helper
 from mergedeep import merge, Strategy

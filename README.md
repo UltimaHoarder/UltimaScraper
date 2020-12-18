@@ -175,6 +175,14 @@ You can choose one or more.
 
     You can automatically choose which site you want to scrape.
 
+[#auto_profile_choice](README.md#auto_profile_choice):
+
+    Default = ""
+    
+    Everything = "0"
+    Default = "1"
+    Username = ""
+
 [#auto_choice](README.md#auto_choice):
 
     Default = ""

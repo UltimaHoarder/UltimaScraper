@@ -1,16 +1,12 @@
-import re
 import time
-from time import sleep
-from typing import Any, Union
+from typing import Union
 from urllib.parse import urlparse
 from urllib import parse
 import hashlib
 import math
-from datetime import datetime, timedelta
+from datetime import datetime
 from dateutil.relativedelta import relativedelta
-from itertools import chain, groupby, product
-from multiprocessing.dummy import Pool as ThreadPool
-import json
+from itertools import chain, product
 from .. import api_helper
 from mergedeep import merge, Strategy
 import jsonpickle

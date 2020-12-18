@@ -453,7 +453,41 @@ def choose_option(subscription_list, auto_scrape: Union[str, bool]):
                 new_names.extend(new_name)
     new_names = [x for x in new_names if not isinstance(x[0], SimpleNamespace)]
     return new_names
-
+def process_profiles(json_settings,json_site_settings,original_sessions,site_name,original_api):
+    apis = []
+    profile_directories = json_settings["profile_directories"]
+    for profile_directory in profile_directories:
+        sessions = copy.deepcopy(original_sessions)
+        x = os.path.join(profile_directory, site_name)
+        x = os.path.abspath(x)
+        os.makedirs(x,exist_ok=True)
+        temp_users = os.listdir(x)
+        if not temp_users:
+            default_profile_directory = os.path.join(x,"default")
+            os.makedirs(default_profile_directory)
+            temp_users.append("default")
+        for user in temp_users:
+            user_profile = os.path.join(x, user)
+            user_auth_filepath = os.path.join(
+                user_profile, "auth.json")
+            api = original_api.start(
+                sessions)
+            if os.path.exists(user_auth_filepath):
+                temp_json_auth = ujson.load(
+                    open(user_auth_filepath))
+                json_auth = temp_json_auth["auth"]
+                if not json_auth.get("active", None):
+                    continue
+                json_auth["username"] = user
+                api.auth.profile_directory = user_profile
+                api.set_auth_details(
+                    json_auth)
+            export_json(
+                user_auth_filepath, api.auth.auth_details.__dict__)
+            apis.append(api)
+            print
+        print
+    return apis
 
 def process_names(module, subscription_list, auto_scrape, session_array, json_config, site_name_lower, site_name):
     names = choose_option(

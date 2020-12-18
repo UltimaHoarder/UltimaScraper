@@ -56,14 +56,3 @@ def check_profiles():
             print
         print
     print
-
-
-# def check_extra_auth():
-#     file_name = "extra_auth.json"
-#     path = os.path.join('.settings', file_name)
-#     json_config, json_config2 = main_helper.get_config(
-#         path)
-#     if json_config:
-#         if json_config != json_config2:
-#             input(
-#                 f"The .settings\\{file_name} file has been updated. Fill in whatever you need to fill in and then press enter when done.\n")

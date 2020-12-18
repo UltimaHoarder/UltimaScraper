@@ -1,27 +1,23 @@
 import hashlib
 from typing import Union
 from apis.onlyfans.onlyfans import auth_details, create_auth, create_subscription, media_types, start
-from classes.prepare_metadata import create_metadata, format_content, format_types, prepare_reformat
+from classes.prepare_metadata import create_metadata, format_content, prepare_reformat
 import os
 from datetime import datetime, timedelta
-from itertools import chain, groupby, product
+from itertools import chain, product
 from urllib.parse import urlparse
 import copy
 import json
-import jsonpickle
-from deepdiff import DeepHash
 import html
-import shutil
 import extras.OFRenamer.start as ofrenamer
 
 import requests
 
 import helpers.main_helper as main_helper
-import classes.prepare_download as prepare_download
 from types import SimpleNamespace
 from mergedeep import merge, Strategy
 
-from helpers.main_helper import import_archive, export_archive, remove_mandatory_files
+from helpers.main_helper import import_archive, export_archive
 
 multiprocessing = main_helper.multiprocessing
 log_download = main_helper.setup_logger('downloads', 'downloads.log')
@@ -1109,7 +1105,7 @@ def manage_subscriptions(api: start, auth_count=0, identifier="", refresh: bool 
     return results2
 
 
-def format_options(f_list:list[Union[start,create_subscription,dict]], choice_type):
+def format_options(f_list: list[Union[start, create_subscription, dict]], choice_type):
     new_item = {}
     new_item["auth_count"] = -1
     new_item["username"] = "All"
@@ -1136,7 +1132,7 @@ def format_options(f_list:list[Union[start,create_subscription,dict]], choice_ty
                 count += 1
         if "usernames" == choice_type:
             for x in f_list:
-                if isinstance(x, start) or isinstance(x,dict):
+                if isinstance(x, start) or isinstance(x, dict):
                     continue
                 name = x.username
                 string += str(count)+" = "+name
@@ -1147,10 +1143,10 @@ def format_options(f_list:list[Union[start,create_subscription,dict]], choice_ty
         if "apis" == choice_type:
             names = f_list
             for api in f_list:
-                if isinstance(api,SimpleNamespace):
+                if isinstance(api, SimpleNamespace):
                     name = getattr(api, "username", None)
                 else:
-                    if isinstance(api,start) or isinstance(api,create_subscription):
+                    if isinstance(api, start) or isinstance(api, create_subscription):
                         continue
                     name = api.get("api_type")
                 string += f"{count} = name"

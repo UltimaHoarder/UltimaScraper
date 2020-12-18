@@ -17,7 +17,7 @@ Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a is
 
 Build and run the image, mounting the appropriate directories:
 
-`docker build -t only-fans . && docker run -it --rm --name onlyfans -v ${PWD}/.settings:/usr/src/app/.settings -v ${PWD}/.sites:/usr/src/app/.sites only-fans`
+`docker build -t only-fans . && docker run -it --rm --name onlyfans -v ${PWD}/.settings:/usr/src/app/.settings -v ${PWD}/.profiles:/usr/src/app/.profiles -v ${PWD}/.sites:/usr/src/app/.sites only-fans`
 
 ## Running the app locally
 

@@ -499,7 +499,8 @@ class start():
         self.auth.auth_details.sess = option["sess"]
         self.auth.auth_details.app_token = option["app_token"]
         if not option["user_agent"]:
-            input(f"user_agent required for: {self.auth.auth_details.username}")
+            input(
+                f"user_agent required for: {self.auth.auth_details.username}")
             exit()
         self.auth.auth_details.user_agent = option["user_agent"]
         self.auth.auth_details.support_2fa = option["support_2fa"]

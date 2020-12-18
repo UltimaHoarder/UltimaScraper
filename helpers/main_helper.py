@@ -118,7 +118,7 @@ def clean_text(string, remove_spaces=False):
             m, " ").strip()
     string = ' '.join(string.split())
     string = BeautifulSoup(string, "lxml").get_text()
-    SAFE_PTN = r"[|\^&+\-%*/=!?>]"
+    SAFE_PTN = r"[|\^&+\-%*/=!\"?>]"
     string = re.sub(SAFE_PTN, ' ',  string.strip()
                     ).strip()
     if remove_spaces:

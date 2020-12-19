@@ -663,11 +663,6 @@ class start():
                          global_offset=offset).users
             session = self.sessions[0]
             results = api_helper.json_request(link=link, session=session)
-            if self.auth.isPerformer and (self.auth.id == identifier or self.auth.username == identifier):
-                sessions = api_helper.create_session(test_ip=False)
-                session = sessions[0]
-                results = api_helper.json_request(
-                    link=link, session=session, ignore_rules=True)
             error = results.get("error", None)
             if error:
                 if error["message"] == "User not found":

@@ -65,8 +65,13 @@ def start_datascraper():
             json_site_settings = json_sites[site_name_lower]["settings"]
 
             auto_scrape_names = json_site_settings["auto_scrape_names"]
+            if isinstance(auto_scrape_names, str):
+                temp_identifiers = auto_scrape_names.split(",")
+                identifiers = [x for x in temp_identifiers if x]
+            else:
+                identifiers = []
+            auto_profile_choice = json_site_settings["auto_profile_choice"]
             apis = []
-            module = m_onlyfans
             subscription_array = []
             original_sessions = []
             original_sessions = api_helper.create_session(
@@ -82,7 +87,6 @@ def start_datascraper():
                 module = m_onlyfans
                 apis = main_helper.process_profiles(
                     json_settings, json_site_settings, original_sessions, site_name, original_api)
-                auto_profile_choice = json_site_settings["auto_profile_choice"]
                 subscription_array = []
                 auth_count = -1
                 jobs = json_site_settings["jobs"]
@@ -94,9 +98,9 @@ def start_datascraper():
                 for api in apis:
                     module.assign_vars(api.auth.auth_details, json_config,
                                        json_site_settings, site_name)
-                    identifier = auto_scrape_names if isinstance(auto_scrape_names, str) else ""
                     setup = False
-                    setup = module.account_setup(api, identifier=identifier)
+                    setup, subscriptions = module.account_setup(
+                        api, identifiers, jobs)
                     if not setup:
                         api.auth.auth_details.active = False
                         auth_details = api.auth.auth_details.__dict__
@@ -105,10 +109,7 @@ def start_datascraper():
                         main_helper.export_json(
                             user_auth_filepath, auth_details)
                         continue
-                    if jobs["scrape_names"]:
-                        array = module.manage_subscriptions(
-                            api, auth_count, identifier=identifier)
-                        subscription_array += array
+                    subscription_array += subscriptions
                 subscription_list = module.format_options(
                     subscription_array, "usernames")
                 if jobs["scrape_paid_content"]:

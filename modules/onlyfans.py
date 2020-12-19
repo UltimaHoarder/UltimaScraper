@@ -70,11 +70,11 @@ def assign_vars(json_auth: auth_details, config, site_settings, site_name):
     app_token = json_auth.app_token
 
 
-def account_setup(api: start, identifier=""):
+def account_setup(api: start, identifiers: list = [], jobs: dict = {}):
     status = False
+    subscriptions = []
     authed = api.login()
     if isinstance(authed, create_auth):
-        jobs = json_settings["jobs"]
         profile_directory = json_global_settings["profile_directories"][0]
         profile_directory = os.path.abspath(profile_directory)
         profile_directory = os.path.join(profile_directory, authed.username)
@@ -89,11 +89,9 @@ def account_setup(api: start, identifier=""):
             export_archive(mass_messages, metadata_filepath,
                            json_settings)
         # chats = api.get_chats()
-        if not identifier and jobs["scrape_names"]:
-            # metadata_filepath = os.path.join(
-            #     profile_metadata_directory, "Subscriptions.json")
-            # imported = import_archive(metadata_filepath)
-            subscriptions = api.get_subscriptions()
+        if identifiers or jobs["scrape_names"]:
+            subscriptions += manage_subscriptions(
+                api, -1, identifiers=identifiers)
         # collection = []
         # for subscription in subscriptions:
         #     delattr(subscription,"download_info")
@@ -108,7 +106,7 @@ def account_setup(api: start, identifier=""):
         # export_archive(collection, metadata_filepath,
         #                 json_settings)
         status = True
-    return status
+    return status, subscriptions
 
 # The start lol
 
@@ -1054,12 +1052,8 @@ class download_media():
         return return_bool
 
 
-def manage_subscriptions(api: start, auth_count=0, identifier="", refresh: bool = False):
-    if identifier:
-        results = api.get_subscription(identifier=identifier)
-        results = [results]
-    else:
-        results = api.get_subscriptions(refresh=refresh)
+def manage_subscriptions(api: start, auth_count=0, identifiers: list = [], refresh: bool = True):
+    results = api.get_subscriptions(identifiers=identifiers, refresh=refresh)
     if blacklist_name:
         r = api.get_lists()
         if not r:
@@ -1083,6 +1077,8 @@ def manage_subscriptions(api: start, auth_count=0, identifier="", refresh: bool 
     results.sort(key=lambda x: x.is_me, reverse=True)
     results2 = []
     for result in results:
+        if not result.id:
+            continue
         result.auth_count = auth_count
         username = result.username
         now = datetime.utcnow().date()

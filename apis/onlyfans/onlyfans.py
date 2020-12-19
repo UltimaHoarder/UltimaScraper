@@ -595,7 +595,7 @@ class start():
         results = api_helper.json_request(link=link, session=session)
         return results
 
-    def get_subscriptions(self, resume=None, refresh=True, extra_info=True, limit=20, offset=0) -> list[Union[create_subscription, None]]:
+    def get_subscriptions(self, resume=None, refresh=True, identifiers: list = [], extra_info=True, limit=20, offset=0) -> list[Union[create_subscription, None]]:
         authed = self.auth
         if not authed:
             return []
@@ -624,28 +624,38 @@ class start():
             subscription.sessions = self.sessions
             subscription = [subscription]
             results.append(subscription)
-
-        def multi(item, session=None):
-            link = item
-            # link = item["link"]
-            # session = item["session"]
-            subscriptions = api_helper.json_request(link=link, session=session)
-            valid_subscriptions = []
-            extras = {}
-            extras["auth_check"] = ""
-            for subscription in subscriptions:
-                subscription["sessions"] = self.sessions
-                if extra_info:
-                    subscription2 = self.get_user(subscription["username"])
-                    subscription = subscription | subscription2
-                subscription = create_subscription(subscription)
-                subscription.link = f"https://onlyfans.com/{subscription.username}"
-                valid_subscriptions.append(subscription)
-            return valid_subscriptions
-        pool = api_helper.multiprocessing()
-        # offset_array= offset_array[:16]
-        results += pool.starmap(multi, product(
-            offset_array, [session]))
+        if not identifiers:
+            def multi(item, session=None):
+                link = item
+                # link = item["link"]
+                # session = item["session"]
+                subscriptions = api_helper.json_request(
+                    link=link, session=session)
+                valid_subscriptions = []
+                extras = {}
+                extras["auth_check"] = ""
+                for subscription in subscriptions:
+                    subscription["sessions"] = self.sessions
+                    if extra_info:
+                        subscription2 = self.get_user(subscription["username"])
+                        subscription = subscription | subscription2
+                    subscription = create_subscription(subscription)
+                    subscription.link = f"https://onlyfans.com/{subscription.username}"
+                    valid_subscriptions.append(subscription)
+                return valid_subscriptions
+            pool = api_helper.multiprocessing()
+            # offset_array= offset_array[:16]
+            results += pool.starmap(multi, product(
+                offset_array, [session]))
+        else:
+            for identifier in identifiers:
+                link = links(identifier=identifier).users
+                result = api_helper.json_request(link=link, session=session)
+                subscription = create_subscription(result)
+                subscription.sessions = self.sessions
+                results.append([subscription])
+                print
+            print
         results = [x for x in results if x is not None]
         results = list(chain(*results))
         self.auth.subscriptions = results

@@ -158,9 +158,9 @@ class config(object):
                                     'scrape_paid_content', True)
                         self.auto_profile_choice = option.get(
                             'auto_profile_choice', "")
-                        self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
+                        self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
                         self.jobs = jobs(option.get(
@@ -214,9 +214,9 @@ class config(object):
                                     'scrape_paid_content', True)
                         self.auto_profile_choice = option.get(
                             'auto_profile_choice', "")
-                        self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
+                        self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
                         self.jobs = jobs(option.get(
@@ -265,9 +265,9 @@ class config(object):
                     def __init__(self, option={}):
                         self.auto_profile_choice = option.get(
                             'auto_profile_choice', "")
-                        self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_names = option.get(
                             'auto_scrape_names', False)
+                        self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
                         self.download_directories = option.get(

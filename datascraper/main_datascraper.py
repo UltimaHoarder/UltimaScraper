@@ -94,7 +94,7 @@ def start_datascraper():
                 for api in apis:
                     module.assign_vars(api.auth.auth_details, json_config,
                                        json_site_settings, site_name)
-                    identifier = ""
+                    identifier = auto_scrape_names if isinstance(auto_scrape_names, str) else ""
                     setup = False
                     setup = module.account_setup(api, identifier=identifier)
                     if not setup:

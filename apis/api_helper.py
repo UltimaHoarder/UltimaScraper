@@ -10,7 +10,7 @@ import os
 from multiprocessing import cpu_count
 from requests.adapters import HTTPAdapter
 from multiprocessing.dummy import Pool as ThreadPool
-from itertools import chain, zip_longest, groupby, product
+from itertools import product
 from os.path import dirname as up
 
 
@@ -62,8 +62,8 @@ def request_parameters(session_rules2, session_retry_rules2):
     session_retry_rules = session_retry_rules2
 
 
-def json_request(link, session, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20) -> Any:
-    if session_rules:
+def json_request(link, session, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20, ignore_rules=False) -> Any:
+    if session_rules and not ignore_rules:
         session = session_rules(session, link)
     count = 0
     sleep_number = 0.5

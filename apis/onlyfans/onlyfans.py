@@ -668,27 +668,6 @@ class start():
             if identifier == subscription.username or identifier == subscription.id:
                 valid = subscription
                 break
-        if not valid and not check:
-            link = links(identifier=identifier, global_limit=limit,
-                         global_offset=offset).users
-            session = self.sessions[0]
-            results = api_helper.json_request(link=link, session=session)
-            error = results.get("error", None)
-            if error:
-                if error["message"] == "User not found":
-                    pass
-                else:
-                    string = "ERROR MESSAGE NOT HANDLED, PLEASE OPEN AN ISSUE ON GITHUB\n"
-                    string += f"{error['message']}"
-                    input()
-                    exit()
-            else:
-                results["sessions"] = self.sessions
-                if results["id"] == identifier or results["subscribedBy"]:
-                    if results["subscribedBy"]:
-                        subscription = create_subscription(results)
-                        valid = subscription
-                        subscriptions.append(subscription)
         return valid
 
     def get_lists(self, refresh=True, limit=100, offset=0):

@@ -53,6 +53,8 @@ def fix_directories(posts, base_directory, site_name, api_type, media_type, user
             print
             new_filepath = main_helper.reformat(
                 prepared_format, filename_format)
+            if prepared_format.text:
+                pass
             setattr(media, "old_filepath", old_filepath)
             setattr(media, "new_filepath", new_filepath)
             new_directories.append(os.path.dirname(new_filepath))

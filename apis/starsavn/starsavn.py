@@ -660,7 +660,7 @@ class start():
                     exit()
             else:
                 results["sessions"] = self.sessions
-                if results["subscribedBy"]:
+                if results["id"] == identifier or results["subscribedBy"]:
                     subscription = create_subscription(results)
                     valid = subscription
                     subscriptions.append(subscription)

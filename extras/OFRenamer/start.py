@@ -1,18 +1,11 @@
 #!/usr/bin/env python3
 from apis.api_helper import multiprocessing
-from classes.prepare_metadata import format_types, format_variables, prepare_reformat
-from hashlib import new
-from os.path import dirname as up
+from classes.prepare_metadata import format_types, prepare_reformat
 import urllib.parse as urlparse
 import shutil
 from datetime import datetime
-import json
 import os
-import sys
-from multiprocessing.dummy import Pool as ThreadPool
 from itertools import product
-
-import jsonpickle
 
 
 def fix_directories(posts, base_directory, site_name, api_type, media_type, username, all_files, json_settings):

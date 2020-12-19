@@ -651,6 +651,8 @@ class start():
             for identifier in identifiers:
                 link = links(identifier=identifier).users
                 result = api_helper.json_request(link=link, session=session)
+                if "error" in result:
+                    continue
                 subscription = create_subscription(result)
                 subscription.sessions = self.sessions
                 results.append([subscription])

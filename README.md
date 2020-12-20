@@ -215,9 +215,9 @@ You can choose one or more.
 
 [#overwrite_files](README.md#overwrite_files):
 
-    Default = true
+    Default = false
 
-    If set to false, any file with the same name won't be downloaded.
+    If set to true, any file with the same name will be redownloaded.
 
 [#date_format](README.md#date_format):
 

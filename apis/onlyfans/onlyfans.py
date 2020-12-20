@@ -649,9 +649,11 @@ class start():
                 offset_array, [session]))
         else:
             for identifier in identifiers:
+                if self.auth.id == identifier or self.auth.username == identifier:
+                    continue
                 link = links(identifier=identifier).users
                 result = api_helper.json_request(link=link, session=session)
-                if "error" in result:
+                if "error" in result or not result["subscribedBy"]:
                     continue
                 subscription = create_subscription(result)
                 subscription.sessions = self.sessions

@@ -1101,7 +1101,7 @@ def manage_subscriptions(api: start, auth_count=0, identifiers: list = [], refre
     return results2
 
 
-def format_options(f_list: list[Union[start, create_subscription, dict]], choice_type):
+def format_options(f_list: list[Union[start, create_subscription, dict]], choice_type:str)->list[Union[start, create_subscription, dict]]:
     new_item = {}
     new_item["auth_count"] = -1
     new_item["username"] = "All"

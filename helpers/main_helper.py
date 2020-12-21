@@ -453,7 +453,7 @@ def choose_option(subscription_list, auto_scrape: Union[str, bool]):
                 new_names.extend(new_name)
     new_names = [x for x in new_names if not isinstance(x[0], SimpleNamespace)]
     return new_names
-def process_profiles(json_settings,json_site_settings,original_sessions,site_name,original_api):
+def process_profiles(json_settings,original_sessions,site_name,original_api):
     apis = []
     profile_directories = json_settings["profile_directories"]
     for profile_directory in profile_directories:

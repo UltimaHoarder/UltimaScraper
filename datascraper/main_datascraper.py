@@ -1,7 +1,7 @@
 
 import os
-import time
 import timeit
+from typing import Union
 
 import helpers.main_helper as main_helper
 from helpers.main_helper import choose_option
@@ -16,13 +16,10 @@ import modules.starsavn as m_starsavn
 api_helper = OnlyFans.api_helper
 
 
-def start_datascraper(json_config, site_name_lower):
+def start_datascraper(json_config, site_name_lower,apis:list=[]):
     json_settings = json_config["settings"]
     json_sites = json_config["supported"]
-    infinite_loop = json_settings["infinite_loop"]
     domain = json_settings["auto_site_choice"]
-    exit_on_completion = json_settings['exit_on_completion']
-    loop_timeout = json_settings['loop_timeout']
     main_helper.assign_vars(json_config)
 
     json_site_settings = json_sites[site_name_lower]["settings"]
@@ -48,8 +45,9 @@ def start_datascraper(json_config, site_name_lower):
         site_name = "OnlyFans"
         original_api = OnlyFans
         module = m_onlyfans
-        apis = main_helper.process_profiles(
-            json_settings, json_site_settings, original_sessions, site_name, original_api)
+        if not apis:
+            apis = main_helper.process_profiles(
+            json_settings, original_sessions, site_name, original_api)
         subscription_array = []
         auth_count = -1
         jobs = json_site_settings["jobs"]
@@ -88,7 +86,7 @@ def start_datascraper(json_config, site_name_lower):
         original_api = StarsAVN
         module = m_starsavn
         apis = main_helper.process_profiles(
-            json_settings, json_site_settings, original_sessions, site_name, original_api)
+            json_settings, original_sessions, site_name, original_api)
         auto_profile_choice = json_site_settings["auto_profile_choice"]
         subscription_array = []
         auth_count = -1
@@ -129,12 +127,3 @@ def start_datascraper(json_config, site_name_lower):
     stop_time = str(
         int(timeit.default_timer() - archive_time) / 60)[:4]
     print('Archive Completed in ' + stop_time + ' Minutes')
-    if exit_on_completion:
-        print("Now exiting.")
-        exit(0)
-    elif not infinite_loop:
-        print("Input anything to continue")
-        input()
-    elif loop_timeout:
-        print('Pausing scraper for ' + loop_timeout + ' seconds.')
-        time.sleep(int(loop_timeout))

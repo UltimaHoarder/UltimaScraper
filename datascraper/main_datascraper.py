@@ -31,7 +31,6 @@ def start_datascraper(json_config, site_name_lower,apis:list=[]):
     else:
         identifiers = []
     auto_profile_choice = json_site_settings["auto_profile_choice"]
-    apis = []
     subscription_array = []
     original_sessions = []
     original_sessions = api_helper.create_session(
@@ -48,6 +47,9 @@ def start_datascraper(json_config, site_name_lower,apis:list=[]):
         if not apis:
             apis = main_helper.process_profiles(
             json_settings, original_sessions, site_name, original_api)
+        else:
+            for api in apis:
+                api.sessions = original_sessions
         subscription_array = []
         auth_count = -1
         jobs = json_site_settings["jobs"]

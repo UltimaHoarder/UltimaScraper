@@ -1145,7 +1145,7 @@ def format_options(f_list: list[Union[start, create_subscription, dict]], choice
                     if isinstance(api, start) or isinstance(api, create_subscription):
                         continue
                     name = api.get("api_type")
-                string += f"{count} = name"
+                string += f"{count} = {name}"
                 if count+1 != name_count:
                     string += seperator
                 count += 1

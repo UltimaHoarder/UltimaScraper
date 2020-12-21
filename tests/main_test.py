@@ -25,7 +25,7 @@ def check_config():
     if json_config != json_config2:
         input(
             f"The .settings\\{file_name} file has been updated. Fill in whatever you need to fill in and then press enter when done.\n")
-
+    return json_config
 
 def check_profiles():
     file_name = "config.json"

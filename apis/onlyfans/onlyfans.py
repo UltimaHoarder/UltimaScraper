@@ -113,7 +113,7 @@ class content_types:
 
 
 class auth_details():
-    def __init__(self, option:dict={}):
+    def __init__(self, option: dict = {}):
         self.username = option.get('username', "")
         self.auth_id = option.get('auth_id', "")
         self.auth_hash = option.get('auth_hash', "")
@@ -657,6 +657,7 @@ class start():
                 if "error" in result or not result["subscribedBy"]:
                     continue
                 subscription = create_subscription(result)
+                subscription.link = f"https://onlyfans.com/{subscription.username}"
                 subscription.sessions = self.sessions
                 results.append([subscription])
                 print

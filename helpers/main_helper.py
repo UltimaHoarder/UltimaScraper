@@ -433,6 +433,8 @@ def choose_option(subscription_list, auto_scrape: Union[str, bool]):
             if auto_scrape:
                 values = [x[1] for x in names]
             else:
+                print(
+                    f"Names: Username = username {seperator} {subscription_list[1]}")
                 values = input().strip().split(",")
         else:
             if not auto_scrape:

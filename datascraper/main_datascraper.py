@@ -55,6 +55,8 @@ def start_datascraper(json_config, site_name_lower, apis: list = []):
         jobs = json_site_settings["jobs"]
         subscription_list = module.format_options(
             apis, "users")
+        if not auto_profile_choice:
+            print("Choose Profile")
         apis = choose_option(
             subscription_list, auto_profile_choice)
         apis = [x.pop(0) for x in apis]

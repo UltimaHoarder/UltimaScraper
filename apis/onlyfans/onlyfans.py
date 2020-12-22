@@ -113,7 +113,7 @@ class content_types:
 
 
 class auth_details():
-    def __init__(self, option={}):
+    def __init__(self, option:dict={}):
         self.username = option.get('username', "")
         self.auth_id = option.get('auth_id', "")
         self.auth_hash = option.get('auth_hash', "")

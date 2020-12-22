@@ -520,6 +520,13 @@ def process_downloads(apis, module):
                 module.download_media(api, subscription)
                 delete_empty_directories(
                     download_info["base_directory"])
+
+def process_webhooks(apis):
+    for api in apis:
+        subscriptions = api.get_subscriptions(refresh=False)
+        for subscription in subscriptions:
+            download_info = subscription.download_info
+            if download_info:
                 if download_info["webhook"]:
                     send_webhook(subscription)
 

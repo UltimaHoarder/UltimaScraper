@@ -16,7 +16,7 @@ import modules.starsavn as m_starsavn
 api_helper = OnlyFans.api_helper
 
 
-def start_datascraper(json_config, site_name_lower,apis:list=[]):
+def start_datascraper(json_config, site_name_lower, apis: list = []):
     json_settings = json_config["settings"]
     json_sites = json_config["supported"]
     domain = json_settings["auto_site_choice"]
@@ -38,7 +38,7 @@ def start_datascraper(json_config, site_name_lower,apis:list=[]):
     original_sessions = [x for x in original_sessions if x]
     if not original_sessions:
         print("Unable to create session")
-        return
+        return False
     archive_time = timeit.default_timer()
     if site_name_lower == "onlyfans":
         site_name = "OnlyFans"
@@ -46,7 +46,7 @@ def start_datascraper(json_config, site_name_lower,apis:list=[]):
         module = m_onlyfans
         if not apis:
             apis = main_helper.process_profiles(
-            json_settings, original_sessions, site_name, original_api)
+                json_settings, original_sessions, site_name, original_api)
         else:
             for api in apis:
                 api.sessions = original_sessions
@@ -129,3 +129,4 @@ def start_datascraper(json_config, site_name_lower,apis:list=[]):
     stop_time = str(
         int(timeit.default_timer() - archive_time) / 60)[:4]
     print('Archive Completed in ' + stop_time + ' Minutes')
+    return apis

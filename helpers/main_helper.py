@@ -436,7 +436,8 @@ def choose_option(subscription_list, auto_scrape: Union[str, bool]):
                 values = input().strip().split(",")
         else:
             if not auto_scrape:
-                print(f"Names: Username = username {seperator} {subscription_list[1]}")
+                print(
+                    f"Names: Username = username {seperator} {subscription_list[1]}")
                 values = input().strip().split(",")
             else:
                 values = auto_scrape.split(",")
@@ -453,17 +454,19 @@ def choose_option(subscription_list, auto_scrape: Union[str, bool]):
                 new_names.extend(new_name)
     new_names = [x for x in new_names if not isinstance(x[0], SimpleNamespace)]
     return new_names
-def process_profiles(json_settings,original_sessions,site_name,original_api):
+
+
+def process_profiles(json_settings, original_sessions, site_name, original_api):
     apis = []
     profile_directories = json_settings["profile_directories"]
     for profile_directory in profile_directories:
         sessions = copy.deepcopy(original_sessions)
         x = os.path.join(profile_directory, site_name)
         x = os.path.abspath(x)
-        os.makedirs(x,exist_ok=True)
+        os.makedirs(x, exist_ok=True)
         temp_users = os.listdir(x)
         if not temp_users:
-            default_profile_directory = os.path.join(x,"default")
+            default_profile_directory = os.path.join(x, "default")
             os.makedirs(default_profile_directory)
             temp_users.append("default")
         for user in temp_users:
@@ -488,6 +491,7 @@ def process_profiles(json_settings,original_sessions,site_name,original_api):
             print
         print
     return apis
+
 
 def process_names(module, subscription_list, auto_scrape, session_array, json_config, site_name_lower, site_name):
     names = choose_option(
@@ -516,7 +520,8 @@ def process_downloads(apis, module):
                 module.download_media(api, subscription)
                 delete_empty_directories(
                     download_info["base_directory"])
-                send_webhook(subscription)
+                if download_info["webhook"]:
+                    send_webhook(subscription)
 
 
 def is_me(user_api):
@@ -577,20 +582,18 @@ def metadata_fixer(directory):
 
 
 def send_webhook(item):
-    download_info = item.download_info
-    if download_info["webhook"]:
-        for webhook_link in webhooks:
-            message = prepare_webhooks.discord()
-            embed = message.embed()
-            embed.title = f"Downloaded: {item.username}"
-            embed.add_field("username", item.username)
-            embed.add_field("post_count", item.postsCount)
-            embed.add_field("link", item.link)
-            embed.image.url = item.avatar
-            message.embeds.append(embed)
-            message = json.loads(json.dumps(
-                message, default=lambda o: o.__dict__))
-            x = requests.post(webhook_link, json=message)
+    for webhook_link in webhooks:
+        message = prepare_webhooks.discord()
+        embed = message.embed()
+        embed.title = f"Downloaded: {item.username}"
+        embed.add_field("username", item.username)
+        embed.add_field("post_count", item.postsCount)
+        embed.add_field("link", item.link)
+        embed.image.url = item.avatar
+        message.embeds.append(embed)
+        message = json.loads(json.dumps(
+            message, default=lambda o: o.__dict__))
+        x = requests.post(webhook_link, json=message)
 
 
 def find_between(s, start, end):

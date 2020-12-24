@@ -444,6 +444,7 @@ class create_subscription():
     def search_messages(self, identifier="", text="", refresh=True, limit=10, offset=0):
         if identifier:
             identifier = parse.urljoin(identifier, "messages")
+        text = parse.quote_plus(text)
         link = links(identifier=identifier, text=text, global_limit=limit,
                      global_offset=offset).search_messages
         session = self.sessions[0]

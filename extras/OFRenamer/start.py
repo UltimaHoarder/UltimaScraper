@@ -78,7 +78,12 @@ def fix_metadata(posts):
                     if os.path.exists(old_filepath):
                         if not media.session:
                             media.downloaded = True
-                        shutil.move(old_filepath, new_filepath)
+                        moved = None
+                        while not moved:
+                            try:
+                                moved = shutil.move(old_filepath, new_filepath)
+                            except OSError as e:
+                                print(e)
                 return old_filepath, new_filepath
             old_filepath = media.old_filepath
             new_filepath = media.new_filepath

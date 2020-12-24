@@ -413,7 +413,9 @@ def process_mass_messages(api: start, subscription, metadata_directory, mass_mes
         text = mass_message["textCropped"]
         text = html.unescape(text)
         mass_found = mass_message["found"]
-        if mass_message["found"] or not mass_message["mediaTypes"]:
+        media_type = mass_message.get("mediaType")
+        media_types = mass_message.get("mediaTypes")
+        if mass_found or (not media_type and not media_types):
             continue
         identifier = None
         if chats:

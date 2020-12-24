@@ -1,6 +1,3 @@
-from apis.onlyfans.onlyfans import auth_details
-from genericpath import exists
-from re import L
 import sys
 import os
 
@@ -31,6 +28,7 @@ def check_profiles():
     file_name = "config.json"
     path = os.path.join('.settings', file_name)
     import helpers.main_helper as main_helper
+    from apis.onlyfans.onlyfans import auth_details
     json_config, json_config2 = main_helper.get_config(path)
     json_settings = json_config["settings"]
     profile_directories = json_settings["profile_directories"]

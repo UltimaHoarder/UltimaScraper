@@ -360,7 +360,8 @@ def downloader(r, download_path, count=0):
         return
     except Exception as e:
         if delete:
-            os.unlink(download_path)
+            x = os.unlink(download_path)
+            print
         string = f"{e}\n Tries: {count}"
         log_error.exception(
             string)

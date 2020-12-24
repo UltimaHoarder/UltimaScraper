@@ -24,6 +24,7 @@ def check_config():
             f"The .settings\\{file_name} file has been updated. Fill in whatever you need to fill in and then press enter when done.\n")
     return json_config
 
+
 def check_profiles():
     file_name = "config.json"
     path = os.path.join('.settings', file_name)
@@ -51,6 +52,7 @@ def check_profiles():
         if not os.path.exists(auth_filepath):
             x = auth_details().__dict__
             main_helper.export_json(auth_filepath, x)
-            print
+            string = f"{auth_filepath} has been created. Fill in the relevant details and then press enter to continue."
+            input(string)
         print
     print

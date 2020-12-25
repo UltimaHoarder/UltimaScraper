@@ -10,7 +10,7 @@ def version_check():
         string = "Execute the script with Python 3.9 \n"
         string += "Press enter to continue"
         input(string)
-
+        exit(0)
 # Updating any outdated config values
 
 

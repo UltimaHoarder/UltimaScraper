@@ -524,6 +524,7 @@ def process_downloads(apis, module):
                 delete_empty_directories(
                     download_info["base_directory"])
 
+
 def process_webhooks(apis):
     for api in apis:
         subscriptions = api.get_subscriptions(refresh=False)

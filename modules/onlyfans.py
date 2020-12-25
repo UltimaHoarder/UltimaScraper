@@ -293,6 +293,7 @@ def profile_scraper(api: start, site_name, api_type, username, text_length, base
 
 def paid_content_scraper(apis: list[start]):
     for api in apis:
+        paid_contents = []
         paid_contents = api.get_paid_content()
         authed = api.auth
         authed.subscriptions = authed.subscriptions

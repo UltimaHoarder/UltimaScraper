@@ -62,6 +62,8 @@ Your auth config should look similar to this
 
 ![app-token](examples/2.png)
 
+Note: If active is set to False, the script will ignore the profile.
+
 # USAGE
 
 `python start_ofd.py` or double click `start_ofd.py`

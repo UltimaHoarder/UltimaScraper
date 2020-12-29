@@ -494,7 +494,7 @@ def process_profiles(json_settings, original_sessions, site_name, original_api):
                 api.set_auth_details(
                     json_auth)
             export_json(
-                user_auth_filepath, api.auth.auth_details.__dict__)
+                user_auth_filepath, api.auth.auth_details.__dict__,encoding=None)
             apis.append(api)
             print
         print
@@ -547,12 +547,12 @@ def is_me(user_api):
         return False
 
 
-def export_json(path, metadata):
+def export_json(path, metadata,encoding="utf-8"):
     if "auth" not in metadata:
         auth = {}
         auth["auth"] = metadata
         metadata = auth
-    with open(path, 'w', encoding='utf-8') as outfile:
+    with open(path, 'w', encoding=encoding) as outfile:
         ujson.dump(metadata, outfile, indent=2)
 
 

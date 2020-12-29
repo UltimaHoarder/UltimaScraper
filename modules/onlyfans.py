@@ -1079,11 +1079,13 @@ def manage_subscriptions(api: start, auth_count=0, identifiers: list = [], refre
     results.sort(key=lambda x: x.subscribedByData.expiredAt)
     results.sort(key=lambda x: x.is_me, reverse=True)
     results2 = []
+    hard_blacklist = ["onlyfanscreators"]
     for result in results:
-        if not result.id:
-            continue
         result.auth_count = auth_count
         username = result.username
+        bl = [x for x in hard_blacklist if x == username]
+        if bl:
+            continue
         now = datetime.utcnow().date()
         # subscribedBy = result["subscribedBy"]
         subscribedByData = result.subscribedByData

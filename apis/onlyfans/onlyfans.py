@@ -246,6 +246,7 @@ class create_subscription():
         self.subscribedByData = subscribedByData(
             option.get("subscribedByData", {}))
         self.is_me = option.get("is_me", False)
+        self.subscribePrice = option.get("subscribePrice", 0)
         self.postsCount = option.get("postsCount", 0)
         self.archivedPostsCount = option.get("archivedPostsCount", 0)
         self.photosCount = option.get("photosCount", 0)

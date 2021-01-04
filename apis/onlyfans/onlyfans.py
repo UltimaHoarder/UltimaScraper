@@ -242,6 +242,8 @@ class create_subscription():
             option["subscribedByData"]["price"] = option["subscribePrice"]
             option["subscribedByData"]["subscribePrice"] = 0
         self.username = option.get("username")
+        if not self.username:
+            self.username = f"u{self.id}"
         self.id = option.get("id")
         self.subscribedByData = subscribedByData(
             option.get("subscribedByData", {}))

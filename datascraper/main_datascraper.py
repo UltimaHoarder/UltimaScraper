@@ -16,7 +16,7 @@ import modules.starsavn as m_starsavn
 api_helper = OnlyFans.api_helper
 
 
-def start_datascraper(json_config, site_name_lower, apis: list = [],webhooks=True):
+def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=True):
     json_settings = json_config["settings"]
     json_sites = json_config["supported"]
     domain = json_settings["auto_site_choice"]

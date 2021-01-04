@@ -241,10 +241,10 @@ class create_subscription():
             option["subscribedByData"]["expiredAt"] = end_date
             option["subscribedByData"]["price"] = option["subscribePrice"]
             option["subscribedByData"]["subscribePrice"] = 0
+        self.id = option.get("id")
         self.username = option.get("username")
         if not self.username:
             self.username = f"u{self.id}"
-        self.id = option.get("id")
         self.subscribedByData = subscribedByData(
             option.get("subscribedByData", {}))
         self.is_me = option.get("is_me", False)

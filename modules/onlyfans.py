@@ -899,8 +899,10 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
             price = new_post["price"] = media_api["price"]if "price" in media_api else None
             if price == None:
                 price = 0
+            canPurchase = media_api.get("canPurchase", None)
+            canViewMedia = media_api.get("canViewMedia", None)
             if price:
-                if not media_api["canPurchase"]:
+                if not canPurchase or canViewMedia:
                     new_post["paid"] = True
             for media in media_api["media"]:
                 date = "-001-11-30T00:00:00+00:00"

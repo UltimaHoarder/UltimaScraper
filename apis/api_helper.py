@@ -5,7 +5,6 @@ from typing import Any
 import requests
 import ujson
 import socket
-import logging
 import os
 from multiprocessing import cpu_count
 from requests.adapters import HTTPAdapter
@@ -14,28 +13,9 @@ from itertools import product
 from os.path import dirname as up
 
 
-def setup_logger(name, log_file, level=logging.INFO):
-    """To setup as many loggers as you want"""
-    log_filename = ".logs/"+log_file
-    log_path = os.path.dirname(log_filename)
-    os.makedirs(log_path, exist_ok=True)
-    formatter = logging.Formatter(
-        '%(asctime)s %(levelname)s %(name)s %(message)s')
-
-    handler = logging.FileHandler(log_filename, 'w+', encoding='utf-8')
-    handler.setFormatter(formatter)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    logger.addHandler(handler)
-
-    return logger
-
-
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
 
-log_error = setup_logger('errors', 'errors.log')
 
 global_settings = None
 session_rules = None
@@ -94,7 +74,6 @@ def json_request(link, session, method="GET", stream=False, json_format=True, da
                 text = r.text
                 if not text:
                     message = "ERROR: 100 Posts skipped. Please post the username you're trying to scrape on the issue "'100 Posts Skipped'""
-                    log_error.exception(message)
                     return result
                 return ujson.loads(text)
             else:
@@ -107,7 +86,6 @@ def json_request(link, session, method="GET", stream=False, json_format=True, da
                 sleep_number += 0.5
             continue
         except Exception as e:
-            log_error.exception(e)
             continue
     return result
 

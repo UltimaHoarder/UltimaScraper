@@ -1,44 +1,28 @@
-from os import rename
 from types import SimpleNamespace
 from typing import Any, Union
 
 from deepdiff.deephash import DeepHash
-from classes.prepare_metadata import format_variables, prepare_reformat
+from sqlalchemy.ext.declarative.api import declarative_base
+from classes.prepare_metadata import format_variables
 import copy
-import csv
-import hashlib
 import json
-import logging
 import os
 import platform
 import re
 from datetime import datetime
-from itertools import chain, zip_longest, groupby, product
-from urllib.parse import urlparse
-import time
-import random
-import socket
+from itertools import chain, zip_longest, groupby
 import psutil
 import shutil
 from multiprocessing.dummy import Pool as ThreadPool
 import ujson
 
 import requests
-from requests.adapters import HTTPAdapter
 from bs4 import BeautifulSoup
-from requests.api import delete
 
 import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
-import extras.OFRenamer.start as ofrenamer
-import warnings
-from multiprocessing import cpu_count
 from mergedeep import merge, Strategy
-
-
-warnings.filterwarnings(
-    "ignore", message='.*looks like a URL.*', category=UserWarning, module='bs4')
-
+import helpers.db_helper as db_helper
 json_global_settings = None
 min_drive_space = 0
 webhooks = None
@@ -46,26 +30,6 @@ max_threads = -1
 os_name = platform.system()
 proxies = None
 cert = None
-
-
-def setup_logger(name, log_file, level=logging.INFO):
-    """To setup as many loggers as you want"""
-    log_filename = ".logs/"+log_file
-    os.makedirs(os.path.dirname(log_filename), exist_ok=True)
-    formatter = logging.Formatter(
-        '%(asctime)s %(levelname)s %(name)s %(message)s')
-
-    handler = logging.FileHandler(log_filename, 'w+', encoding='utf-8')
-    handler.setFormatter(formatter)
-
-    logger = logging.getLogger(name)
-    logger.setLevel(level)
-    logger.addHandler(handler)
-
-    return logger
-
-
-log_error = setup_logger('errors', 'errors.log')
 
 
 def assign_vars(config):
@@ -133,29 +97,6 @@ def format_media_set(media_set):
             os.makedirs(directory, exist_ok=True)
         merged.pop("directories")
     return merged
-    media_set = list(chain(*media_set))
-    media_set.sort(key=lambda x: x["type"])
-    media_set = [list(g) for k, g in groupby(
-        media_set, key=lambda x: x["type"])]
-    new_list = []
-    for item in media_set:
-        item2 = {k: [d[k] for d in item] for k in item[0]}
-        item2["type"] = item2['type'][0].title()
-        item2["valid"] = list(chain(*item2["valid"]))
-        item2["invalid"] = list(chain(*item2["invalid"]))
-        if item2["valid"]:
-            seen = set()
-            item2["valid"] = [x for x in item2["valid"]
-                              if x["filename"] not in seen and not seen.add(x["filename"])]
-            seen = set()
-            location_directories = [x["directory"] for x in item2["valid"]
-                                    if x["directory"] not in seen and not seen.add(x["directory"])]
-            for location_directory in location_directories:
-                os.makedirs(location_directory+os.sep, exist_ok=True)
-            item2["valid"] = [list(g) for k, g in groupby(
-                item2["valid"], key=lambda x: x["post_id"])]
-        new_list.append(item2)
-    return new_list
 
 
 def format_image(filepath, timestamp):
@@ -188,14 +129,75 @@ def import_archive(archive_path) -> Any:
     return metadata
 
 
+def make_metadata(archive_path, datas):
+    metadata_directory = os.path.dirname(archive_path)
+    os.makedirs(metadata_directory, exist_ok=True)
+    api_type = os.path.basename(archive_path).removesuffix(".db")
+    metadata_path = archive_path
+    Session, engine = db_helper.create_database_session(metadata_path)
+    database_session = Session()
+    db_base = declarative_base()
+    api_table = db_helper.create_api_table(db_base, api_type)
+    media_table = db_helper.create_media_table(db_base)
+    folder = db_helper.type_0()
+    folder.api_table = api_table
+    folder.media_table = media_table
+    db_base.metadata.create_all(engine)
+    for post in datas:
+        post_id = post["post_id"]
+        date_object = datetime.strptime(
+            post["postedAt"], "%d-%m-%Y %H:%M:%S")
+        result = database_session.query(api_table)
+        if post_id == 85623385:
+            print
+        post_db = result.filter_by(id=post_id).first()
+        if not post_db:
+            post_db = api_table()
+        post_db.id = post_id
+        post_db.text = post["text"]
+        if post["price"] == None:
+            post["price"] = 0
+        post_db.price = post["price"]
+        post_db.paid = post["paid"]
+        post_db.created_at = date_object
+        database_session.add(post_db)
+        for media in post["medias"]:
+            media_id = media["media_id"]
+            result = database_session.query(media_table)
+            media_db = result.filter_by(id=media_id).first()
+            if not media_db:
+                media_db = result.filter_by(
+                    filename=media["filename"], created_at=date_object).first()
+                if not media_db:
+                    media_db = media_table()
+            media_db.id = media_id
+            media_db.post_id = post_id
+            media_db.link = media["links"][0]
+            media_db.directory = media["directory"]
+            media_db.filename = media["filename"]
+            media_db.media_type = media["media_type"]
+            media_db.created_at = date_object
+            database_session.add(media_db)
+            print
+        print
+    print
+
+    database_session.commit()
+    database_session.close()
+    return Session, api_type, folder
+
+
 def export_archive(datas, archive_path, json_settings):
     if not datas:
         return
     archive_directory = os.path.dirname(archive_path)
     if json_settings["export_metadata"]:
         export_type = json_global_settings["export_type"]
+        os.makedirs(archive_directory, exist_ok=True)
+        if export_type == "sqlite":
+            make_metadata(archive_path, datas)
         if export_type == "json":
-            os.makedirs(archive_directory, exist_ok=True)
+            datas = datas.export()
             with open(archive_path, 'w', encoding='utf-8') as outfile:
                 ujson.dump(datas, outfile, indent=2)
         # if export_type == "csv":
@@ -234,6 +236,7 @@ def reformat(prepared_format, unformatted):
     text = prepared_format.text
     value = "Free"
     maximum_length = prepared_format.maximum_length
+    text_length = prepared_format.text_length
     post_id = "" if post_id is None else str(post_id)
     media_id = "" if media_id is None else str(media_id)
     extra_count = 0
@@ -268,9 +271,9 @@ def reformat(prepared_format, unformatted):
     directory_count = len(directory)
     path_count = len(path)
     maximum_length = maximum_length - (directory_count+path_count+extra_count)
-
+    text_length = text_length if text_length < maximum_length else maximum_length
     if has_text:
-        filtered_text = text[:maximum_length]
+        filtered_text = text[:text_length]
         path = path.replace("{text}", filtered_text)
     else:
         path = path.replace("{text}", "")
@@ -368,8 +371,6 @@ def downloader(r, download_path, count=0):
                 except PermissionError as e2:
                     print(e2)
         string = f"{e}\n Tries: {count}"
-        log_error.exception(
-            string)
         return
     return True
 
@@ -494,7 +495,7 @@ def process_profiles(json_settings, original_sessions, site_name, original_api):
                 api.set_auth_details(
                     json_auth)
             export_json(
-                user_auth_filepath, api.auth.auth_details.__dict__,encoding=None)
+                user_auth_filepath, api.auth.auth_details.__dict__, encoding=None)
             apis.append(api)
             print
         print
@@ -547,7 +548,7 @@ def is_me(user_api):
         return False
 
 
-def export_json(path, metadata,encoding="utf-8"):
+def export_json(path, metadata, encoding="utf-8"):
     if "auth" not in metadata:
         auth = {}
         auth["auth"] = metadata

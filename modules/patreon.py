@@ -15,7 +15,6 @@ import helpers.main_helper as main_helper
 from multiprocessing import cpu_count
 
 multiprocessing = main_helper.multiprocessing
-log_download = main_helper.setup_logger('downloads', 'downloads.log')
 
 json_config = None
 max_threads = -1
@@ -152,8 +151,7 @@ def create_auth(session, user_agent, auth_array, max_auth=2):
                 return array
             auth_count += 1
     except Exception as e:
-        main_helper.log_error.exception(e)
-        # input("Enter to continue")
+        input("Enter to continue")
     array = dict()
     array["session"] = None
     array["me_api"] = me_api
@@ -359,8 +357,6 @@ def download_media(media_set, session):
             except Exception as e:
                 if delete:
                     os.unlink(download_path)
-                main_helper.log_error.exception(
-                    str(e) + "\n Tries: "+str(count))
                 count += 1
                 continue
             main_helper.format_image(download_path, timestamp)

@@ -1,8 +1,9 @@
 #!/usr/bin/env python3
 import tests.main_test as main_test
 import os
-import logging
 import time
+import traceback
+
 
 main_test.version_check()
 main_test.check_config()
@@ -11,13 +12,6 @@ main_test.check_profiles()
 if __name__ == "__main__":
     import datascraper.main_datascraper as main_datascraper
     import helpers.main_helper as main_helper
-    log_error = main_helper.setup_logger('errors', 'errors.log')
-    console = logging.StreamHandler()
-    console.setLevel(logging.DEBUG)
-    formatter = logging.Formatter(
-        '%(asctime)s %(levelname)s %(name)s %(message)s')
-    console.setFormatter(formatter)
-    logging.getLogger("").addHandler(console)
     config_path = os.path.join('.settings', 'config.json')
     json_config, json_config2 = main_helper.get_config(config_path)
     json_settings = json_config["settings"]
@@ -54,5 +48,5 @@ if __name__ == "__main__":
                 print('Pausing scraper for ' + loop_timeout + ' seconds.')
                 time.sleep(int(loop_timeout))
         except Exception as e:
-            log_error.exception(e)
+            print(traceback.format_exc())
             input()

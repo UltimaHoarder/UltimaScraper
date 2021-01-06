@@ -151,8 +151,7 @@ class format_content(object):
                         post = self.post_item(old_post)
                         new_medias = []
                         for media in post.medias:
-                            if "Texts" == key:
-                                continue
+                            media["media_type"] = key
                             media2 = self.media_item(media)
                             new_medias.append(media2)
                         post.medias = new_medias
@@ -167,8 +166,7 @@ class format_content(object):
                         old_post = media_list2[0]
                         post = self.post_item(old_post)
                         for item in media_list2:
-                            if "Texts" == key:
-                                continue
+                            item["media_type"] = key
                             media = self.media_item(item)
                             post.medias.append(media)
                         new_posts.append(post)
@@ -212,6 +210,7 @@ class format_content(object):
             self.directory = option.get("directory", "")
             self.filename = option.get("filename", "")
             self.size = option.get("size", None)
+            self.media_type = option.get("media_type", None)
             self.session = option.get("session", None)
             self.downloaded = option.get("downloaded", False)
 
@@ -366,7 +365,8 @@ class prepare_reformat(object):
         self.date = option.get('postedAt', format_variables2.date)
         self.price = option.get('price', 0)
         self.date_format = option.get('date_format')
-        self.maximum_length = option.get('maximum_length')
+        self.maximum_length = 255
+        self.text_length = option.get('text_length', self.maximum_length)
         self.directory = option.get(
             'directory')
         if not keep_vars:

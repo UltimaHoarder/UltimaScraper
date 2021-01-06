@@ -198,7 +198,9 @@ class create_auth():
         self.archived_stories = {}
         self.mass_messages = []
         self.paid_content = {}
-        self.sessions = option.get("sessions")
+        self.sessions = option.get("sessions", [])
+        for session in self.sessions:
+            session.links = []
         self.auth_details = auth_details()
         self.profile_directory = option.get("profile_directory", "")
         self.active = False

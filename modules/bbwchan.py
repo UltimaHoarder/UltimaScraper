@@ -11,7 +11,6 @@ from types import SimpleNamespace
 from multiprocessing import cpu_count
 
 multiprocessing = main_helper.multiprocessing
-log_download = main_helper.setup_logger('downloads', 'downloads.log')
 
 json_config = None
 json_global_settings = None
@@ -228,7 +227,6 @@ def download_media(media_set, session, directory, board_name):
                     except (ConnectionResetError) as e:
                         if delete:
                             os.unlink(download_path)
-                        main_helper.log_error.exception(e)
                         count += 1
                         continue
                     except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
@@ -237,8 +235,6 @@ def download_media(media_set, session, directory, board_name):
                     except Exception as e:
                         if delete:
                             os.unlink(download_path)
-                        main_helper.log_error.exception(
-                            str(e) + "\n Tries: "+str(count))
                         count += 1
                         continue
                     main_helper.format_image(download_path, timestamp)

@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from apis.onlyfans.onlyfans import media_types
 from apis.api_helper import multiprocessing
 from classes.prepare_metadata import format_types, prepare_reformat
 import urllib.parse as urlparse
@@ -8,14 +9,17 @@ import os
 from itertools import product
 
 
-def fix_directories(posts, base_directory, site_name, api_type, media_type, username, all_files, json_settings):
+def fix_directories(posts, all_files, Session, folder, site_name, api_type, username, base_directory, json_settings):
     new_directories = []
 
-    def fix_directory(post):
-        new_post_dict = post.convert(keep_empty_items=True)
-        for media in post.medias:
-            if media.links:
-                path = urlparse.urlparse(media.links[0]).path
+    def fix_directories(post):
+        database_session = Session()
+        post_id = post.id
+        result = database_session.query(folder.media_table)
+        media_db = result.filter_by(post_id=post_id).all()
+        for media in media_db:
+            if media.link:
+                path = urlparse.urlparse(media.link).path
             else:
                 path = media.filename
             new_filename = os.path.basename(path)
@@ -28,72 +32,72 @@ def fix_directories(posts, base_directory, site_name, api_type, media_type, user
             download_path = base_directory
             today = datetime.today()
             today = today.strftime("%d-%m-%Y %H:%M:%S")
-            new_media_dict = media.convert(keep_empty_items=True)
             option = {}
-            option = option | new_post_dict | new_media_dict
             option["site_name"] = site_name
-            option["filename"] = filename
-            option["api_type"] = api_type
-            option["media_type"] = media_type
-            option["ext"] = ext
+            option["post_id"] = post_id
+            option["media_id"] = media.id
             option["username"] = username
+            option["api_type"] = api_type
+            option["media_type"] = media.media_type
+            option["filename"] = filename
+            option["ext"] = ext
+            option["text"] = post.text
+            option["postedAt"] = media.created_at
+            option["price"] = post.price
             option["date_format"] = date_format
-            option["maximum_length"] = text_length
+            option["text_length"] = text_length
             option["directory"] = download_path
             prepared_format = prepare_reformat(option)
             file_directory = main_helper.reformat(
                 prepared_format, file_directory_format)
             prepared_format.directory = file_directory
             old_filepath = ""
-            x = [x for x in all_files if media.filename == os.path.basename(x)]
-            if x:
-                # media.downloaded = True
-                old_filepath = x[0]
-                old_filepath = os.path.abspath(old_filepath)
+            old_filepaths = [
+                x for x in all_files if media.filename in os.path.basename(x)]
+            if not old_filepaths:
+                old_filepaths = [
+                    x for x in all_files if str(media.id) in os.path.basename(x)]
+                print
+            if old_filepaths:
+                old_filepath = old_filepaths[0]
             print
             new_filepath = main_helper.reformat(
                 prepared_format, filename_format)
+            if old_filepath and old_filepath != new_filepath:
+                if os.path.exists(new_filepath):
+                    os.remove(new_filepath)
+                if os.path.exists(old_filepath):
+                    if media.size:
+                        media.downloaded = True
+                    moved = None
+                    while not moved:
+                        try:
+                            moved = shutil.move(old_filepath, new_filepath)
+                        except OSError as e:
+                            print(e)
+                    print
+                print
+            else:
+                print
             if prepared_format.text:
                 pass
-            setattr(media, "old_filepath", old_filepath)
-            setattr(media, "new_filepath", new_filepath)
+            media.directory = file_directory
+            media.filename = os.path.basename(new_filepath)
+            database_session.commit()
             new_directories.append(os.path.dirname(new_filepath))
+        database_session.close()
     pool = multiprocessing()
-    pool.starmap(fix_directory, product(
+    pool.starmap(fix_directories, product(
         posts))
     new_directories = list(set(new_directories))
     return posts, new_directories
 
 
-def fix_metadata(posts):
-    for post in posts:
-        for media in post.medias:
-            def update(old_filepath, new_filepath):
-                # if os.path.exists(old_filepath):
-                #     if not media.session:
-                #         media.downloaded = True
-                if old_filepath != new_filepath:
-                    if os.path.exists(new_filepath):
-                        os.remove(new_filepath)
-                    if os.path.exists(old_filepath):
-                        if not media.session:
-                            media.downloaded = True
-                        moved = None
-                        while not moved:
-                            try:
-                                moved = shutil.move(old_filepath, new_filepath)
-                            except OSError as e:
-                                print(e)
-                return old_filepath, new_filepath
-            old_filepath = media.old_filepath
-            new_filepath = media.new_filepath
-            old_filepath, new_filepath = update(old_filepath, new_filepath)
-            media.directory = os.path.dirname(new_filepath)
-            media.filename = os.path.basename(new_filepath)
-    return posts
-
-
-def start(subscription, api_type, api_path, site_name, json_settings):
+def start(Session, api_type, api_path, site_name, subscription, folder, json_settings):
+    api_table = folder.api_table
+    media_table = folder.media_table
+    database_session = Session()
+    result = database_session.query(api_table).all()
     metadata = getattr(subscription.scraped, api_type)
     download_info = subscription.download_info
     root_directory = download_info["directory"]
@@ -126,19 +130,10 @@ def start(subscription, api_type, api_path, site_name, json_settings):
     for root, subdirs, files in os.walk(base_directory):
         x = [os.path.join(root, x) for x in files]
         all_files.extend(x)
-    for media_type, value in metadata.content:
-        if media_type == "Texts":
-            continue
-        for status, value2 in value:
-            fixed, new_directories = fix_directories(
-                value2, root_directory, site_name, api_path, media_type, username, all_files, json_settings)
-            for new_directory in new_directories:
-                directory = os.path.abspath(new_directory)
-                os.makedirs(directory, exist_ok=True)
-            fixed2 = fix_metadata(
-                fixed)
-            setattr(value, status, fixed2)
-        setattr(metadata.content, media_type, value,)
+
+    fixed, new_directories = fix_directories(
+        result, all_files, Session, folder, site_name, api_type, username, root_directory, json_settings)
+    database_session.close()
     return metadata
 
 

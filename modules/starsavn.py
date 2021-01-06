@@ -20,7 +20,6 @@ from mergedeep import merge, Strategy
 from helpers.main_helper import import_archive, export_archive
 
 multiprocessing = main_helper.multiprocessing
-log_download = main_helper.setup_logger('downloads', 'downloads.log')
 
 json_config = None
 json_global_settings = None

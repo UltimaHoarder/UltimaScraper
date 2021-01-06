@@ -10,10 +10,15 @@ from itertools import product
 import traceback
 
 
-def fix_directories(posts, all_files, Session, folder, site_name, api_type, username, base_directory, json_settings):
+def fix_directories(posts, all_files, Session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
     new_directories = []
 
     def fix_directories(post):
+        final_type = ""
+        if parent_type:
+            final_type = f"{api_type}{os.path.sep}{parent_type}"
+            print
+        final_type = final_type if final_type else api_type
         database_session = Session()
         post_id = post.id
         result = database_session.query(folder.media_table)
@@ -38,7 +43,7 @@ def fix_directories(posts, all_files, Session, folder, site_name, api_type, user
             option["post_id"] = post_id
             option["media_id"] = media.id
             option["username"] = username
-            option["api_type"] = api_type
+            option["api_type"] = final_type if parent_type else api_type
             option["media_type"] = media.media_type
             option["filename"] = filename
             option["ext"] = ext
@@ -94,7 +99,7 @@ def fix_directories(posts, all_files, Session, folder, site_name, api_type, user
     return posts, new_directories
 
 
-def start(Session, api_type, api_path, site_name, subscription, folder, json_settings):
+def start(Session, parent_type, api_type, api_path, site_name, subscription, folder, json_settings):
     api_table = folder.api_table
     media_table = folder.media_table
     database_session = Session()
@@ -133,7 +138,7 @@ def start(Session, api_type, api_path, site_name, subscription, folder, json_set
         all_files.extend(x)
 
     fixed, new_directories = fix_directories(
-        result, all_files, Session, folder, site_name, api_type, username, root_directory, json_settings)
+        result, all_files, Session, folder, site_name, parent_type, api_type, username, root_directory, json_settings)
     database_session.close()
     return metadata
 

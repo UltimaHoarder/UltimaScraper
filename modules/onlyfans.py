@@ -551,9 +551,9 @@ def process_legacy_metadata(api: start, new_metadata_set, formatted_directories,
     return final_set, delete_metadatas
 
 
-def process_metadata(archive_path, new_metadata_object, site_name, api_path, subscription, delete_metadatas):
+def process_metadata(archive_path, new_metadata_object, site_name, parent_type,api_path, subscription, delete_metadatas):
     Session, api_type, folder = main_helper.make_metadata(
-        archive_path, new_metadata_object)
+        archive_path, new_metadata_object,parent_type)
     if not subscription.download_info:
         subscription.download_info["metadata_locations"] = {}
     subscription.download_info["directory"] = j_directory
@@ -561,7 +561,7 @@ def process_metadata(archive_path, new_metadata_object, site_name, api_path, sub
     subscription.download_info["metadata_locations"][api_type] = archive_path
     print("Renaming files.")
     new_metadata_object = ofrenamer.start(
-        Session, api_type, api_path, site_name, subscription, folder, json_settings)
+        Session, parent_type, api_type, api_path, site_name, subscription, folder, json_settings)
     for old_metadata in delete_metadatas:
         os.remove(old_metadata)
 
@@ -678,7 +678,7 @@ def prepare_scraper(api: start, site_name, item):
             api, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
         new_metadata = new_metadata + old_metadata
         w = process_metadata(metadata_path, new_metadata,
-                             site_name, api_path, subscription, delete_metadatas)
+                             site_name,parent_type, api_path, subscription, delete_metadatas)
     return True
 
 
@@ -868,6 +868,9 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
         for media_api in results:
             new_post = {}
             new_post["medias"] = []
+            rawText = media_api.get("rawText", None)
+            text = media_api.get("text", None)
+            final_text = rawText if rawText else text
             # if media_api["responseType"] == "post":
             #     if media_api["isArchived"]:
             #         pass
@@ -889,7 +892,7 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                     "%d-%m-%Y %H:%M:%S")
                 master_date = date_string
             new_post["post_id"] = media_api["id"]
-            new_post["text"] = media_api["rawText"]
+            new_post["text"] = final_text
             new_post["postedAt"] = date_string
             new_post["paid"] = False
             price = new_post["price"] = media_api["price"]if "price" in media_api else None
@@ -940,10 +943,7 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
 
                 if media["type"] not in alt_media_type:
                     continue
-                if "rawText" not in media_api:
-                    media_api["rawText"] = ""
-                text = media_api["rawText"] if media_api["rawText"] else ""
-                matches = [s for s in ignored_keywords if s in text]
+                matches = [s for s in ignored_keywords if s in final_text]
                 if matches:
                     print("Matches: ", matches)
                     continue

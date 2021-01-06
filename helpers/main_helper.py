@@ -129,7 +129,7 @@ def import_archive(archive_path) -> Any:
     return metadata
 
 
-def make_metadata(archive_path, datas):
+def make_metadata(archive_path, datas,parent_type):
     metadata_directory = os.path.dirname(archive_path)
     os.makedirs(metadata_directory, exist_ok=True)
     api_type = os.path.basename(archive_path).removesuffix(".db")
@@ -137,7 +137,8 @@ def make_metadata(archive_path, datas):
     Session, engine = db_helper.create_database_session(metadata_path)
     database_session = Session()
     db_base = declarative_base()
-    api_table = db_helper.create_api_table(db_base, api_type)
+    database_name = parent_type if parent_type else api_type
+    api_table = db_helper.create_api_table(db_base, database_name)
     media_table = db_helper.create_media_table(db_base)
     folder = db_helper.type_0()
     folder.api_table = api_table

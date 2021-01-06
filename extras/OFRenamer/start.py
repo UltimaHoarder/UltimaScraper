@@ -7,6 +7,7 @@ import shutil
 from datetime import datetime
 import os
 from itertools import product
+import traceback
 
 
 def fix_directories(posts, all_files, Session, folder, site_name, api_type, username, base_directory, json_settings):
@@ -74,7 +75,7 @@ def fix_directories(posts, all_files, Session, folder, site_name, api_type, user
                         try:
                             moved = shutil.move(old_filepath, new_filepath)
                         except OSError as e:
-                            print(e)
+                            print(traceback.format_exc())
                     print
                 print
             else:

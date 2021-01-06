@@ -330,6 +330,10 @@ def paid_content_scraper(apis: list[start]):
             count += 1
             for api_type, paid_content in subscription.scraped:
                 if api_type == "Archived":
+                    if any(x for k, x in paid_content if not x):
+                        input(
+                            "OPEN A ISSUE GITHUB ON GITHUB WITH THE MODEL'S USERNAME AND THIS ERROR, THANKS")
+                        exit(0)
                     continue
                 formatted_directories = format_directories(
                     j_directory, site_name, username, metadata_directory_format, media_type, api_type)
@@ -338,18 +342,15 @@ def paid_content_scraper(apis: list[start]):
                     metadata_directory, api_type+".db")
                 new_metadata = media_scraper(paid_content, api,
                                              formatted_directories, username, api_type)
+                new_metadata = new_metadata["content"]
                 if new_metadata:
                     api_path = os.path.join(api_type, "")
-                    new_metadata_object, delete_metadatas = process_json_metadata(
+                    old_metadata, delete_metadatas = process_legacy_metadata(
                         api, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
-                    w = process_metadata(metadata_path, new_metadata_object,
-                                         site_name, api_path, subscription, delete_metadatas)
-                    new_metadata_object = process_metadata(
-                        api, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
-                    new_metadata_set = new_metadata_object.convert()
-                    if export_metadata:
-                        export_archive(new_metadata_set,
-                                       metadata_path, json_settings)
+                    parent_type = ""
+                    new_metadata = new_metadata + old_metadata
+                    w = process_metadata(metadata_path, new_metadata,
+                                         site_name, parent_type, api_path, subscription, delete_metadatas)
 
 
 def format_media_types():
@@ -551,9 +552,9 @@ def process_legacy_metadata(api: start, new_metadata_set, formatted_directories,
     return final_set, delete_metadatas
 
 
-def process_metadata(archive_path, new_metadata_object, site_name, parent_type,api_path, subscription, delete_metadatas):
+def process_metadata(archive_path, new_metadata_object, site_name, parent_type, api_path, subscription, delete_metadatas):
     Session, api_type, folder = main_helper.make_metadata(
-        archive_path, new_metadata_object,parent_type)
+        archive_path, new_metadata_object, parent_type)
     if not subscription.download_info:
         subscription.download_info["metadata_locations"] = {}
     subscription.download_info["directory"] = j_directory
@@ -678,7 +679,7 @@ def prepare_scraper(api: start, site_name, item):
             api, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
         new_metadata = new_metadata + old_metadata
         w = process_metadata(metadata_path, new_metadata,
-                             site_name,parent_type, api_path, subscription, delete_metadatas)
+                             site_name, parent_type, api_path, subscription, delete_metadatas)
     return True
 
 

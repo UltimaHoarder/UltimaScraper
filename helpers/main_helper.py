@@ -272,7 +272,7 @@ def reformat(prepared_format, unformatted):
     path = path.replace("{date}", date)
     directory_count = len(directory)
     path_count = len(path)
-    maximum_length = maximum_length - (directory_count+path_count+extra_count)
+    maximum_length = maximum_length - (directory_count+path_count-extra_count)
     text_length = text_length if text_length < maximum_length else maximum_length
     if has_text:
         filtered_text = text[:text_length]

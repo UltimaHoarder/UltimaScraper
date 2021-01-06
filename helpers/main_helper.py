@@ -129,7 +129,7 @@ def import_archive(archive_path) -> Any:
     return metadata
 
 
-def make_metadata(archive_path, datas,parent_type):
+def make_metadata(archive_path, datas, parent_type):
     metadata_directory = os.path.dirname(archive_path)
     os.makedirs(metadata_directory, exist_ok=True)
     api_type = os.path.basename(archive_path).removesuffix(".db")
@@ -146,11 +146,12 @@ def make_metadata(archive_path, datas,parent_type):
     db_base.metadata.create_all(engine)
     for post in datas:
         post_id = post["post_id"]
-        date_object = datetime.strptime(
-            post["postedAt"], "%d-%m-%Y %H:%M:%S")
+        postedAt = post["postedAt"]
+        date_object = None
+        if postedAt:
+            date_object = datetime.strptime(
+                postedAt, "%d-%m-%Y %H:%M:%S")
         result = database_session.query(api_table)
-        if post_id == 85623385:
-            print
         post_db = result.filter_by(id=post_id).first()
         if not post_db:
             post_db = api_table()

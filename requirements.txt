@@ -12,3 +12,4 @@ deepdiff[murmur]
 numpy==1.19.3
 ujson
 sqlalchemy
+alembic

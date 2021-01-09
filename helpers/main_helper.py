@@ -26,6 +26,7 @@ from mergedeep import merge, Strategy
 import helpers.db_helper as db_helper
 from alembic.config import Config
 from alembic import command
+import traceback
 
 json_global_settings = None
 min_drive_space = 0
@@ -129,7 +130,11 @@ def import_archive(archive_path) -> Any:
     metadata = {}
     if os.path.exists(archive_path) and os.path.getsize(archive_path):
         with open(archive_path, 'r', encoding='utf-8') as outfile:
-            metadata = ujson.load(outfile)
+            while not metadata:
+                try:
+                    metadata = ujson.load(outfile)
+                except OSError as e:
+                    print(traceback.format_exc())
     return metadata
 
 
@@ -599,6 +604,8 @@ def export_data(metadata: Union[list, dict], path: str, encoding: Union[str, Non
         auth = {}
         auth["auth"] = metadata
         metadata = auth
+    directory = os.path.dirname(path)
+    os.makedirs(directory, exist_ok=True)
     with open(path, 'w', encoding=encoding) as outfile:
         ujson.dump(metadata, outfile, indent=2)
 

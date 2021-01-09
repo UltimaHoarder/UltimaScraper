@@ -565,7 +565,8 @@ def process_metadata(archive_path, new_metadata_object, site_name, parent_type, 
     new_metadata_object = ofrenamer.start(
         Session, parent_type, api_type, api_path, site_name, subscription, folder, json_settings)
     for old_metadata in delete_metadatas:
-        os.remove(old_metadata)
+        if os.path.exists(old_metadata):
+            os.remove(old_metadata)
 
 
 def format_directories(directory, site_name, username, unformatted, locations=[], api_type="") -> dict:

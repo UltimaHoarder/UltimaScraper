@@ -69,10 +69,12 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
             if not setup:
                 api.auth.auth_details.active = False
                 auth_details = api.auth.auth_details.__dict__
-                user_auth_filepath = os.path.join(
-                    api.auth.profile_directory, "auth.json")
-                main_helper.export_data(
-                    auth_details, user_auth_filepath)
+                profile_directory = api.auth.profile_directory
+                if profile_directory:
+                    user_auth_filepath = os.path.join(
+                        api.auth.profile_directory, "auth.json")
+                    main_helper.export_data(
+                        auth_details, user_auth_filepath)
                 continue
             subscription_array += subscriptions
         subscription_list = module.format_options(

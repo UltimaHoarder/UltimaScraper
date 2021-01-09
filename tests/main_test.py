@@ -1,5 +1,8 @@
 import sys
 import os
+from os.path import dirname as up
+path = up(up(os.path.realpath(__file__)))
+os.chdir(path)
 
 
 def version_check():

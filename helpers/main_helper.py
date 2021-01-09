@@ -244,6 +244,8 @@ def make_metadata(archive_path, datas, parent_type, legacy_fixer=False):
         post_db.created_at = date_object
         database_session.add(post_db)
         for media in post["medias"]:
+            if media["media_type"] == "Texts":
+                continue
             media_id = media.get("media_id", None)
             result = database_session.query(media_table)
             media_db = result.filter_by(media_id=media_id).first()

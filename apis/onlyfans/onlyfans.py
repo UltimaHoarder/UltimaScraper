@@ -741,11 +741,11 @@ class start():
         self.auth.chats = items
         return items
 
-    def get_mass_messages(self, resume=None, refresh=True, limit=10, offset=0):
+    def get_mass_messages(self, resume=None, refresh=True, limit=10, offset=0) -> list:
         api_type = "mass_messages"
         authed = self.auth
         if not authed:
-            return
+            return []
         if not refresh:
             result = handle_refresh(self, api_type)
             if result:

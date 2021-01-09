@@ -17,7 +17,7 @@ import helpers.main_helper as main_helper
 from types import SimpleNamespace
 from mergedeep import merge, Strategy
 
-from helpers.main_helper import import_archive, export_archive
+from helpers.main_helper import import_archive
 
 multiprocessing = main_helper.multiprocessing
 
@@ -84,8 +84,7 @@ def account_setup(api: start, identifier=""):
         if authed.isPerformer:
             imported = import_archive(metadata_filepath)
             mass_messages = api.get_mass_messages(resume=imported)
-            export_archive(mass_messages, metadata_filepath,
-                           json_settings)
+            main_helper.export_data(mass_messages, metadata_filepath)
         # chats = api.get_chats()
         if not identifier and jobs["scrape_names"]:
             # metadata_filepath = os.path.join(

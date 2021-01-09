@@ -267,41 +267,6 @@ def make_metadata(archive_path, datas, parent_type, legacy_fixer=False):
     return Session, api_type, database
 
 
-def export_archive(datas, archive_path, json_settings):
-    if not datas:
-        return
-    archive_directory = os.path.dirname(archive_path)
-    if json_settings["export_metadata"]:
-        export_type = json_global_settings["export_type"]
-        os.makedirs(archive_directory, exist_ok=True)
-        if export_type == "sqlite":
-            make_metadata(archive_path, datas)
-        if export_type == "json":
-            datas = datas.export()
-            with open(archive_path, 'w', encoding='utf-8') as outfile:
-                ujson.dump(datas, outfile, indent=2)
-        # if export_type == "csv":
-        #     archive_path = os.path.join(archive_directory+".csv")
-        #     with open(archive_path, mode='w', encoding='utf-8', newline='') as csv_file:
-        #         for data in datas:
-        #             fieldnames = []
-        #             media_type = data["type"].lower()
-        #             valid = list(chain.from_iterable(data["valid"]))
-        #             invalid = list(chain.from_iterable(data["invalid"]))
-        #             if valid:
-        #                 fieldnames.extend(valid[0].keys())
-        #             elif invalid:
-        #                 fieldnames.extend(invalid[0].keys())
-        #             header = [media_type]+fieldnames
-        #             if len(fieldnames) > 1:
-        #                 writer = csv.DictWriter(csv_file, fieldnames=header)
-        #                 writer.writeheader()
-        #                 for item in valid:
-        #                     writer.writerow({**{media_type: "valid"}, **item})
-        #                 for item in invalid:
-        #                     writer.writerow({**{media_type: "invalid"}, **item})
-
-
 def format_paths(j_directories, site_name):
     paths = []
     for j_directory in j_directories:
@@ -574,8 +539,9 @@ def process_profiles(json_settings, original_sessions, site_name, original_api):
                 api.auth.profile_directory = user_profile
                 api.set_auth_details(
                     json_auth)
-            export_json(
-                user_auth_filepath, api.auth.auth_details.__dict__, encoding=None)
+            datas = api.auth.auth_details.__dict__
+            export_data(
+                datas, user_auth_filepath, encoding=None)
             apis.append(api)
             print
         print
@@ -628,7 +594,7 @@ def is_me(user_api):
         return False
 
 
-def export_json(path, metadata, encoding="utf-8"):
+def export_data(metadata: Union[list, dict], path: str, encoding: Union[str, None] = "utf-8"):
     if "auth" not in metadata:
         auth = {}
         auth["auth"] = metadata

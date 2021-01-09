@@ -71,8 +71,8 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
                 auth_details = api.auth.auth_details.__dict__
                 user_auth_filepath = os.path.join(
                     api.auth.profile_directory, "auth.json")
-                main_helper.export_json(
-                    user_auth_filepath, auth_details)
+                main_helper.export_data(
+                    auth_details, user_auth_filepath)
                 continue
             subscription_array += subscriptions
         subscription_list = module.format_options(
@@ -113,8 +113,8 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
                 auth_details = api.auth.auth_details.__dict__
                 user_auth_filepath = os.path.join(
                     api.auth.profile_directory, "auth.json")
-                main_helper.export_json(
-                    user_auth_filepath, auth_details)
+                main_helper.export_data(
+                    auth_details, user_auth_filepath)
                 continue
             if jobs["scrape_names"]:
                 array = module.manage_subscriptions(

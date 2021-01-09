@@ -22,7 +22,7 @@ import sqlite3
 import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
-from helpers.main_helper import import_archive, export_archive
+from helpers.main_helper import export_data, import_archive
 
 multiprocessing = main_helper.multiprocessing
 
@@ -88,8 +88,7 @@ def account_setup(api: start, identifiers: list = [], jobs: dict = {}):
         if authed.isPerformer:
             imported = import_archive(metadata_filepath)
             mass_messages = api.get_mass_messages(resume=imported)
-            export_archive(mass_messages, metadata_filepath,
-                           json_settings)
+            main_helper.export_data(mass_messages,metadata_filepath)
         # chats = api.get_chats()
         if identifiers or jobs["scrape_names"]:
             subscriptions += manage_subscriptions(
@@ -485,7 +484,7 @@ def process_mass_messages(api: start, subscription, metadata_directory, mass_mes
             print
         if not mass_found:
             mass_message["status"] = False
-    export_archive(chats, chats_path, json_settings)
+    main_helper.export_data(chats, chats_path)
     for mass_message in mass_messages:
         found = mass_message["found"]
         if found and found["media"]:
@@ -508,8 +507,8 @@ def process_mass_messages(api: start, subscription, metadata_directory, mass_mes
             global_found.append(found)
         print
     print
-    main_helper.export_archive(
-        mass_messages, mass_message_path, json_settings)
+    main_helper.export_data(
+        mass_messages, mass_message_path)
     return global_found
 
 
@@ -997,7 +996,7 @@ class download_media():
                 metadata_locations = download_info["metadata_locations"]
                 directory = download_info["directory"]
                 for parent_type, value in metadata_locations.items():
-                    for api_type,metadata_path in value.items():
+                    for api_type, metadata_path in value.items():
                         Session, engine = db_helper.create_database_session(
                             metadata_path)
                         database_session = Session()

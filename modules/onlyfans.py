@@ -87,6 +87,8 @@ def account_setup(api: start, identifiers: list = [], jobs: dict = {}):
         print
         if authed.isPerformer:
             imported = import_archive(metadata_filepath)
+            if "auth" in imported:
+                imported = imported["auth"]
             mass_messages = api.get_mass_messages(resume=imported)
             main_helper.export_data(mass_messages,metadata_filepath)
         # chats = api.get_chats()

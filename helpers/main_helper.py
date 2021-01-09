@@ -546,7 +546,8 @@ def process_profiles(json_settings, original_sessions, site_name, original_api):
                 api.auth.profile_directory = user_profile
                 api.set_auth_details(
                     json_auth)
-            datas = api.auth.auth_details.__dict__
+            datas = {}
+            datas["auth"] = api.auth.auth_details.__dict__
             export_data(
                 datas, user_auth_filepath, encoding=None)
             apis.append(api)
@@ -602,10 +603,6 @@ def is_me(user_api):
 
 
 def export_data(metadata: Union[list, dict], path: str, encoding: Union[str, None] = "utf-8"):
-    if "auth" not in metadata:
-        auth = {}
-        auth["auth"] = metadata
-        metadata = auth
     directory = os.path.dirname(path)
     os.makedirs(directory, exist_ok=True)
     with open(path, 'w', encoding=encoding) as outfile:

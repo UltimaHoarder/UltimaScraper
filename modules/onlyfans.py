@@ -1,6 +1,6 @@
 import hashlib
 from helpers import db_helper
-from helpers.db_helper import type_0
+from helpers.db_helper import database_collection
 from typing import Union
 from apis.onlyfans.onlyfans import auth_details, create_auth, create_subscription, media_types, start
 from classes.prepare_metadata import create_metadata, format_content, prepare_reformat
@@ -559,7 +559,9 @@ def process_metadata(archive_path, new_metadata_object, site_name, parent_type, 
         subscription.download_info["metadata_locations"] = {}
     subscription.download_info["directory"] = j_directory
     subscription.download_info["webhook"] = webhook
-    subscription.download_info["metadata_locations"][api_type] = archive_path
+    database_name = parent_type if parent_type else api_type
+    subscription.download_info["metadata_locations"][api_type] = {}
+    subscription.download_info["metadata_locations"][api_type][database_name] = archive_path
     print("Renaming files.")
     new_metadata_object = ofrenamer.start(
         Session, parent_type, api_type, api_path, site_name, subscription, folder, json_settings)
@@ -707,6 +709,8 @@ def legacy_metadata_fixer(formatted_directories: dict, api: object) -> tuple[cre
                 legacy_metadata_path = os.path.join(
                     legacy_directory, type_one_file)
                 legacy_metadata = import_archive(legacy_metadata_path)
+                if legacy_metadata:
+                    delete_legacy_metadatas.append(legacy_metadata_path)
                 legacy_metadata = create_metadata(
                     api, legacy_metadata, api_type=api_type).convert()
                 new_format.append(legacy_metadata)
@@ -992,30 +996,33 @@ class download_media():
                 self.downloaded = True
                 metadata_locations = download_info["metadata_locations"]
                 directory = download_info["directory"]
-                for api_type, metadata_path in metadata_locations.items():
-                    Session, engine = db_helper.create_database_session(
-                        metadata_path)
-                    database_session = Session()
-                    db_base = declarative_base()
-                    api_table = db_helper.create_api_table(db_base, api_type)
-                    media_table = db_helper.create_media_table(db_base)
-                    result = database_session.query(media_table).all()
-                    media_type_list = media_types()
-                    for r in result:
-                        item = getattr(media_type_list, r.media_type)
-                        item.append(r)
-                    media_type_list = media_type_list.__dict__
-                    for location, v in media_type_list.items():
-                        if location == "Texts":
-                            continue
-                        media_set = v
-                        string = "Download Processing\n"
-                        string += f"Name: {username} | Type: {api_type} | Count: {len(media_set)} {location} | Directory: {directory}\n"
-                        print(string)
-                        pool = multiprocessing()
-                        pool.starmap(self.download, product(
-                            media_set, [api]))
-                    database_session.commit()
+                for parent_type, value in metadata_locations.items():
+                    for api_type,metadata_path in value.items():
+                        Session, engine = db_helper.create_database_session(
+                            metadata_path)
+                        database_session = Session()
+                        database_name = api_type.lower()
+                        db_collection = db_helper.database_collection()
+                        database = db_collection.chooser(database_name)
+                        api_table = database.api_table
+                        media_table = database.media_table
+                        result = database_session.query(media_table).all()
+                        media_type_list = media_types()
+                        for r in result:
+                            item = getattr(media_type_list, r.media_type)
+                            item.append(r)
+                        media_type_list = media_type_list.__dict__
+                        for location, v in media_type_list.items():
+                            if location == "Texts":
+                                continue
+                            media_set = v
+                            string = "Download Processing\n"
+                            string += f"Name: {username} | Type: {api_type} | Count: {len(media_set)} {location} | Directory: {directory}\n"
+                            print(string)
+                            pool = multiprocessing()
+                            pool.starmap(self.download, product(
+                                media_set, [api]))
+                        database_session.commit()
             else:
                 self.downloaded = False
 

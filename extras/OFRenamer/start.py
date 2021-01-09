@@ -1,7 +1,4 @@
 #!/usr/bin/env python3
-from apis.onlyfans.onlyfans import media_types
-from apis.api_helper import multiprocessing
-from classes.prepare_metadata import format_types, prepare_reformat
 import urllib.parse as urlparse
 import shutil
 from datetime import datetime
@@ -149,4 +146,5 @@ if __name__ == "__main__":
     exit()
 else:
     import helpers.main_helper as main_helper
-    from classes.prepare_metadata import create_metadata
+    from apis.api_helper import multiprocessing
+    from classes.prepare_metadata import format_types, prepare_reformat

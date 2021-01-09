@@ -2,6 +2,7 @@ from types import SimpleNamespace
 from typing import Any, Union
 
 from deepdiff.deephash import DeepHash
+from sqlalchemy.ext.declarative import api
 from sqlalchemy.ext.declarative.api import declarative_base
 from classes.prepare_metadata import format_variables
 import copy
@@ -23,6 +24,9 @@ import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
 from mergedeep import merge, Strategy
 import helpers.db_helper as db_helper
+from alembic.config import Config
+from alembic import command
+
 json_global_settings = None
 min_drive_space = 0
 webhooks = None
@@ -129,33 +133,104 @@ def import_archive(archive_path) -> Any:
     return metadata
 
 
-def make_metadata(archive_path, datas, parent_type):
+def legacy_database_fixer(database_path, database, database_name):
+    database_directory = os.path.dirname(database_path)
+    old_database_path = database_path
+    old_filename = os.path.basename(old_database_path)
+    new_filename = f"Pre_Alembic_{old_filename}"
+    new_database_path = os.path.join(database_directory, new_filename)
+    saved = False
+    if os.path.exists(new_database_path):
+        database_path = new_database_path
+        saved = True
+    Session, engine = db_helper.create_database_session(database_path)
+    database_session = Session()
+    datas = []
+    result = engine.dialect.has_table(engine, 'alembic_version')
+    if not result:
+        if not saved:
+            os.rename(old_database_path, new_database_path)
+        api_table = database.api_table()
+        media_table = database.media_table()
+        Base = declarative_base()
+        # DON'T FORGET TO REMOVE
+        # database_name = "posts"
+        # DON'T FORGET TO REMOVE
+        legacy_api_table = api_table.legacy(Base, database_name)
+        legacy_media_table = media_table.legacy(Base)
+        result = database_session.query(legacy_api_table)
+        post_db = result.all()
+        for post in post_db:
+            post_id = post.id
+            created_at = post.created_at
+            new_item = {}
+            new_item["post_id"] = post_id
+            new_item["text"] = post.text
+            new_item["price"] = post.price
+            new_item["paid"] = post.paid
+            new_item["postedAt"] = created_at
+            new_item["medias"] = []
+            result2 = database_session.query(legacy_media_table)
+            media_db = result2.filter_by(post_id=post_id).all()
+            for media in media_db:
+                new_item2 = {}
+                new_item2["media_id"] = media.id
+                new_item2["post_id"] = media.post_id
+                new_item2["links"] = [media.link]
+                new_item2["directory"] = media.directory
+                new_item2["filename"] = media.filename
+                new_item2["size"] = media.size
+                new_item2["media_type"] = media.media_type
+                new_item2["downloaded"] = media.downloaded
+                new_item2["created_at"] = created_at
+                new_item["medias"].append(new_item2)
+            datas.append(new_item)
+        print
+        database_session.close()
+        x = make_metadata(old_database_path, datas,
+                          database_name, legacy_fixer=True)
+    print
+
+
+def make_metadata(archive_path, datas, parent_type, legacy_fixer=False):
     metadata_directory = os.path.dirname(archive_path)
     os.makedirs(metadata_directory, exist_ok=True)
+    cwd = os.getcwd()
     api_type = os.path.basename(archive_path).removesuffix(".db")
-    metadata_path = archive_path
-    Session, engine = db_helper.create_database_session(metadata_path)
-    database_session = Session()
-    db_base = declarative_base()
+    database_path = archive_path
     database_name = parent_type if parent_type else api_type
-    api_table = db_helper.create_api_table(db_base, database_name)
-    media_table = db_helper.create_media_table(db_base)
-    folder = db_helper.type_0()
-    folder.api_table = api_table
-    folder.media_table = media_table
-    db_base.metadata.create_all(engine)
+    database_name = database_name.lower()
+    db_collection = db_helper.database_collection()
+    database = db_collection.chooser(database_name)
+    alembic_location = os.path.join(
+        cwd, "database", "databases", database_name)
+    exists = os.path.exists(database_path)
+    if not legacy_fixer and exists:
+        x = legacy_database_fixer(database_path, database, database_name)
+    db_helper.run_migrations(alembic_location, database_path)
+    print
+    Session, engine = db_helper.create_database_session(database_path)
+    database_session = Session()
+    api_table = database.api_table
+    media_table = database.media_table
+    # api_table = db_helper.api_table()
+    # media_table = db_helper.media_table()
+
     for post in datas:
         post_id = post["post_id"]
         postedAt = post["postedAt"]
         date_object = None
         if postedAt:
-            date_object = datetime.strptime(
-                postedAt, "%d-%m-%Y %H:%M:%S")
+            if not isinstance(postedAt, datetime):
+                date_object = datetime.strptime(
+                    postedAt, "%d-%m-%Y %H:%M:%S")
+            else:
+                date_object = postedAt
         result = database_session.query(api_table)
-        post_db = result.filter_by(id=post_id).first()
+        post_db = result.filter_by(post_id=post_id).first()
         if not post_db:
             post_db = api_table()
-        post_db.id = post_id
+        post_db.post_id = post_id
         post_db.text = post["text"]
         if post["price"] == None:
             post["price"] = 0
@@ -164,15 +239,18 @@ def make_metadata(archive_path, datas, parent_type):
         post_db.created_at = date_object
         database_session.add(post_db)
         for media in post["medias"]:
-            media_id = media.get("media_id",None)
+            media_id = media.get("media_id", None)
             result = database_session.query(media_table)
-            media_db = result.filter_by(id=media_id).first()
+            media_db = result.filter_by(media_id=media_id).first()
             if not media_db:
                 media_db = result.filter_by(
                     filename=media["filename"], created_at=date_object).first()
                 if not media_db:
                     media_db = media_table()
-            media_db.id = media_id
+            if legacy_fixer:
+                media_db.size = media["size"]
+                media_db.downloaded = media["downloaded"]
+            media_db.media_id = media_id
             media_db.post_id = post_id
             media_db.link = media["links"][0]
             media_db.directory = media["directory"]
@@ -186,7 +264,7 @@ def make_metadata(archive_path, datas, parent_type):
 
     database_session.commit()
     database_session.close()
-    return Session, api_type, folder
+    return Session, api_type, database
 
 
 def export_archive(datas, archive_path, json_settings):

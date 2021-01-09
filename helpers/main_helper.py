@@ -155,6 +155,8 @@ def legacy_database_fixer(database_path, database, database_name):
     if not result:
         if not saved:
             os.rename(old_database_path, new_database_path)
+        Session, engine = db_helper.create_database_session(new_database_path)
+        database_session = Session()
         api_table = database.api_table()
         media_table = database.media_table()
         Base = declarative_base()

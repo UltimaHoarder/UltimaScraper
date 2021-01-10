@@ -875,8 +875,8 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
         for media_api in results:
             new_post = {}
             new_post["medias"] = []
-            rawText = media_api.get("rawText", None)
-            text = media_api.get("text", None)
+            rawText = media_api.get("rawText", "")
+            text = media_api.get("text", "")
             final_text = rawText if rawText else text
             # if media_api["responseType"] == "post":
             #     if media_api["isArchived"]:

@@ -367,6 +367,10 @@ class create_subscription():
         while True:
             results = process()
             result = results["result"]
+            error = result.get("error",None)
+            if error:
+                if error["code"] == 0:
+                    break
             list = result["list"] if "list" in result else []
             if list:
                 if resume:

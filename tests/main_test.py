@@ -53,8 +53,9 @@ def check_profiles():
         os.makedirs(default_profile_directory, exist_ok=True)
         auth_filepath = os.path.join(default_profile_directory, "auth.json")
         if not os.path.exists(auth_filepath):
-            x = auth_details().__dict__
-            main_helper.export_data(x, auth_filepath)
+            new_item = {}
+            new_item["auth"] = auth_details().__dict__
+            main_helper.export_data(new_item, auth_filepath)
             string = f"{auth_filepath} has been created. Fill in the relevant details and then press enter to continue."
             input(string)
         print

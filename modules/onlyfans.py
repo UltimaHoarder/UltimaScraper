@@ -911,6 +911,7 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                 if not canPurchase or canViewMedia:
                     new_post["paid"] = True
             for media in media_api["media"]:
+                media_id = media["id"]
                 date = "-001-11-30T00:00:00+00:00"
                 size = 0
                 link = ""
@@ -941,7 +942,7 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                 if all(rules):
                     continue
                 new_media = dict()
-                new_media["media_id"] = media["id"]
+                new_media["media_id"] = media_id
                 new_media["links"] = []
                 new_media["media_type"] = media_type
                 for xlink in link, preview_link:
@@ -963,6 +964,7 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                 option = {}
                 option = option | new_post
                 option["site_name"] = "OnlyFans"
+                option["media_id"] = media_id
                 option["filename"] = filename
                 option["api_type"] = api_type
                 option["media_type"] = media_type

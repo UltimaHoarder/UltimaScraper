@@ -86,7 +86,8 @@ def account_setup(api: start, identifiers: list = [], jobs: dict = {}):
             if "auth" in imported:
                 imported = imported["auth"]
             mass_messages = api.get_mass_messages(resume=imported)
-            main_helper.export_data(mass_messages, metadata_filepath)
+            if mass_messages:
+                main_helper.export_data(mass_messages, metadata_filepath)
         # chats = api.get_chats()
         if identifiers or jobs["scrape_names"]:
             subscriptions += manage_subscriptions(
@@ -916,22 +917,23 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                     quality_key = "source"
                     source = media[quality_key]
                     link = source[quality_key]
-                    if media["type"] == "video":
-                        qualities = media["videoSources"]
-                        qualities = dict(
-                            sorted(qualities.items(), reverse=False))
-                        qualities[quality_key] = source[quality_key]
-                        for quality, quality_link in qualities.items():
-                            video_quality_json = json_settings["video_quality"]
-                            video_quality_json = video_quality_json.removesuffix(
-                                "p")
-                            if quality == video_quality_json:
-                                if link:
-                                    link = quality_link
-                                    break
+                    if link:
+                        if media["type"] == "video":
+                            qualities = media["videoSources"]
+                            qualities = dict(
+                                sorted(qualities.items(), reverse=False))
+                            qualities[quality_key] = source[quality_key]
+                            for quality, quality_link in qualities.items():
+                                video_quality_json = json_settings["video_quality"]
+                                video_quality_json = video_quality_json.removesuffix(
+                                    "p")
+                                if quality == video_quality_json:
+                                    if link:
+                                        link = quality_link
+                                        break
+                                    print
                                 print
                             print
-                        print
 
                     size = media["info"]["preview"]["size"] if "info" in media_api else 1
                 if "src" in media:

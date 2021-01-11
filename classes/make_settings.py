@@ -177,6 +177,8 @@ class config(object):
                         self.metadata_directory_format = normpath(option.get(
                             'metadata_directory_format', "{site_name}/{username}/Metadata"))
                         self.text_length = option.get('text_length', 255)
+                        self.video_quality = option.get(
+                            'video_quality', "source")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
                         self.date_format = option.get(
@@ -185,10 +187,6 @@ class config(object):
                             'ignored_keywords', [])
                         self.ignore_type = option.get(
                             'ignore_type', "")
-                        self.export_metadata = option.get(
-                            'export_metadata', True)
-                        self.delete_legacy_metadata = option.get(
-                            'delete_legacy_metadata', False)
                         self.blacklist_name = option.get(
                             'blacklist_name', "")
                         self.webhook = option.get(
@@ -241,10 +239,6 @@ class config(object):
                             'ignored_keywords', [])
                         self.ignore_type = option.get(
                             'ignore_type', "")
-                        self.export_metadata = option.get(
-                            'export_metadata', True)
-                        self.delete_legacy_metadata = option.get(
-                            'delete_legacy_metadata', False)
                         self.blacklist_name = option.get(
                             'blacklist_name', "")
                         self.webhook = option.get(
@@ -290,10 +284,6 @@ class config(object):
                             'ignored_keywords', [])
                         self.ignore_type = option.get(
                             'ignore_type', "")
-                        self.export_metadata = option.get(
-                            'export_metadata', True)
-                        self.delete_legacy_metadata = option.get(
-                            'delete_legacy_metadata', False)
                         self.blacklist_name = option.get(
                             'blacklist_name', "")
                         self.webhook = option.get(

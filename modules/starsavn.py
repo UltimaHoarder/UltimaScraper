@@ -34,8 +34,6 @@ overwrite_files = None
 date_format = None
 ignored_keywords = None
 ignore_type = None
-export_metadata = None
-delete_legacy_metadata = None
 blacklist_name = None
 webhook = None
 maximum_length = None
@@ -43,7 +41,7 @@ app_token = None
 
 
 def assign_vars(json_auth: auth_details, config, site_settings, site_name):
-    global json_config, json_global_settings, max_threads, json_settings, auto_choice, j_directory, metadata_directory_format, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, blacklist_name, webhook, maximum_length, app_token
+    global json_config, json_global_settings, max_threads, json_settings, auto_choice, j_directory, metadata_directory_format, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, maximum_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -59,8 +57,6 @@ def assign_vars(json_auth: auth_details, config, site_settings, site_name):
     date_format = json_settings["date_format"]
     ignored_keywords = json_settings["ignored_keywords"]
     ignore_type = json_settings["ignore_type"]
-    export_metadata = json_settings["export_metadata"]
-    delete_legacy_metadata = json_settings["delete_legacy_metadata"]
     blacklist_name = json_settings["blacklist_name"]
     webhook = json_settings["webhook"]
     maximum_length = 255

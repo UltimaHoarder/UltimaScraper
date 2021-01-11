@@ -39,8 +39,6 @@ overwrite_files = None
 date_format = None
 ignored_keywords = None
 ignore_type = None
-export_metadata = None
-delete_legacy_metadata = None
 blacklist_name = None
 webhook = None
 text_length = None
@@ -48,7 +46,7 @@ app_token = None
 
 
 def assign_vars(json_auth: auth_details, config, site_settings, site_name):
-    global json_config, json_global_settings, max_threads, json_settings, auto_choice, j_directory, metadata_directory_format, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, export_metadata, delete_legacy_metadata, blacklist_name, webhook, text_length, app_token
+    global json_config, json_global_settings, max_threads, json_settings, auto_choice, j_directory, metadata_directory_format, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, text_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -64,8 +62,6 @@ def assign_vars(json_auth: auth_details, config, site_settings, site_name):
     date_format = json_settings["date_format"]
     ignored_keywords = json_settings["ignored_keywords"]
     ignore_type = json_settings["ignore_type"]
-    export_metadata = json_settings["export_metadata"]
-    delete_legacy_metadata = json_settings["delete_legacy_metadata"]
     blacklist_name = json_settings["blacklist_name"]
     webhook = json_settings["webhook"]
     text_length = json_settings["text_length"]
@@ -917,8 +913,26 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                 link = ""
                 preview_link = ""
                 if "source" in media:
-                    source = media["source"]
-                    link = source["source"]
+                    quality_key = "source"
+                    source = media[quality_key]
+                    link = source[quality_key]
+                    if media["type"] == "video":
+                        qualities = media["videoSources"]
+                        qualities = dict(
+                            sorted(qualities.items(), reverse=False))
+                        qualities[quality_key] = source[quality_key]
+                        for quality, quality_link in qualities.items():
+                            video_quality_json = json_settings["video_quality"]
+                            video_quality_json = video_quality_json.removesuffix(
+                                "p")
+                            if quality == video_quality_json:
+                                if link:
+                                    link = quality_link
+                                    break
+                                print
+                            print
+                        print
+
                     size = media["info"]["preview"]["size"] if "info" in media_api else 1
                 if "src" in media:
                     link = media["src"]

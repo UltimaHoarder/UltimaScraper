@@ -90,7 +90,7 @@ def account_setup(api: start, identifiers: list = [], jobs: dict = {}):
             if "auth" in imported:
                 imported = imported["auth"]
             mass_messages = api.get_mass_messages(resume=imported)
-            main_helper.export_data(mass_messages,metadata_filepath)
+            main_helper.export_data(mass_messages, metadata_filepath)
         # chats = api.get_chats()
         if identifiers or jobs["scrape_names"]:
             subscriptions += manage_subscriptions(
@@ -520,12 +520,12 @@ def process_legacy_metadata(api: start, new_metadata_set, formatted_directories,
     archive_path = archive_path.replace("db", "json")
     legacy_metadata_object, delete_legacy_metadatas = legacy_metadata_fixer(
         formatted_directories, api)
-    if legacy_metadata_object:
+    if delete_legacy_metadatas:
         print("Merging new metadata with legacy metadata.")
     old_metadata_set = import_archive(archive_path)
     old_metadata_object = create_metadata(
         api, old_metadata_set, api_type=api_type)
-    if old_metadata_object:
+    if old_metadata_set:
         print("Merging new metadata with old metadata.")
     old_metadata_object = compare_metadata(
         old_metadata_object, legacy_metadata_object)
@@ -554,7 +554,7 @@ def process_legacy_metadata(api: start, new_metadata_set, formatted_directories,
 
 
 def process_metadata(archive_path, new_metadata_object, site_name, parent_type, api_path, subscription, delete_metadatas):
-    Session, api_type, folder = main_helper.make_metadata(
+    Session, api_type, folder = main_helper.export_sqlite(
         archive_path, new_metadata_object, parent_type)
     if not subscription.download_info:
         subscription.download_info["metadata_locations"] = {}

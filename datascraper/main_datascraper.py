@@ -68,7 +68,8 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
                 api, identifiers, jobs)
             if not setup:
                 api.auth.auth_details.active = False
-                auth_details = api.auth.auth_details.__dict__
+                auth_details = {}
+                auth_details["auth"] = api.auth.auth_details.__dict__
                 profile_directory = api.auth.profile_directory
                 if profile_directory:
                     user_auth_filepath = os.path.join(

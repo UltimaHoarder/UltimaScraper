@@ -138,24 +138,27 @@ def import_archive(archive_path) -> Any:
     return metadata
 
 
-def legacy_database_fixer(database_path, database, database_name):
+def legacy_database_fixer(database_path, database, database_name,database_exists):
     database_directory = os.path.dirname(database_path)
     old_database_path = database_path
     old_filename = os.path.basename(old_database_path)
     new_filename = f"Pre_Alembic_{old_filename}"
-    new_database_path = os.path.join(database_directory, new_filename)
-    saved = False
-    if os.path.exists(new_database_path):
-        database_path = new_database_path
-        saved = True
-    Session, engine = db_helper.create_database_session(database_path)
-    database_session = Session()
+    pre_alembic_path = os.path.join(database_directory, new_filename)
+    pre_alembic_database_exists = False
+    if os.path.exists(pre_alembic_path):
+        database_path = pre_alembic_path
+        pre_alembic_database_exists = True
     datas = []
-    result = engine.dialect.has_table(engine, 'alembic_version')
-    if not result:
-        if not saved:
-            os.rename(old_database_path, new_database_path)
-        Session, engine = db_helper.create_database_session(new_database_path)
+    if database_exists:
+        Session, engine = db_helper.create_database_session(database_path)
+        database_session = Session()
+        result = engine.dialect.has_table(engine, 'alembic_version')
+        if not result:
+            if not pre_alembic_database_exists:
+                os.rename(old_database_path, pre_alembic_path)
+                pre_alembic_database_exists = True
+    if pre_alembic_database_exists:
+        Session, engine = db_helper.create_database_session(pre_alembic_path)
         database_session = Session()
         api_table = database.api_table()
         media_table = database.media_table()
@@ -194,12 +197,12 @@ def legacy_database_fixer(database_path, database, database_name):
             datas.append(new_item)
         print
         database_session.close()
-        x = make_metadata(old_database_path, datas,
-                          database_name, legacy_fixer=True)
+        x = export_sqlite(old_database_path, datas,
+                            database_name, legacy_fixer=True)
     print
 
 
-def make_metadata(archive_path, datas, parent_type, legacy_fixer=False):
+def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False):
     metadata_directory = os.path.dirname(archive_path)
     os.makedirs(metadata_directory, exist_ok=True)
     cwd = os.getcwd()
@@ -211,9 +214,13 @@ def make_metadata(archive_path, datas, parent_type, legacy_fixer=False):
     database = db_collection.chooser(database_name)
     alembic_location = os.path.join(
         cwd, "database", "databases", database_name)
-    exists = os.path.exists(database_path)
-    if not legacy_fixer and exists:
-        x = legacy_database_fixer(database_path, database, database_name)
+    database_exists = os.path.exists(database_path)
+    if database_exists:
+        if os.path.getsize(database_path) == 0:
+            os.remove(database_path)
+            database_exists = False
+    if not legacy_fixer:
+        x = legacy_database_fixer(database_path, database, database_name,database_exists)
     db_helper.run_migrations(alembic_location, database_path)
     print
     Session, engine = db_helper.create_database_session(database_path)

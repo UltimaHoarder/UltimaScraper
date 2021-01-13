@@ -701,7 +701,7 @@ class start():
         authed.lists = results
         return results
 
-    def get_lists_users(self, identifier, refresh=True, limit=100, offset=0):
+    def get_lists_users(self, identifier, check: bool = False, refresh=True, limit=100, offset=0):
         authed = self.auth
         if not authed:
             return
@@ -709,6 +709,9 @@ class start():
                      global_offset=offset).lists_users
         session = self.sessions[0]
         results = api_helper.json_request(link=link, session=session)
+        if len(results) >= limit and not check:
+            results2 = self.get_lists_users(identifier, limit=limit, offset=limit+offset)
+            results.extend(results2)
         return results
 
     def get_chats(self, resume=None, refresh=True, limit=10, offset=0):

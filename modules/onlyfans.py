@@ -1116,11 +1116,18 @@ def manage_subscriptions(api: start, auth_count=0, identifiers: list = [], refre
             return [False, []]
         new_results = [c for c in r if blacklist_name == c["name"]]
         if new_results:
+            list_users = []
             item = new_results[0]
-            list_users = item["users"]
-            if int(item["usersCount"]) > 2:
+            banned_count = int(item["usersCount"])
+            if banned_count < 2:
+                list_users.append(item["users"])
+            else:
                 list_id = str(item["id"])
-                list_users = api.get_lists_users(list_id)
+                limit = 100
+                offset = 0
+                while offset < banned_count:
+                    list_users.extend(api.get_lists_users(list_id, limit=limit, offset=offset))
+                    offset += limit
             users = list_users
             bl_ids = [x["username"] for x in users]
             results2 = results.copy()

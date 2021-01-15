@@ -138,7 +138,7 @@ def import_archive(archive_path) -> Any:
     return metadata
 
 
-def legacy_database_fixer(database_path, database, database_name,database_exists):
+def legacy_database_fixer(database_path, database, database_name, database_exists):
     database_directory = os.path.dirname(database_path)
     old_database_path = database_path
     old_filename = os.path.basename(old_database_path)
@@ -198,7 +198,7 @@ def legacy_database_fixer(database_path, database, database_name,database_exists
         print
         database_session.close()
         x = export_sqlite(old_database_path, datas,
-                            database_name, legacy_fixer=True)
+                          database_name, legacy_fixer=True)
     print
 
 
@@ -220,7 +220,8 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False):
             os.remove(database_path)
             database_exists = False
     if not legacy_fixer:
-        x = legacy_database_fixer(database_path, database, database_name,database_exists)
+        x = legacy_database_fixer(
+            database_path, database, database_name, database_exists)
     db_helper.run_migrations(alembic_location, database_path)
     print
     Session, engine = db_helper.create_database_session(database_path)
@@ -363,6 +364,7 @@ def check_space(download_paths, min_size=min_drive_space, priority="download"):
     while not root:
         paths = []
         for download_path in download_paths:
+            os.makedirs(download_path, exist_ok=True)
             obj_Disk = psutil.disk_usage(download_path)
             free = obj_Disk.free / (1024.0 ** 3)
             x = {}

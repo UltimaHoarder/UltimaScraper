@@ -385,6 +385,17 @@ def check_space(download_paths, min_size=min_drive_space, priority="download"):
     return root
 
 
+def find_model_directory(username, directories):
+    download_path = None
+    status = False
+    for directory in directories:
+        download_path = os.path.join(directory, username)
+        if os.path.exists(download_path):
+            status = True
+            break
+    return download_path, status
+
+
 def are_long_paths_enabled():
     if os_name == "Windows":
         from ctypes import WinDLL, c_ubyte
@@ -450,13 +461,15 @@ def get_config(config_path):
         **json_config), default=lambda o: o.__dict__))
     hashed = DeepHash(json_config)[json_config]
     hashed2 = DeepHash(json_config2)[json_config2]
+    updated = False
     if hashed != hashed2:
+        updated = True
         update_config(json_config, file_name=file_name)
     if not json_config:
         input(
             f"The .settings\\{file_name} file has been created. Fill in whatever you need to fill in and then press enter when done.\n")
         json_config = json.load(open(config_path))
-    return json_config, json_config2
+    return json_config, updated
 
 
 def update_config(json_config, file_name="config.json"):

@@ -21,8 +21,8 @@ def check_config():
     file_name = "config.json"
     path = os.path.join('.settings', file_name)
     import helpers.main_helper as main_helper
-    json_config, json_config2 = main_helper.get_config(path)
-    if json_config != json_config2:
+    json_config, updated = main_helper.get_config(path)
+    if updated:
         input(
             f"The .settings\\{file_name} file has been updated. Fill in whatever you need to fill in and then press enter when done.\n")
     return json_config

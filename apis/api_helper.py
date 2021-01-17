@@ -117,7 +117,7 @@ def create_session(settings={}, custom_proxy="", test_ip=True):
             r = json_request(
                 link, session, json_format=False, sleep=False)
             if not isinstance(r, requests.Response):
-                print("Proxy Not Set: "+proxy+"\n")
+                print(f"Proxy Not Set: {proxy}\n")
                 return
             ip = r.text.strip()
             print("Session IP: "+ip+"\n")

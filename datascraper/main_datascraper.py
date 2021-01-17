@@ -67,7 +67,6 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
             setup, subscriptions = module.account_setup(
                 api, identifiers, jobs)
             if not setup:
-                api.auth.auth_details.active = False
                 auth_details = {}
                 auth_details["auth"] = api.auth.auth_details.__dict__
                 profile_directory = api.auth.profile_directory
@@ -112,7 +111,6 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
             setup = False
             setup = module.account_setup(api, identifier=identifier)
             if not setup:
-                api.auth.auth_details.active = False
                 auth_details = api.auth.auth_details.__dict__
                 user_auth_filepath = os.path.join(
                     api.auth.profile_directory, "auth.json")

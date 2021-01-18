@@ -1,5 +1,5 @@
 from types import SimpleNamespace
-from typing import Any, Union
+from typing import Any, Tuple, Union
 
 from deepdiff.deephash import DeepHash
 from sqlalchemy.ext.declarative import api
@@ -359,12 +359,13 @@ def get_directory(directories, site_name):
     return directory
 
 
-def check_space(download_paths, min_size=min_drive_space, priority="download"):
+def check_space(download_paths, min_size=min_drive_space, priority="download", create_directory=True):
     root = ""
     while not root:
         paths = []
         for download_path in download_paths:
-            os.makedirs(download_path, exist_ok=True)
+            if create_directory:
+                os.makedirs(download_path, exist_ok=True)
             obj_Disk = psutil.disk_usage(download_path)
             free = obj_Disk.free / (1024.0 ** 3)
             x = {}
@@ -385,8 +386,8 @@ def check_space(download_paths, min_size=min_drive_space, priority="download"):
     return root
 
 
-def find_model_directory(username, directories):
-    download_path = None
+def find_model_directory(username, directories) -> Tuple[str, bool]:
+    download_path = ""
     status = False
     for directory in directories:
         download_path = os.path.join(directory, username)

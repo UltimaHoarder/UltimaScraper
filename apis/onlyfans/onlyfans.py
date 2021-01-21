@@ -367,7 +367,7 @@ class create_subscription():
         while True:
             results = process()
             result = results["result"]
-            error = result.get("error",None)
+            error = result.get("error", None)
             if error:
                 if error["code"] == 0:
                     break
@@ -645,6 +645,11 @@ class start():
                 valid_subscriptions = []
                 extras = {}
                 extras["auth_check"] = ""
+                if isinstance(subscriptions, str):
+                    input(subscriptions)
+                    return
+                subscriptions = [
+                    subscription for subscription in subscriptions if "error" != subscription]
                 for subscription in subscriptions:
                     subscription["sessions"] = self.sessions
                     if extra_info:
@@ -710,7 +715,8 @@ class start():
         session = self.sessions[0]
         results = api_helper.json_request(link=link, session=session)
         if len(results) >= limit and not check:
-            results2 = self.get_lists_users(identifier, limit=limit, offset=limit+offset)
+            results2 = self.get_lists_users(
+                identifier, limit=limit, offset=limit+offset)
             results.extend(results2)
         return results
 

@@ -551,6 +551,7 @@ def process_profiles(json_settings, original_sessions, site_name, original_api):
         x = os.path.abspath(x)
         os.makedirs(x, exist_ok=True)
         temp_users = os.listdir(x)
+        temp_users = remove_mandatory_files(temp_users)
         if not temp_users:
             default_profile_directory = os.path.join(x, "default")
             os.makedirs(default_profile_directory)
@@ -645,9 +646,10 @@ def create_link_group(max_threads):
 
 
 def remove_mandatory_files(files, keep=[]):
-    matches = ["desktop.ini"]
+    matches = ["desktop.ini", ".DS_store"]
     folders = [x for x in files if x not in matches]
-    folders = [x for x in files if x in keep]
+    if keep:
+        folders = [x for x in files if x in keep]
     return folders
 
 

@@ -296,6 +296,8 @@ def paid_content_scraper(apis: list[start]):
         paid_contents = []
         paid_contents = api.get_paid_content()
         authed = api.auth
+        if not authed.active:
+            return
         authed.subscriptions = authed.subscriptions
         for paid_content in paid_contents:
             author = paid_content.get("author")

@@ -21,7 +21,9 @@ Build and run the image, mounting the appropriate directories:
 
 ## Running the app locally
 
-You need C Build Tools
+You need to install C++ Build Tools for the deephash module.
+
+(I'll probably end up using something else since this is an annoying requirement)
 
 https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019
 

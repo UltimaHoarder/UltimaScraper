@@ -21,6 +21,9 @@ Build and run the image, mounting the appropriate directories:
 
 ## Running the app locally
 
+You need C Build Tools
+https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019
+
 From the project folder open CMD/Terminal and run the command below:
 
 `pip install -r requirements.txt`

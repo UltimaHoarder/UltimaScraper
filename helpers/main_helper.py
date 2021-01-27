@@ -646,7 +646,7 @@ def create_link_group(max_threads):
 
 
 def remove_mandatory_files(files, keep=[]):
-    matches = ["desktop.ini", ".DS_store"]
+    matches = ["desktop.ini", ".DS_store", "@eaDir"]
     folders = [x for x in files if x not in matches]
     if keep:
         folders = [x for x in files if x in keep]

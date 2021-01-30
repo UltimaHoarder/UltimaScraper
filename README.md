@@ -5,7 +5,8 @@
 # Video Tutorial
 
 Watch this video made by Omnipotent of [RaidForums](https://raidforums.com/) or follow the tutorial below (Thanks):
-(Authentication is no longer inside config.json)
+
+(The video's authentication part is outdated. Authentication is no longer inside config.json)
 
 https://www.youtube.com/watch?v=3r8SQT7mNHk
 
@@ -20,6 +21,12 @@ Build and run the image, mounting the appropriate directories:
 `docker build -t only-fans . && docker run -it --rm --name onlyfans -v ${PWD}/.settings:/usr/src/app/.settings -v ${PWD}/.profiles:/usr/src/app/.profiles -v ${PWD}/.sites:/usr/src/app/.sites only-fans`
 
 ## Running the app locally
+
+You need to install C++ Build Tools for the deephash module.
+
+(I'll probably end up using something else since this is an annoying requirement)
+
+https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019
 
 From the project folder open CMD/Terminal and run the command below:
 

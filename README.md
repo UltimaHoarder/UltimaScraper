@@ -86,13 +86,25 @@ Where your account information is stored.
 
     If you're going to fill, please remember to use forward ("/") slashes only.
 
-[#download_paths](README.md#download_paths):
+[#download_directories](README.md#download_directories):
 
 Where downloaded content is stored.
 
     Default = [".sites"]
 
     If you're going to fill, please remember to use forward ("/") slashes only.
+
+    You can add multiple directories and the script will automatically rollover to the next directory if the current is full.
+
+[#metadata_directories](README.md#metadata_directories):
+
+Where metadata content is stored.
+
+    Default = [".sites"]
+
+    If you're going to fill, please remember to use forward ("/") slashes only.
+
+    Automatic rollover not supported yet.
 
 [#path_formatting](README.md#path_formatting):
 

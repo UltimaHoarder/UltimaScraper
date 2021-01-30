@@ -344,14 +344,17 @@ def reformat(prepared_format, unformatted):
     return directory3
 
 
-def get_directory(directories, site_name):
-    directories = format_paths(directories, site_name)
+def get_directory(directories, extra_path):
+    directories = format_paths(directories, extra_path)
     new_directories = []
     if not directories:
         directories = [""]
     for directory in directories:
         if not os.path.isabs(directory):
-            fp = os.path.abspath(".sites")
+            if directory:
+                fp = os.path.abspath(directory)
+            else:
+                fp = os.path.abspath(extra_path)
             directory = os.path.abspath(fp)
         os.makedirs(directory, exist_ok=True)
         new_directories.append(directory)

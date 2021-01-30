@@ -57,6 +57,24 @@ def session_retry_rules(r, link):
     return boolean
 
 
+class content_types():
+    def __init__(self, option={}) -> None:
+        class archived_types(content_types):
+            def __init__(self) -> None:
+                self.Posts = []
+        self.Stories = []
+        self.Posts = []
+        self.Archived = archived_types()
+        self.Chats = []
+        self.Messages = []
+        self.Highlights = []
+        self.MassMessages = []
+
+    def __iter__(self):
+        for attr, value in self.__dict__.items():
+            yield attr, value
+
+
 class media_types():
     def __init__(self, option={}, assign_states=False) -> None:
         self.Images = option.get("Images", [])
@@ -88,24 +106,6 @@ class media_types():
         source_list = [getattr(x, string, None) for x in a]
         x = list(set(source_list))
         return x
-
-    def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
-
-
-class content_types:
-    def __init__(self, option={}) -> None:
-        class archived_types(content_types):
-            def __init__(self) -> None:
-                self.Posts = []
-        self.Stories = []
-        self.Posts = []
-        self.Archived = archived_types()
-        self.Chats = []
-        self.Messages = []
-        self.Highlights = []
-        self.MassMessages = []
 
     def __iter__(self):
         for attr, value in self.__dict__.items():

@@ -24,7 +24,7 @@ def fix(config={}):
     for key, value in config.items():
         if key == "settings":
             settings = value
-            auto_profile_choice = settings.pop("auto_profile_choice",None)
+            auto_profile_choice = settings.pop("auto_profile_choice", None)
             socks5_proxies = settings.pop(
                 "socks5_proxy", None)
             if socks5_proxies:
@@ -74,6 +74,11 @@ def fix(config={}):
                             settings["metadata_directory_format"] = "{site_name}/{username}/Metadata"
                             string = f"metadata_directory_format in {key2}"
                             added.append(string)
+                        delete_legacy_metadata = settings.get(
+                            "delete_legacy_metadata", None)
+                        if delete_legacy_metadata == None:
+                            message_string = f"{key2} - IN THIS COMMIT I CHANGED HOW STORING METADATA WORKS. 'METADATA_DIRECTORIES' (config.json) NOW CONTROLS WHERE METADATA IS STORED SO MAKE SURE IT'S THE CORRECT DIRECTORY TO AVOID DOWNLOADING DUPES.\nPRESS ENTER TO CONTINUE"
+                            print(message_string)
                         filename_format = settings.pop(
                             "file_name_format", None)
                         if filename_format:
@@ -141,7 +146,6 @@ class config(object):
         class Supported(object):
             def __init__(self, onlyfans={}, patreon={}, starsavn={}):
                 self.onlyfans = self.OnlyFans(onlyfans)
-                self.patreon = self.Patreon(patreon)
                 self.starsavn = self.StarsAvn(starsavn)
 
             class OnlyFans:
@@ -176,6 +180,8 @@ class config(object):
                             'metadata_directories', [".sites"])
                         self.metadata_directory_format = normpath(option.get(
                             'metadata_directory_format', "{site_name}/{username}/Metadata"))
+                        self.delete_legacy_metadata = option.get(
+                            'delete_legacy_metadata', False)
                         self.text_length = option.get('text_length', 255)
                         self.video_quality = option.get(
                             'video_quality', "source")
@@ -230,52 +236,11 @@ class config(object):
                             'metadata_directories', [".sites"])
                         self.metadata_directory_format = normpath(option.get(
                             'metadata_directory_format', "{site_name}/{username}/Metadata"))
+                        self.delete_legacy_metadata = option.get(
+                            'delete_legacy_metadata', False)
                         self.text_length = option.get('text_length', 255)
-                        self.overwrite_files = option.get(
-                            'overwrite_files', False)
-                        self.date_format = option.get(
-                            'date_format', "%d-%m-%Y")
-                        self.ignored_keywords = option.get(
-                            'ignored_keywords', [])
-                        self.ignore_type = option.get(
-                            'ignore_type', "")
-                        self.blacklist_name = option.get(
-                            'blacklist_name', "")
-                        self.webhook = option.get(
-                            'webhook', True)
-
-            class Patreon:
-                def __init__(self, module):
-                    self.settings = self.Settings(module.get('settings', {}))
-
-                class Auth:
-                    def __init__(self, option={}):
-                        self.cf_clearance = option.get('cf_clearance', "")
-                        self.session_id = option.get('session_id', "")
-                        self.user_agent = option.get('user_agent', "")
-                        self.support_2fa = option.get('support_2fa', True)
-
-                class Settings:
-                    def __init__(self, option={}):
-                        self.auto_profile_choice = option.get(
-                            'auto_profile_choice', "")
-                        self.auto_scrape_names = option.get(
-                            'auto_scrape_names', False)
-                        self.auto_choice = option.get('auto_choice', "")
-                        self.auto_scrape_apis = option.get(
-                            'auto_scrape_apis', True)
-                        self.download_directories = option.get(
-                            'download_directories', [".sites"])
-                        normpath = os.path.normpath
-                        self.file_directory_format = normpath(option.get(
-                            'file_directory_format', "{site_name}/{username}/{api_type}/{value}/{media_type}"))
-                        self.filename_format = normpath(option.get(
-                            'filename_format', "{filename}.{ext}"))
-                        self.metadata_directories = option.get(
-                            'metadata_directories', [".sites"])
-                        self.metadata_directory_format = normpath(option.get(
-                            'metadata_directory_format', "{site_name}/{username}/Metadata"))
-                        self.text_length = option.get('text_length', "255")
+                        self.video_quality = option.get(
+                            'video_quality', "source")
                         self.overwrite_files = option.get(
                             'overwrite_files', False)
                         self.date_format = option.get(

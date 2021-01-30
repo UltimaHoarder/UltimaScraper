@@ -1,8 +1,9 @@
 import hashlib
+import shutil
 from helpers import db_helper
 from helpers.db_helper import database_collection
 from typing import Union
-from apis.onlyfans.onlyfans import auth_details, create_auth, create_subscription, media_types, start
+from apis.onlyfans.onlyfans import auth_details, content_types, create_auth, create_subscription, media_types, start
 from classes.prepare_metadata import create_metadata, format_content, prepare_reformat
 import os
 from datetime import datetime, timedelta
@@ -31,10 +32,13 @@ json_global_settings = None
 max_threads = -1
 json_settings = None
 auto_choice = None
-j_directory = ""
-metadata_directory_format = ""
+profile_directory = ""
+download_directory = ""
+metadata_directory = ""
 file_directory_format = None
 filename_format = None
+metadata_directory_format = ""
+delete_legacy_metadata = False
 overwrite_files = None
 date_format = None
 ignored_keywords = None
@@ -46,18 +50,23 @@ app_token = None
 
 
 def assign_vars(json_auth: auth_details, config, site_settings, site_name):
-    global json_config, json_global_settings, max_threads, json_settings, auto_choice, j_directory, metadata_directory_format, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, text_length, app_token
+    global json_config, json_global_settings, max_threads, json_settings, auto_choice, profile_directory, download_directory, metadata_directory, metadata_directory_format,delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, text_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
     max_threads = json_global_settings["max_threads"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
-    j_directory = main_helper.get_directory(
-        json_settings['download_directories'], site_name)
-    metadata_directory_format = json_settings["metadata_directory_format"]
+    profile_directory = main_helper.get_directory(
+        json_global_settings['profile_directories'], ".profiles")
+    download_directory = main_helper.get_directory(
+        json_settings['download_directories'], ".sites")
+    metadata_directory = main_helper.get_directory(
+        json_settings['metadata_directories'], ".metadatas")
     file_directory_format = json_settings["file_directory_format"]
     filename_format = json_settings["filename_format"]
+    metadata_directory_format = json_settings["metadata_directory_format"]
+    delete_legacy_metadata = json_settings["delete_legacy_metadata"]
     overwrite_files = json_settings["overwrite_files"]
     date_format = json_settings["date_format"]
     ignored_keywords = json_settings["ignored_keywords"]
@@ -179,7 +188,7 @@ def scrape_choice(api: start, subscription):
     if "-l" in input_choice:
         only_links = True
         input_choice = input_choice.replace(" -l", "")
-    mandatory = [j_directory, only_links]
+    mandatory = [download_directory, only_links]
     y = ["photo", "video", "stream", "gif", "audio", "text"]
     u_array = ["You have chosen to scrape {}", [
         user_api, media_types, *mandatory, post_count], "Profile"]
@@ -317,7 +326,6 @@ def paid_content_scraper(apis: list[start]):
             api_type = paid_content["responseType"].capitalize()+"s"
             api_media = getattr(subscription.scraped, api_type)
             api_media.append(paid_content)
-            print
         count = 0
         max_count = len(authed.subscriptions)
         for subscription in authed.subscriptions:
@@ -335,11 +343,15 @@ def paid_content_scraper(apis: list[start]):
                             "OPEN A ISSUE GITHUB ON GITHUB WITH THE MODEL'S USERNAME AND THIS ERROR, THANKS")
                         exit(0)
                     continue
+                mandatory_directories = {}
+                mandatory_directories["profile_directory"] = profile_directory
+                mandatory_directories["download_directory"] = download_directory
+                mandatory_directories["metadata_directory"] = metadata_directory
                 formatted_directories = format_directories(
-                    j_directory, site_name, username, metadata_directory_format, media_type, api_type)
-                metadata_directory = formatted_directories["metadata_directory"]
+                    mandatory_directories, site_name, username, metadata_directory_format, media_type, api_type)
+                formatted_metadata_directory = formatted_directories["metadata_directory"]
                 metadata_path = os.path.join(
-                    metadata_directory, api_type+".db")
+                    formatted_metadata_directory, api_type+".db")
                 new_metadata = media_scraper(paid_content, api,
                                              formatted_directories, username, api_type)
                 new_metadata = new_metadata["content"]
@@ -349,8 +361,9 @@ def paid_content_scraper(apis: list[start]):
                         api, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
                     parent_type = ""
                     new_metadata = new_metadata + old_metadata
-                    w = process_metadata(metadata_path, new_metadata,
+                    w = process_metadata(metadata_path, formatted_directories, new_metadata,
                                          site_name, parent_type, api_path, subscription, delete_metadatas)
+                    print
 
 
 def format_media_types():
@@ -516,11 +529,20 @@ def process_mass_messages(api: start, subscription, metadata_directory, mass_mes
 def process_legacy_metadata(api: start, new_metadata_set, formatted_directories, subscription, api_type, api_path, archive_path, site_name):
     print("Processing metadata.")
     delete_metadatas = []
+    legacy_metadata2 = formatted_directories["legacy_metadatas"]["legacy_metadata2"]
+    legacy_metadata_path2 = os.path.join(
+        legacy_metadata2, os.path.basename(archive_path))
+    exists = os.path.exists(archive_path)
+    exists2 = os.path.exists(legacy_metadata_path2)
+    if legacy_metadata_path2 != archive_path:
+        if not exists and exists2:
+            shutil.move(legacy_metadata_path2, archive_path)
     archive_path = archive_path.replace("db", "json")
     legacy_metadata_object, delete_legacy_metadatas = legacy_metadata_fixer(
         formatted_directories, api)
     if delete_legacy_metadatas:
         print("Merging new metadata with legacy metadata.")
+        delete_metadatas.extend(delete_legacy_metadatas)
     old_metadata_set = import_archive(archive_path)
     old_metadata_object = create_metadata(
         api, old_metadata_set, api_type=api_type)
@@ -552,12 +574,13 @@ def process_legacy_metadata(api: start, new_metadata_set, formatted_directories,
     return final_set, delete_metadatas
 
 
-def process_metadata(archive_path, new_metadata_object, site_name, parent_type, api_path, subscription, delete_metadatas):
+def process_metadata(archive_path: str, formatted_directories: dict, new_metadata_object, site_name, parent_type, api_path, subscription, delete_metadatas):
+    print
     Session, api_type, folder = main_helper.export_sqlite(
         archive_path, new_metadata_object, parent_type)
     if not subscription.download_info:
         subscription.download_info["metadata_locations"] = {}
-    subscription.download_info["directory"] = j_directory
+    subscription.download_info["directory"] = download_directory
     subscription.download_info["webhook"] = webhook
     database_name = parent_type if parent_type else api_type
     subscription.download_info["metadata_locations"][api_type] = {}
@@ -565,31 +588,38 @@ def process_metadata(archive_path, new_metadata_object, site_name, parent_type, 
     print("Renaming files.")
     new_metadata_object = ofrenamer.start(
         Session, parent_type, api_type, api_path, site_name, subscription, folder, json_settings)
-    for old_metadata in delete_metadatas:
-        if os.path.exists(old_metadata):
-            os.remove(old_metadata)
+    if delete_legacy_metadata:
+        for old_metadata in delete_metadatas:
+            if os.path.exists(old_metadata):
+                os.remove(old_metadata)
 
 
-def format_directories(directory, site_name, username, unformatted, locations=[], api_type="") -> dict:
+def format_directories(directories, site_name, username, unformatted, locations=[], api_type="") -> dict:
     x = {}
-    option = {}
-    option["site_name"] = site_name
-    option["username"] = username
-    option["directory"] = directory
-    option["postedAt"] = datetime.today()
-    option["date_format"] = date_format
-    option["text_length"] = text_length
-    prepared_format = prepare_reformat(option)
-    legacy_model_directory = x["legacy_model_directory"] = os.path.join(
-        directory, site_name, username)
+    x["profile_directory"] = ""
     x["legacy_metadatas"] = {}
-    x["legacy_metadatas"]["legacy_metadata"] = os.path.join(
-        legacy_model_directory, api_type, "Metadata")
-    x["legacy_metadatas"]["legacy_metadata2"] = os.path.join(
-        legacy_model_directory, "Metadata")
-    x["metadata_directory"] = main_helper.reformat(
-        prepared_format, unformatted)
-    x["download_directory"] = directory
+    for key, directory in directories.items():
+        option = {}
+        option["site_name"] = site_name
+        option["username"] = username
+        option["directory"] = directory
+        option["postedAt"] = datetime.today()
+        option["date_format"] = date_format
+        option["text_length"] = text_length
+        prepared_format = prepare_reformat(option)
+        if key == "profile_directory":
+            x["profile_directory"] = prepared_format.directory
+        if key == "download_directory":
+            x["download_directory"] = prepared_format.directory
+            legacy_model_directory = x["legacy_model_directory"] = os.path.join(
+                directory, site_name, username)
+            x["legacy_metadatas"]["legacy_metadata"] = os.path.join(
+                legacy_model_directory, api_type, "Metadata")
+            x["legacy_metadatas"]["legacy_metadata2"] = os.path.join(
+                legacy_model_directory, "Metadata")
+        if key == "metadata_directory":
+            x["metadata_directory"] = main_helper.reformat(
+                prepared_format, unformatted)
     x["locations"] = []
     for location in locations:
         directories = {}
@@ -618,13 +648,17 @@ def prepare_scraper(api: start, site_name, item):
     username = api_array["username"]
     master_set = []
     pool = multiprocessing()
+    mandatory_directories = {}
+    mandatory_directories["profile_directory"] = profile_directory
+    mandatory_directories["download_directory"] = download_directory
+    mandatory_directories["metadata_directory"] = metadata_directory
     formatted_directories = format_directories(
-        j_directory, site_name, username, metadata_directory_format, media_type, api_type)
+        mandatory_directories, site_name, username, metadata_directory_format, media_type, api_type)
     legacy_model_directory = formatted_directories["legacy_model_directory"]
-    metadata_directory = formatted_directories["metadata_directory"]
-    download_directory = formatted_directories["download_directory"]
+    formatted_download_directory = formatted_directories["download_directory"]
+    formatted_metadata_directory = formatted_directories["metadata_directory"]
     if api_type == "Profile":
-        profile_scraper(api, site_name, api_type, username, download_directory)
+        profile_scraper(api, site_name, api_type, username, formatted_download_directory)
         return True
     if api_type == "Stories":
         master_set = subscription.get_stories()
@@ -649,7 +683,7 @@ def prepare_scraper(api: start, site_name, item):
         if subscription.is_me and mass_messages:
             mass_messages = getattr(authed, "mass_messages")
             unrefined_set2 = process_mass_messages(api,
-                                                   subscription, metadata_directory, mass_messages)
+                                                   subscription, formatted_metadata_directory, mass_messages)
             unrefined_set += unrefined_set2
         master_set = [unrefined_set]
     master_set2 = master_set
@@ -676,13 +710,13 @@ def prepare_scraper(api: start, site_name, item):
     if new_metadata:
         new_metadata = new_metadata["content"]
         metadata_path = os.path.join(
-            metadata_directory, api_type+".db")
+            formatted_metadata_directory, api_type+".db")
         api_path = os.path.join(api_type, parent_type)
         old_metadata, delete_metadatas = process_legacy_metadata(
             api, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
         new_metadata = new_metadata + old_metadata
-        w = process_metadata(metadata_path, new_metadata,
-                             site_name, parent_type, api_path, subscription, delete_metadatas)
+        w = process_metadata(metadata_path, formatted_directories, new_metadata,
+                                site_name, parent_type, api_path, subscription, delete_metadatas)
     return True
 
 
@@ -699,11 +733,13 @@ def legacy_metadata_fixer(formatted_directories: dict, api: object) -> tuple[cre
             continue
         if os.path.exists(legacy_directory):
             folders = os.listdir(legacy_directory)
+            api_names = [metadata_name]
             metadata_names = media_types()
             metadata_names = [f"{k}.json" for k, v in metadata_names]
+            api_names += metadata_names
             print
             type_one_files = main_helper.remove_mandatory_files(
-                folders, keep=metadata_names)
+                folders, keep=api_names)
             new_format = []
             for type_one_file in type_one_files:
                 api_type = type_one_file.removesuffix(".json")

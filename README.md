@@ -188,6 +188,12 @@ You can choose one or more.
     The ideal is actually 0.
     When you use {text} in filename_format, a limit of how many characters can be set by inputting a number.
 
+[#video_quality](README.md#video_quality):
+
+    Default = "source"
+    720p = "720" | "720p"
+    240p = "240" | "240p"
+
 [#auto_site_choice](README.md#auto_site_choice):
 
     Default = ""

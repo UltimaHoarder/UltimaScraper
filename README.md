@@ -85,15 +85,15 @@ Open:
 
 [settings]
 
-[#profile_directories](README.md#profile_directories):
+### profile_directories:
 
-Where your account information is stored.
+Where your account information is stored (auth.json).
 
     Default = [".profiles"]
 
     If you're going to fill, please remember to use forward ("/") slashes only.
 
-[#download_directories](README.md#download_directories):
+### download_directories:
 
 Where downloaded content is stored.
 
@@ -103,7 +103,7 @@ Where downloaded content is stored.
 
     You can add multiple directories and the script will automatically rollover to the next directory if the current is full.
 
-[#metadata_directories](README.md#metadata_directories):
+### metadata_directories:
 
 Where metadata content is stored.
 
@@ -113,7 +113,9 @@ Where metadata content is stored.
 
     Automatic rollover not supported yet.
 
-[#path_formatting](README.md#path_formatting):
+### path_formatting:
+
+Overview for [file_directory_format](#file_directory_format), [filename_format](#filename_format) and [metadata_directory_format](#metadata_directory_format)
 
     {site_name} = The site you're scraping.
 
@@ -139,7 +141,7 @@ Where metadata content is stored.
 
     Don't use the text variable. If you do, enjoy emojis in your filepaths and errors lmao.
 
-[#file_directory_format](README.md#file_directory_format):
+### file_directory_format:
 
 This puts each media file into a folder.
 
@@ -150,61 +152,65 @@ You can choose one or more.
     Default = "{site_name}/{username}/{api_type}/{value}/{media_type}"
     Default Translated = "OnlyFans/belledelphine/Posts/Free/Images"
 
-    {username}
+    {username} = belledelphine
 
-[#filename_format](README.md#filename_format):
+### filename_format:
 
-Literally a filename.
+Usage: Format for a filename
 
 The list below are unique identifiers that you must include.
 
-You can choose one or more.
+You must choose one or more.
 
     Default = "{filename}.{ext}"
     Default Translated = "5fb5a5e4b4ce6c47ce2b4_source.mp4"
 
-    {media_id}
-    {filename}
+    {filename} = 5fb5a5e4b4ce6c47ce2b4_source
+    {media_id} = 133742069
 
-[#metadata_directory_format](README.md#metadata_directory_format):
+### metadata_directory_format:
 
-Filepath for metadata. It's tied with download_directories so ignore metadata_directories in the config.
+Usage: Filepath for metadata. It's tied with download_directories so ignore metadata_directories in the config.
 
 The list below are unique identifiers that you must include.
 
-You can choose one or more.
+You must choose one or more.
 
     Default = "{site_name}/{username}/Metadata"
     Default Translated = "OnlyFans/belledelphine/Metadata"
 
-    {username}
+    {username} = belledelphine
 
-[#text_length](README.md#text_length):
+### text_length:
+
+Usage: When you use {text} in filename_format, a limit of how many characters can be set by inputting a number.
 
     Default = ""
     Ideal = "50"
     Max = "255"
 
     The ideal is actually 0.
-    When you use {text} in filename_format, a limit of how many characters can be set by inputting a number.
 
-[#video_quality](README.md#video_quality):
+### video_quality:
+
+Usage: Select the resolution of the video.
 
     Default = "source"
     720p = "720" | "720p"
     240p = "240" | "240p"
 
-[#auto_site_choice](README.md#auto_site_choice):
+### auto_site_choice:
+
+Usage: You can automatically choose which site you want to scrape.
 
     Default = ""
 
     OnlyFans = "onlyfans"
 
-    You can automatically choose which site you want to scrape.
+### auto_choice:
 
-[#auto_choice](README.md#auto_choice):
-
-    Default = ""
+Usage: You can automatically choose which media type you want to scrape.
+Default = ""
 
     Everything = "a"
     Images = "b"

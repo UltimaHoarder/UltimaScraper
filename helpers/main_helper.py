@@ -585,13 +585,11 @@ def process_profiles(json_settings, original_sessions, site_name, original_api):
     return apis
 
 
-def process_names(module, subscription_list, auto_scrape, session_array, json_config, site_name_lower, site_name):
+def process_names(module, subscription_list, auto_scrape, session_array, json_config, site_name_lower, site_name) -> list:
     names = choose_option(
         subscription_list, auto_scrape)
     if not names:
         print("There's nothing to scrape.")
-        return
-    app_token = ""
     for name in names:
         # Extra Auth Support
         auth_count = name[0]
@@ -601,6 +599,7 @@ def process_names(module, subscription_list, auto_scrape, session_array, json_co
         username = parse_links(site_name_lower, name)
         result = module.start_datascraper(
             api, username, site_name)
+    return names
 
 
 def process_downloads(apis, module):

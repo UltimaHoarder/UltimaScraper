@@ -50,7 +50,7 @@ app_token = None
 
 
 def assign_vars(json_auth: auth_details, config, site_settings, site_name):
-    global json_config, json_global_settings, max_threads, json_settings, auto_choice, profile_directory, download_directory, metadata_directory, metadata_directory_format,delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, text_length, app_token
+    global json_config, json_global_settings, max_threads, json_settings, auto_choice, profile_directory, download_directory, metadata_directory, metadata_directory_format, delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, text_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -326,6 +326,7 @@ def paid_content_scraper(apis: list[start]):
             api_type = paid_content["responseType"].capitalize()+"s"
             api_media = getattr(subscription.scraped, api_type)
             api_media.append(paid_content)
+            break
         count = 0
         max_count = len(authed.subscriptions)
         for subscription in authed.subscriptions:
@@ -658,7 +659,8 @@ def prepare_scraper(api: start, site_name, item):
     formatted_download_directory = formatted_directories["download_directory"]
     formatted_metadata_directory = formatted_directories["metadata_directory"]
     if api_type == "Profile":
-        profile_scraper(api, site_name, api_type, username, formatted_download_directory)
+        profile_scraper(api, site_name, api_type, username,
+                        formatted_download_directory)
         return True
     if api_type == "Stories":
         master_set = subscription.get_stories()
@@ -716,7 +718,7 @@ def prepare_scraper(api: start, site_name, item):
             api, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
         new_metadata = new_metadata + old_metadata
         w = process_metadata(metadata_path, formatted_directories, new_metadata,
-                                site_name, parent_type, api_path, subscription, delete_metadatas)
+                             site_name, parent_type, api_path, subscription, delete_metadatas)
     return True
 
 
@@ -941,9 +943,8 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
             if price == None:
                 price = 0
             canPurchase = media_api.get("canPurchase", None)
-            canViewMedia = media_api.get("canViewMedia", None)
             if price:
-                if not canPurchase or canViewMedia:
+                if all(media["canView"] for media in media_api["media"]):
                     new_post["paid"] = True
             for media in media_api["media"]:
                 media_id = media["id"]

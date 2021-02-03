@@ -1,6 +1,6 @@
-
 import os
 import sqlalchemy
+from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.orm import scoped_session
 from alembic.config import Config
@@ -10,9 +10,9 @@ from database.databases.posts import posts
 from database.databases.messages import messages
 
 
-def create_database_session(metadata_path):
-    engine = sqlalchemy.create_engine(f'sqlite:///{metadata_path}')
-    session_factory = sessionmaker(bind=engine)
+def create_database_session(connection_info, connection_type="sqlite:///", autocommit=False) -> tuple[scoped_session, Engine]:
+    engine = sqlalchemy.create_engine(f'{connection_type}{connection_info}')
+    session_factory = sessionmaker(bind=engine, autocommit=autocommit)
     Session = scoped_session(session_factory)
     return Session, engine
 
@@ -26,7 +26,6 @@ def run_revisions(alembic_directory: str, database_path: str = ""):
     alembic_cfg.set_main_option('sqlalchemy.url', full_database_path)
     x = command.upgrade(alembic_cfg, 'head')
     x = command.revision(alembic_cfg, autogenerate=True, message="content")
-    print
 
 
 def run_migrations(alembic_directory: str, database_path: str) -> None:
@@ -37,7 +36,6 @@ def run_migrations(alembic_directory: str, database_path: str) -> None:
     alembic_cfg.set_main_option('script_location', script_location)
     alembic_cfg.set_main_option('sqlalchemy.url', full_database_path)
     x = command.upgrade(alembic_cfg, 'head')
-    print
 
 
 class database_collection(object):

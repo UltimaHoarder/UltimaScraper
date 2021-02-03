@@ -17,10 +17,11 @@ def fix_directories(posts, all_files, Session, folder, site_name, parent_type, a
             print
         final_type = final_type if final_type else api_type
         database_session = Session()
-        post_id = post.id
+        post_id = post.post_id
         result = database_session.query(folder.media_table)
         media_db = result.filter_by(post_id=post_id).all()
         for media in media_db:
+            media_id = media.media_id
             if media.link:
                 path = urlparse.urlparse(media.link).path
             else:
@@ -38,7 +39,7 @@ def fix_directories(posts, all_files, Session, folder, site_name, parent_type, a
             option = {}
             option["site_name"] = site_name
             option["post_id"] = post_id
-            option["media_id"] = media.id
+            option["media_id"] = media_id
             option["username"] = username
             option["api_type"] = final_type if parent_type else api_type
             option["media_type"] = media.media_type
@@ -54,12 +55,14 @@ def fix_directories(posts, all_files, Session, folder, site_name, parent_type, a
             file_directory = main_helper.reformat(
                 prepared_format, file_directory_format)
             prepared_format.directory = file_directory
+            if post_id == 79521602:
+                print
             old_filepath = ""
             old_filepaths = [
                 x for x in all_files if media.filename in os.path.basename(x)]
             if not old_filepaths:
                 old_filepaths = [
-                    x for x in all_files if str(media.id) in os.path.basename(x)]
+                    x for x in all_files if str(media_id) in os.path.basename(x)]
                 print
             if old_filepaths:
                 old_filepath = old_filepaths[0]
@@ -80,8 +83,12 @@ def fix_directories(posts, all_files, Session, folder, site_name, parent_type, a
                             print(traceback.format_exc())
                     print
                 print
+
+            if os.path.exists(new_filepath):
+                if media.size:
+                    media.downloaded = True
             else:
-                print
+                media.downloaded = False
             if prepared_format.text:
                 pass
             media.directory = file_directory

@@ -84,7 +84,7 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
             paid_content = module.paid_content_scraper(apis)
         if jobs["scrape_names"]:
             print("Scraping Subscriptions")
-            x = main_helper.process_names(
+            names = main_helper.process_names(
                 module, subscription_list, auto_scrape_names, apis, json_config, site_name_lower, site_name)
         x = main_helper.process_downloads(apis, module)
         if webhooks:
@@ -128,7 +128,7 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
             paid_content = module.paid_content_scraper(apis)
         if jobs["scrape_names"]:
             print("Scraping Subscriptions")
-            x = main_helper.process_names(
+            names = main_helper.process_names(
                 module, subscription_list, auto_scrape_names, apis, json_config, site_name_lower, site_name)
         x = main_helper.process_downloads(apis, module)
     stop_time = str(

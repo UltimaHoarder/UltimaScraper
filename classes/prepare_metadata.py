@@ -369,6 +369,7 @@ class prepare_reformat(object):
         self.text_length = option.get('text_length', self.maximum_length)
         self.directory = option.get(
             'directory')
+        self.preview = option.get('preview')
         if not keep_vars:
             for key, value in self:
                 print

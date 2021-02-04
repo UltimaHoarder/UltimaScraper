@@ -916,9 +916,8 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
             text = media_api.get("text", "")
             final_text = rawText if rawText else text
             previews = media_api.get("preview", None)
-            # if media_api["responseType"] == "post":
-            #     if media_api["isArchived"]:
-            #         pass
+            if api_type == "Stories":
+                previews = []
             if api_type == "Messages":
                 media_api["rawText"] = media_api["text"]
                 previews = media_api.get("previews", None)

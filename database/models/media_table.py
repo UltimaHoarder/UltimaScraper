@@ -13,6 +13,7 @@ class media_table():
     filename = sqlalchemy.Column(sqlalchemy.String)
     size = sqlalchemy.Column(sqlalchemy.Integer, default=None)
     media_type = sqlalchemy.Column(sqlalchemy.String)
+    preview = sqlalchemy.Column(sqlalchemy.Integer, default=0)
     downloaded = sqlalchemy.Column(sqlalchemy.Integer, default=0)
     created_at = sqlalchemy.Column(sqlalchemy.DATETIME)
 

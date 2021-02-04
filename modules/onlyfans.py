@@ -927,9 +927,9 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                 media_username = media_user["username"]
                 if media_username != username:
                     continue
-            if previews == None:
-                # REMOVE BEFORE PUSHING COMMIT
-                input("PREVIEW NOT FOUND")
+            # if previews == None:
+            #     # REMOVE BEFORE PUSHING COMMIT
+            #     input("PREVIEW NOT FOUND")
             date = media_api["postedAt"] if "postedAt" in media_api else media_api["createdAt"]
             if date == "-001-11-30T00:00:00+00:00":
                 date_string = master_date

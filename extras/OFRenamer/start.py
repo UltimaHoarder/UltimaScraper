@@ -51,6 +51,7 @@ def fix_directories(posts, all_files, Session, folder, site_name, parent_type, a
             option["date_format"] = date_format
             option["text_length"] = text_length
             option["directory"] = download_path
+            option["preview"] = media.preview
             prepared_format = prepare_reformat(option)
             file_directory = main_helper.reformat(
                 prepared_format, file_directory_format)

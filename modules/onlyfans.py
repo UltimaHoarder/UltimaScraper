@@ -915,16 +915,21 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
             rawText = media_api.get("rawText", "")
             text = media_api.get("text", "")
             final_text = rawText if rawText else text
+            previews = media_api.get("preview", None)
             # if media_api["responseType"] == "post":
             #     if media_api["isArchived"]:
             #         pass
             if api_type == "Messages":
                 media_api["rawText"] = media_api["text"]
+                previews = media_api.get("previews", None)
             if api_type == "Mass Messages":
                 media_user = media_api["fromUser"]
                 media_username = media_user["username"]
                 if media_username != username:
                     continue
+            if previews == None:
+                # REMOVE BEFORE PUSHING COMMIT
+                input("PREVIEW NOT FOUND")
             date = media_api["postedAt"] if "postedAt" in media_api else media_api["createdAt"]
             if date == "-001-11-30T00:00:00+00:00":
                 date_string = master_date
@@ -939,6 +944,7 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
             new_post["text"] = final_text
             new_post["postedAt"] = date_string
             new_post["paid"] = False
+            new_post["preview_media_ids"] = previews
             price = new_post["price"] = media_api["price"]if "price" in media_api else None
             if price == None:
                 price = 0
@@ -946,6 +952,8 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
             if price:
                 if all(media["canView"] for media in media_api["media"]):
                     new_post["paid"] = True
+                else:
+                    print
             for media in media_api["media"]:
                 media_id = media["id"]
                 date = "-001-11-30T00:00:00+00:00"
@@ -1000,6 +1008,9 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                 new_media["media_id"] = media_id
                 new_media["links"] = []
                 new_media["media_type"] = media_type
+                new_media["preview"] = False
+                if int(media_id) in new_post["preview_media_ids"]:
+                    new_media["preview"] = True
                 for xlink in link, preview_link:
                     if xlink:
                         new_media["links"].append(xlink)
@@ -1028,6 +1039,7 @@ def media_scraper(results, api, formatted_directories, username, api_type, paren
                 option["date_format"] = date_format
                 option["text_length"] = text_length
                 option["directory"] = download_path
+                option["preview"] = new_media["preview"]
 
                 prepared_format = prepare_reformat(option)
                 file_directory = main_helper.reformat(

@@ -270,6 +270,7 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False):
             media_db.media_id = media_id
             media_db.post_id = post_id
             media_db.link = media["links"][0]
+            media_db.preview = media.get("preview", False)
             media_db.directory = media["directory"]
             media_db.filename = media["filename"]
             media_db.media_type = media["media_type"]
@@ -318,7 +319,8 @@ def reformat(prepared_format, unformatted):
         extra_count = len("{text}")
     if "{value}" in unformatted:
         if prepared_format.price:
-            value = "Paid"
+            if not prepared_format.preview:
+                value = "Paid"
     directory = prepared_format.directory
     path = unformatted.replace("{site_name}", prepared_format.site_name)
     path = path.replace("{post_id}", post_id)

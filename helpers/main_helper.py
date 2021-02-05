@@ -206,7 +206,7 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False):
     metadata_directory = os.path.dirname(archive_path)
     os.makedirs(metadata_directory, exist_ok=True)
     cwd = os.getcwd()
-    api_type = os.path.basename(archive_path).removesuffix(".db")
+    api_type:str = os.path.basename(archive_path).removesuffix(".db")
     database_path = archive_path
     database_name = parent_type if parent_type else api_type
     database_name = database_name.lower()
@@ -251,7 +251,8 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False):
             post["price"] = 0
         post_db.price = post["price"]
         post_db.paid = post["paid"]
-        post_db.created_at = date_object
+        if date_object:
+            post_db.created_at = date_object
         database_session.add(post_db)
         for media in post["medias"]:
             if media["media_type"] == "Texts":
@@ -274,7 +275,8 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False):
             media_db.directory = media["directory"]
             media_db.filename = media["filename"]
             media_db.media_type = media["media_type"]
-            media_db.created_at = date_object
+            if date_object:
+                media_db.created_at = date_object
             database_session.add(media_db)
             print
         print
@@ -346,7 +348,7 @@ def reformat(prepared_format, unformatted):
     return directory3
 
 
-def get_directory(directories, extra_path):
+def get_directory(directories:list[str], extra_path):
     directories = format_paths(directories, extra_path)
     new_directories = []
     if not directories:
@@ -354,9 +356,9 @@ def get_directory(directories, extra_path):
     for directory in directories:
         if not os.path.isabs(directory):
             if directory:
-                fp = os.path.abspath(directory)
+                fp:str = os.path.abspath(directory)
             else:
-                fp = os.path.abspath(extra_path)
+                fp:str = os.path.abspath(extra_path)
             directory = os.path.abspath(fp)
         os.makedirs(directory, exist_ok=True)
         new_directories.append(directory)
@@ -547,11 +549,10 @@ def choose_option(subscription_list, auto_scrape: Union[str, bool]):
     return new_names
 
 
-def process_profiles(json_settings, original_sessions, site_name, original_api):
+def process_profiles(json_settings, session_manager, site_name, original_api):
     apis = []
     profile_directories = json_settings["profile_directories"]
     for profile_directory in profile_directories:
-        sessions = copy.deepcopy(original_sessions)
         x = os.path.join(profile_directory, site_name)
         x = os.path.abspath(x)
         os.makedirs(x, exist_ok=True)
@@ -566,7 +567,7 @@ def process_profiles(json_settings, original_sessions, site_name, original_api):
             user_auth_filepath = os.path.join(
                 user_profile, "auth.json")
             api = original_api.start(
-                sessions)
+                session_manager)
             if os.path.exists(user_auth_filepath):
                 temp_json_auth = ujson.load(
                     open(user_auth_filepath))

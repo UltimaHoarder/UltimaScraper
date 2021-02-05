@@ -45,7 +45,6 @@ class database_collection(object):
         self.message_database = messages
 
     def chooser(self, database_name):
-        database = None
         if database_name == "stories":
             database = self.stories_database
         elif database_name == "posts":
@@ -53,6 +52,7 @@ class database_collection(object):
         elif database_name == "messages":
             database = self.message_database
         else:
-            print("ERROR")
+            database = None
+            print("DB CHOOSER ERROR")
             input()
         return database

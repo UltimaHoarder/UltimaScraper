@@ -288,7 +288,7 @@ def profile_scraper(api: start, site_name, api_type, username, base_directory):
         if not overwrite_files:
             if os.path.isfile(download_path):
                 continue
-        session = api.sessions[0]
+        session = api.session_manager.sessions[0]
         r = api.json_request(media_link, session, stream=True,
                              json_format=False, sleep=False)
         if not isinstance(r, requests.Response):
@@ -300,7 +300,7 @@ def profile_scraper(api: start, site_name, api_type, username, base_directory):
             break
 
 
-def paid_content_scraper(apis: list[start]):
+def paid_content_scraper(apis: list[start], identifiers=[]):
     for api in apis:
         paid_contents = []
         paid_contents = api.get_paid_content()
@@ -326,13 +326,14 @@ def paid_content_scraper(apis: list[start]):
             api_type = paid_content["responseType"].capitalize()+"s"
             api_media = getattr(subscription.scraped, api_type)
             api_media.append(paid_content)
-            break
         count = 0
         max_count = len(authed.subscriptions)
         for subscription in authed.subscriptions:
+            if any(subscription.username != x for x in identifiers):
+                continue
             string = f"Scraping - {subscription.username} | {count} / {max_count}"
             print(string)
-            subscription.sessions = api.sessions
+            subscription.sessions = api.session_manager.sessions
             username = subscription.username
             site_name = "OnlyFans"
             media_type = format_media_types()
@@ -353,8 +354,10 @@ def paid_content_scraper(apis: list[start]):
                 formatted_metadata_directory = formatted_directories["metadata_directory"]
                 metadata_path = os.path.join(
                     formatted_metadata_directory, api_type+".db")
-                new_metadata = media_scraper(paid_content, api,
-                                             formatted_directories, username, api_type)
+                unrefined_set = media_scraper(paid_content, api,
+                                              formatted_directories, username, api_type)
+                unrefined_set = [x for x in [unrefined_set]]
+                new_metadata = main_helper.format_media_set(unrefined_set)
                 new_metadata = new_metadata["content"]
                 if new_metadata:
                     api_path = os.path.join(api_type, "")
@@ -403,7 +406,7 @@ def process_mass_messages(api: start, subscription, metadata_directory, mass_mes
         print
     global_found = []
     chats = []
-    session = api.sessions[0]
+    session = api.session_manager.sessions[0]
     salt = json_global_settings["random_string"]
     encoded = f"{session.ip}{salt}"
     encoded = encoded.encode('utf-8')
@@ -706,9 +709,6 @@ def prepare_scraper(api: start, site_name, item):
             master_set2, [api], [formatted_directories], [username], [api_type], [parent_type]))
         unrefined_set = [x for x in unrefined_set]
     new_metadata = main_helper.format_media_set(unrefined_set)
-    if not new_metadata:
-        print("No "+api_type+" Found.")
-        delattr(subscription.scraped, api_type)
     if new_metadata:
         new_metadata = new_metadata["content"]
         metadata_path = os.path.join(
@@ -719,6 +719,10 @@ def prepare_scraper(api: start, site_name, item):
         new_metadata = new_metadata + old_metadata
         w = process_metadata(metadata_path, formatted_directories, new_metadata,
                              site_name, parent_type, api_path, subscription, delete_metadatas)
+    else:
+        print("No "+api_type+" Found.")
+        delattr(subscription.scraped, api_type)
+
     return True
 
 
@@ -863,11 +867,11 @@ def compare_metadata(new_metadata: create_metadata, old_metadata: create_metadat
 # Scrapes the API for content
 
 
-def media_scraper(results, api, formatted_directories, username, api_type, parent_type=""):
+def media_scraper(results, api:start, formatted_directories, username, api_type, parent_type=""):
     new_set = {}
     new_set["content"] = []
     directories = []
-    session = api.sessions[0]
+    session = api.session_manager.sessions[0]
     if api_type == "Stories":
         if "stories" in results:
             items = results["stories"]
@@ -1101,7 +1105,7 @@ class download_media():
         if not overwrite_files and media.downloaded:
             return
         count = 0
-        sessions = [x for x in api.sessions if media.link in x.links]
+        sessions = [x for x in api.session_manager.sessions if media.link in x.links]
         if not sessions:
             return
         session = sessions[0]
@@ -1111,7 +1115,7 @@ class download_media():
             def choose_link(session, links):
                 for link in links:
                     r = api.json_request(link, session, "HEAD",
-                                         stream=True, json_format=False)
+                                         stream=False, json_format=False)
                     if not isinstance(r, requests.Response):
                         continue
 

@@ -1,4 +1,5 @@
 
+from itertools import product
 import os
 import timeit
 from typing import Union
@@ -12,8 +13,18 @@ from apis.onlyfans import onlyfans as OnlyFans
 from apis.starsavn import starsavn as StarsAVN
 import modules.patreon as m_patreon
 import modules.starsavn as m_starsavn
+import time
 
 api_helper = OnlyFans.api_helper
+
+# test_ip = None
+# def multi(link,session):
+#     global test_ip
+#     r = session.get(link)
+#     text = r.text.strip('\n')
+#     if test_ip == None:
+#         test_ip = text
+#     return text
 
 
 def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=True):
@@ -39,6 +50,24 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
     if not original_sessions:
         print("Unable to create session")
         return False
+    session_manager = api_helper.session_manager()
+    session_manager.sessions = original_sessions
+    session_manager = api_helper.stimulate_sessions(session_manager)
+
+    # offset_array = ["https://checkip.amazonaws.com"]*2
+    # pool = api_helper.multiprocessing()
+    # count = 60
+    # while True:
+    #     test_ip2 = pool.starmap(multi, product(
+    #         offset_array, [original_sessions[0]]))[0]
+    #     if test_ip == test_ip2:
+    #         print(f"SAME IP: {test_ip2} - WAITING {count} second(s)")
+    #         time.sleep(count)
+    #     else:
+    #         print(f"NEW IP: {test_ip2} - TIME: {count}")
+    #         print
+    #     count+=1
+    #     print
     archive_time = timeit.default_timer()
     if site_name_lower == "onlyfans":
         site_name = "OnlyFans"
@@ -46,10 +75,10 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
         module = m_onlyfans
         if not apis:
             apis = main_helper.process_profiles(
-                json_settings, original_sessions, site_name, original_api)
+                json_settings, session_manager, site_name, original_api)
         else:
             for api in apis:
-                api.sessions = original_sessions
+                api.session_manager = session_manager
         subscription_array = []
         auth_count = -1
         jobs = json_site_settings["jobs"]
@@ -81,7 +110,7 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
             subscription_array, "usernames")
         if jobs["scrape_paid_content"]:
             print("Scraping Paid Content")
-            paid_content = module.paid_content_scraper(apis)
+            paid_content = module.paid_content_scraper(apis, identifiers)
         if jobs["scrape_names"]:
             print("Scraping Subscriptions")
             names = main_helper.process_names(
@@ -134,4 +163,5 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
     stop_time = str(
         int(timeit.default_timer() - archive_time) / 60)[:4]
     print('Archive Completed in ' + stop_time + ' Minutes')
+    session_manager.kill = True
     return apis

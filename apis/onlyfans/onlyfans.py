@@ -466,15 +466,15 @@ class create_subscription():
 
 
 class start():
-    def __init__(self, sessions=[], custom_request=callable) -> None:
-        sessions = api_helper.copy_sessions(sessions)
-        self.sessions = sessions
+    def __init__(self, session_manager:api_helper.session_manager, custom_request=callable) -> None:
+        # sessions = api_helper.copy_sessions(sessions)
+        self.session_manager = session_manager
         self.auth = create_auth(init=True)
         self.custom_request = custom_request
         self.max_threads = -1
         self.lists = None
         self.links = links
-        for session in sessions:
+        for session in session_manager.sessions:
             session.headers["access-token"] = ""
             session.headers["sign"] = ""
             session.headers["time"] = ""
@@ -527,7 +527,7 @@ class start():
             {'name': f'auth_uniq_{auth_id}', 'value': auth_items.auth_uniq_},
             {'name': f'auth_uid_{auth_id}', 'value': None},
         ]
-        for session in self.sessions:
+        for session in self.session_manager.sessions:
             a = [session, link, auth_items.sess, user_agent]
             session = create_sign(*a)
             session.headers["user-agent"] = user_agent
@@ -566,7 +566,7 @@ class start():
                                 code = input("Enter 2FA Code\n")
                                 data = {'code': code, 'rememberMe': True}
                                 r = api_helper.json_request(link,
-                                                            self.sessions[0], method="PUT", data=data)
+                                                            self.session_manager.sessions[0], method="PUT", data=data)
                                 if "error" in r:
                                     count += 1
                                 else:
@@ -591,9 +591,9 @@ class start():
     def get_authed(self):
         if not self.auth.active:
             link = links().customer
-            r = api_helper.json_request(link, self.sessions[0],  sleep=False)
+            r = api_helper.json_request(link, self.session_manager.sessions[0],  sleep=False)
             if r:
-                r["sessions"] = self.sessions
+                r["sessions"] = self.session_manager.sessions
         else:
             r = self.auth
         return r
@@ -603,7 +603,7 @@ class start():
 
     def get_user(self, identifier):
         link = links(identifier).users
-        session = self.sessions[0]
+        session = self.session_manager.sessions[0]
         results = api_helper.json_request(link=link, session=session)
         return results
 
@@ -615,7 +615,7 @@ class start():
             subscriptions = authed.subscriptions
             return subscriptions
         link = links(global_limit=limit, global_offset=offset).subscriptions
-        session = self.sessions[0]
+        session = self.session_manager.sessions[0]
         ceil = math.ceil(authed.subscribesCount / limit)
         a = list(range(ceil))
         offset_array = []
@@ -633,7 +633,7 @@ class start():
             json_authed = json_authed | self.get_user(authed.username)
 
             subscription = create_subscription(json_authed)
-            subscription.sessions = self.sessions
+            subscription.sessions = self.session_manager.sessions
             subscription = [subscription]
             results.append(subscription)
         if not identifiers:
@@ -652,7 +652,7 @@ class start():
                 subscriptions = [
                     subscription for subscription in subscriptions if "error" != subscription]
                 for subscription in subscriptions:
-                    subscription["sessions"] = self.sessions
+                    subscription["sessions"] = self.session_manager.sessions
                     if extra_info:
                         subscription2 = self.get_user(subscription["username"])
                         subscription = subscription | subscription2
@@ -674,7 +674,7 @@ class start():
                     continue
                 subscription = create_subscription(result)
                 subscription.link = f"https://onlyfans.com/{subscription.username}"
-                subscription.sessions = self.sessions
+                subscription.sessions = self.session_manager.sessions
                 results.append([subscription])
                 print
             print
@@ -702,7 +702,7 @@ class start():
             return subscriptions
         link = links(global_limit=limit,
                      global_offset=offset).lists
-        session = self.sessions[0]
+        session = self.session_manager.sessions[0]
         results = api_helper.json_request(link=link, session=session)
         authed.lists = results
         return results
@@ -713,7 +713,7 @@ class start():
             return
         link = links(identifier, global_limit=limit,
                      global_offset=offset).lists_users
-        session = self.sessions[0]
+        session = self.session_manager.sessions[0]
         results = api_helper.json_request(link=link, session=session)
         if len(results) >= limit and not check:
             results2 = self.get_lists_users(
@@ -732,7 +732,7 @@ class start():
                 return result
         link = links(global_limit=limit,
                      global_offset=offset).list_chats
-        session = self.sessions[0]
+        session = self.session_manager.sessions[0]
         results = api_helper.json_request(link=link, session=session)
         items = results["list"]
         if resume:
@@ -766,7 +766,7 @@ class start():
                 return result
         link = links(global_limit=limit,
                      global_offset=offset).mass_messages_api
-        session = self.sessions[0]
+        session = self.session_manager.sessions[0]
         results = api_helper.json_request(link=link, session=session)
         items = results.get("list", [])
         if not items:
@@ -802,7 +802,7 @@ class start():
                 return result
         link = links(global_limit=limit,
                      global_offset=offset).paid_api
-        session = self.sessions[0]
+        session = self.session_manager.sessions[0]
         results = api_helper.json_request(link=link, session=session)
         if len(results) >= limit and not check:
             results2 = self.get_paid_content(limit=limit, offset=limit+offset)

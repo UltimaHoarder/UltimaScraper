@@ -11,6 +11,7 @@ from requests.adapters import HTTPAdapter
 from multiprocessing.dummy import Pool as ThreadPool
 from itertools import product
 from os.path import dirname as up
+import threading
 
 
 path = up(up(os.path.realpath(__file__)))
@@ -97,6 +98,26 @@ def multiprocessing():
     else:
         pool = ThreadPool(max_threads)
     return pool
+
+
+class session_manager():
+    def __init__(self) -> None:
+        self.sessions = []
+        self.kill = False
+
+
+def stimulate_sessions(session_manager) -> session_manager:
+    # Some proxies switch IP addresses if no request have been made for x amount of seconds
+    def do(session_manager):
+        while not session_manager.kill:
+            for session in session_manager.sessions:
+                r = session.get("https://checkip.amazonaws.com")
+                text = r.text.strip('\n')
+                # print(f"Stimulating {text}")
+                time.sleep(10)
+    t1 = threading.Thread(target=do, args=[session_manager])
+    t1.start()
+    return session_manager
 
 
 def create_session(settings={}, custom_proxy="", test_ip=True):
@@ -223,10 +244,10 @@ def scrape_check(links, sessions, api_type):
             continue
         items = assign_session(links, sessions)
         pool = multiprocessing()
-        result = pool.starmap(multi, product(
+        results = pool.starmap(multi, product(
             items))
-        media_set.extend(result)
-        faulty = [x for x in result if not x]
+        media_set.extend(results)
+        faulty = [x for x in results if not x]
         if not faulty:
             print("Found: "+api_type)
             break
@@ -238,6 +259,6 @@ def scrape_check(links, sessions, api_type):
             split_by = 2
             print("Missing "+str(num)+" Posts... Retrying...")
             links = restore_missing_data(
-                links, result, split_by)
+                links, results, split_by)
     media_set = [x for x in media_set]
     return media_set

@@ -5,12 +5,12 @@ from datetime import datetime
 import os
 from itertools import product
 import traceback
-
+from database.databases.stories import stories
 
 def fix_directories(posts, all_files, Session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
     new_directories = []
 
-    def fix_directories(post):
+    def fix_directories(post:stories.api_table):
         final_type = ""
         if parent_type:
             final_type = f"{api_type}{os.path.sep}{parent_type}"
@@ -25,7 +25,7 @@ def fix_directories(posts, all_files, Session, folder, site_name, parent_type, a
             if media.link:
                 path = urlparse.urlparse(media.link).path
             else:
-                path = media.filename
+                path:str = media.filename
             new_filename = os.path.basename(path)
             filename, ext = os.path.splitext(new_filename)
             ext = ext.replace(".", "")

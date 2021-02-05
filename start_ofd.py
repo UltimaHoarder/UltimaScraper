@@ -37,7 +37,7 @@ if __name__ == "__main__":
                 x = int(x)
                 site_name = site_names[x]
             site_name_lower = site_name.lower()
-            main_datascraper.start_datascraper(json_config, site_name_lower)
+            apis = main_datascraper.start_datascraper(json_config, site_name_lower)
             if exit_on_completion:
                 print("Now exiting.")
                 exit(0)

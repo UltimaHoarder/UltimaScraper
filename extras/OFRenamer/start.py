@@ -1,4 +1,5 @@
 #!/usr/bin/env python3
+from sqlalchemy.orm.scoping import scoped_session
 from database.models.api_table import api_table
 import urllib.parse as urlparse
 import shutil
@@ -7,7 +8,7 @@ import os
 from itertools import product
 import traceback
 
-def fix_directories(posts, all_files, Session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
+def fix_directories(posts, all_files, Session:scoped_session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
     new_directories = []
 
     def fix_directories(post:api_table):
@@ -96,7 +97,7 @@ def fix_directories(posts, all_files, Session, folder, site_name, parent_type, a
             media.filename = os.path.basename(new_filepath)
             database_session.commit()
             new_directories.append(os.path.dirname(new_filepath))
-        database_session.close()
+        Session.remove()
     pool = multiprocessing()
     pool.starmap(fix_directories, product(
         posts))

@@ -198,9 +198,7 @@ class create_auth():
         self.archived_stories = {}
         self.mass_messages = []
         self.paid_content = {}
-        self.sessions = option.get("sessions", [])
-        for session in self.sessions:
-            session.links = []
+        self.session_manager = option.get("session_manager")
         self.auth_details = auth_details()
         self.profile_directory = option.get("profile_directory", "")
         self.active = False
@@ -265,7 +263,7 @@ class create_subscription():
         self.links = content_types()
         self.scraped = content_types()
         self.auth_count = None
-        self.sessions = option.get("sessions")
+        self.session_manager:api_helper.session_manager = option.get("session_manager")
         self.download_info = {}
 
         # Modify self
@@ -311,7 +309,7 @@ class create_subscription():
             return []
         link = [links(identifier=self.id, global_limit=limit,
                       global_offset=offset).stories_api]
-        results = api_helper.scrape_check(link, self.sessions, api_type)
+        results = api_helper.scrape_check(link, self.session_manager, api_type)
         self.scraped.Stories = results
         return results
 
@@ -329,7 +327,7 @@ class create_subscription():
         else:
             link = links(identifier=hightlight_id, global_limit=limit,
                          global_offset=offset).highlight
-        session = self.sessions[0]
+        session = self.session_manager.sessions[0]
         results = api_helper.json_request(link=link, session=session)
         return results
 
@@ -340,7 +338,7 @@ class create_subscription():
             if result:
                 return result
         links = self.links.Posts
-        results = api_helper.scrape_check(links, self.sessions, api_type)
+        results = api_helper.scrape_check(links, self.session_manager, api_type)
         self.scraped.Posts = results
         return results
 
@@ -358,7 +356,7 @@ class create_subscription():
         def process():
             link = links(identifier=identifier, global_limit=limit,
                          global_offset=offset).message_api
-            session = self.sessions[0]
+            session = self.session_manager.sessions[0]
             results = api_helper.json_request(link=link, session=session)
             item = {}
             item["session"] = session
@@ -395,7 +393,7 @@ class create_subscription():
     def get_message_by_id(self, identifier=None, identifier2=None, refresh=True, limit=10, offset=0):
         link = links(identifier=identifier, identifier2=identifier2, global_limit=limit,
                      global_offset=offset).message_by_id
-        session = self.sessions[0]
+        session = self.session_manager.sessions[0]
         results = api_helper.json_request(link=link, session=session)
         item = {}
         item["session"] = session
@@ -410,7 +408,7 @@ class create_subscription():
                 return result
         link = links(global_limit=limit,
                      global_offset=offset).archived_stories
-        session = self.sessions[0]
+        session = self.session_manager.sessions[0]
         results = api_helper.json_request(link=link, session=session)
         self.archived_stories = results
         return results
@@ -424,7 +422,7 @@ class create_subscription():
         results = []
         links = self.links.Archived.Posts
         if links:
-            results = api_helper.scrape_check(links, self.sessions, api_type)
+            results = api_helper.scrape_check(links, self.session_manager, api_type)
         self.scraped.Archived.Posts = results
         return results
 
@@ -447,7 +445,7 @@ class create_subscription():
             identifier = parse.urljoin(identifier, "messages")
         link = links(identifier=identifier, text=text, global_limit=limit,
                      global_offset=offset).search_chat
-        session = self.sessions[0]
+        session = self.session_manager.sessions[0]
         results = api_helper.json_request(link=link, session=session)
         return results
 
@@ -457,7 +455,7 @@ class create_subscription():
         text = parse.quote_plus(text)
         link = links(identifier=identifier, text=text, global_limit=limit,
                      global_offset=offset).search_messages
-        session = self.sessions[0]
+        session = self.session_manager.sessions[0]
         results = api_helper.json_request(link=link, session=session)
         return results
 
@@ -593,7 +591,7 @@ class start():
             link = links().customer
             r = api_helper.json_request(link, self.session_manager.sessions[0],  sleep=False)
             if r:
-                r["sessions"] = self.session_manager.sessions
+                r["session_manager"] = self.session_manager
         else:
             r = self.auth
         return r
@@ -633,7 +631,7 @@ class start():
             json_authed = json_authed | self.get_user(authed.username)
 
             subscription = create_subscription(json_authed)
-            subscription.sessions = self.session_manager.sessions
+            subscription.session_manager = self.session_manager
             subscription = [subscription]
             results.append(subscription)
         if not identifiers:
@@ -652,7 +650,7 @@ class start():
                 subscriptions = [
                     subscription for subscription in subscriptions if "error" != subscription]
                 for subscription in subscriptions:
-                    subscription["sessions"] = self.session_manager.sessions
+                    subscription["session_manager"] = self.session_manager
                     if extra_info:
                         subscription2 = self.get_user(subscription["username"])
                         subscription = subscription | subscription2
@@ -674,7 +672,7 @@ class start():
                     continue
                 subscription = create_subscription(result)
                 subscription.link = f"https://onlyfans.com/{subscription.username}"
-                subscription.sessions = self.session_manager.sessions
+                subscription.session_manager = self.session_manager
                 results.append([subscription])
                 print
             print

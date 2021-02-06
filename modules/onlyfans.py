@@ -24,6 +24,7 @@ import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import sessionmaker
 from helpers.main_helper import export_data, import_archive
+import time
 
 multiprocessing = main_helper.multiprocessing
 
@@ -101,19 +102,6 @@ def account_setup(api: start, identifiers: list = [], jobs: dict = {}):
         if identifiers or jobs["scrape_names"]:
             subscriptions += manage_subscriptions(
                 api, -1, identifiers=identifiers)
-        # collection = []
-        # for subscription in subscriptions:
-        #     delattr(subscription,"download_info")
-        #     delattr(subscription,"sessions")
-        #     delattr(subscription,"scraped")
-        #     delattr(subscription,"is_me")
-        #     delattr(subscription,"links")
-        #     collection.append(subscription)
-        # collection = jsonpickle.encode(
-        #     collection, unpicklable=False)
-        # collection = jsonpickle.decode(collection)
-        # export_archive(collection, metadata_filepath,
-        #                 json_settings)
         status = True
     return status, subscriptions
 
@@ -867,7 +855,7 @@ def compare_metadata(new_metadata: create_metadata, old_metadata: create_metadat
 # Scrapes the API for content
 
 
-def media_scraper(results, api:start, formatted_directories, username, api_type, parent_type=""):
+def media_scraper(results, api: start, formatted_directories, username, api_type, parent_type=""):
     new_set = {}
     new_set["content"] = []
     directories = []
@@ -1105,7 +1093,8 @@ class download_media():
         if not overwrite_files and media.downloaded:
             return
         count = 0
-        sessions = [x for x in api.session_manager.sessions if media.link in x.links]
+        sessions = [
+            x for x in api.session_manager.sessions if media.link in x.links]
         if not sessions:
             return
         session = sessions[0]
@@ -1117,6 +1106,7 @@ class download_media():
                     r = api.json_request(link, session, "HEAD",
                                          stream=False, json_format=False)
                     if not isinstance(r, requests.Response):
+                        # print(f"WRONG\n{link}")
                         continue
 
                     header = r.headers
@@ -1154,7 +1144,7 @@ class download_media():
                 continue
             main_helper.format_image(download_path, timestamp)
             link_string = f"Link: {link}"
-            path_string = f"Link: {download_path}"
+            path_string = f"Filepath: {download_path}"
             print(link_string)
             print(path_string)
             media.downloaded = True

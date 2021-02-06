@@ -1,16 +1,16 @@
 #!/usr/bin/env python3
+from database.models.api_table import api_table
 import urllib.parse as urlparse
 import shutil
 from datetime import datetime
 import os
 from itertools import product
 import traceback
-from database.databases.stories import stories
 
 def fix_directories(posts, all_files, Session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
     new_directories = []
 
-    def fix_directories(post:stories.api_table):
+    def fix_directories(post:api_table):
         final_type = ""
         if parent_type:
             final_type = f"{api_type}{os.path.sep}{parent_type}"

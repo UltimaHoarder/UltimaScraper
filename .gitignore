@@ -146,6 +146,7 @@ $RECYCLE.BIN/
 
 # Project Specific
 .profiles
+.metadatas
 .sites
 *.log
 .settings/*

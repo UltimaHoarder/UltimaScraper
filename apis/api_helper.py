@@ -111,10 +111,18 @@ def stimulate_sessions(session_manager) -> session_manager:
     def do(session_manager):
         while not session_manager.kill:
             for session in session_manager.sessions:
-                r = session.get("https://checkip.amazonaws.com")
-                text = r.text.strip('\n')
-                # print(f"Stimulating {text}")
-                time.sleep(10)
+                text = False
+                for link in session.links:
+                    r = session.head(link)
+                    if r:
+                        text = True
+                    else:
+                        print
+                if text:
+                    # print(f"Stimulating {text}")
+                    time.sleep(10)
+                else:
+                    time.sleep(1)
     t1 = threading.Thread(target=do, args=[session_manager])
     t1.start()
     return session_manager
@@ -143,6 +151,7 @@ def create_session(settings={}, custom_proxy="", test_ip=True):
             ip = r.text.strip()
             print("Session IP: "+ip+"\n")
             setattr(session, "ip", ip)
+            setattr(session, "links", [])
         return session
     sessions = []
     settings = set_settings(settings)
@@ -220,10 +229,10 @@ def restore_missing_data(master_set2, media_set, split_by):
     return new_set
 
 
-def scrape_check(links, sessions, api_type):
-    def multi(item):
+def scrape_check(links, session_manager:session_manager, api_type):
+    def multi(item,session_manager):
         link = item["link"]
-        session = sessions[item["count"]]
+        session = session_manager.sessions[item["count"]]
         item = {}
         result = json_request(link, session)
         # if result:
@@ -242,10 +251,10 @@ def scrape_check(links, sessions, api_type):
         print("Scrape Attempt: "+str(attempt+1)+"/"+str(max_attempts))
         if not links:
             continue
-        items = assign_session(links, sessions)
+        items = assign_session(links, session_manager.sessions)
         pool = multiprocessing()
         results = pool.starmap(multi, product(
-            items))
+            items, [session_manager]))
         media_set.extend(results)
         faulty = [x for x in results if not x]
         if not faulty:

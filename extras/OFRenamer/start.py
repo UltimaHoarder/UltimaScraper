@@ -19,8 +19,9 @@ def fix_directories(posts, all_files, Session:scoped_session, folder, site_name,
         final_type = final_type if final_type else api_type
         database_session = Session()
         post_id = post.post_id
-        result = database_session.query(folder.media_table)
-        media_db = result.filter_by(post_id=post_id).all()
+        # result = database_session.query(folder.media_table)
+        # media_db = result.filter_by(post_id=post_id).all()
+        media_db = database_session.query(folder.media_table).filter_by(post_id=post_id).all()
         for media in media_db:
             media_id = media.media_id
             if media.link:

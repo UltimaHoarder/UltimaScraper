@@ -96,8 +96,8 @@ def fix_directories(posts, all_files, Session:scoped_session, folder, site_name,
                 pass
             media.directory = file_directory
             media.filename = os.path.basename(new_filepath)
-            database_session.commit()
             new_directories.append(os.path.dirname(new_filepath))
+        Session.commit()
         Session.remove()
     pool = multiprocessing()
     pool.starmap(fix_directories, product(

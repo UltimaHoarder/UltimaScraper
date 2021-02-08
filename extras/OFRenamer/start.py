@@ -1,6 +1,7 @@
 #!/usr/bin/env python3
 from sqlalchemy.orm.scoping import scoped_session
 from database.models.api_table import api_table
+from database.models.media_table import media_table
 import urllib.parse as urlparse
 import shutil
 from datetime import datetime
@@ -12,18 +13,14 @@ import traceback
 def fix_directories(posts, all_files, Session: scoped_session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
     new_directories = []
 
-    def fix_directories(post: api_table):
+    def fix_directories(post: api_table, media_db: list[media_table]):
         final_type = ""
         if parent_type:
             final_type = f"{api_type}{os.path.sep}{parent_type}"
             print
         final_type = final_type if final_type else api_type
-        database_session = Session()
         post_id = post.post_id
-        # result = database_session.query(folder.media_table)
-        # media_db = result.filter_by(post_id=post_id).all()
-        media_db = database_session.query(
-            folder.media_table).filter_by(post_id=post_id).all()
+        media_db = [x for x in media_db if x.post_id == post_id]
         for media in media_db:
             media_id = media.media_id
             if media.link:
@@ -97,13 +94,13 @@ def fix_directories(posts, all_files, Session: scoped_session, folder, site_name
             media.directory = file_directory
             media.filename = os.path.basename(new_filepath)
             new_directories.append(os.path.dirname(new_filepath))
-        Session.commit()
-        Session.remove()
-    # pool = multiprocessing()
-    # pool.starmap(fix_directories, product(
-    #     posts))
-    for post in posts:
-        fix_directories(post)
+    pool = multiprocessing()
+    database_session = Session()
+    result = database_session.query(folder.media_table)
+    media_db = result.all()
+    pool.starmap(fix_directories, product(
+        posts, [media_db]))
+    database_session.commit()
     new_directories = list(set(new_directories))
     return posts, new_directories
 

@@ -423,7 +423,16 @@ class create_subscription():
         links = self.links.Archived.Posts
         if links:
             results = api_helper.scrape_check(links, self.session_manager, api_type)
-        self.scraped.Archived.Posts = results
+        try:
+            self.scraped.Archived.Posts = results
+        except AttributeError:
+            # dirty fix to #789
+            class archived_types(content_types):
+                def __init__(self) -> None:
+                    self.Posts = []
+
+            self.scraped.Archived = archived_types()
+            self.scraped.Archived.Posts = results
         return results
 
     def get_archived(self, api):

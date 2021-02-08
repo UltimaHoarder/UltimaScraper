@@ -8,10 +8,11 @@ import os
 from itertools import product
 import traceback
 
-def fix_directories(posts, all_files, Session:scoped_session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
+
+def fix_directories(posts, all_files, Session: scoped_session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
     new_directories = []
 
-    def fix_directories(post:api_table):
+    def fix_directories(post: api_table):
         final_type = ""
         if parent_type:
             final_type = f"{api_type}{os.path.sep}{parent_type}"
@@ -21,13 +22,14 @@ def fix_directories(posts, all_files, Session:scoped_session, folder, site_name,
         post_id = post.post_id
         # result = database_session.query(folder.media_table)
         # media_db = result.filter_by(post_id=post_id).all()
-        media_db = database_session.query(folder.media_table).filter_by(post_id=post_id).all()
+        media_db = database_session.query(
+            folder.media_table).filter_by(post_id=post_id).all()
         for media in media_db:
             media_id = media.media_id
             if media.link:
                 path = urlparse.urlparse(media.link).path
             else:
-                path:str = media.filename
+                path: str = media.filename
             new_filename = os.path.basename(path)
             filename, ext = os.path.splitext(new_filename)
             ext = ext.replace(".", "")
@@ -58,8 +60,6 @@ def fix_directories(posts, all_files, Session:scoped_session, folder, site_name,
             file_directory = main_helper.reformat(
                 prepared_format, file_directory_format)
             prepared_format.directory = file_directory
-            if post_id == 79521602:
-                print
             old_filepath = ""
             old_filepaths = [
                 x for x in all_files if media.filename in os.path.basename(x)]
@@ -99,9 +99,11 @@ def fix_directories(posts, all_files, Session:scoped_session, folder, site_name,
             new_directories.append(os.path.dirname(new_filepath))
         Session.commit()
         Session.remove()
-    pool = multiprocessing()
-    pool.starmap(fix_directories, product(
-        posts))
+    # pool = multiprocessing()
+    # pool.starmap(fix_directories, product(
+    #     posts))
+    for post in posts:
+        fix_directories(post)
     new_directories = list(set(new_directories))
     return posts, new_directories
 
@@ -144,9 +146,9 @@ def start(Session, parent_type, api_type, api_path, site_name, subscription, fol
         x = [os.path.join(root, x) for x in files]
         all_files.extend(x)
 
+    database_session.close()
     fixed, new_directories = fix_directories(
         result, all_files, Session, folder, site_name, parent_type, api_type, username, root_directory, json_settings)
-    database_session.close()
     return metadata
 
 

@@ -6,18 +6,18 @@ import urllib.parse as urlparse
 import shutil
 from datetime import datetime
 import os
-from itertools import product
+from itertools import chain, product
 import traceback
 
 
-def fix_directories(posts, all_files, Session: scoped_session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
+def fix_directories(posts, all_files, database_session: scoped_session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
     new_directories = []
 
     def fix_directories(post: api_table, media_db: list[media_table]):
+        delete_rows = []
         final_type = ""
         if parent_type:
             final_type = f"{api_type}{os.path.sep}{parent_type}"
-            print
         final_type = final_type if final_type else api_type
         post_id = post.post_id
         media_db = [x for x in media_db if x.post_id == post_id]
@@ -67,6 +67,10 @@ def fix_directories(posts, all_files, Session: scoped_session, folder, site_name
             if old_filepaths:
                 old_filepath = old_filepaths[0]
             print
+            # if media_id == 168602584:
+            #     print
+            # if media_id == 1306951815:
+            #     print
             new_filepath = main_helper.reformat(
                 prepared_format, filename_format)
             if old_filepath and old_filepath != new_filepath:
@@ -78,7 +82,13 @@ def fix_directories(posts, all_files, Session: scoped_session, folder, site_name
                     moved = None
                     while not moved:
                         try:
+                            # if media_id == 1306951815:
+                            #     print
+                            found_dupes = [
+                                x for x in media_db if x.filename == new_filename and not x.id != media.id]
+                            delete_rows.extend(found_dupes)
                             moved = shutil.move(old_filepath, new_filepath)
+                            print
                         except OSError as e:
                             print(traceback.format_exc())
                     print
@@ -94,12 +104,16 @@ def fix_directories(posts, all_files, Session: scoped_session, folder, site_name
             media.directory = file_directory
             media.filename = os.path.basename(new_filepath)
             new_directories.append(os.path.dirname(new_filepath))
-    pool = multiprocessing()
-    database_session = Session()
+        return delete_rows
     result = database_session.query(folder.media_table)
     media_db = result.all()
-    pool.starmap(fix_directories, product(
+    pool = multiprocessing()
+    delete_rows = pool.starmap(fix_directories, product(
         posts, [media_db]))
+    delete_rows = list(chain(*delete_rows))
+    for delete_row in delete_rows:
+        database_session.query(folder.media_table).filter(
+            folder.media_table.id == delete_row.id).delete()
     database_session.commit()
     new_directories = list(set(new_directories))
     return posts, new_directories
@@ -143,9 +157,9 @@ def start(Session, parent_type, api_type, api_path, site_name, subscription, fol
         x = [os.path.join(root, x) for x in files]
         all_files.extend(x)
 
-    database_session.close()
     fixed, new_directories = fix_directories(
-        result, all_files, Session, folder, site_name, parent_type, api_type, username, root_directory, json_settings)
+        result, all_files, database_session, folder, site_name, parent_type, api_type, username, root_directory, json_settings)
+    database_session.close()
     return metadata
 
 

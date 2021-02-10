@@ -1159,10 +1159,11 @@ class download_media():
                 new_metadata = main_helper.format_media_set(unrefined_set)
                 new_metadata = new_metadata["content"]
                 found_post = main_helper.format_media_set(new_metadata)
-                found_media = [x for x in found_post["medias"]
-                               if x["media_id"] == media.media_id]
-                new_link = found_media[0]["links"][0]
-                media.link = new_link
+                if found_post:
+                    found_media = [x for x in found_post["medias"]
+                                if x["media_id"] == media.media_id]
+                    new_link = found_media[0]["links"][0]
+                    media.link = new_link
                 count += 1
                 continue
             link = result[0]

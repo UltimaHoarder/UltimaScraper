@@ -134,6 +134,7 @@ class links(object):
         self.lists = f"https://onlyfans.com/api2/v2/lists?limit=100&offset=0&app-token={app_token}"
         self.lists_users = f"https://onlyfans.com/api2/v2/lists/{identifier}/users?limit=100&offset=0&query=&app-token={app_token}"
         self.list_chats = f"https://onlyfans.com/api2/v2/chats?limit=10&offset=0&order=desc&app-token={app_token}"
+        self.post_by_id = f"https://onlyfans.com/api2/v2/posts/{identifier}&app-token=33d57ade8c02dbc5a333db99ff9ae26a"
         self.message_by_id = f"https://onlyfans.com/api2/v2/chats/{identifier}/messages?limit=10&offset=0&firstId={identifier2}&order=desc&skip_users=all&skip_users_dups=1&app-token=33d57ade8c02dbc5a333db99ff9ae26a"
         self.search_chat = f"https://onlyfans.com/api2/v2/chats/{identifier}/messages/search?query={text}&app-token={app_token}"
         self.message_api = f"https://onlyfans.com/api2/v2/chats/{identifier}/messages?limit=100&offset=0&order=desc&app-token={app_token}"
@@ -263,7 +264,8 @@ class create_subscription():
         self.links = content_types()
         self.scraped = content_types()
         self.auth_count = None
-        self.session_manager:api_helper.session_manager = option.get("session_manager")
+        self.session_manager: api_helper.session_manager = option.get(
+            "session_manager")
         self.download_info = {}
 
         # Modify self
@@ -338,9 +340,22 @@ class create_subscription():
             if result:
                 return result
         links = self.links.Posts
-        results = api_helper.scrape_check(links, self.session_manager, api_type)
+        results = api_helper.scrape_check(
+            links, self.session_manager, api_type)
         self.scraped.Posts = results
         return results
+
+    def get_post(self, identifier=None, limit=10, offset=0):
+        if not identifier:
+            identifier = self.id
+        link = links(identifier=identifier, global_limit=limit,
+                     global_offset=offset).post_by_id
+        session = self.session_manager.sessions[0]
+        results = api_helper.json_request(link=link, session=session)
+        item = {}
+        item["session"] = session
+        item["result"] = results
+        return item
 
     def get_messages(self, identifier=None, resume=None, refresh=True, limit=10, offset=0):
         api_type = "messages"
@@ -391,6 +406,8 @@ class create_subscription():
         return results
 
     def get_message_by_id(self, identifier=None, identifier2=None, refresh=True, limit=10, offset=0):
+        if not identifier:
+            identifier = self.id
         link = links(identifier=identifier, identifier2=identifier2, global_limit=limit,
                      global_offset=offset).message_by_id
         session = self.session_manager.sessions[0]
@@ -422,7 +439,8 @@ class create_subscription():
         results = []
         links = self.links.Archived.Posts
         if links:
-            results = api_helper.scrape_check(links, self.session_manager, api_type)
+            results = api_helper.scrape_check(
+                links, self.session_manager, api_type)
         self.scraped.Archived.Posts = results
         return results
 
@@ -464,7 +482,7 @@ class create_subscription():
 
 
 class start():
-    def __init__(self, session_manager:api_helper.session_manager, custom_request=callable) -> None:
+    def __init__(self, session_manager: api_helper.session_manager, custom_request=callable) -> None:
         # sessions = api_helper.copy_sessions(sessions)
         self.session_manager = session_manager
         self.auth = create_auth(init=True)
@@ -589,7 +607,8 @@ class start():
     def get_authed(self):
         if not self.auth.active:
             link = links().customer
-            r = api_helper.json_request(link, self.session_manager.sessions[0],  sleep=False)
+            r = api_helper.json_request(
+                link, self.session_manager.sessions[0],  sleep=False)
             if r:
                 r["session_manager"] = self.session_manager
         else:

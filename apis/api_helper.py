@@ -91,9 +91,11 @@ def json_request(link, session, method="GET", stream=False, json_format=True, da
     return result
 
 
-def multiprocessing():
-    max_threads = global_settings["max_threads"]
-    if max_threads < 1:
+def multiprocessing(max_threads=None):
+    if not max_threads:
+        max_threads = global_settings["max_threads"]
+    max_threads2 = cpu_count()
+    if max_threads < 1 or max_threads >= max_threads2:
         pool = ThreadPool()
     else:
         pool = ThreadPool(max_threads)
@@ -103,34 +105,43 @@ def multiprocessing():
 class session_manager():
     def __init__(self) -> None:
         self.sessions = []
+        self.pool = multiprocessing()
+        self.max_threads = self.pool._processes
         self.kill = False
 
-
-def stimulate_sessions(session_manager) -> session_manager:
-    # Some proxies switch IP addresses if no request have been made for x amount of seconds
-    def do(session_manager):
-        while not session_manager.kill:
-            for session in session_manager.sessions:
-                text = False
-                for link in session.links:
-                    r = session.head(link)
-                    if r:
-                        text = True
-                    else:
-                        print
-                if text:
-                    # print(f"Stimulating {text}")
-                    time.sleep(10)
-                else:
-                    time.sleep(1)
-    t1 = threading.Thread(target=do, args=[session_manager])
-    t1.start()
-    return session_manager
+    def stimulate_sessions(self):
+        # Some proxies switch IP addresses if no request have been made for x amount of seconds
+        def do(session_manager):
+            while not session_manager.kill:
+                for session in session_manager.sessions:
+                    def process_links(link, session):
+                        r = session.get(link)
+                        text = r.text.strip("\n")
+                        if text == session.ip:
+                            print
+                        else:
+                            found_dupe = [
+                                x for x in session_manager.sessions if x.ip == text]
+                            if found_dupe:
+                                return
+                            cloned_session = copy.deepcopy(session)
+                            cloned_session.ip = text
+                            cloned_session.links = []
+                            session_manager.sessions.append(cloned_session)
+                            print(text)
+                            print
+                        return text
+                    time.sleep(62)
+                    link = "https://checkip.amazonaws.com"
+                    ip = process_links(link, session)
+                    print
+        t1 = threading.Thread(target=do, args=[self])
+        t1.start()
 
 
 def create_session(settings={}, custom_proxy="", test_ip=True):
 
-    def test_session(proxy=None, cert=None):
+    def test_session(proxy=None, cert=None, max_threads=None):
         session = requests.Session()
         proxy_type = {'http': proxy,
                       'https': proxy}
@@ -138,9 +149,8 @@ def create_session(settings={}, custom_proxy="", test_ip=True):
             session.proxies = proxy_type
             if cert:
                 session.verify = cert
-        max_threads2 = cpu_count()
         session.mount(
-            'https://', HTTPAdapter(pool_connections=max_threads2, pool_maxsize=max_threads2))
+            'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
         if test_ip:
             link = 'https://checkip.amazonaws.com'
             r = json_request(
@@ -162,7 +172,7 @@ def create_session(settings={}, custom_proxy="", test_ip=True):
         if proxies:
             pool = multiprocessing()
             sessions = pool.starmap(test_session, product(
-                proxies, [cert]))
+                proxies, [cert], [pool._processes]))
         else:
             session = test_session()
             sessions.append(session)
@@ -229,8 +239,8 @@ def restore_missing_data(master_set2, media_set, split_by):
     return new_set
 
 
-def scrape_check(links, session_manager:session_manager, api_type):
-    def multi(item,session_manager):
+def scrape_check(links, session_manager: session_manager, api_type):
+    def multi(item, session_manager):
         link = item["link"]
         session = session_manager.sessions[item["count"]]
         item = {}

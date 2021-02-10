@@ -644,6 +644,7 @@ class start():
         # Following logic is unique to creators only
         results = []
         if authed.isPerformer:
+            delattr(authed,"session_manager")
             json_authed = jsonpickle.encode(
                 authed, unpicklable=False)
             json_authed = jsonpickle.decode(json_authed)

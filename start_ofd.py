@@ -3,6 +3,7 @@ import tests.main_test as main_test
 import os
 import time
 import traceback
+import logging
 
 
 main_test.version_check()
@@ -21,6 +22,8 @@ if __name__ == "__main__":
     json_sites = json_config["supported"]
     domain = json_settings["auto_site_choice"]
     string, site_names = main_helper.module_chooser(domain, json_sites)
+    
+    # logging.basicConfig(level=logging.DEBUG, format="%(message)s")
     while True:
         try:
             if domain:

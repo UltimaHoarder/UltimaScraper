@@ -1,5 +1,6 @@
 import hashlib
 import shutil
+import timeit
 from helpers import db_helper
 from helpers.db_helper import database_collection
 from typing import Union
@@ -22,12 +23,13 @@ from mergedeep import merge, Strategy
 import sqlite3
 import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import sessionmaker
+from sqlalchemy.orm import session, sessionmaker
 from helpers.main_helper import export_data, import_archive
 import time
 
 multiprocessing = main_helper.multiprocessing
 
+site_name = "OnlyFans"
 json_config = None
 json_global_settings = None
 max_threads = -1
@@ -321,7 +323,7 @@ def paid_content_scraper(apis: list[start], identifiers=[]):
                 continue
             string = f"Scraping - {subscription.username} | {count} / {max_count}"
             print(string)
-            subscription.sessions = api.session_manager.sessions
+            subscription.session_manager = api.session_manager
             username = subscription.username
             site_name = "OnlyFans"
             media_type = format_media_types()
@@ -586,7 +588,7 @@ def process_metadata(archive_path: str, formatted_directories: dict, new_metadat
                 os.remove(old_metadata)
 
 
-def format_directories(directories, site_name, username, unformatted, locations=[], api_type="") -> dict:
+def format_directories(directories, site_name, username, unformatted, locations: list = [], api_type="") -> dict:
     x = {}
     x["profile_directory"] = ""
     x["legacy_metadatas"] = {}
@@ -1006,10 +1008,10 @@ def media_scraper(results, api: start, formatted_directories, username, api_type
                     if xlink:
                         new_media["links"].append(xlink)
                         break
-                session.links.extend(new_media["links"])
 
                 if media["type"] not in alt_media_type:
                     continue
+                session.links.extend(new_media["links"])
                 matches = [s for s in ignored_keywords if s in final_text]
                 if matches:
                     print("Matches: ", matches)
@@ -1078,18 +1080,31 @@ class download_media():
                             if location == "Texts":
                                 continue
                             media_set = v
+                            media_set_count = len(media_set)
                             string = "Download Processing\n"
-                            string += f"Name: {username} | Type: {api_type} | Count: {len(media_set)} {location} | Directory: {directory}\n"
+                            string += f"Name: {username} | Type: {api_type} | Count: {media_set_count} {location} | Directory: {directory}\n"
                             print(string)
                             pool = multiprocessing()
-                            pool.starmap(self.download, product(
-                                media_set, [api]))
+                            # fill_count = pool._processes - media_set_count
+                            # fill_count = max(0, fill_count)
+                            # if fill_count:
+                            #     media_set += ["https://cdn2.onlyfans.com"]*fill_count
+                            pool.starmap(self.prepare_download, product(
+                                media_set, [api], [api_type], [subscription]))
                         database_session.commit()
             else:
                 self.downloaded = False
 
-    def download(self, media, api):
+    def prepare_download(self, media, api, api_type, subscription: create_subscription):
         return_bool = True
+        # if isinstance(media, str):
+        #     for session in api.session_manager.sessions:
+        #         link = media
+        #         r = api.json_request(link, session, "HEAD",
+        #                              stream=False, json_format=False)
+        #         print
+        #     print
+        #     return
         if not overwrite_files and media.downloaded:
             return
         count = 0
@@ -1106,7 +1121,6 @@ class download_media():
                     r = api.json_request(link, session, "HEAD",
                                          stream=False, json_format=False)
                     if not isinstance(r, requests.Response):
-                        # print(f"WRONG\n{link}")
                         continue
 
                     header = r.headers
@@ -1117,6 +1131,38 @@ class download_media():
                     return [link, content_length]
             result = choose_link(session, links)
             if not result:
+                result_list = []
+                if api_type == "Messages":
+                    result = subscription.get_message_by_id(
+                        identifier2=media.post_id, limit=1)["result"]
+                    result_list = result.get("list")
+                    if not result_list:
+                        print
+                elif api_type == "Posts":
+                    result = subscription.get_post(media.post_id)
+                    result_list = result.get("list")
+                    if not result_list:
+                        print
+                    print
+                else:
+                    print
+                mandatory_directories = {}
+                mandatory_directories["profile_directory"] = profile_directory
+                mandatory_directories["download_directory"] = download_directory
+                mandatory_directories["metadata_directory"] = metadata_directory
+                media_type = format_media_types()
+                formatted_directories = format_directories(
+                    mandatory_directories, site_name, subscription.username, metadata_directory_format, media_type, api_type)
+                unrefined_set = media_scraper(result_list, api,
+                                              formatted_directories, subscription.username, api_type)
+                unrefined_set = [x for x in [unrefined_set]]
+                new_metadata = main_helper.format_media_set(unrefined_set)
+                new_metadata = new_metadata["content"]
+                found_post = main_helper.format_media_set(new_metadata)
+                found_media = [x for x in found_post["medias"]
+                               if x["media_id"] == media.media_id]
+                new_link = found_media[0]["links"][0]
+                media.link = new_link
                 count += 1
                 continue
             link = result[0]
@@ -1149,6 +1195,9 @@ class download_media():
             print(path_string)
             media.downloaded = True
             break
+        if not media.downloaded:
+            print
+
         return return_bool
 
 

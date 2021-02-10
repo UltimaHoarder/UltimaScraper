@@ -50,19 +50,16 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
     if not original_sessions:
         print("Unable to create session")
         return False
-    session_manager = api_helper.session_manager()
-    session_manager.sessions = original_sessions
     archive_time = timeit.default_timer()
     if site_name_lower == "onlyfans":
         site_name = "OnlyFans"
         original_api = OnlyFans
         module = m_onlyfans
         if not apis:
+            session_manager = api_helper.session_manager()
             apis = main_helper.process_profiles(
                 json_settings, session_manager, site_name, original_api)
-        else:
-            for api in apis:
-                api.session_manager = session_manager
+
         subscription_array = []
         auth_count = -1
         jobs = json_site_settings["jobs"]
@@ -74,6 +71,7 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
             subscription_list, auto_profile_choice)
         apis = [x.pop(0) for x in apis]
         for api in apis:
+            api.session_manager.sessions = original_sessions
             module.assign_vars(api.auth.auth_details, json_config,
                                json_site_settings, site_name)
             setup = False

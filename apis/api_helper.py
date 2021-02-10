@@ -165,16 +165,17 @@ def create_session(settings={}, custom_proxy="", test_ip=True):
         return session
     sessions = []
     settings = set_settings(settings)
+    pool = multiprocessing()
+    max_threads = pool._processes
     proxies = settings.proxies
     cert = settings.cert
     while not sessions:
         proxies = [custom_proxy] if custom_proxy else proxies
         if proxies:
-            pool = multiprocessing()
             sessions = pool.starmap(test_session, product(
-                proxies, [cert], [pool._processes]))
+                proxies, [cert], [max_threads]))
         else:
-            session = test_session()
+            session = test_session(max_threads=max_threads)
             sessions.append(session)
     return sessions
 

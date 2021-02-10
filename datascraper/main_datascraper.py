@@ -52,22 +52,6 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
         return False
     session_manager = api_helper.session_manager()
     session_manager.sessions = original_sessions
-    session_manager = api_helper.stimulate_sessions(session_manager)
-
-    # offset_array = ["https://checkip.amazonaws.com"]*2
-    # pool = api_helper.multiprocessing()
-    # count = 60
-    # while True:
-    #     test_ip2 = pool.starmap(multi, product(
-    #         offset_array, [original_sessions[0]]))[0]
-    #     if test_ip == test_ip2:
-    #         print(f"SAME IP: {test_ip2} - WAITING {count} second(s)")
-    #         time.sleep(count)
-    #     else:
-    #         print(f"NEW IP: {test_ip2} - TIME: {count}")
-    #         print
-    #     count+=1
-    #     print
     archive_time = timeit.default_timer()
     if site_name_lower == "onlyfans":
         site_name = "OnlyFans"
@@ -163,5 +147,4 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
     stop_time = str(
         int(timeit.default_timer() - archive_time) / 60)[:4]
     print('Archive Completed in ' + stop_time + ' Minutes')
-    session_manager.kill = True
     return apis

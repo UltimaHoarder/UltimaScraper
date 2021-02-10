@@ -27,7 +27,6 @@ import helpers.db_helper as db_helper
 from alembic.config import Config
 from alembic import command
 import traceback
-
 json_global_settings = None
 min_drive_space = 0
 webhooks = None
@@ -202,11 +201,11 @@ def legacy_database_fixer(database_path, database, database_name, database_exist
     print
 
 
-def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False):
+def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None):
     metadata_directory = os.path.dirname(archive_path)
     os.makedirs(metadata_directory, exist_ok=True)
     cwd = os.getcwd()
-    api_type:str = os.path.basename(archive_path).removesuffix(".db")
+    api_type: str = os.path.basename(archive_path).removesuffix(".db")
     database_path = archive_path
     database_name = parent_type if parent_type else api_type
     database_name = database_name.lower()
@@ -222,7 +221,7 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False):
     if not legacy_fixer:
         x = legacy_database_fixer(
             database_path, database, database_name, database_exists)
-    db_helper.run_migrations(alembic_location, database_path)
+    db_helper.run_migrations(alembic_location, database_path, api)
     print
     Session, engine = db_helper.create_database_session(database_path)
     database_session = Session()
@@ -348,7 +347,7 @@ def reformat(prepared_format, unformatted):
     return directory3
 
 
-def get_directory(directories:list[str], extra_path):
+def get_directory(directories: list[str], extra_path):
     directories = format_paths(directories, extra_path)
     new_directories = []
     if not directories:
@@ -356,9 +355,9 @@ def get_directory(directories:list[str], extra_path):
     for directory in directories:
         if not os.path.isabs(directory):
             if directory:
-                fp:str = os.path.abspath(directory)
+                fp: str = os.path.abspath(directory)
             else:
-                fp:str = os.path.abspath(extra_path)
+                fp: str = os.path.abspath(extra_path)
             directory = os.path.abspath(fp)
         os.makedirs(directory, exist_ok=True)
         new_directories.append(directory)
@@ -651,7 +650,7 @@ def create_link_group(max_threads):
 
 
 def remove_mandatory_files(files, keep=[]):
-    matches = ["desktop.ini", ".DS_store", "@eaDir"]
+    matches = ["desktop.ini", ".DS_Store", ".DS_store", "@eaDir"]
     folders = [x for x in files if x not in matches]
     if keep:
         folders = [x for x in files if x in keep]

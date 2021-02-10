@@ -28,7 +28,7 @@ def run_revisions(alembic_directory: str, database_path: str = ""):
     x = command.revision(alembic_cfg, autogenerate=True, message="content")
 
 
-def run_migrations(alembic_directory: str, database_path: str) -> None:
+def run_migrations(alembic_directory: str, database_path: str, api) -> None:
     ini_path = os.path.join(alembic_directory, "alembic.ini")
     script_location = os.path.join(alembic_directory, "alembic")
     full_database_path = f'sqlite:///{database_path}'

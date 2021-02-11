@@ -66,11 +66,6 @@ def fix_directories(posts, all_files, database_session: scoped_session, folder, 
                 print
             if old_filepaths:
                 old_filepath = old_filepaths[0]
-            print
-            # if media_id == 168602584:
-            #     print
-            # if media_id == 1306951815:
-            #     print
             new_filepath = main_helper.reformat(
                 prepared_format, filename_format)
             if old_filepath and old_filepath != new_filepath:
@@ -82,13 +77,11 @@ def fix_directories(posts, all_files, database_session: scoped_session, folder, 
                     moved = None
                     while not moved:
                         try:
-                            # if media_id == 1306951815:
-                            #     print
                             found_dupes = [
                                 x for x in media_db if x.filename == new_filename and not x.id != media.id]
                             delete_rows.extend(found_dupes)
+                            os.makedirs(os.path.dirname(new_filepath), exist_ok=True)
                             moved = shutil.move(old_filepath, new_filepath)
-                            print
                         except OSError as e:
                             print(traceback.format_exc())
                     print

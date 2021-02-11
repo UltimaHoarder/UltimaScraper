@@ -526,10 +526,11 @@ def process_legacy_metadata(api: start, new_metadata_set, formatted_directories,
     legacy_metadata2 = formatted_directories["legacy_metadatas"]["legacy_metadata2"]
     legacy_metadata_path2 = os.path.join(
         legacy_metadata2, os.path.basename(archive_path))
-    exists = os.path.exists(archive_path)
-    exists2 = os.path.exists(legacy_metadata_path2)
+    exists = os.path.exists(legacy_metadata_path2)
+    exists2 = os.path.exists(archive_path)
     if legacy_metadata_path2 != archive_path:
-        if not exists and exists2:
+        if exists and not exists2:
+            os.makedirs(os.path.dirname(archive_path),exist_ok=True)
             shutil.move(legacy_metadata_path2, archive_path)
     archive_path = archive_path.replace("db", "json")
     legacy_metadata_object, delete_legacy_metadatas = legacy_metadata_fixer(

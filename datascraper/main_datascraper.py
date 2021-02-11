@@ -71,7 +71,7 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
             subscription_list, auto_profile_choice)
         apis = [x.pop(0) for x in apis]
         for api in apis:
-            api.session_manager.sessions = original_sessions
+            api.session_manager.copy_sessions(original_sessions)
             module.assign_vars(api.auth.auth_details, json_config,
                                json_site_settings, site_name)
             setup = False

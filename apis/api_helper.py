@@ -103,11 +103,22 @@ def multiprocessing(max_threads=None):
 
 
 class session_manager():
-    def __init__(self) -> None:
-        self.sessions = []
+    def __init__(self, original_sessions=[]) -> None:
+        self.sessions = self.copy_sessions(original_sessions)
         self.pool = multiprocessing()
         self.max_threads = self.pool._processes
         self.kill = False
+
+    def copy_sessions(self, original_sessions):
+        sessions = []
+        for original_session in original_sessions:
+            cloned_session = copy.deepcopy(original_session)
+            ip = getattr(original_session, "ip", "")
+            cloned_session.ip = ip
+            cloned_session.links = []
+            sessions.append(cloned_session)
+        self.sessions = sessions
+        return self.sessions
 
     def stimulate_sessions(self):
         # Some proxies switch IP addresses if no request have been made for x amount of seconds
@@ -177,16 +188,6 @@ def create_session(settings={}, custom_proxy="", test_ip=True):
         else:
             session = test_session(max_threads=max_threads)
             sessions.append(session)
-    return sessions
-
-
-def copy_sessions(original_sessions):
-    sessions = []
-    for original_session in original_sessions:
-        original_session2 = copy.deepcopy(original_session)
-        ip = getattr(original_session, "ip", "")
-        setattr(original_session2, "ip", ip)
-        sessions.append(original_session2)
     return sessions
 
 

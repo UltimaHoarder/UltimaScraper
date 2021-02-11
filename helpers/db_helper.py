@@ -10,8 +10,12 @@ from database.databases.posts import posts
 from database.databases.messages import messages
 
 
-def create_database_session(connection_info, connection_type="sqlite:///", autocommit=False) -> tuple[scoped_session, Engine]:
-    engine = sqlalchemy.create_engine(f'{connection_type}{connection_info}')
+def create_database_session(connection_info, connection_type="sqlite:///", autocommit=False ,pool_size=5) -> tuple[scoped_session, Engine]:
+    kwargs = {}
+    if connection_type == "mysql+mysqldb://":
+        kwargs["pool_size"] = pool_size
+
+    engine = sqlalchemy.create_engine(f'{connection_type}{connection_info}',**kwargs)
     session_factory = sessionmaker(bind=engine, autocommit=autocommit)
     Session = scoped_session(session_factory)
     return Session, engine
@@ -56,3 +60,9 @@ class database_collection(object):
             print("DB CHOOSER ERROR")
             input()
         return database
+
+
+def create_auth_array(item):
+    auth_array = dict(item)
+    auth_array["support_2fa"] = False
+    return auth_array

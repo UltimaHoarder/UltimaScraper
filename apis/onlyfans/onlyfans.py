@@ -533,7 +533,7 @@ class start():
         auth_items = self.auth.auth_details
         link = links().customer
         user_agent = auth_items.user_agent
-        auth_id = auth_items.auth_id
+        auth_id = str(auth_items.auth_id)
         app_token = auth_items.app_token
         # expected string error is fixed by auth_id
         auth_cookies = [

@@ -1140,10 +1140,7 @@ class download_media():
                         print
                 elif api_type == "Posts":
                     result = subscription.get_post(media.post_id)
-                    result_list = result.get("list")
-                    if not result_list:
-                        print
-                    print
+                    result_list = result.get("result")
                 else:
                     print
                 mandatory_directories = {}

@@ -530,7 +530,7 @@ def process_legacy_metadata(api: start, new_metadata_set, formatted_directories,
     exists2 = os.path.exists(archive_path)
     if legacy_metadata_path2 != archive_path:
         if exists and not exists2:
-            os.makedirs(os.path.dirname(archive_path),exist_ok=True)
+            os.makedirs(os.path.dirname(archive_path), exist_ok=True)
             shutil.move(legacy_metadata_path2, archive_path)
     archive_path = archive_path.replace("db", "json")
     legacy_metadata_object, delete_legacy_metadatas = legacy_metadata_fixer(
@@ -910,7 +910,7 @@ def media_scraper(results, api: start, formatted_directories, username, api_type
             rawText = media_api.get("rawText", "")
             text = media_api.get("text", "")
             final_text = rawText if rawText else text
-            previews = media_api.get("preview", None)
+            previews = media_api.get("preview", [])
             if api_type == "Stories":
                 previews = []
             if api_type == "Messages":
@@ -921,6 +921,10 @@ def media_scraper(results, api: start, formatted_directories, username, api_type
                 media_username = media_user["username"]
                 if media_username != username:
                     continue
+            elif api_type == "Archived":
+                test_previews = media_api.get("previews", [])
+                if test_previews:
+                    input("REPORT THIS ERROR TO GITHUB, I'LL KNOW WHAT IT IS :)")
             # if previews == None:
             #     # REMOVE BEFORE PUSHING COMMIT
             #     input("PREVIEW NOT FOUND")
@@ -1159,7 +1163,7 @@ class download_media():
                 found_post = main_helper.format_media_set(new_metadata)
                 if found_post:
                     found_media = [x for x in found_post["medias"]
-                                if x["media_id"] == media.media_id]
+                                   if x["media_id"] == media.media_id]
                     new_link = found_media[0]["links"][0]
                     media.link = new_link
                 count += 1

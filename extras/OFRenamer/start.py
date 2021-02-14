@@ -71,19 +71,22 @@ def fix_directories(posts, all_files, database_session: scoped_session, folder, 
             if old_filepath and old_filepath != new_filepath:
                 if os.path.exists(new_filepath):
                     os.remove(new_filepath)
-                if os.path.exists(old_filepath):
-                    if media.size:
-                        media.downloaded = True
-                    moved = None
-                    while not moved:
-                        try:
+                moved = None
+                while not moved:
+                    try:
+                        if os.path.exists(old_filepath):
+                            if media.size:
+                                media.downloaded = True
                             found_dupes = [
                                 x for x in media_db if x.filename == new_filename and not x.id != media.id]
                             delete_rows.extend(found_dupes)
-                            os.makedirs(os.path.dirname(new_filepath), exist_ok=True)
+                            os.makedirs(os.path.dirname(
+                                new_filepath), exist_ok=True)
                             moved = shutil.move(old_filepath, new_filepath)
-                        except OSError as e:
-                            print(traceback.format_exc())
+                        else:
+                            break
+                    except OSError as e:
+                        print(traceback.format_exc())
                     print
                 print
 

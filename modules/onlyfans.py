@@ -24,8 +24,10 @@ import sqlite3
 import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import session, sessionmaker
-from helpers.main_helper import export_data, import_archive
+from helpers.main_helper import download_session, export_data, import_archive
 import time
+from queue import Queue
+from threading import Thread
 
 multiprocessing = main_helper.multiprocessing
 
@@ -266,6 +268,9 @@ def profile_scraper(api: start, site_name, api_type, username, base_directory):
         override_media_types.append(["Avatars", avatar])
     if header:
         override_media_types.append(["Headers", header])
+    d_session = download_session()
+    d_session.start(unit='B', unit_scale=True,
+                    miniters=1)
     for override_media_type in override_media_types:
         new_dict = dict()
         media_type = override_media_type[0]
@@ -283,11 +288,12 @@ def profile_scraper(api: start, site_name, api_type, username, base_directory):
                              json_format=False, sleep=False)
         if not isinstance(r, requests.Response):
             continue
-        while True:
-            downloader = main_helper.downloader(r, download_path)
-            if not downloader:
-                continue
-            break
+        tsize = r.headers.get("content-length")
+        d_session.update_total_size(tsize)
+        downloaded = main_helper.downloader(r, download_path, d_session)
+        if not downloaded:
+            continue
+    d_session.close()
 
 
 def paid_content_scraper(apis: list[start], identifiers=[]):
@@ -1086,30 +1092,24 @@ class download_media():
                                 continue
                             media_set = v
                             media_set_count = len(media_set)
+                            if not media_set:
+                                continue
                             string = "Download Processing\n"
                             string += f"Name: {username} | Type: {api_type} | Count: {media_set_count} {location} | Directory: {directory}\n"
                             print(string)
+                            d_session = download_session()
+                            d_session.start(unit='B', unit_scale=True,
+                                            miniters=1)
                             pool = multiprocessing()
-                            # fill_count = pool._processes - media_set_count
-                            # fill_count = max(0, fill_count)
-                            # if fill_count:
-                            #     media_set += ["https://cdn2.onlyfans.com"]*fill_count
                             pool.starmap(self.prepare_download, product(
-                                media_set, [api], [api_type], [subscription]))
+                                media_set, [api], [api_type], [subscription], [d_session]))
+                            d_session.close()
                         database_session.commit()
             else:
                 self.downloaded = False
 
-    def prepare_download(self, media, api, api_type, subscription: create_subscription):
+    def prepare_download(self, media, api, api_type, subscription: create_subscription, d_session):
         return_bool = True
-        # if isinstance(media, str):
-        #     for session in api.session_manager.sessions:
-        #         link = media
-        #         r = api.json_request(link, session, "HEAD",
-        #                              stream=False, json_format=False)
-        #         print
-        #     print
-        #     return
         if not overwrite_files and media.downloaded:
             return
         count = 0
@@ -1164,8 +1164,9 @@ class download_media():
                 if found_post:
                     found_media = [x for x in found_post["medias"]
                                    if x["media_id"] == media.media_id]
-                    new_link = found_media[0]["links"][0]
-                    media.link = new_link
+                    if found_media:
+                        new_link = found_media[0]["links"][0]
+                        media.link = new_link
                 count += 1
                 continue
             link = result[0]
@@ -1187,19 +1188,18 @@ class download_media():
                 return_bool = False
                 count += 1
                 continue
-            downloader = main_helper.downloader(r, download_path, count)
+            d_session.update_total_size(content_length)
+            downloader = main_helper.downloader(
+                r, download_path, d_session, count)
             if not downloader:
                 count += 1
                 continue
             main_helper.format_image(download_path, timestamp)
-            link_string = f"Link: {link}"
-            path_string = f"Filepath: {download_path}"
-            print(link_string)
-            print(path_string)
             media.downloaded = True
             break
         if not media.downloaded:
-            print
+            print(f"Download Failed: {media.link}")
+            d_session.colour = "Red"
 
         return return_bool
 

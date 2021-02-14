@@ -11,11 +11,13 @@ import os
 import platform
 import re
 from datetime import datetime
+import time
 from itertools import chain, zip_longest, groupby
 import psutil
 import shutil
 from multiprocessing.dummy import Pool as ThreadPool
 import ujson
+from tqdm import tqdm
 
 import requests
 from bs4 import BeautifulSoup
@@ -109,9 +111,9 @@ def format_image(filepath, timestamp):
             if os_name == "Windows":
                 from win32_setctime import setctime
                 setctime(filepath, timestamp)
-                print(f"Updated Creation Time {filepath}")
+                # print(f"Updated Creation Time {filepath}")
             os.utime(filepath, (timestamp, timestamp))
-            print(f"Updated Modification Time {filepath}")
+            # print(f"Updated Modification Time {filepath}")
         except Exception as e:
             continue
         break
@@ -427,15 +429,35 @@ def check_for_dupe_file(download_path, content_length):
             found = True
     return found
 
+class download_session(tqdm):
+    def start(self,unit='B', unit_scale=True,
+                             miniters=1,tsize=0):
+        self.unit = unit
+        self.unit_scale = unit_scale
+        self.miniters = miniters
+        self.total = 0
+        self.colour = "Green"
+        if tsize:
+            tsize = int(tsize)
+            self.total += tsize
+    def update_total_size(self,tsize):
+        tsize = int(tsize)
+        self.total += tsize
+    def update_to(self, b=1, bsize=1, tsize=None):
+        x = bsize
+        print
+        self.update(b)
 
-def downloader(r, download_path, count=0):
+
+def downloader(r, download_path, d_session,count=0):
     delete = False
     try:
         with open(download_path, 'wb') as f:
             delete = True
-            for chunk in r.iter_content(chunk_size=1024):
+            for chunk in r.iter_content(chunk_size=4096):
                 if chunk:  # filter out keep-alive new chunks
-                    f.write(chunk)
+                    size = f.write(chunk)
+                    d_session.update(size)
     except (ConnectionResetError) as e:
         if delete:
             os.unlink(download_path)

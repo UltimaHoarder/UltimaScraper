@@ -69,6 +69,9 @@ Your auth config should look similar to this
 
 ![app-token](examples/2.png)
 
+If you get auth attempt errors, only YOU can fix it unless you're willing to let me into your account so I can see if it's working or not.
+All issues about auth errors will be closed automatically. It's spam at this point, there's like 1000s of them and I don't care for anyone who can't use the search function lmao.
+
 Note: If active is set to False, the script will ignore the profile.
 
 # USAGE

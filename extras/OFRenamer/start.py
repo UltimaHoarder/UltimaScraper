@@ -28,7 +28,7 @@ def fix_directories(posts, all_files, database_session: scoped_session, folder, 
             else:
                 path: str = media.filename
             new_filename = os.path.basename(path)
-            filename, ext = os.path.splitext(new_filename)
+            original_filename, ext = os.path.splitext(new_filename)
             ext = ext.replace(".", "")
             file_directory_format = json_settings["file_directory_format"]
             filename_format = json_settings["filename_format"]
@@ -44,7 +44,7 @@ def fix_directories(posts, all_files, database_session: scoped_session, folder, 
             option["username"] = username
             option["api_type"] = final_type if parent_type else api_type
             option["media_type"] = media.media_type
-            option["filename"] = filename
+            option["filename"] = original_filename
             option["ext"] = ext
             option["text"] = post.text
             option["postedAt"] = media.created_at
@@ -58,12 +58,16 @@ def fix_directories(posts, all_files, database_session: scoped_session, folder, 
                 prepared_format, file_directory_format)
             prepared_format.directory = file_directory
             old_filepath = ""
+            if media.linked:
+                filename_format = f"linked_{filename_format}"
             old_filepaths = [
-                x for x in all_files if media.filename in os.path.basename(x)]
+                x for x in all_files if original_filename in os.path.basename(x)]
             if not old_filepaths:
                 old_filepaths = [
                     x for x in all_files if str(media_id) in os.path.basename(x)]
                 print
+            if not media.linked:
+                old_filepaths = [x for x in old_filepaths if "linked_" not in x]
             if old_filepaths:
                 old_filepath = old_filepaths[0]
             new_filepath = main_helper.reformat(
@@ -78,11 +82,17 @@ def fix_directories(posts, all_files, database_session: scoped_session, folder, 
                             if media.size:
                                 media.downloaded = True
                             found_dupes = [
-                                x for x in media_db if x.filename == new_filename and not x.id != media.id]
+                                x for x in media_db if x.filename == new_filename and x.id != media.id]
                             delete_rows.extend(found_dupes)
                             os.makedirs(os.path.dirname(
                                 new_filepath), exist_ok=True)
-                            moved = shutil.move(old_filepath, new_filepath)
+                            if media.linked:
+                                if os.path.dirname(old_filepath) == os.path.dirname(new_filepath):
+                                    moved = shutil.move(old_filepath, new_filepath)
+                                else:
+                                    moved = shutil.copy(old_filepath, new_filepath)
+                            else:
+                                moved = shutil.move(old_filepath, new_filepath)
                         else:
                             break
                     except OSError as e:
@@ -93,8 +103,6 @@ def fix_directories(posts, all_files, database_session: scoped_session, folder, 
             if os.path.exists(new_filepath):
                 if media.size:
                     media.downloaded = True
-            else:
-                media.downloaded = False
             if prepared_format.text:
                 pass
             media.directory = file_directory

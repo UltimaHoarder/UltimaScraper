@@ -350,7 +350,7 @@ def paid_content_scraper(apis: list[start], identifiers=[]):
                 formatted_metadata_directory = formatted_directories["metadata_directory"]
                 metadata_path = os.path.join(
                     formatted_metadata_directory, api_type+".db")
-                unrefined_set = media_scraper(paid_content, api,
+                unrefined_set = media_scraper(paid_content, api, subscription,
                                               formatted_directories, username, api_type)
                 unrefined_set = [x for x in [unrefined_set]]
                 new_metadata = main_helper.format_media_set(unrefined_set)
@@ -561,7 +561,6 @@ def process_legacy_metadata(api: start, new_metadata_set, formatted_directories,
             print
         print
     print
-    subscription.set_scraped(api_type, old_metadata_object)
     if old_metadata_set:
         delete_metadatas.append(archive_path)
     final_set = []
@@ -698,12 +697,12 @@ def prepare_scraper(api: start, site_name, item):
             parent_type = master_set3["type"]
             results = master_set3["results"]
             unrefined_result = pool.starmap(media_scraper, product(
-                results, [api], [formatted_directories], [username], [api_type], [parent_type]))
+                results, [api], [subscription], [formatted_directories], [username], [api_type], [parent_type]))
             unrefined_set.append(unrefined_result)
         unrefined_set = list(chain(*unrefined_set))
     else:
         unrefined_set = pool.starmap(media_scraper, product(
-            master_set2, [api], [formatted_directories], [username], [api_type], [parent_type]))
+            master_set2, [api], [subscription], [formatted_directories], [username], [api_type], [parent_type]))
         unrefined_set = [x for x in unrefined_set]
     new_metadata = main_helper.format_media_set(unrefined_set)
     if new_metadata:
@@ -714,8 +713,11 @@ def prepare_scraper(api: start, site_name, item):
         old_metadata, delete_metadatas = process_legacy_metadata(
             api, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
         new_metadata = new_metadata + old_metadata
+        subscription.set_scraped(api_type, new_metadata)
+        print
         w = process_metadata(metadata_path, formatted_directories, new_metadata,
                              site_name, parent_type, api_path, subscription, delete_metadatas)
+        print
     else:
         print("No "+api_type+" Found.")
         delattr(subscription.scraped, api_type)
@@ -864,7 +866,7 @@ def compare_metadata(new_metadata: create_metadata, old_metadata: create_metadat
 # Scrapes the API for content
 
 
-def media_scraper(results, api: start, formatted_directories, username, api_type, parent_type=""):
+def media_scraper(results, api: start, subscription: create_subscription, formatted_directories, username, api_type, parent_type="", print_output=True):
     new_set = {}
     new_set["content"] = []
     directories = []
@@ -908,9 +910,11 @@ def media_scraper(results, api: start, formatted_directories, username, api_type
                 print
             print
         seperator = " | "
-        print(
-            f"Scraping [{seperator.join(alt_media_type)}]. Should take less than a minute.")
+        if print_output:
+            print(
+                f"Scraping [{seperator.join(alt_media_type)}]. Should take less than a minute.")
         for media_api in results:
+            post_id = media_api["id"]
             new_post = {}
             new_post["medias"] = []
             rawText = media_api.get("rawText", "")
@@ -949,6 +953,7 @@ def media_scraper(results, api: start, formatted_directories, username, api_type
             new_post["postedAt"] = date_string
             new_post["paid"] = False
             new_post["preview_media_ids"] = previews
+            new_post["api_type"] = api_type
             price = new_post["price"] = media_api["price"]if "price" in media_api else None
             if price == None:
                 price = 0
@@ -1055,8 +1060,31 @@ def media_scraper(results, api: start, formatted_directories, username, api_type
                 new_media["filename"] = os.path.basename(file_path)
                 if file_directory not in directories:
                     directories.append(file_directory)
+                new_media["linked"] = None
+                for k, v in subscription.scraped:
+                    if k == api_type or k == "Archived":
+                        continue
+                    if v:
+                        for post in v:
+                            found_medias = [x for x in post["medias"]
+                                            if x["filename"] == new_media["filename"]]
+                            if found_medias:
+                                for found_media in found_medias:
+                                    found_media["linked"] = api_type
+                                new_media["linked"] = post["api_type"]
+                                new_media["filename"] = f"linked_{new_media['filename']}"
+                                print
+                            print
+                        print
+                    print
                 new_post["medias"].append(new_media)
-            new_set["content"].append(new_post)
+            found_post = [x for x in new_set["content"]
+                          if x["post_id"] == post_id]
+            if found_post:
+                found_post = found_post[0]
+                found_post["medias"] += new_post["medias"]
+            else:
+                new_set["content"].append(new_post)
     new_set["directories"] = directories
     return new_set
 
@@ -1155,8 +1183,8 @@ class download_media():
                 media_type = format_media_types()
                 formatted_directories = format_directories(
                     mandatory_directories, site_name, subscription.username, metadata_directory_format, media_type, api_type)
-                unrefined_set = media_scraper(result_list, api,
-                                              formatted_directories, subscription.username, api_type)
+                unrefined_set = media_scraper(result_list, api, subscription,
+                                              formatted_directories, subscription.username, api_type, print_output=False)
                 unrefined_set = [x for x in [unrefined_set]]
                 new_metadata = main_helper.format_media_set(unrefined_set)
                 new_metadata = new_metadata["content"]

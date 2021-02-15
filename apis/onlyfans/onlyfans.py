@@ -81,9 +81,6 @@ class media_types():
         self.Videos = option.get("Videos", [])
         self.Audios = option.get("Audios", [])
         self.Texts = option.get("Texts", [])
-        if assign_states:
-            for k, v in self:
-                setattr(self, k, assign_states())
 
     def remove_empty(self):
         copied = copy.deepcopy(self)
@@ -644,7 +641,7 @@ class start():
         # Following logic is unique to creators only
         results = []
         if authed.isPerformer:
-            delattr(authed,"session_manager")
+            delattr(authed, "session_manager")
             json_authed = jsonpickle.encode(
                 authed, unpicklable=False)
             json_authed = jsonpickle.decode(json_authed)

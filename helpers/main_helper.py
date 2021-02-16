@@ -276,7 +276,7 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None
             media_db.directory = media["directory"]
             media_db.filename = media["filename"]
             media_db.media_type = media["media_type"]
-            media_db.linked = media["linked"]
+            media_db.linked = media.get("linked",None)
             if date_object:
                 media_db.created_at = date_object
             database_session.add(media_db)

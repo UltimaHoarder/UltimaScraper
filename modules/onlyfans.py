@@ -565,6 +565,7 @@ def process_legacy_metadata(api: start, new_metadata_set, formatted_directories,
         delete_metadatas.append(archive_path)
     final_set = []
     for item in old_metadata_set:
+        item["api_type"] = api_type
         x = [x for x in new_metadata_set if x["post_id"] == item["post_id"]]
         if not x:
             final_set.append(item)

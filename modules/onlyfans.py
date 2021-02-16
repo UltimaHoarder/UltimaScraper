@@ -1062,8 +1062,10 @@ def media_scraper(results, api: start, subscription: create_subscription, format
                     directories.append(file_directory)
                 new_media["linked"] = None
                 for k, v in subscription.scraped:
-                    if k == api_type or k == "Archived":
+                    if k == api_type:
                         continue
+                    if k == "Archived":
+                        v = getattr(v, api_type, [])
                     if v:
                         for post in v:
                             found_medias = [x for x in post["medias"]

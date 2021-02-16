@@ -7,6 +7,8 @@ from typing import Union
 from apis.onlyfans.onlyfans import auth_details, content_types, create_auth, create_subscription, media_types, start
 from classes.prepare_metadata import create_metadata, format_content, prepare_reformat
 import os
+import sys
+import traceback
 from datetime import datetime, timedelta
 from itertools import chain, product
 from urllib.parse import urlparse
@@ -144,10 +146,14 @@ def start_datascraper(api: start, identifier, site_name, choice_type=None):
         item["api_array"]["username"] = username
         item["api_array"]["subscription"] = subscription
         api_type = item["api_type"]
-        results = prepare_scraper(
-            api, site_name, item)
+        try:
+            results = prepare_scraper(
+                api, site_name, item)
+        except:
+            print("Scraping error:")
+            traceback.print_exc(file=sys.stdout)
         print
-    print("Scrape Completed"+"\n")
+    print("Scrape Finished"+"\n")
     return [True, subscription]
 
 

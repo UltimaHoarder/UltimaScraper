@@ -720,7 +720,8 @@ def send_webhook(item):
 
 
 def find_between(s, start, end):
-    x = re.search(f'{start}(.+?){end}', s)
+    format = f'{start}(.+?){end}'
+    x = re.search(format, s)
     if x:
         x = x.group(1)
     else:

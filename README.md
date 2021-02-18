@@ -222,26 +222,26 @@ Default = ""
 
     You can automatically choose which type of media you want to scrape.
 
-[#auto_scrape_names](README.md#auto_scrape_names):
+### auto_scrape_names:
 
     Default = false
 
     If set to true, the script will scrape all the names.
 
-[#auto_scrape_apis](README.md#auto_scrape_apis):
+### auto_scrape_apis:
 
     Default = true
 
     If set to false, you'll be given the option to scrape individual apis.
 
-[#jobs](README.md#jobs):
+### jobs:
 
     "scrape_names" - This will scrape your standard content
     "scrape_paid_content" - This will scrape paid content
 
     If set to false, it won't do the job.
 
-[#export_type](README.md#export_type):
+### export_type:
 
     Default = "json"
 
@@ -249,13 +249,13 @@ Default = ""
 
     You can export an archive to different formats (not anymore lol).
 
-[#overwrite_files](README.md#overwrite_files):
+### overwrite_files:
 
     Default = false
 
     If set to true, any file with the same name will be redownloaded.
 
-[#date_format](README.md#date_format):
+### date_format:
 
     Default = "%d-%m-%Y"
 
@@ -263,14 +263,14 @@ Default = ""
 
     "%m-%d-%Y"
 
-[#max_threads](README.md#max_threads):
+### max_threads:
 
     Default = -1
 
     When number is set below 1, it will use all threads.
     Set a number higher than 0 to limit threads.
 
-[#min_drive_space](README.md#min_drive_space):
+### min_drive_space:
 
     Default = 0
     Type: Float
@@ -279,7 +279,7 @@ Default = ""
     0.5 is 500mb, 1 is 1gb,etc.
     When a drive goes below minimum drive space, it will move onto the next drive or go into an infinite loop until drive is above the minimum space.
 
-[#webhooks](README.md#webhooks):
+### webhooks:
 
     Default = []
 
@@ -290,39 +290,39 @@ Default = ""
     You can also put in your own custom url and parse the data.
     Need another webhook? Open an issue.
 
-[#exit_on_completion](README.md#exit_on_completion):
+### exit_on_completion:
 
     Default = false
 
     If set to true the scraper run once and exit upon completion, otherwise the scraper will give the option to run again. This is useful if the scraper is being executed by a cron job or another script.
 
-[#infinite_loop](README.md#infinite_loop):
+### infinite_loop:
 
     Default = true
 
     If set to false, the script will run once and ask you to input anything to continue.
 
-[#loop_timeout](README.md#loop_timeout):
+### loop_timeout:
 
     Default = 0
 
     When infinite_loop is set to true this will set the time in seconds to pause the loop in between runs.
 
-[#boards](README.md#boards):
+### boards:
 
     Default = []
     Example = ["s", "gif"]
 
     Input boards names that you want to automatically scrape.
 
-[#ignored_keywords](README.md#ignored_keywords):
+### ignored_keywords:
 
     Default = []
     Example = ["ignore", "me"]
 
     Any words you input, the script will ignore any content that contains these words.
 
-[#ignore_type](README.md#ignore_type):
+### ignore_type:
 
     Default = ""
     a = "paid"
@@ -334,13 +334,13 @@ Default = ""
 
     This choice will not include any accounts that you've paid for.
 
-[#export_metadata](README.md#export_metadata):
+### export_metadata:
 
     Default = true
 
     Set to false if you don't want to save metadata.
 
-[#blacklist_name](README.md#blacklist_name):
+### blacklist_name:
 
     Default = ""
 
@@ -353,12 +353,6 @@ Default = ""
     Example: "blacklist_name": "Blacklisted"
 
     You can create as many lists as you want.
-
-[#OPTIONAL ARGUMENTS](README.md#OPTIONAL_ARGUMENTS)
-
--m
-
-    The script will download metadata files only.
 
 # FAQ
 

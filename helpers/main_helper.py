@@ -703,6 +703,8 @@ def metadata_fixer(directory):
         new = os.path.join(metadata_file, "Archive.json")
         shutil.move(archive_file, new)
 
+def ordinal(n): return "%d%s" % (
+    n, "tsnrhtdd"[(n/10 % 10 != 1)*(n % 10 < 4)*n % 10::4])
 
 def send_webhook(item):
     for webhook_link in webhooks:

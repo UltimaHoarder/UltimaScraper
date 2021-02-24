@@ -1069,17 +1069,29 @@ def media_scraper(results, api: start, subscription: create_subscription, format
                         v = getattr(v, api_type, [])
                     if v:
                         for post in v:
-                            medias = post.get("medias",[])
-                            if not medias:
+                            try:
+                                medias = post.get("medias",[])
+                          
+                                found_medias = [x for x in medias
+                                                if x["filename"] == new_media["filename"]]
+                          
+                                if found_medias:
+                                    for found_media in found_medias:
+                                        found_media["linked"] = api_type
+                                    new_media["linked"] = post["api_type"]
+                                    new_media["filename"] = f"linked_{new_media['filename']}"
+                                    print
+                            catch KeyError:
                                 medias = post.get("media",[])
-                            found_medias = [x for x in medias
-                                            if x["filename"] == new_media["filename"]]
-                            if found_medias:
-                                for found_media in found_medias:
-                                    found_media["linked"] = api_type
-                                new_media["linked"] = post["api_type"]
-                                new_media["filename"] = f"linked_{new_media['filename']}"
-                                print
+                            
+                                found_medias = [x for x in medias
+                                                if x["source"]["source"] == new_media["filename"]]
+                                if found_medias:
+                                    for found_media in found_medias:
+                                        found_media["linked"] = api_type
+                                    new_media["linked"] = post["api_type"]
+                                    new_media["filename"] = f"linked_{new_media['filename']}"
+                                    print
                             print
                         print
                     print

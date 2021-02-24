@@ -1072,7 +1072,8 @@ def media_scraper(results, api: start, subscription: create_subscription, format
                             medias = post.get("medias",[])
                             if not medias:
                                 medias = post.get("media",[])
-                            found_medias = [x for x in medias
+                            found_medias = [x for x in "medias"
+                                            if "filename" in x 
                                             if x["filename"] == new_media["filename"]]
                             if found_medias:
                                 for found_media in found_medias:

@@ -74,6 +74,8 @@ All issues about auth errors will be closed automatically. It's spam at this poi
 
 Note: If active is set to False, the script will ignore the profile.
 
+**You can also use [this browser extension](https://github.com/M-rcus/OnlyFans-Cookie-Helper) to automatically get the AUTH JSON**
+
 # USAGE
 
 `python start_ofd.py` or double click `start_ofd.py`

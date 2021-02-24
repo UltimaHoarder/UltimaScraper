@@ -865,7 +865,14 @@ def compare_metadata(new_metadata: create_metadata, old_metadata: create_metadat
     return new_metadata
 
 # Scrapes the API for content
-
+unknowncount = 0
+def getValueIfKey(key, dictv):
+    global unknowncount
+    if key in dictv:
+        return dictv[key]
+    else:
+        unknowncount+=1
+        return 'unknown{unkowncount}'
 
 def media_scraper(results, api: start, subscription: create_subscription, formatted_directories, username, api_type, parent_type="", print_output=True):
     new_set = {}
@@ -1073,7 +1080,7 @@ def media_scraper(results, api: start, subscription: create_subscription, format
                             if not medias:
                                 medias = post.get("media",[])
                             found_medias = [x for x in medias
-                                            if x["filename"] == new_media["filename"]]
+                                            if getValueIfKey("filename", x) == getValueIfKey("filename", new_media)]
                             if found_medias:
                                 for found_media in found_medias:
                                     found_media["linked"] = api_type

@@ -872,7 +872,7 @@ def getValueIfKey(key, dictv):
         return dictv[key]
     else:
         unknowncount+=1
-        return 'unknown{unkowncount}'
+        return 'unknown{unknowncount}'
 
 def media_scraper(results, api: start, subscription: create_subscription, formatted_directories, username, api_type, parent_type="", print_output=True):
     new_set = {}

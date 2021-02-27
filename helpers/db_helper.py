@@ -14,8 +14,10 @@ def create_database_session(connection_info, connection_type="sqlite:///", autoc
     kwargs = {}
     if connection_type == "mysql+mysqldb://":
         kwargs["pool_size"] = pool_size
+        kwargs["pool_pre_ping"] = True
+        kwargs["max_overflow"] = -1
 
-    engine = sqlalchemy.create_engine(f'{connection_type}{connection_info}',**kwargs)
+    engine = sqlalchemy.create_engine(f'{connection_type}{connection_info}?charset=utf8mb4',**kwargs)
     session_factory = sessionmaker(bind=engine, autocommit=autocommit)
     Session = scoped_session(session_factory)
     return Session, engine

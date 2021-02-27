@@ -1081,7 +1081,7 @@ def media_scraper(results, api: start, subscription: create_subscription, format
                                     new_media["linked"] = post["api_type"]
                                     new_media["filename"] = f"linked_{new_media['filename']}"
                                     print
-                            catch KeyError:
+                            except KeyError:
                                 medias = post.get("media",[])
                             
                                 found_medias = [x for x in medias

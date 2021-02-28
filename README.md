@@ -63,6 +63,8 @@ Only enter in cookies that reflect your OnlyFans account otherwise, you'll get a
 
 Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get said above cookies
 
+(Instead of typing "?app", type "api2")
+
 ![app-token](examples/1.png)
 
 Your auth config should look similar to this

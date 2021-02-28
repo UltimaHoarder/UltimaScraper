@@ -128,7 +128,7 @@ class auth_details():
 
 class links(object):
     def __init__(self, identifier=None, identifier2=None, text="", only_links=True, global_limit=None, global_offset=None, app_token="33d57ade8c02dbc5a333db99ff9ae26a"):
-        self.customer = f"https://onlyfans.com/api2/v2/users/customer?app-token={app_token}"
+        self.customer = f"https://onlyfans.com/api2/v2/users/me"
         self.users = f'https://onlyfans.com/api2/v2/users/{identifier}?app-token={app_token}'
         self.subscriptions = f"https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=100&offset=0&type=active&app-token={app_token}"
         self.lists = f"https://onlyfans.com/api2/v2/lists?limit=100&offset=0&app-token={app_token}"
@@ -547,6 +547,7 @@ class start():
             a = [session, link, auth_items.sess, user_agent]
             session = create_sign(*a)
             session.headers["user-agent"] = user_agent
+            session.headers["app-token"] = "33d57ade8c02dbc5a333db99ff9ae26a"
             session.headers["referer"] = 'https://onlyfans.com/'
             for auth_cookie in auth_cookies:
                 session.cookies.set(**auth_cookie)

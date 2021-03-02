@@ -236,6 +236,7 @@ class format_content(object):
 class format_variables(object):
     def __init__(self):
         self.site_name = "{site_name}"
+        self.first_letter = "{first_letter}"
         self.post_id = "{post_id}"
         self.media_id = "{media_id}"
         self.username = "{username}"
@@ -290,7 +291,8 @@ class format_types():
                     if b in self.filename_format:
                         invalid_list.append(b)
             if key == "metadata_directory_format":
-                wl = ["{site_name}", "{model_id}", "{username}"]
+                wl = ["{site_name}", "{first_letter}",
+                      "{model_id}", "{username}"]
                 bl = format_variables().whitelist(wl)
                 invalid_list = []
                 for b in bl:

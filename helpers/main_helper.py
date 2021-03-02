@@ -329,6 +329,7 @@ def reformat(prepared_format, unformatted):
                 value = "Paid"
     directory = prepared_format.directory
     path = unformatted.replace("{site_name}", prepared_format.site_name)
+    path = path.replace("{first_letter}", prepared_format.username[0].capitalize())
     path = path.replace("{post_id}", post_id)
     path = path.replace("{media_id}", media_id)
     path = path.replace("{username}", prepared_format.username)

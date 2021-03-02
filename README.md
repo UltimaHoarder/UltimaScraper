@@ -124,6 +124,8 @@ Overview for [file_directory_format](#file_directory_format), [filename_format](
 
     {site_name} = The site you're scraping.
 
+    {first_letter} = First letter of the model you're scraping.
+
     {post_id} = The posts' ID.
 
     {media_id} = The media's ID.

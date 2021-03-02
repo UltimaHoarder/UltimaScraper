@@ -5,19 +5,21 @@ from sqlalchemy.orm.session import sessionmaker
 from sqlalchemy.orm import scoped_session
 from alembic.config import Config
 from alembic import command
+from sqlalchemy.exc import IntegrityError
 from database.databases.stories import stories
 from database.databases.posts import posts
 from database.databases.messages import messages
 
 
-def create_database_session(connection_info, connection_type="sqlite:///", autocommit=False ,pool_size=5) -> tuple[scoped_session, Engine]:
+def create_database_session(connection_info, connection_type="sqlite:///", autocommit=False, pool_size=5) -> tuple[scoped_session, Engine]:
     kwargs = {}
     if connection_type == "mysql+mysqldb://":
         kwargs["pool_size"] = pool_size
         kwargs["pool_pre_ping"] = True
         kwargs["max_overflow"] = -1
 
-    engine = sqlalchemy.create_engine(f'{connection_type}{connection_info}?charset=utf8mb4',**kwargs)
+    engine = sqlalchemy.create_engine(
+        f'{connection_type}{connection_info}?charset=utf8mb4', **kwargs)
     session_factory = sessionmaker(bind=engine, autocommit=autocommit)
     Session = scoped_session(session_factory)
     return Session, engine
@@ -68,3 +70,21 @@ def create_auth_array(item):
     auth_array = dict(item)
     auth_array["support_2fa"] = False
     return auth_array
+
+
+def get_or_create(session, model, defaults=None, **kwargs):
+    instance = session.query(model).filter_by(**kwargs).one_or_none()
+    if instance:
+        return instance, True
+    else:
+        kwargs |= defaults or {}
+        instance = model(**kwargs)
+        try:
+            session.add(instance)
+            session.commit()
+        except IntegrityError:
+            session.rollback()
+            instance = session.query(model).filter_by(**kwargs).one()
+            return instance, False
+        else:
+            return instance, True

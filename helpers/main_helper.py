@@ -18,6 +18,8 @@ import shutil
 from multiprocessing.dummy import Pool as ThreadPool
 import ujson
 from tqdm import tqdm
+import string
+import random
 
 import requests
 from bs4 import BeautifulSoup
@@ -276,7 +278,7 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None
             media_db.directory = media["directory"]
             media_db.filename = media["filename"]
             media_db.media_type = media["media_type"]
-            media_db.linked = media.get("linked",None)
+            media_db.linked = media.get("linked", None)
             if date_object:
                 media_db.created_at = date_object
             database_session.add(media_db)
@@ -430,9 +432,10 @@ def check_for_dupe_file(download_path, content_length):
             found = True
     return found
 
+
 class download_session(tqdm):
-    def start(self,unit='B', unit_scale=True,
-                             miniters=1,tsize=0):
+    def start(self, unit='B', unit_scale=True,
+              miniters=1, tsize=0):
         self.unit = unit
         self.unit_scale = unit_scale
         self.miniters = miniters
@@ -441,16 +444,18 @@ class download_session(tqdm):
         if tsize:
             tsize = int(tsize)
             self.total += tsize
-    def update_total_size(self,tsize):
+
+    def update_total_size(self, tsize):
         tsize = int(tsize)
         self.total += tsize
+
     def update_to(self, b=1, bsize=1, tsize=None):
         x = bsize
         print
         self.update(b)
 
 
-def downloader(r, download_path, d_session,count=0):
+def downloader(r, download_path, d_session, count=0):
     delete = False
     try:
         with open(download_path, 'wb') as f:
@@ -703,8 +708,22 @@ def metadata_fixer(directory):
         new = os.path.join(metadata_file, "Archive.json")
         shutil.move(archive_file, new)
 
+
 def ordinal(n): return "%d%s" % (
     n, "tsnrhtdd"[(n/10 % 10 != 1)*(n % 10 < 4)*n % 10::4])
+
+
+def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
+    return ''.join(random.choice(chars) for _ in range(size))
+
+def humansize(nbytes):
+    i = 0
+    suffixes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
+    while nbytes >= 1024 and i < len(suffixes)-1:
+        nbytes /= 1024.
+        i += 1
+    f = ('%.2f' % nbytes).rstrip('0').rstrip('.')
+    return '%s %s' % (f, suffixes[i])
 
 def send_webhook(item):
     for webhook_link in webhooks:

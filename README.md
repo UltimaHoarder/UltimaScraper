@@ -32,6 +32,10 @@ From the project folder open CMD/Terminal and run the command below:
 
 `pip install -r requirements.txt`
 
+## Updating the script
+
+All you have to do is overwrite the old files with the new.
+
 Start:
 
 `python start_ofd.py` or double click `start_ofd.py`

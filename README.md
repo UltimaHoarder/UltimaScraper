@@ -10,6 +10,10 @@ Watch this video made by Omnipotent of [RaidForums](https://raidforums.com/) or 
 
 https://www.youtube.com/watch?v=3r8SQT7mNHk
 
+## Updating the script
+
+All you have to do is overwrite the old files with the new.
+
 # Mandatory Tutorial
 
 Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a issue.

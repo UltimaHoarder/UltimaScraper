@@ -1069,11 +1069,19 @@ def media_scraper(results, api: start, subscription: create_subscription, format
                         v = getattr(v, api_type, [])
                     if v:
                         for post in v:
-                            medias = post.get("medias",[])
+                            medias = post.get("medias", [])
                             if not medias:
-                                medias = post.get("media",[])
-                            found_medias = [x for x in medias
-                                            if x["filename"] == new_media["filename"]]
+                                medias = post.get("media", [])
+                            found_medias = []
+                            for temp_media in medias:
+                                temp_filename = temp_media.get("filename")
+                                if temp_filename:
+                                    if temp_filename == new_media["filename"]:
+                                        found_medias.append(temp_media)
+                                else:
+                                    print
+                            # found_medias = [x for x in medias
+                            #                 if x["filename"] == new_media["filename"]]
                             if found_medias:
                                 for found_media in found_medias:
                                     found_media["linked"] = api_type

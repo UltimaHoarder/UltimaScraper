@@ -4,19 +4,17 @@
 
 # Video Tutorial
 
-Watch this video made by Omnipotent of [RaidForums](https://raidforums.com/) or follow the tutorial below (Thanks):
+Watch this video made by [MrGrape](https://www.youtube.com/watch?v=6Fy1Wy9Fpv8) (Thanks) or follow the written tutorial below:
 
-(The video's authentication part is outdated. Authentication is no longer inside config.json)
-
-https://www.youtube.com/watch?v=3r8SQT7mNHk
-
-## Updating the script
-
-All you have to do is overwrite the old files with the new.
+https://www.youtube.com/watch?v=6Fy1Wy9Fpv8
 
 # Mandatory Tutorial
 
 Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a issue.
+
+## Linux Guide
+
+https://github.com/DIGITALCRIMINAL/OnlyFans/discussions/889
 
 ## Running the app via docker
 
@@ -420,3 +418,5 @@ Disclaimer:
 > The contributors of this script isn't in any way affiliated with, sponsored by, or endorsed by Fenix International Limited.
 
 > The contributors of this script are not responsible for the end users' actions.
+
+> LMAO

@@ -9,10 +9,9 @@ import os
 from multiprocessing import cpu_count
 from requests.adapters import HTTPAdapter
 from multiprocessing.dummy import Pool as ThreadPool
-from itertools import product
+from itertools import product,chain, zip_longest, groupby
 from os.path import dirname as up
 import threading
-
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
@@ -264,22 +263,33 @@ def scrape_check(links, session_manager: session_manager, api_type):
         if not links:
             continue
         items = assign_session(links, session_manager.sessions)
+        # item_groups = grouper(300,items)
         pool = multiprocessing()
         results = pool.starmap(multi, product(
             items, [session_manager]))
-        media_set.extend(results)
-        faulty = [x for x in results if not x]
-        if not faulty:
+        faulty = [{"key":k,"value":v, "link":links[k]} for k,v in enumerate(results) if not v]
+        last_number = len(results)-1
+        if faulty:
+            positives = [x for x in faulty if x["key"] != last_number]
+            false_positive = [x for x in faulty if x["key"] == last_number]
+            if positives:
+                attempt = attempt if attempt > 1 else attempt + 1
+                num = int(len(faulty)*(100/attempt))
+                split_by = 2
+                print("Missing "+str(num)+" Posts... Retrying...")
+                links = restore_missing_data(
+                    links, results, split_by)
+            if not positives and false_positive:
+                media_set.extend(results)
+                break
+            print
+        else:
+            media_set.extend(results)
             print("Found: "+api_type)
             break
-        else:
-            if count < 2:
-                break
-            attempt = attempt if attempt > 1 else attempt + 1
-            num = int(len(faulty)*(100/attempt))
-            split_by = 2
-            print("Missing "+str(num)+" Posts... Retrying...")
-            links = restore_missing_data(
-                links, results, split_by)
     media_set = [x for x in media_set]
     return media_set
+
+def grouper(n, iterable, fillvalue=None):
+    args = [iter(iterable)] * n
+    return list(zip_longest(fillvalue=fillvalue, *args))

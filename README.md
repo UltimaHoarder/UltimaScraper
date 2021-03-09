@@ -2,12 +2,6 @@
 
 # ![app-token](examples/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 
-# Video Tutorial
-
-Watch this video made by [MrGrape](https://www.youtube.com/watch?v=6Fy1Wy9Fpv8) (Thanks) or follow the written tutorial below:
-
-https://www.youtube.com/watch?v=6Fy1Wy9Fpv8
-
 # Mandatory Tutorial
 
 Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a issue.

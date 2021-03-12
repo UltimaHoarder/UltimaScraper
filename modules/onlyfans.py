@@ -28,6 +28,7 @@ from helpers.main_helper import download_session, export_data, import_archive
 import time
 from queue import Queue
 from threading import Thread
+import extras.OFLogin.start_ofl as oflogin
 
 multiprocessing = main_helper.multiprocessing
 
@@ -107,6 +108,13 @@ def account_setup(api: start, identifiers: list = [], jobs: dict = {}):
             subscriptions += manage_subscriptions(
                 api, -1, identifiers=identifiers)
         status = True
+    elif api.auth.auth_details.email and api.auth.auth_details.password:
+        proxy = None
+        session = api.session_manager.sessions[0]
+        if session.proxies:
+            proxy = session.proxies["https"]
+        domain = "https://onlyfans.com"
+        cookies = oflogin.start(api, domain, proxy)
     return status, subscriptions
 
 # The start lol
@@ -1079,7 +1087,6 @@ def media_scraper(results, api: start, subscription: create_subscription, format
                                     if temp_filename == new_media["filename"]:
                                         found_medias.append(temp_media)
                                 else:
-                                    print
                             # found_medias = [x for x in medias
                             #                 if x["filename"] == new_media["filename"]]
                             if found_medias:

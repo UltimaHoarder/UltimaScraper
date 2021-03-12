@@ -122,6 +122,8 @@ class auth_details():
         self.app_token = option.get(
             'app_token', '33d57ade8c02dbc5a333db99ff9ae26a')
         self.user_agent = option.get('user_agent', "")
+        self.email = option.get('email', "")
+        self.password = option.get('password', "")
         self.support_2fa = option.get('support_2fa', True)
         self.active = option.get('active', True)
 
@@ -147,6 +149,8 @@ class links(object):
         self.archived_posts = f"https://onlyfans.com/api2/v2/users/{identifier}/posts/archived?limit=100&offset=0&order=publish_date_desc&app-token={app_token}"
         self.archived_stories = f"https://onlyfans.com/api2/v2/stories/archive/?limit=100&offset=0&order=publish_date_desc&app-token={app_token}"
         self.paid_api = f"https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token={app_token}"
+        self.pay = f"https://onlyfans.com/api2/v2/payments/pay"
+        self.two_factor = f"https://onlyfans.com/api2/v2/users/otp/check"
         full = {}
         items = self.__dict__.items()
         for key, link in items:
@@ -525,6 +529,8 @@ class start():
                 f"user_agent required for: {self.auth.auth_details.username}")
             exit()
         self.auth.auth_details.user_agent = option["user_agent"]
+        self.auth.auth_details.email = option["email"]
+        self.auth.auth_details.password = option["password"]
         self.auth.auth_details.support_2fa = option["support_2fa"]
         self.auth.auth_details.active = option["active"]
 
@@ -560,8 +566,6 @@ class start():
             if me_api and not "error" in me_api:
                 me_api = create_auth(me_api)
                 me_api.active = True
-            else:
-                continue
 
             def resolve_auth(r):
                 if 'error' in r:
@@ -574,7 +578,7 @@ class start():
                         error_message = "Blocked by 2FA."
                         print(error_message)
                         if auth_items.support_2fa:
-                            link = f"https://onlyfans.com/api2/v2/users/otp/check?app-token={app_token}"
+                            link = f"https://onlyfans.com/api2/v2/users/otp/check"
                             count = 1
                             max_count = 3
                             while count < max_count+1:
@@ -583,14 +587,14 @@ class start():
                                 code = input("Enter 2FA Code\n")
                                 data = {'code': code, 'rememberMe': True}
                                 r = api_helper.json_request(link,
-                                                            self.session_manager.sessions[0], method="PUT", data=data)
+                                                            self.session_manager.sessions[0], method="POST", data=data)
                                 if "error" in r:
                                     count += 1
                                 else:
                                     print("Success")
                                     return [True, r]
                     return [False, r["error"]["message"]]
-            if not me_api.name:
+            if not isinstance(me_api, create_auth) and "error" in me_api:
                 result = resolve_auth(me_api)
                 if not result[0]:
                     error_message = result[1]

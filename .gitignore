@@ -150,3 +150,6 @@ $RECYCLE.BIN/
 .sites
 *.log
 .settings/*
+extras/OFLogin/geckodriver.exe
+extras/OFLogin/chromedriver.exe
+extras/OFMetadataFixer/*

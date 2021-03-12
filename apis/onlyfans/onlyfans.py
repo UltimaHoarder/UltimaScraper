@@ -35,6 +35,7 @@ def create_sign(session, link, sess, user_agent, text="onlyfans"):
 
 def session_rules(session, link):
     if "https://onlyfans.com/api2/v2/" in link:
+        session.headers["app-token"] = "33d57ade8c02dbc5a333db99ff9ae26a"
         sess = session.headers["access-token"]
         user_agent = session.headers["user-agent"]
         a = [session, link, sess, user_agent]
@@ -553,7 +554,6 @@ class start():
             a = [session, link, auth_items.sess, user_agent]
             session = create_sign(*a)
             session.headers["user-agent"] = user_agent
-            session.headers["app-token"] = "33d57ade8c02dbc5a333db99ff9ae26a"
             session.headers["referer"] = 'https://onlyfans.com/'
             for auth_cookie in auth_cookies:
                 session.cookies.set(**auth_cookie)

@@ -61,7 +61,7 @@ def monitor_cookies(web_browser):
     return cookies
 
 
-def start(api, domain ,proxy=None):
+def login(api, domain, proxy=None):
     auth_details = api.auth.auth_details
     email = auth_details.email
     password = auth_details.password

@@ -114,7 +114,7 @@ def account_setup(api: start, identifiers: list = [], jobs: dict = {}):
         if session.proxies:
             proxy = session.proxies["https"]
         domain = "https://onlyfans.com"
-        cookies = oflogin.start(api, domain, proxy)
+        cookies = oflogin.login(api, domain, proxy)
     return status, subscriptions
 
 # The start lol

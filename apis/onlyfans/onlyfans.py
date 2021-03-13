@@ -606,6 +606,7 @@ class start():
                 else:
                     continue
             print(f"Welcome {me_api.name} | {me_api.username}")
+            me_api.auth_details = self.auth.auth_details
             self.auth = me_api
             return self.auth
 

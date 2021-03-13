@@ -530,8 +530,8 @@ class start():
                 f"user_agent required for: {self.auth.auth_details.username}")
             exit()
         self.auth.auth_details.user_agent = option["user_agent"]
-        self.auth.auth_details.email = option["email"]
-        self.auth.auth_details.password = option["password"]
+        self.auth.auth_details.email = option.get("email","")
+        self.auth.auth_details.password = option.get("password","")
         self.auth.auth_details.support_2fa = option["support_2fa"]
         self.auth.auth_details.active = option["active"]
 

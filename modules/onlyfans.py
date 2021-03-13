@@ -108,7 +108,6 @@ def account_setup(api: start, identifiers: list = [], jobs: dict = {}):
             subscriptions += manage_subscriptions(
                 api, -1, identifiers=identifiers)
         status = True
-    elif api.auth.auth_details.email and api.auth.auth_details.password:
     elif api.auth.auth_details.email and api.auth.auth_details.password and json_settings["browser"]["auth"]:
         proxy = None
         session = api.session_manager.sessions[0]

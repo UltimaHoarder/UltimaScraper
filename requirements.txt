@@ -16,3 +16,4 @@ alembic
 tqdm
 selenium
 selenium-wire
+user_agent

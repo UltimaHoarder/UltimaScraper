@@ -160,6 +160,10 @@ class config(object):
                                     'scrape_names', True)
                                 self.scrape_paid_content = option.get(
                                     'scrape_paid_content', True)
+                        class browser:
+                            def __init__(self, option={}) -> None:
+                                self.auth = option.get(
+                                    'auth', True)
                         self.auto_profile_choice = option.get(
                             'auto_profile_choice', "")
                         self.auto_scrape_names = option.get(
@@ -167,6 +171,8 @@ class config(object):
                         self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
+                        self.browser = browser(option.get(
+                            'browser', {}))
                         self.jobs = jobs(option.get(
                             'jobs', {}))
                         self.download_directories = option.get(
@@ -216,6 +222,10 @@ class config(object):
                                     'scrape_names', True)
                                 self.scrape_paid_content = option.get(
                                     'scrape_paid_content', True)
+                        class browser:
+                            def __init__(self, option={}) -> None:
+                                self.auth = option.get(
+                                    'auth', True)
                         self.auto_profile_choice = option.get(
                             'auto_profile_choice', "")
                         self.auto_scrape_names = option.get(
@@ -223,6 +233,8 @@ class config(object):
                         self.auto_choice = option.get('auto_choice', "")
                         self.auto_scrape_apis = option.get(
                             'auto_scrape_apis', True)
+                        self.browser = browser(option.get(
+                            'browser', {}))
                         self.jobs = jobs(option.get(
                             'jobs', {}))
                         self.download_directories = option.get(

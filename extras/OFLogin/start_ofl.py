@@ -17,7 +17,7 @@ def launch_browser(proxy=None, user_agent=None, browser_type="Firefox"):
     directory = os.path.dirname(__file__)
     driver = None
     if browser_type == "Firefox":
-        matches = ["geckodriver.exe"]
+        matches = ["geckodriver.exe","geckodriver"]
         driver_paths = list(
             map(lambda match: os.path.join(directory, match), matches))
         found_paths = [

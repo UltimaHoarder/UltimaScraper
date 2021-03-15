@@ -164,6 +164,12 @@ class config(object):
                             def __init__(self, option={}) -> None:
                                 self.auth = option.get(
                                     'auth', True)
+                        class database:
+                            def __init__(self, option={}) -> None:
+                                self.posts = option.get(
+                                    'posts', True)
+                                self.comments = option.get(
+                                    'comments', True)
                         self.auto_profile_choice = option.get(
                             'auto_profile_choice', "")
                         self.auto_scrape_names = option.get(

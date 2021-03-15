@@ -6,7 +6,7 @@ from selenium.webdriver.support import expected_conditions
 from user_agent import generate_user_agent
 
 
-def launch_browser(proxy=None, user_agent=None, browser_type="Firefox"):
+def launch_browser(headers=None, user_agent=None, proxy=None, browser_type="Firefox"):
     options = {}
     if proxy:
         proxy = {
@@ -46,6 +46,8 @@ def launch_browser(proxy=None, user_agent=None, browser_type="Firefox"):
         exit(0)
     driver.set_window_size(1920, 1080)
     browser = driver
+    if headers:
+        browser._client.set_header_overrides(headers=headers)
     return browser
 
 
@@ -73,7 +75,7 @@ def login(api, domain, proxy=None):
         if web_browser:
             web_browser.close()
         web_browser = launch_browser(
-            proxy=proxy, user_agent=auth_details.user_agent)
+            user_agent=auth_details.user_agent, proxy=proxy)
         web_browser.get(
             domain)
         try:

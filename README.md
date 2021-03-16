@@ -356,7 +356,7 @@ Default = ""
 
 # FAQ
 
-Before troubleshooting, make sure you're using Python 3.9.
+Before troubleshooting, make sure you're using Python 3.9 and the latest commit of the script.
 
 Error: Access Denied / Auth Loop
 
@@ -392,18 +392,13 @@ Am I able to bypass paywalls with this script?
 
 Do OnlyFans or OnlyFans models know I'm using this script?
 
-> No, but there is identifiable information in the metadata folder which contains your IP address, so don't share it unless you're using a proxy/vpn or just don't care.
+> OnlyFans may know that you're using this script, but I try to keep it as anon as possible.
+
+> Generally, models will not know unless OnlyFans tells them but there is identifiable information in the metadata folder which contains your IP address, so don't share it unless you're using a proxy/vpn or just don't care.
 
 Do you collect session information?
 
 > No. The code is on Github which allows you to audit the codebase yourself. You can use wireshark or any other network analysis program to verify the outgoing connections are respective to the modules you chose.
-
-Does this script violate the Onlyfans.com ToS?
-
-> No...
-> OnlyFans themselves allow users to download content as stated in their [Terms of Service](https://onlyfans.com/terms)
-
-> 8.2.2 you may print or download one copy of a reasonable number of pages of the Website for your own personal, non-commercial use and not for further reproduction, publication, or distribution."
 
 Disclaimer:
 
@@ -412,5 +407,6 @@ Disclaimer:
 > The contributors of this script isn't in any way affiliated with, sponsored by, or endorsed by Fenix International Limited.
 
 > The contributors of this script are not responsible for the end users' actions.
+
 
 > LMAO

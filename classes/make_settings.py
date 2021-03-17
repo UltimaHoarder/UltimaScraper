@@ -30,7 +30,7 @@ def fix(config={}):
             if socks5_proxies:
                 fixed_socks5_proxies = []
                 for socks5_proxy in socks5_proxies:
-                    fixed_socks5_proxy = f"socks5://{socks5_proxy}"
+                    fixed_socks5_proxy = f"socks5h://{socks5_proxy}"
                     fixed_socks5_proxies.append(fixed_socks5_proxy)
                 settings["proxies"] = fixed_socks5_proxies
             global_user_agent = settings.pop(

@@ -151,6 +151,7 @@ class links(object):
         self.archived_stories = f"https://onlyfans.com/api2/v2/stories/archive/?limit=100&offset=0&order=publish_date_desc&app-token={app_token}"
         self.paid_api = f"https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token={app_token}"
         self.pay = f"https://onlyfans.com/api2/v2/payments/pay"
+        self.transactions = f"https://onlyfans.com/api2/v2/payments/all/transactions?limit=10&offset=0"
         self.two_factor = f"https://onlyfans.com/api2/v2/users/otp/check"
         full = {}
         items = self.__dict__.items()

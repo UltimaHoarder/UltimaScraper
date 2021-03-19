@@ -33,7 +33,7 @@ def launch_browser(headers=None, user_agent=None, proxy=None, browser_type="Fire
             driver = webdriver.Firefox(firefox_profile=profile, executable_path=driver_path,
                                        options=opts, seleniumwire_options=options)
         else:
-            message = f"Download geckodriver from https://github.com/mozilla/geckodriver/releases and paste it in {directory}"
+            message = f"Download geckodriver from https://github.com/mozilla/geckodriver/releases/tag/v0.27.0 and paste it in {directory}"
             input(message)
     else:
         driver_path = os.path.join(directory, "chromedriver.exe")

@@ -3,6 +3,8 @@ from seleniumwire import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
 from selenium.webdriver.support import expected_conditions
+from selenium.webdriver.firefox.options import Options as FirefoxOptions
+from selenium.webdriver.firefox.firefox_profile import FirefoxProfile
 from user_agent import generate_user_agent
 
 
@@ -24,9 +26,9 @@ def launch_browser(headers=None, user_agent=None, proxy=None, browser_type="Fire
             driver_path for driver_path in driver_paths if os.path.exists(driver_path)]
         if found_paths:
             driver_path = found_paths[0]
-            opts = webdriver.FirefoxOptions()
-            # opts.add_argument("--headless")
-            profile = webdriver.FirefoxProfile()
+            opts = FirefoxOptions()
+            # opts.headless = True
+            profile = FirefoxProfile()
             if not user_agent:
                 user_agent = generate_user_agent()
             profile.set_preference("general.useragent.override", user_agent)

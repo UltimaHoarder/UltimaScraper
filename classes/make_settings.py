@@ -35,6 +35,11 @@ def fix(config={}):
                 settings["proxies"] = fixed_socks5_proxies
             global_user_agent = settings.pop(
                 "global_user_agent", None)
+            if isinstance(settings.get(
+                    "webhooks", {}), list):
+                webhook = settings["webhooks"]
+                settings["webhooks"] = {}
+                settings["webhooks"]["global_webhooks"] = webhook
         if key == "supported":
             for key2, value2 in value.items():
                 temp_auth = value2.pop("auth", None)
@@ -129,13 +134,45 @@ def fix(config={}):
 class config(object):
     def __init__(self, settings={}, supported={}):
         class Settings(object):
-            def __init__(self, auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, webhooks=[], exit_on_completion=False, infinite_loop=True, loop_timeout="0", proxies=[], cert="",  random_string=""):
+            def __init__(self, auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, webhooks={}, exit_on_completion=False, infinite_loop=True, loop_timeout="0", proxies=[], cert="",  random_string=""):
+                class webhooks_settings:
+                    def __init__(self, option={}) -> None:
+                        class webhook_template:
+                            def __init__(self, option={}) -> None:
+                                self.webhooks = option.get(
+                                    'webhooks', [])
+                                self.status = option.get(
+                                    'status', None)
+                                self.hide_sensitive_info = option.get(
+                                    'hide_sensitive_info', True)
+                                print
+
+                        class auth_webhook:
+                            def __init__(self, option={}) -> None:
+                                self.succeeded = webhook_template(
+                                    option.get('succeeded', {}))
+                                self.failed = webhook_template(
+                                    option.get('failed', {}))
+
+                        class download_webhook:
+                            def __init__(self, option={}) -> None:
+                                self.succeeded = webhook_template(
+                                    option.get('succeeded', {}))
+                        self.global_webhooks = option.get(
+                            'global_webhooks', [])
+                        self.global_status = option.get(
+                            'global_status', True)
+                        self.auth_webhook = auth_webhook(
+                            option.get('auth_webhook', {}))
+                        self.download_webhook = download_webhook(
+                            option.get('download_webhook', {}))
                 self.auto_site_choice = auto_site_choice
                 self.export_type = export_type
                 self.profile_directories = profile_directories
                 self.max_threads = max_threads
                 self.min_drive_space = min_drive_space
-                self.webhooks = webhooks
+                self.webhooks = webhooks_settings(settings.get(
+                    'webhooks', webhooks))
                 self.exit_on_completion = exit_on_completion
                 self.infinite_loop = infinite_loop
                 self.loop_timeout = loop_timeout
@@ -160,10 +197,12 @@ class config(object):
                                     'scrape_names', True)
                                 self.scrape_paid_content = option.get(
                                     'scrape_paid_content', True)
+
                         class browser:
                             def __init__(self, option={}) -> None:
                                 self.auth = option.get(
                                     'auth', True)
+
                         class database:
                             def __init__(self, option={}) -> None:
                                 self.posts = option.get(
@@ -228,6 +267,7 @@ class config(object):
                                     'scrape_names', True)
                                 self.scrape_paid_content = option.get(
                                     'scrape_paid_content', True)
+
                         class browser:
                             def __init__(self, option={}) -> None:
                                 self.auth = option.get(

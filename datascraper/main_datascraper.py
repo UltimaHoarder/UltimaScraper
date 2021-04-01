@@ -29,6 +29,7 @@ api_helper = OnlyFans.api_helper
 
 def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=True):
     json_settings = json_config["settings"]
+    json_webhooks = json_settings["webhooks"]
     json_sites = json_config["supported"]
     domain = json_settings["auto_site_choice"]
     main_helper.assign_vars(json_config)
@@ -78,6 +79,9 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
             setup, subscriptions = module.account_setup(
                 api, identifiers, jobs)
             if not setup:
+                if webhooks:
+                    x = main_helper.process_webhooks(
+                        [api], "auth_webhook", "failed")
                 auth_details = {}
                 auth_details["auth"] = api.auth.auth_details.__dict__
                 profile_directory = api.auth.profile_directory
@@ -88,6 +92,8 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
                         auth_details, user_auth_filepath)
                 continue
             subscription_array += subscriptions
+            x = main_helper.process_webhooks(
+                [api], "auth_webhook", "succeeded")
         subscription_list = module.format_options(
             subscription_array, "usernames")
         if jobs["scrape_paid_content"]:
@@ -99,7 +105,8 @@ def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=Tr
                 module, subscription_list, auto_scrape_names, apis, json_config, site_name_lower, site_name)
         x = main_helper.process_downloads(apis, module)
         if webhooks:
-            x = main_helper.process_webhooks(apis)
+            x = main_helper.process_webhooks(
+                apis, "download_webhook", "succeeded")
     elif site_name_lower == "starsavn":
         site_name = "StarsAVN"
         original_api = StarsAVN

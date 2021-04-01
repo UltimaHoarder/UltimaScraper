@@ -329,7 +329,8 @@ def reformat(prepared_format, unformatted):
                 value = "Paid"
     directory = prepared_format.directory
     path = unformatted.replace("{site_name}", prepared_format.site_name)
-    path = path.replace("{first_letter}", prepared_format.username[0].capitalize())
+    path = path.replace(
+        "{first_letter}", prepared_format.username[0].capitalize())
     path = path.replace("{post_id}", post_id)
     path = path.replace("{media_id}", media_id)
     path = path.replace("{username}", prepared_format.username)
@@ -644,14 +645,26 @@ def process_downloads(apis, module):
                     download_info["base_directory"])
 
 
-def process_webhooks(apis):
-    for api in apis:
-        subscriptions = api.get_subscriptions(refresh=False)
-        for subscription in subscriptions:
-            download_info = subscription.download_info
-            if download_info:
-                if download_info["webhook"]:
-                    send_webhook(subscription)
+def process_webhooks(apis: list, category, category2):
+    global_webhooks = webhooks["global_webhooks"]
+    global_status = webhooks["global_status"]
+    webhook = webhooks[category]
+    webhook_state = webhook[category2]
+    webhook_links = []
+    webhook_status = global_status
+    webhook_hide_sensitive_info = True
+    if webhook_state["status"] != None:
+        webhook_status = webhook_state["status"]
+    if global_webhooks:
+        webhook_links = global_webhooks
+    if webhook_state["webhooks"]:
+        webhook_links = webhook_state["webhooks"]
+    if webhook_status:
+        for api in apis:
+            send_webhook(api, webhook_hide_sensitive_info,
+                         webhook_links, category, category2)
+        print
+    print
 
 
 def is_me(user_api):
@@ -717,6 +730,7 @@ def ordinal(n): return "%d%s" % (
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
     return ''.join(random.choice(chars) for _ in range(size))
 
+
 def humansize(nbytes):
     i = 0
     suffixes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
@@ -726,19 +740,40 @@ def humansize(nbytes):
     f = ('%.2f' % nbytes).rstrip('0').rstrip('.')
     return '%s %s' % (f, suffixes[i])
 
-def send_webhook(item):
-    for webhook_link in webhooks:
-        message = prepare_webhooks.discord()
-        embed = message.embed()
-        embed.title = f"Downloaded: {item.username}"
-        embed.add_field("username", item.username)
-        embed.add_field("post_count", item.postsCount)
-        embed.add_field("link", item.link)
-        embed.image.url = item.avatar
-        message.embeds.append(embed)
-        message = json.loads(json.dumps(
-            message, default=lambda o: o.__dict__))
-        x = requests.post(webhook_link, json=message)
+
+def send_webhook(item, webhook_hide_sensitive_info, webhook_links, category, category2: str):
+    if category == "auth_webhook":
+        for webhook_link in webhook_links:
+            auth = item.auth
+            username = auth.username
+            if webhook_hide_sensitive_info:
+                username = "REDACTED"
+            message = prepare_webhooks.discord()
+            embed = message.embed()
+            embed.title = f"Auth {category2.capitalize()}"
+            embed.add_field("username", username)
+            message.embeds.append(embed)
+            message = json.loads(json.dumps(
+                message, default=lambda o: o.__dict__))
+            x = requests.post(webhook_link, json=message)
+    if category == "download_webhook":
+        subscriptions = item.get_subscriptions(refresh=False)
+        for subscription in subscriptions:
+            download_info = subscription.download_info
+            if download_info:
+                for webhook_link in webhook_links:
+                    message = prepare_webhooks.discord()
+                    embed = message.embed()
+                    embed.title = f"Downloaded: {subscription.username}"
+                    embed.add_field("username", subscription.username)
+                    embed.add_field("post_count", subscription.postsCount)
+                    embed.add_field("link", subscription.link)
+                    embed.image.url = subscription.avatar
+                    message.embeds.append(embed)
+                    message = json.loads(json.dumps(
+                        message, default=lambda o: o.__dict__))
+                    x = requests.post(webhook_link, json=message)
+                    print
 
 
 def find_between(s, start, end):

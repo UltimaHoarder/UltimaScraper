@@ -1087,7 +1087,7 @@ def media_scraper(results, api: start, subscription: create_subscription, format
                                     if temp_filename == new_media["filename"]:
                                         found_medias.append(temp_media)
                                 else:
-                                    print
+                                    continue
                             # found_medias = [x for x in medias
                             #                 if x["filename"] == new_media["filename"]]
                             if found_medias:

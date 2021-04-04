@@ -1,5 +1,7 @@
 ### api_table.py ###
 
+from datetime import datetime
+from typing import cast
 import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
 
@@ -10,7 +12,7 @@ class api_table():
     text = sqlalchemy.Column(sqlalchemy.String)
     price = sqlalchemy.Column(sqlalchemy.Integer)
     paid = sqlalchemy.Column(sqlalchemy.Integer)
-    created_at = sqlalchemy.Column(sqlalchemy.DATETIME)
+    created_at = cast(datetime,sqlalchemy.Column(sqlalchemy.TIMESTAMP))
 
     def legacy(self,Base,table_name):
         class legacy_api_table(Base):

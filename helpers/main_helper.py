@@ -1,3 +1,4 @@
+import math
 from types import SimpleNamespace
 from typing import Any, Tuple, Union
 
@@ -739,6 +740,10 @@ def humansize(nbytes):
         i += 1
     f = ('%.2f' % nbytes).rstrip('0').rstrip('.')
     return '%s %s' % (f, suffixes[i])
+
+
+def byteToGigaByte(n):
+    return (n / math.pow(10, 9))
 
 
 def send_webhook(item, webhook_hide_sensitive_info, webhook_links, category, category2: str):

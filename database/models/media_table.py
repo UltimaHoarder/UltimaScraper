@@ -1,5 +1,7 @@
 ### api_table.py ###
 
+from datetime import datetime
+from typing import Optional, cast
 import sqlalchemy
 
 
@@ -16,7 +18,7 @@ class media_table():
     preview = sqlalchemy.Column(sqlalchemy.Integer, default=0)
     linked = sqlalchemy.Column(sqlalchemy.String, default=None)
     downloaded = sqlalchemy.Column(sqlalchemy.Integer, default=0)
-    created_at = sqlalchemy.Column(sqlalchemy.DATETIME)
+    created_at = cast(datetime,sqlalchemy.Column(sqlalchemy.TIMESTAMP))
 
     def legacy(self,Base):
         class legacy_media_table(Base):

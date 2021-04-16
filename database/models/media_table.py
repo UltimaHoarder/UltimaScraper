@@ -11,13 +11,13 @@ class media_table():
     media_id = sqlalchemy.Column(sqlalchemy.Integer, unique=True)
     post_id = sqlalchemy.Column(sqlalchemy.Integer, nullable=False)
     link = sqlalchemy.Column(sqlalchemy.String)
-    directory = sqlalchemy.Column(sqlalchemy.String)
-    filename = sqlalchemy.Column(sqlalchemy.String)
+    directory = cast(str,sqlalchemy.Column(sqlalchemy.String))
+    filename = cast(str,sqlalchemy.Column(sqlalchemy.String))
     size = sqlalchemy.Column(sqlalchemy.Integer, default=None)
     media_type = sqlalchemy.Column(sqlalchemy.String)
     preview = sqlalchemy.Column(sqlalchemy.Integer, default=0)
     linked = sqlalchemy.Column(sqlalchemy.String, default=None)
-    downloaded = sqlalchemy.Column(sqlalchemy.Integer, default=0)
+    downloaded = cast(bool,sqlalchemy.Column(sqlalchemy.Integer, default=0))
     created_at = cast(datetime,sqlalchemy.Column(sqlalchemy.TIMESTAMP))
 
     def legacy(self,Base):

@@ -188,6 +188,12 @@ def handle_refresh(argument, argument2):
     return argument
 
 
+class error_details():
+    def __init__(self) -> None:
+        self.code = None
+        self.message = ""
+
+
 class create_auth():
     def __init__(self, option={}, init=False) -> None:
         self.id = option.get("id")
@@ -209,6 +215,7 @@ class create_auth():
         self.auth_details = auth_details()
         self.profile_directory = option.get("profile_directory", "")
         self.active = False
+        self.errors: list[error_details] = []
         valid_counts = ["chatMessagesCount"]
         args = [self.username, False, False]
         link_info = links(*args).full
@@ -531,8 +538,8 @@ class start():
                 f"user_agent required for: {self.auth.auth_details.username}")
             exit()
         self.auth.auth_details.user_agent = option["user_agent"]
-        self.auth.auth_details.email = option.get("email","")
-        self.auth.auth_details.password = option.get("password","")
+        self.auth.auth_details.email = option.get("email", "")
+        self.auth.auth_details.password = option.get("password", "")
         self.auth.auth_details.support_2fa = option["support_2fa"]
         self.auth.auth_details.active = option["active"]
 
@@ -562,22 +569,14 @@ class start():
         while count < max_attempts+1:
             string = f"Auth {auth_version} Attempt {count}/{max_attempts}"
             print(string)
-            me_api = self.get_authed()
+            self.get_authed()
             count += 1
-            if me_api and not "error" in me_api:
-                me_api = create_auth(me_api)
-                me_api.active = True
 
-            def resolve_auth(r):
-                if 'error' in r:
-                    error = r["error"]
-                    error_message = r["error"]["message"]
-                    error_code = error["code"]
-                    if error_code == 0:
-                        print(error_message)
-                    if error_code == 101:
-                        error_message = "Blocked by 2FA."
-                        print(error_message)
+            def resolve_auth(auth: create_auth):
+                if self.auth.errors:
+                    error = self.auth.errors[-1]
+                    print(error.message)
+                    if error.code == 101:
                         if auth_items.support_2fa:
                             link = f"https://onlyfans.com/api2/v2/users/otp/check"
                             count = 1
@@ -590,40 +589,57 @@ class start():
                                 r = api_helper.json_request(link,
                                                             self.session_manager.sessions[0], method="POST", data=data)
                                 if "error" in r:
+                                    error.message = r["error"]["message"]
                                     count += 1
                                 else:
                                     print("Success")
-                                    return [True, r]
-                    return [False, r["error"]["message"]]
-            if not isinstance(me_api, create_auth) and "error" in me_api:
-                result = resolve_auth(me_api)
-                if not result[0]:
-                    error_message = result[1]
-                    if "token" in error_message:
-                        break
-                    if "Code wrong" in error_message:
-                        break
-                    continue
-                else:
-                    continue
-            print(f"Welcome {me_api.name} | {me_api.username}")
-            me_api.auth_details = self.auth.auth_details
-            self.auth = me_api
-            return self.auth
+                                    auth.active = True
+                                    auth.errors.remove(error)
+                                    break
+            resolve_auth(self.auth)
+            if self.auth.errors:
+                error = self.auth.errors[-1]
+                error_message = error.message
+                if "token" in error_message:
+                    break
+                if "Code wrong" in error_message:
+                    break
+                continue
+            else:
+                print(f"Welcome {self.auth.name} | {self.auth.username}")
+                return self.auth
 
-    def get_authed(self):
+    def get_authed(self) -> Union[create_auth]:
         if not self.auth.active:
             link = links().customer
             r = api_helper.json_request(
                 link, self.session_manager.sessions[0],  sleep=False)
             if r:
-                r["session_manager"] = self.session_manager
-        else:
-            r = self.auth
-        return r
+                self.resolve_auth_errors(r)
+                if not self.auth.errors:
+                    me_api = create_auth(r)
+                    me_api.active = True
+                    me_api.session_manager = self.session_manager
+                    self.auth = me_api
+        return self.auth
 
     def set_auth(self, me):
         self.auth = me
+
+    def resolve_auth_errors(self, r):
+        # Adds an error object to self.auth.errors
+        if 'error' in r:
+            error = r["error"]
+            error_message = r["error"]["message"]
+            error_code = error["code"]
+            error = error_details()
+            if error_code == 0:
+                pass
+            if error_code == 101:
+                error_message = "Blocked by 2FA."
+            error.code = error_code
+            error.message = error_message
+            self.auth.errors.append(error)
 
     def get_user(self, identifier):
         link = links(identifier).users

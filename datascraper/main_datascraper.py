@@ -27,7 +27,7 @@ api_helper = OnlyFans.api_helper
 #     return text
 
 
-def start_datascraper(json_config, site_name_lower, apis: list = [], webhooks=True):
+def start_datascraper(json_config:dict, site_name_lower:str, apis: list = [], webhooks=True):
     json_settings = json_config["settings"]
     json_webhooks = json_settings["webhooks"]
     json_sites = json_config["supported"]

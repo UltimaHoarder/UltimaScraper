@@ -363,7 +363,6 @@ Before troubleshooting, make sure you're using Python 3.9 and the latest commit 
 Error: Access Denied / Auth Loop
 
 > Make sure your cookies and user-agent are correct.
-> Use this tool [Cookie Helper](https://github.com/M-rcus/OnlyFans-Cookie-Helper)
 
 AttributeError: type object 'datetime.datetime' has no attribute 'fromisoformat'
 

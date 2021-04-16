@@ -8,7 +8,6 @@ python-dateutil
 lxml
 mergedeep
 jsonpickle
-deepdiff[murmur]
 numpy==1.19.3
 ujson
 sqlalchemy==1.3.23

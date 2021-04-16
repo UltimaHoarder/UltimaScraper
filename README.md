@@ -18,12 +18,6 @@ https://github.com/DIGITALCRIMINAL/OnlyFans/discussions/889
 
 ## Running the app locally
 
-You need to install C++ Build Tools for the deephash module.
-
-(I'll probably end up using something else since this is an annoying requirement)
-
-https://visualstudio.microsoft.com/downloads/#build-tools-for-visual-studio-2019
-
 From the project folder open CMD/Terminal and run the command below:
 
 `pip install -r requirements.txt`

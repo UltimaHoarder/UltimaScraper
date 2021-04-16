@@ -2,7 +2,6 @@ import math
 from types import SimpleNamespace
 from typing import Any, Tuple, Union
 
-from deepdiff.deephash import DeepHash
 from sqlalchemy.ext.declarative import api
 from sqlalchemy.ext.declarative.api import declarative_base
 from classes.prepare_metadata import format_variables
@@ -497,10 +496,8 @@ def get_config(config_path):
     file_name = os.path.basename(config_path)
     json_config = json.loads(json.dumps(make_settings.config(
         **json_config), default=lambda o: o.__dict__))
-    hashed = DeepHash(json_config)[json_config]
-    hashed2 = DeepHash(json_config2)[json_config2]
     updated = False
-    if hashed != hashed2:
+    if json_config != json_config2:
         updated = True
         update_config(json_config, file_name=file_name)
     if not json_config:

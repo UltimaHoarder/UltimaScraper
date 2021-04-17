@@ -594,9 +594,10 @@ def process_metadata(archive_path: str, formatted_directories: dict, new_metadat
     database_name = parent_type if parent_type else api_type
     subscription.download_info["metadata_locations"][api_type] = {}
     subscription.download_info["metadata_locations"][api_type][database_name] = archive_path
-    print("Renaming files.")
-    new_metadata_object = ofrenamer.start(
-        Session, parent_type, api_type, api_path, site_name, subscription, folder, json_settings)
+    if json_global_settings["helpers"]["renamer"]:
+        print("Renaming files.")
+        new_metadata_object = ofrenamer.start(
+            Session, parent_type, api_type, api_path, site_name, subscription, folder, json_settings)
     if delete_legacy_metadata:
         for old_metadata in delete_metadatas:
             if os.path.exists(old_metadata):

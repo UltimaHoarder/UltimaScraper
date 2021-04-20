@@ -621,6 +621,8 @@ class start():
                     me_api.active = True
                     me_api.session_manager = self.session_manager
                     self.auth = me_api
+            else:
+                self.auth.active = False
         return self.auth
 
     def set_auth(self, me):

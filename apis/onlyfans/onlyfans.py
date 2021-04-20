@@ -651,7 +651,7 @@ class start():
 
     def get_subscriptions(self, resume=None, refresh=True, identifiers: list = [], extra_info=True, limit=20, offset=0) -> list[Union[create_subscription, None]]:
         authed = self.auth
-        if not authed:
+        if not authed.active:
             return []
         if not refresh:
             subscriptions = authed.subscriptions

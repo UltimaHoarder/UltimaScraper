@@ -597,17 +597,20 @@ class start():
                                     auth.errors.remove(error)
                                     break
             resolve_auth(self.auth)
-            if self.auth.errors:
-                error = self.auth.errors[-1]
-                error_message = error.message
-                if "token" in error_message:
-                    break
-                if "Code wrong" in error_message:
-                    break
+            if not self.auth.active:
+                if self.auth.errors:
+                    error = self.auth.errors[-1]
+                    error_message = error.message
+                    if "token" in error_message:
+                        break
+                    if "Code wrong" in error_message:
+                        break
+                else:
+                    print("Auth 404'ed")
                 continue
             else:
                 print(f"Welcome {self.auth.name} | {self.auth.username}")
-                return self.auth
+                break
 
     def get_authed(self) -> Union[create_auth]:
         if not self.auth.active:
@@ -622,6 +625,7 @@ class start():
                     me_api.session_manager = self.session_manager
                     self.auth = me_api
             else:
+                # 404'ed
                 self.auth.active = False
         return self.auth
 

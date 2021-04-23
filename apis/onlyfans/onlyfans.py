@@ -611,6 +611,7 @@ class start():
             else:
                 print(f"Welcome {self.auth.name} | {self.auth.username}")
                 break
+        return self.auth
 
     def get_authed(self) -> Union[create_auth]:
         if not self.auth.active:

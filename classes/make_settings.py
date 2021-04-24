@@ -225,6 +225,8 @@ class config(object):
                             'auto_scrape_apis', True)
                         self.browser = browser(option.get(
                             'browser', {}))
+                        self.csv_export_only = option.get(
+                            'csv_export_only', False)
                         self.jobs = jobs(option.get(
                             'jobs', {}))
                         self.download_directories = option.get(

@@ -38,6 +38,7 @@ json_global_settings = None
 max_threads = -1
 json_settings = None
 auto_choice = None
+csv_export_only = False
 profile_directory = ""
 download_directory = ""
 metadata_directory = ""
@@ -56,13 +57,14 @@ app_token = None
 
 
 def assign_vars(json_auth: auth_details, config, site_settings, site_name):
-    global json_config, json_global_settings, max_threads, json_settings, auto_choice, profile_directory, download_directory, metadata_directory, metadata_directory_format, delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, text_length, app_token
+    global json_config, json_global_settings, max_threads, json_settings, auto_choice, csv_export_only, profile_directory, download_directory, metadata_directory, metadata_directory_format, delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, text_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
     max_threads = json_global_settings["max_threads"]
     json_settings = site_settings
     auto_choice = json_settings["auto_choice"]
+    csv_export_only = json_settings["csv_export_only"]
     profile_directory = main_helper.get_directory(
         json_global_settings['profile_directories'], ".profiles")
     download_directory = main_helper.get_directory(
@@ -604,6 +606,15 @@ def process_metadata(archive_path: str, formatted_directories: dict, new_metadat
                 os.remove(old_metadata)
 
 
+def get_csv_path(username):
+    mandatory_directories = {}
+    mandatory_directories["metadata_directory"] = metadata_directory
+    media_type = format_media_types()
+    formatted_directories = format_directories(mandatory_directories, site_name, username, metadata_directory_format)
+    formatted_metadata_directory = formatted_directories["metadata_directory"]
+    return os.path.join(formatted_metadata_directory, 'all_media_links.csv')
+
+
 def format_directories(directories, site_name, username, unformatted, locations: list = [], api_type="") -> dict:
     x = {}
     x["profile_directory"] = ""
@@ -1122,6 +1133,9 @@ class download_media():
                 self.downloaded = True
                 metadata_locations = download_info["metadata_locations"]
                 directory = download_info["directory"]
+                csv_path = get_csv_path(subscription.username)
+                if os.path.exists(csv_path):
+                    os.remove(csv_path)
                 for parent_type, value in metadata_locations.items():
                     for api_type, metadata_path in value.items():
                         Session, engine = db_helper.create_database_session(
@@ -1133,28 +1147,32 @@ class download_media():
                         api_table = database.api_table
                         media_table = database.media_table
                         result = database_session.query(media_table).all()
-                        media_type_list = media_types()
-                        for r in result:
-                            item = getattr(media_type_list, r.media_type)
-                            item.append(r)
-                        media_type_list = media_type_list.__dict__
-                        for location, v in media_type_list.items():
-                            if location == "Texts":
-                                continue
-                            media_set = v
-                            media_set_count = len(media_set)
-                            if not media_set:
-                                continue
-                            string = "Download Processing\n"
-                            string += f"Name: {username} | Type: {api_type} | Count: {media_set_count} {location} | Directory: {directory}\n"
-                            print(string)
-                            d_session = download_session()
-                            d_session.start(unit='B', unit_scale=True,
-                                            miniters=1)
-                            pool = multiprocessing()
-                            pool.starmap(self.prepare_download, product(
-                                media_set, [api], [api_type], [subscription], [d_session]))
-                            d_session.close()
+                        if csv_export_only:
+                            print(f"\nExporting CSV for {subscription.username} {api_type}")
+                            self.export_csv(result, csv_path)
+                        else:
+                            media_type_list = media_types()
+                            for r in result:
+                                item = getattr(media_type_list, r.media_type)
+                                item.append(r)
+                            media_type_list = media_type_list.__dict__
+                            for location, v in media_type_list.items():
+                                if location == "Texts":
+                                    continue
+                                media_set = v
+                                media_set_count = len(media_set)
+                                if not media_set:
+                                    continue
+                                string = "Download Processing\n"
+                                string += f"Name: {username} | Type: {api_type} | Count: {media_set_count} {location} | Directory: {directory}\n"
+                                print(string)
+                                d_session = download_session()
+                                d_session.start(unit='B', unit_scale=True,
+                                                miniters=1)
+                                pool = multiprocessing()
+                                pool.starmap(self.prepare_download, product(
+                                    media_set, [api], [api_type], [subscription], [d_session]))
+                                d_session.close()
                         database_session.commit()
             else:
                 self.downloaded = False
@@ -1253,6 +1271,14 @@ class download_media():
             d_session.colour = "Red"
 
         return return_bool
+
+    def export_csv(self, media_resulsts, csv_path):
+        print(csv_path)
+        with open(csv_path, 'a') as csv_out:
+            for media in media_resulsts:
+                links = [media.link]
+                for link in links:
+                    csv_out.write(f'{link}\n')
 
 
 def manage_subscriptions(api: start, auth_count=0, identifiers: list = [], refresh: bool = True):

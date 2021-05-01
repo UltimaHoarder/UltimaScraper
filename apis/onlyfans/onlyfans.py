@@ -557,7 +557,7 @@ class start():
         self.auth.auth_details.password = option.get("password", "")
         self.auth.auth_details.support_2fa = option["support_2fa"]
         self.auth.auth_details.active = option["active"]
-        self.auth.auth_details.x_bc = option["x_bc"]
+        self.auth.auth_details.x_bc = option.get("x_bc", "")
 
     def login(self, full=False, max_attempts=10) -> Union[create_auth, None]:
         auth_version = "(V1)"

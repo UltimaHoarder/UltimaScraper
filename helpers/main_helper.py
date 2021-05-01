@@ -481,7 +481,6 @@ def downloader(r, download_path, d_session, count=0):
                     deleted = True
                 except PermissionError as e2:
                     print(e2)
-        string = f"{e}\n Tries: {count}"
         return
     return True
 

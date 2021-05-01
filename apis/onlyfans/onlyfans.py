@@ -1,4 +1,5 @@
 import time
+import base64
 from typing import Union
 from urllib.parse import urlparse
 from urllib import parse
@@ -11,25 +12,37 @@ from .. import api_helper
 from mergedeep import merge, Strategy
 import jsonpickle
 import copy
+from random import random
 
 
 # Zero reason to do this lmao
 
 
-def create_sign(session, link, sess, user_agent, text="onlyfans"):
+def create_sign(session, link, sess, x_bc, text="onlyfans"):
     # Users: 300000 | Creators: 301000
-    time2 = str(int(round(time.time() * 1000-301000)))
+    time2 = str(int(round(time.time())))
     path = urlparse(link).path
     query = urlparse(link).query
-    path = path+"?"+query
-    a = [sess, time2, path, user_agent, text]
+    path = path if not query else f"{path}?{query}"
+    static_param = "BcsLYSyemJCNrob8u6QWziudT5Xx4LlO"
+    a = [static_param, time2, path, "0"]
     msg = "\n".join(a)
     message = msg.encode("utf-8")
     hash_object = hashlib.sha1(message)
-    sha_1 = hash_object.hexdigest()
+    sha_1_sign = hash_object.hexdigest()
+    sha_1_b = sha_1_sign.encode("ascii")
+    checksum = sha_1_b[15] + sha_1_b[3] + sha_1_b[27] + sha_1_b[38] + sha_1_b[31] + \
+               sha_1_b[23] + sha_1_b[4] + sha_1_b[35] + sha_1_b[9] + sha_1_b[25] + \
+               sha_1_b[30] + sha_1_b[22] + sha_1_b[10] + sha_1_b[26] + sha_1_b[23] + \
+               sha_1_b[19] + sha_1_b[0] + sha_1_b[18] + sha_1_b[27] + sha_1_b[6] + \
+               sha_1_b[2] + sha_1_b[33] + sha_1_b[18] + sha_1_b[37] + sha_1_b[0] + \
+               sha_1_b[34] + sha_1_b[23] + sha_1_b[38] + sha_1_b[25] + sha_1_b[14] + \
+               sha_1_b[23] + sha_1_b[6] - 100
+
     session.headers["access-token"] = sess
-    session.headers["sign"] = sha_1
+    session.headers["sign"] = "3:{}:{:x}:608c48da".format(sha_1_sign, abs(checksum))
     session.headers["time"] = time2
+    session.headers["x-bc"] = x_bc
     return session
 
 
@@ -38,7 +51,8 @@ def session_rules(session, link):
         session.headers["app-token"] = "33d57ade8c02dbc5a333db99ff9ae26a"
         sess = session.headers["access-token"]
         user_agent = session.headers["user-agent"]
-        a = [session, link, sess, user_agent]
+        x_bc = session.headers["x-bc"]
+        a = [session, link, sess, x_bc]
         session = create_sign(*a)
     return session
 
@@ -127,6 +141,7 @@ class auth_details():
         self.password = option.get('password', "")
         self.support_2fa = option.get('support_2fa', True)
         self.active = option.get('active', True)
+        self.x_bc = option.get('x_bc', "")
 
 
 class links(object):
@@ -542,6 +557,7 @@ class start():
         self.auth.auth_details.password = option.get("password", "")
         self.auth.auth_details.support_2fa = option["support_2fa"]
         self.auth.auth_details.active = option["active"]
+        self.auth.auth_details.x_bc = option["x_bc"]
 
     def login(self, full=False, max_attempts=10) -> Union[create_auth, None]:
         auth_version = "(V1)"
@@ -549,7 +565,7 @@ class start():
         link = links().customer
         user_agent = auth_items.user_agent
         auth_id = str(auth_items.auth_id)
-        app_token = auth_items.app_token
+        x_bc = auth_items.x_bc
         # expected string error is fixed by auth_id
         auth_cookies = [
             {'name': 'auth_id', 'value': auth_id},
@@ -559,14 +575,14 @@ class start():
             {'name': f'auth_uid_{auth_id}', 'value': None},
         ]
         for session in self.session_manager.sessions:
-            a = [session, link, auth_items.sess, user_agent]
+            a = [session, link, auth_items.sess, x_bc]
             session = create_sign(*a)
             session.headers["user-agent"] = user_agent
             session.headers["referer"] = 'https://onlyfans.com/'
             for auth_cookie in auth_cookies:
                 session.cookies.set(**auth_cookie)
         count = 1
-        while count < max_attempts+1:
+        while count < max_attempts + 1:
             string = f"Auth {auth_version} Attempt {count}/{max_attempts}"
             print(string)
             self.get_authed()

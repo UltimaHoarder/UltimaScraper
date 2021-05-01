@@ -134,6 +134,7 @@ class auth_details():
         self.auth_hash = option.get('auth_hash', "")
         self.auth_uniq_ = option.get('auth_uniq_', "")
         self.sess = option.get('sess', "")
+        self.x_bc = option.get('x_bc', "")
         self.app_token = option.get(
             'app_token', '33d57ade8c02dbc5a333db99ff9ae26a')
         self.user_agent = option.get('user_agent', "")
@@ -141,7 +142,6 @@ class auth_details():
         self.password = option.get('password', "")
         self.support_2fa = option.get('support_2fa', True)
         self.active = option.get('active', True)
-        self.x_bc = option.get('x_bc', "")
 
 
 class links(object):
@@ -547,6 +547,7 @@ class start():
         self.auth.auth_details.auth_hash = option["auth_hash"]
         self.auth.auth_details.auth_uniq_ = option["auth_uniq_"]
         self.auth.auth_details.sess = option["sess"]
+        self.auth.auth_details.x_bc = option.get("x_bc", "")
         self.auth.auth_details.app_token = option["app_token"]
         if not option["user_agent"]:
             input(
@@ -557,7 +558,6 @@ class start():
         self.auth.auth_details.password = option.get("password", "")
         self.auth.auth_details.support_2fa = option["support_2fa"]
         self.auth.auth_details.active = option["active"]
-        self.auth.auth_details.x_bc = option.get("x_bc", "")
 
     def login(self, full=False, max_attempts=10) -> Union[create_auth, None]:
         auth_version = "(V1)"

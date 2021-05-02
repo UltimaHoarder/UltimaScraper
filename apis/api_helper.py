@@ -9,7 +9,7 @@ import os
 from multiprocessing import cpu_count
 from requests.adapters import HTTPAdapter
 from multiprocessing.dummy import Pool as ThreadPool
-from itertools import product,chain, zip_longest, groupby
+from itertools import product, chain, zip_longest, groupby
 from os.path import dirname as up
 import threading
 
@@ -45,6 +45,7 @@ def request_parameters(session_rules2, session_retry_rules2):
 def json_request(link, session, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20, ignore_rules=False) -> Any:
     if session_rules and not ignore_rules:
         session = session_rules(session, link)
+    session = copy.deepcopy(session)
     count = 0
     sleep_number = 0.5
     result = {}
@@ -244,9 +245,10 @@ def scrape_check(links, session_manager: session_manager, api_type):
     def multi(item, session_manager):
         link = item["link"]
         session = session_manager.sessions[item["count"]]
-        session2 = copy.deepcopy(session)
         item = {}
-        result = json_request(link, session2)
+        result = json_request(link, session)
+        if "error" in result:
+            result = []
         # if result:
         #     print(f"Found: {link}")
         # else:
@@ -268,7 +270,9 @@ def scrape_check(links, session_manager: session_manager, api_type):
         pool = multiprocessing()
         results = pool.starmap(multi, product(
             items, [session_manager]))
-        faulty = [{"key":k,"value":v, "link":links[k]} for k,v in enumerate(results) if not v]
+        not_faulty = [x for x in results if x]
+        faulty = [{"key": k, "value": v, "link": links[k]}
+                  for k, v in enumerate(results) if not v]
         last_number = len(results)-1
         if faulty:
             positives = [x for x in faulty if x["key"] != last_number]
@@ -280,6 +284,7 @@ def scrape_check(links, session_manager: session_manager, api_type):
                 print("Missing "+str(num)+" Posts... Retrying...")
                 links = restore_missing_data(
                     links, results, split_by)
+                media_set.extend(not_faulty)
             if not positives and false_positive:
                 media_set.extend(results)
                 break
@@ -290,6 +295,7 @@ def scrape_check(links, session_manager: session_manager, api_type):
             break
     media_set = [x for x in media_set]
     return media_set
+
 
 def grouper(n, iterable, fillvalue=None):
     args = [iter(iterable)] * n

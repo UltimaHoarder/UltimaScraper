@@ -8,6 +8,9 @@ import math
 from datetime import datetime
 from dateutil.relativedelta import relativedelta
 from itertools import chain, product
+import requests
+
+from sqlalchemy.orm.session import Session
 from .. import api_helper
 from mergedeep import merge, Strategy
 import jsonpickle
@@ -18,29 +21,27 @@ from random import random
 # Zero reason to do this lmao
 
 
-def create_sign(session, link, sess, x_bc, text="onlyfans"):
+def create_sign(session: requests.Session, link: str, sess: str, x_bc: str, auth_id: int, text="onlyfans"):
     # Users: 300000 | Creators: 301000
     time2 = str(int(round(time.time())))
     path = urlparse(link).path
     query = urlparse(link).query
     path = path if not query else f"{path}?{query}"
     static_param = "BcsLYSyemJCNrob8u6QWziudT5Xx4LlO"
-    a = [static_param, time2, path, "0"]
+    a = [static_param, time2, path, auth_id]
     msg = "\n".join(a)
     message = msg.encode("utf-8")
     hash_object = hashlib.sha1(message)
     sha_1_sign = hash_object.hexdigest()
     sha_1_b = sha_1_sign.encode("ascii")
-    checksum = sha_1_b[15] + sha_1_b[3] + sha_1_b[27] + sha_1_b[38] + sha_1_b[31] + \
-               sha_1_b[23] + sha_1_b[4] + sha_1_b[35] + sha_1_b[9] + sha_1_b[25] + \
-               sha_1_b[30] + sha_1_b[22] + sha_1_b[10] + sha_1_b[26] + sha_1_b[23] + \
-               sha_1_b[19] + sha_1_b[0] + sha_1_b[18] + sha_1_b[27] + sha_1_b[6] + \
-               sha_1_b[2] + sha_1_b[33] + sha_1_b[18] + sha_1_b[37] + sha_1_b[0] + \
-               sha_1_b[34] + sha_1_b[23] + sha_1_b[38] + sha_1_b[25] + sha_1_b[14] + \
-               sha_1_b[23] + sha_1_b[6] - 100
+    checksum = sum([sha_1_b[15], sha_1_b[3], sha_1_b[27], sha_1_b[38], sha_1_b[31], sha_1_b[23], sha_1_b[4], sha_1_b[35], sha_1_b[9], sha_1_b[25], sha_1_b[30], sha_1_b[22], sha_1_b[10], sha_1_b[26], sha_1_b[23], sha_1_b[19],
+                    sha_1_b[0], sha_1_b[18], sha_1_b[27], sha_1_b[6], sha_1_b[2], sha_1_b[33], sha_1_b[18], sha_1_b[37],
+                    sha_1_b[0], sha_1_b[34], sha_1_b[23], sha_1_b[38],
+                    sha_1_b[25], sha_1_b[14], sha_1_b[23], sha_1_b[6]])-100
 
     session.headers["access-token"] = sess
-    session.headers["sign"] = "3:{}:{:x}:608c48da".format(sha_1_sign, abs(checksum))
+    session.headers["sign"] = "3:{}:{:x}:608c48da".format(
+        sha_1_sign, abs(checksum))
     session.headers["time"] = time2
     session.headers["x-bc"] = x_bc
     return session
@@ -51,8 +52,9 @@ def session_rules(session, link):
         session.headers["app-token"] = "33d57ade8c02dbc5a333db99ff9ae26a"
         sess = session.headers["access-token"]
         user_agent = session.headers["user-agent"]
+        auth_id = session.headers["user-id"]
         x_bc = session.headers["x-bc"]
-        a = [session, link, sess, x_bc]
+        a = [session, link, sess, x_bc, auth_id]
         session = create_sign(*a)
     return session
 
@@ -575,10 +577,11 @@ class start():
             {'name': f'auth_uid_{auth_id}', 'value': None},
         ]
         for session in self.session_manager.sessions:
-            a = [session, link, auth_items.sess, x_bc]
+            a = [session, link, auth_items.sess, x_bc,auth_id]
             session = create_sign(*a)
             session.headers["user-agent"] = user_agent
             session.headers["referer"] = 'https://onlyfans.com/'
+            session.headers["user-id"] = auth_id
             for auth_cookie in auth_cookies:
                 session.cookies.set(**auth_cookie)
         count = 1

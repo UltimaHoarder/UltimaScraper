@@ -335,7 +335,7 @@ def paid_content_scraper(api: start, identifiers=[]):
         for subscription in authed.subscriptions:
             if any(subscription.username != x for x in identifiers):
                 continue
-            string = f"Scraping - {subscription.username} | {count} / {max_count}"
+            string = f"Scraping - {subscription.username} | {count+1} / {max_count}"
             print(string)
             subscription.session_manager = authed.session_manager
             username = subscription.username

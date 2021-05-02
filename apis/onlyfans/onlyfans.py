@@ -673,7 +673,7 @@ class start():
         results = api_helper.json_request(link=link, session=session)
         return results
 
-    def get_subscriptions(self, resume=None, refresh=True, identifiers: list = [], extra_info=True, limit=20, offset=0) -> list[Union[create_subscription, None]]:
+    def get_subscriptions(self, resume=None, refresh=True, identifiers: list = [], extra_info=True, limit=10, offset=0) -> list[Union[create_subscription, None]]:
         authed = self.auth
         if not authed.active:
             return []

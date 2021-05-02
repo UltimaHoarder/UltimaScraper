@@ -699,10 +699,12 @@ class create_auth():
         # Following logic is unique to creators only
         results = []
         if self.isPerformer:
+            temp_session_manager = self.session_manager
             delattr(self, "session_manager")
             json_authed = jsonpickle.encode(
                 self, unpicklable=False)
             json_authed = jsonpickle.decode(json_authed)
+            self.session_manager = temp_session_manager
             json_authed = json_authed | self.get_user(self.username)
 
             subscription = create_subscription(json_authed)

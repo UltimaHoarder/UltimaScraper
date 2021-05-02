@@ -244,6 +244,7 @@ def scrape_check(links, session_manager: session_manager, api_type):
     def multi(item, session_manager):
         link = item["link"]
         session = session_manager.sessions[item["count"]]
+        session = copy.deepcopy(session)
         item = {}
         result = json_request(link, session)
         # if result:

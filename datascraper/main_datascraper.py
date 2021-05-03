@@ -83,11 +83,11 @@ def start_datascraper(json_config: dict, site_name_lower: str, api: Optional[Onl
                     x = main_helper.process_webhooks(
                         api, "auth_webhook", "failed")
                 auth_details = {}
-                auth_details["auth"] = api.auth.auth_details.__dict__
-                profile_directory = api.auth.profile_directory
+                auth_details["auth"] = auth.auth_details.__dict__
+                profile_directory = auth.profile_directory
                 if profile_directory:
                     user_auth_filepath = os.path.join(
-                        api.auth.profile_directory, "auth.json")
+                        auth.profile_directory, "auth.json")
                     main_helper.export_data(
                         auth_details, user_auth_filepath)
                 continue

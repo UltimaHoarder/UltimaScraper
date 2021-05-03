@@ -292,8 +292,7 @@ def profile_scraper(authed: create_auth, site_name, api_type, username, base_dir
         if not overwrite_files:
             if os.path.isfile(download_path):
                 continue
-        session = authed.session_manager.sessions[0]
-        r = OnlyFans.api_helper.json_request(media_link, session, stream=True,
+        r = authed.session_manager.json_request(media_link, session, stream=True,
                                              json_format=False, sleep=False)
         if not isinstance(r, requests.Response):
             continue
@@ -1173,7 +1172,7 @@ class download_media():
 
             def choose_link(session, links):
                 for link in links:
-                    r = OnlyFans.api_helper.json_request(link, session, "HEAD",
+                    r = authed.session_manager.json_request(link, session, "HEAD",
                                          stream=False, json_format=False)
                     if not isinstance(r, requests.Response):
                         continue
@@ -1232,7 +1231,7 @@ class download_media():
                     return_bool = False
                     media.downloaded = True
                     break
-            r = OnlyFans.api_helper.json_request(
+            r = authed.session_manager.json_request(
                 link, session, stream=True, json_format=False)
             if not isinstance(r, requests.Response):
                 return_bool = False

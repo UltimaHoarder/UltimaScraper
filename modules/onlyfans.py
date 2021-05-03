@@ -292,7 +292,7 @@ def profile_scraper(authed: create_auth, site_name, api_type, username, base_dir
         if not overwrite_files:
             if os.path.isfile(download_path):
                 continue
-        r = authed.session_manager.json_request(media_link, session, stream=True,
+        r = authed.session_manager.json_request(media_link, stream=True,
                                              json_format=False, sleep=False)
         if not isinstance(r, requests.Response):
             continue

@@ -36,19 +36,19 @@ def create_signed_headers(link: str,  auth_id: int):
     path = urlparse(link).path
     query = urlparse(link).query
     path = path if not query else f"{path}?{query}"
-    static_param = "Sx7FEcC7r5uKuCIzVljwS8gnZGhNprM5"
+    static_param = "rhtNVxJh2LD3Jul5MhHcAAnFMysnLlct"
     a = [static_param, time2, path, str(auth_id)]
     msg = "\n".join(a)
     message = msg.encode("utf-8")
     hash_object = hashlib.sha1(message)
     sha_1_sign = hash_object.hexdigest()
     sha_1_b = sha_1_sign.encode("ascii")
-    checksum = sum([sha_1_b[15], sha_1_b[37], sha_1_b[6], sha_1_b[9], sha_1_b[13], sha_1_b[34], sha_1_b[17], sha_1_b[14], sha_1_b[1], sha_1_b[37], sha_1_b[14], sha_1_b[18], sha_1_b[24], sha_1_b[28], sha_1_b[1], sha_1_b[31], 
-                    sha_1_b[13], sha_1_b[14], sha_1_b[15], sha_1_b[19], sha_1_b[9], sha_1_b[29], sha_1_b[30], sha_1_b[23], 
-                    sha_1_b[16], sha_1_b[13], sha_1_b[28], sha_1_b[35],
-                    sha_1_b[15], sha_1_b[23], sha_1_b[28], sha_1_b[39]])-112
+    checksum = sum([sha_1_b[31], sha_1_b[13], sha_1_b[8], sha_1_b[3], sha_1_b[25], sha_1_b[8], sha_1_b[33], sha_1_b[25], sha_1_b[1], sha_1_b[23], sha_1_b[37], sha_1_b[11], sha_1_b[2], sha_1_b[29], sha_1_b[9], sha_1_b[7],
+					sha_1_b[29], sha_1_b[30], sha_1_b[18], sha_1_b[25], sha_1_b[18], sha_1_b[21], sha_1_b[10], sha_1_b[37],
+					sha_1_b[28], sha_1_b[35], sha_1_b[31], sha_1_b[5],
+					sha_1_b[13], sha_1_b[31], sha_1_b[2], sha_1_b[9]]) + 1110
     headers = {}
-    headers["sign"] = "5:{}:{:x}:6091065f".format(
+    headers["sign"] = "6:{}:{:x}:609184ae".format(
         sha_1_sign, abs(checksum))
     headers["time"] = time2
     return headers

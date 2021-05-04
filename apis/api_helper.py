@@ -47,12 +47,12 @@ def multiprocessing(max_threads=None):
 
 
 class session_manager():
-    def __init__(self, original_sessions=[], headers2: dict = {}, session_rules=None, session_retry_rules=None) -> None:
+    def __init__(self, original_sessions=[], headers: dict = {}, session_rules=None, session_retry_rules=None) -> None:
         self.sessions = self.copy_sessions(original_sessions)
         self.pool = multiprocessing()
         self.max_threads = self.pool._processes
         self.kill = False
-        self.headers = headers2
+        self.headers = headers
         self.session_rules = session_rules
         self.session_retry_rules = session_retry_rules
 

@@ -43,12 +43,12 @@ def create_signed_headers(link: str,  auth_id: int):
     hash_object = hashlib.sha1(message)
     sha_1_sign = hash_object.hexdigest()
     sha_1_b = sha_1_sign.encode("ascii")
-    checksum = sum([sha_1_b[14], sha_1_b[21], sha_1_b[2], sha_1_b[39], sha_1_b[25], sha_1_b[33], sha_1_b[17], sha_1_b[24], sha_1_b[17], sha_1_b[28], sha_1_b[23], sha_1_b[16], sha_1_b[28], sha_1_b[5], sha_1_b[5], sha_1_b[20],
-                    sha_1_b[22], sha_1_b[25], sha_1_b[36], sha_1_b[17], sha_1_b[39], sha_1_b[14], sha_1_b[11], sha_1_b[11],
-                    sha_1_b[7], sha_1_b[32], sha_1_b[19], sha_1_b[18],
-                    sha_1_b[30], sha_1_b[31], sha_1_b[38], sha_1_b[4]])-148
+    checksum = sum([sha_1_b[15], sha_1_b[37], sha_1_b[6], sha_1_b[9], sha_1_b[13], sha_1_b[34], sha_1_b[17], sha_1_b[14], sha_1_b[1], sha_1_b[37], sha_1_b[14], sha_1_b[18], sha_1_b[24], sha_1_b[28], sha_1_b[1], sha_1_b[31], 
+                    sha_1_b[13], sha_1_b[14], sha_1_b[15], sha_1_b[19], sha_1_b[9], sha_1_b[29], sha_1_b[30], sha_1_b[23], 
+                    sha_1_b[16], sha_1_b[13], sha_1_b[28], sha_1_b[35],
+                    sha_1_b[15], sha_1_b[23], sha_1_b[28], sha_1_b[39]])-112
     headers = {}
-    headers["sign"] = "4:{}:{:x}:608fcf2c".format(
+    headers["sign"] = "5:{}:{:x}:6091065f".format(
         sha_1_sign, abs(checksum))
     headers["time"] = time2
     return headers

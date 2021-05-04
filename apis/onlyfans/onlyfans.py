@@ -36,7 +36,7 @@ def create_signed_headers(link: str,  auth_id: int):
     path = urlparse(link).path
     query = urlparse(link).query
     path = path if not query else f"{path}?{query}"
-    static_param = "yoCCrPVmrN27vlUEQLZcW3DZH97KRVoy"
+    static_param = "Sx7FEcC7r5uKuCIzVljwS8gnZGhNprM5"
     a = [static_param, time2, path, str(auth_id)]
     msg = "\n".join(a)
     message = msg.encode("utf-8")

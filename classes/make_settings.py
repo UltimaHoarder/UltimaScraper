@@ -171,6 +171,8 @@ class config(object):
                 class helpers_settings:
                     def __init__(self, option={}) -> None:
                         self.renamer = option.get('renamer', True)
+                        self.reformat_media = option.get('reformat_media', True)
+                        self.delete_empty_directories = option.get('delete_empty_directories', False)
                 self.auto_site_choice = auto_site_choice
                 self.export_type = export_type
                 self.profile_directories = profile_directories

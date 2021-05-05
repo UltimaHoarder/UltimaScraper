@@ -68,7 +68,7 @@ class session_manager():
         return self.sessions
 
     def stimulate_sessions(self):
-        # Some proxies switch IP addresses if no request have been made for x amount of seconds
+        # Some proxies switch IP addresses if no request have been made for x amount of secondss
         def do(session_manager):
             while not session_manager.kill:
                 for session in session_manager.sessions:

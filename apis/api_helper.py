@@ -96,7 +96,7 @@ class session_manager():
         t1 = threading.Thread(target=do, args=[self])
         t1.start()
 
-    def json_request(self, link: str, session: Union[Session] = None, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20, ignore_rules=False) -> Any:
+    def json_request(self, link: str, session: Union[Session] = None, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20, ignore_rules=False, force_json=False) -> Any:
         headers = {}
         if not session:
             session = self.sessions[0]
@@ -126,7 +126,7 @@ class session_manager():
                 if json_format:
                     content_type = r.headers['Content-Type']
                     matches = ["application/json;", "application/vnd.api+json"]
-                    if all(match not in content_type for match in matches):
+                    if not force_json and all(match not in content_type for match in matches):
                         continue
                     text = r.text
                     if not text:

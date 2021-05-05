@@ -24,31 +24,25 @@ def create_headers(auth_id, user_agent="", x_bc="", sess="", link="https://onlyf
     headers["referer"] = link
     headers["user-id"] = auth_id
     headers["x-bc"] = x_bc
-    a = [link, auth_id]
-    headers2 = create_signed_headers(*a)
-    headers |= headers2
     return headers
 
 
-def create_signed_headers(link: str,  auth_id: int):
+def create_signed_headers(link: str,  auth_id: int, dynamic_rules: dict):
     # Users: 300000 | Creators: 301000
     time2 = str(int(round(time.time())))
     path = urlparse(link).path
     query = urlparse(link).query
     path = path if not query else f"{path}?{query}"
-    static_param = "cyo3uhuZp5tqYuEAhaVMuXMmPpRRsBq1"
-    a = [static_param, time2, path, str(auth_id)]
+    a = [dynamic_rules["static_param"], time2, path, str(auth_id)]
     msg = "\n".join(a)
     message = msg.encode("utf-8")
     hash_object = hashlib.sha1(message)
     sha_1_sign = hash_object.hexdigest()
     sha_1_b = sha_1_sign.encode("ascii")
-    checksum = sum([sha_1_b[25], sha_1_b[35], sha_1_b[26], sha_1_b[34], sha_1_b[32], sha_1_b[35], sha_1_b[32], sha_1_b[6], sha_1_b[21], sha_1_b[2], sha_1_b[15], sha_1_b[9], sha_1_b[3], sha_1_b[14], sha_1_b[26], sha_1_b[26],
-                    sha_1_b[5], sha_1_b[34], sha_1_b[30], sha_1_b[34], sha_1_b[30], sha_1_b[23], sha_1_b[12], sha_1_b[20],
-                    sha_1_b[20], sha_1_b[26], sha_1_b[17], sha_1_b[35],
-                    sha_1_b[5], sha_1_b[16], sha_1_b[37], sha_1_b[1]]) - 956
+    checksum = sum([sha_1_b[number] for number in dynamic_rules["checksum_indexes"]]
+                   )+dynamic_rules["checksum_constant"]
     headers = {}
-    headers["sign"] = "7:{}:{:x}:6092b93d".format(
+    headers["sign"] = dynamic_rules["format"].format(
         sha_1_sign, abs(checksum))
     headers["time"] = time2
     return headers
@@ -57,9 +51,11 @@ def create_signed_headers(link: str,  auth_id: int):
 def session_rules(session_manager: api_helper.session_manager, link) -> dict:
     headers = session_manager.headers
     if "https://onlyfans.com/api2/v2/" in link:
+        dr_link = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json"
+        dynamic_rules = session_manager.json_request(dr_link, force_json=True)
         headers["app-token"] = "33d57ade8c02dbc5a333db99ff9ae26a"
         auth_id = headers["user-id"]
-        a = [link, auth_id]
+        a = [link, auth_id, dynamic_rules]
         headers2 = create_signed_headers(*a)
         headers |= headers2
     return headers

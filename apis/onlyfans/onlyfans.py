@@ -61,19 +61,21 @@ def session_rules(session_manager: api_helper.session_manager, link) -> dict:
     return headers
 
 
-def session_retry_rules(r, link):
-    # 0 Fine, 1 Continue, 2 Break
-    boolean = 0
+def session_retry_rules(r, link:str)-> int:
+    """
+    0 Fine, 1 Continue, 2 Break
+    """
+    status_code = 0
     if "https://onlyfans.com/api2/v2/" in link:
         text = r.text
         if "Invalid request sign" in text:
-            boolean = 1
+            status_code = 1
         elif "Access Denied" in text:
-            boolean = 2
+            status_code = 2
     else:
         if not r.status_code == 200:
-            boolean = 1
-    return boolean
+            status_code = 1
+    return status_code
 
 
 class content_types():

@@ -51,8 +51,7 @@ def create_signed_headers(link: str,  auth_id: int, dynamic_rules: dict):
 def session_rules(session_manager: api_helper.session_manager, link) -> dict:
     headers = session_manager.headers
     if "https://onlyfans.com/api2/v2/" in link:
-        dr_link = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json"
-        dynamic_rules = session_manager.json_request(dr_link, force_json=True)
+        dynamic_rules = session_manager.dynamic_rules
         headers["app-token"] = "33d57ade8c02dbc5a333db99ff9ae26a"
         auth_id = headers["user-id"]
         a = [link, auth_id, dynamic_rules]
@@ -61,7 +60,7 @@ def session_rules(session_manager: api_helper.session_manager, link) -> dict:
     return headers
 
 
-def session_retry_rules(r, link:str)-> int:
+def session_retry_rules(r, link: str) -> int:
     """
     0 Fine, 1 Continue, 2 Break
     """

@@ -55,6 +55,7 @@ class session_manager():
         self.headers = headers
         self.session_rules = session_rules
         self.session_retry_rules = session_retry_rules
+        self.dynamic_rules = None
 
     def copy_sessions(self, original_sessions):
         sessions = []

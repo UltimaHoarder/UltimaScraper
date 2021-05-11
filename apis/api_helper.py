@@ -1,15 +1,16 @@
 import copy
 import time
-from typing import Any
+from typing import Any, Union
 
 import requests
+from requests.sessions import Session
 import ujson
 import socket
 import os
 from multiprocessing import cpu_count
 from requests.adapters import HTTPAdapter
 from multiprocessing.dummy import Pool as ThreadPool
-from itertools import product,chain, zip_longest, groupby
+from itertools import product, chain, zip_longest, groupby
 from os.path import dirname as up
 import threading
 
@@ -17,9 +18,7 @@ path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
 
 
-global_settings = None
-session_rules = None
-session_retry_rules = None
+global_settings = {}
 
 
 class set_settings():
@@ -36,63 +35,9 @@ def chunks(l, n):
     return final
 
 
-def request_parameters(session_rules2, session_retry_rules2):
-    global session_rules, session_retry_rules
-    session_rules = session_rules2
-    session_retry_rules = session_retry_rules2
-
-
-def json_request(link, session, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20, ignore_rules=False) -> Any:
-    if session_rules and not ignore_rules:
-        session = session_rules(session, link)
-    count = 0
-    sleep_number = 0.5
-    result = {}
-    while count < 11:
-        try:
-            count += 1
-            headers = session.headers
-            if json_format:
-                headers["accept"] = "application/json, text/plain, */*"
-            if data:
-                r = session.request(method, link, json=data,
-                                    stream=stream, timeout=timeout)
-            else:
-                r = session.request(
-                    method, link, stream=stream, timeout=timeout)
-            if session_retry_rules:
-                rule = session_retry_rules(r, link)
-                if rule == 1:
-                    continue
-                elif rule == 2:
-                    break
-            if json_format:
-                content_type = r.headers['Content-Type']
-                matches = ["application/json;", "application/vnd.api+json"]
-                if all(match not in content_type for match in matches):
-                    continue
-                text = r.text
-                if not text:
-                    message = "ERROR: 100 Posts skipped. Please post the username you're trying to scrape on the issue "'100 Posts Skipped'""
-                    return result
-                return ujson.loads(text)
-            else:
-                return r
-        except (ConnectionResetError) as e:
-            continue
-        except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout, socket.timeout) as e:
-            if sleep:
-                time.sleep(sleep_number)
-                sleep_number += 0.5
-            continue
-        except Exception as e:
-            continue
-    return result
-
-
 def multiprocessing(max_threads=None):
     if not max_threads:
-        max_threads = global_settings["max_threads"]
+        max_threads = global_settings.get("max_threads", -1)
     max_threads2 = cpu_count()
     if max_threads < 1 or max_threads >= max_threads2:
         pool = ThreadPool()
@@ -102,11 +47,15 @@ def multiprocessing(max_threads=None):
 
 
 class session_manager():
-    def __init__(self, original_sessions=[]) -> None:
+    def __init__(self, original_sessions=[], headers: dict = {}, session_rules=None, session_retry_rules=None) -> None:
         self.sessions = self.copy_sessions(original_sessions)
         self.pool = multiprocessing()
         self.max_threads = self.pool._processes
         self.kill = False
+        self.headers = headers
+        self.session_rules = session_rules
+        self.session_retry_rules = session_retry_rules
+        self.dynamic_rules = None
 
     def copy_sessions(self, original_sessions):
         sessions = []
@@ -120,7 +69,7 @@ class session_manager():
         return self.sessions
 
     def stimulate_sessions(self):
-        # Some proxies switch IP addresses if no request have been made for x amount of seconds
+        # Some proxies switch IP addresses if no request have been made for x amount of secondss
         def do(session_manager):
             while not session_manager.kill:
                 for session in session_manager.sessions:
@@ -148,6 +97,57 @@ class session_manager():
         t1 = threading.Thread(target=do, args=[self])
         t1.start()
 
+    def json_request(self, link: str, session: Union[Session] = None, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20, ignore_rules=False, force_json=False) -> Any:
+        headers = {}
+        if not session:
+            session = self.sessions[0]
+        if self.session_rules and not ignore_rules:
+            headers |= self.session_rules(self, link)
+        session = copy.deepcopy(session)
+        count = 0
+        sleep_number = 0.5
+        result = {}
+        while count < 11:
+            try:
+                count += 1
+                if json_format:
+                    headers["accept"] = "application/json, text/plain, */*"
+                if data:
+                    r = session.request(method, link, json=data,
+                                        stream=stream, timeout=timeout, headers=headers)
+                else:
+                    r = session.request(
+                        method, link, stream=stream, timeout=timeout, headers=headers)
+                if self.session_retry_rules:
+                    rule = self.session_retry_rules(r, link)
+                    if rule == 1:
+                        continue
+                    elif rule == 2:
+                        break
+                if json_format:
+                    content_type = r.headers['Content-Type']
+                    matches = ["application/json;", "application/vnd.api+json"]
+                    if not force_json and all(match not in content_type for match in matches):
+                        continue
+                    text = r.text
+                    if not text:
+                        message = "ERROR: 100 Posts skipped. Please post the username you're trying to scrape on the issue "'100 Posts Skipped'""
+                        return result
+                    return ujson.loads(text)
+                else:
+                    return r
+            except (ConnectionResetError) as e:
+                continue
+            except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout, socket.timeout) as e:
+                if sleep:
+                    time.sleep(sleep_number)
+                    sleep_number += 0.5
+                continue
+            except Exception as e:
+                print(e)
+                continue
+        return result
+
 
 def create_session(settings={}, custom_proxy="", test_ip=True):
 
@@ -163,7 +163,7 @@ def create_session(settings={}, custom_proxy="", test_ip=True):
             'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
         if test_ip:
             link = 'https://checkip.amazonaws.com'
-            r = json_request(
+            r = session_manager().json_request(
                 link, session, json_format=False, sleep=False)
             if not isinstance(r, requests.Response):
                 print(f"Proxy Not Set: {proxy}\n")
@@ -241,11 +241,13 @@ def restore_missing_data(master_set2, media_set, split_by):
 
 
 def scrape_check(links, session_manager: session_manager, api_type):
-    def multi(item, session_manager):
+    def multi(item):
         link = item["link"]
-        session = session_manager.sessions[item["count"]]
         item = {}
-        result = json_request(link, session)
+        session = session_manager.sessions[0]
+        result = session_manager.json_request(link, session)
+        if "error" in result:
+            result = []
         # if result:
         #     print(f"Found: {link}")
         # else:
@@ -266,8 +268,10 @@ def scrape_check(links, session_manager: session_manager, api_type):
         # item_groups = grouper(300,items)
         pool = multiprocessing()
         results = pool.starmap(multi, product(
-            items, [session_manager]))
-        faulty = [{"key":k,"value":v, "link":links[k]} for k,v in enumerate(results) if not v]
+            items))
+        not_faulty = [x for x in results if x]
+        faulty = [{"key": k, "value": v, "link": links[k]}
+                  for k, v in enumerate(results) if not v]
         last_number = len(results)-1
         if faulty:
             positives = [x for x in faulty if x["key"] != last_number]
@@ -279,6 +283,7 @@ def scrape_check(links, session_manager: session_manager, api_type):
                 print("Missing "+str(num)+" Posts... Retrying...")
                 links = restore_missing_data(
                     links, results, split_by)
+                media_set.extend(not_faulty)
             if not positives and false_positive:
                 media_set.extend(results)
                 break
@@ -289,6 +294,7 @@ def scrape_check(links, session_manager: session_manager, api_type):
             break
     media_set = [x for x in media_set]
     return media_set
+
 
 def grouper(n, iterable, fillvalue=None):
     args = [iter(iterable)] * n

@@ -1,3 +1,4 @@
+from apis.onlyfans import onlyfans as OnlyFans
 import math
 from types import SimpleNamespace
 from typing import Any, Tuple, Union
@@ -108,17 +109,18 @@ def format_media_set(media_set):
 
 
 def format_image(filepath, timestamp):
-    while True:
-        try:
-            if os_name == "Windows":
-                from win32_setctime import setctime
-                setctime(filepath, timestamp)
-                # print(f"Updated Creation Time {filepath}")
-            os.utime(filepath, (timestamp, timestamp))
-            # print(f"Updated Modification Time {filepath}")
-        except Exception as e:
-            continue
-        break
+    if json_global_settings["helpers"]["reformat_media"]:
+        while True:
+            try:
+                if os_name == "Windows":
+                    from win32_setctime import setctime
+                    setctime(filepath, timestamp)
+                    # print(f"Updated Creation Time {filepath}")
+                os.utime(filepath, (timestamp, timestamp))
+                # print(f"Updated Modification Time {filepath}")
+            except Exception as e:
+                continue
+            break
 
 
 def filter_metadata(datas):
@@ -481,7 +483,6 @@ def downloader(r, download_path, d_session, count=0):
                     deleted = True
                 except PermissionError as e2:
                     print(e2)
-        string = f"{e}\n Tries: {count}"
         return
     return True
 
@@ -576,8 +577,7 @@ def choose_option(subscription_list, auto_scrape: Union[str, bool]):
     return new_names
 
 
-def process_profiles(json_settings, session_manager, site_name, original_api):
-    apis = []
+def process_profiles(json_settings, original_sessions, site_name, api: Union[OnlyFans.start]):
     profile_directories = json_settings["profile_directories"]
     for profile_directory in profile_directories:
         x = os.path.join(profile_directory, site_name)
@@ -593,8 +593,7 @@ def process_profiles(json_settings, session_manager, site_name, original_api):
             user_profile = os.path.join(x, user)
             user_auth_filepath = os.path.join(
                 user_profile, "auth.json")
-            api = original_api.start(
-                session_manager)
+            datas = {}
             if os.path.exists(user_auth_filepath):
                 temp_json_auth = ujson.load(
                     open(user_auth_filepath))
@@ -602,20 +601,20 @@ def process_profiles(json_settings, session_manager, site_name, original_api):
                 if not json_auth.get("active", None):
                     continue
                 json_auth["username"] = user
-                api.auth.profile_directory = user_profile
-                api.set_auth_details(
+                auth = api.set_auth_details(
                     json_auth)
-            datas = {}
-            datas["auth"] = api.auth.auth_details.__dict__
-            export_data(
-                datas, user_auth_filepath, encoding=None)
-            apis.append(api)
+                auth.session_manager.copy_sessions(original_sessions)
+                auth.profile_directory = user_profile
+                datas["auth"] = auth.auth_details.__dict__
+            if datas:
+                export_data(
+                    datas, user_auth_filepath, encoding=None)
             print
         print
-    return apis
+    return api
 
 
-def process_names(module, subscription_list, auto_scrape, session_array, json_config, site_name_lower, site_name) -> list:
+def process_names(module, subscription_list, auto_scrape, api, json_config, site_name_lower, site_name) -> list:
     names = choose_option(
         subscription_list, auto_scrape)
     if not names:
@@ -623,27 +622,28 @@ def process_names(module, subscription_list, auto_scrape, session_array, json_co
     for name in names:
         # Extra Auth Support
         auth_count = name[0]
-        api = session_array[auth_count]
+        authed = api.auths[auth_count]
         name = name[-1]
         assign_vars(json_config)
         username = parse_links(site_name_lower, name)
         result = module.start_datascraper(
-            api, username, site_name)
+            authed, username, site_name)
     return names
 
 
-def process_downloads(apis, module):
-    for api in apis:
-        subscriptions = api.get_subscriptions(refresh=False)
+def process_downloads(api, module):
+    for auth in api.auths:
+        subscriptions = auth.get_subscriptions(refresh=False)
         for subscription in subscriptions:
             download_info = subscription.download_info
             if download_info:
-                module.download_media(api, subscription)
-                delete_empty_directories(
-                    download_info["base_directory"])
+                module.download_media(auth, subscription)
+                if json_global_settings["helpers"]["delete_empty_directories"]:
+                    delete_empty_directories(
+                        download_info.get("base_directory", ""))
 
 
-def process_webhooks(apis: list, category, category2):
+def process_webhooks(api: Union[OnlyFans.start], category, category2):
     global_webhooks = webhooks["global_webhooks"]
     global_status = webhooks["global_status"]
     webhook = webhooks[category]
@@ -658,8 +658,8 @@ def process_webhooks(apis: list, category, category2):
     if webhook_state["webhooks"]:
         webhook_links = webhook_state["webhooks"]
     if webhook_status:
-        for api in apis:
-            send_webhook(api, webhook_hide_sensitive_info,
+        for auth in api.auths:
+            send_webhook(auth, webhook_hide_sensitive_info,
                          webhook_links, category, category2)
         print
     print
@@ -746,7 +746,7 @@ def byteToGigaByte(n):
 def send_webhook(item, webhook_hide_sensitive_info, webhook_links, category, category2: str):
     if category == "auth_webhook":
         for webhook_link in webhook_links:
-            auth = item.auth
+            auth = item
             username = auth.username
             if webhook_hide_sensitive_info:
                 username = "REDACTED"

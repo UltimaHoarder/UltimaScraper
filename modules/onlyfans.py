@@ -54,11 +54,10 @@ ignore_type = None
 blacklist_name = None
 webhook = None
 text_length = None
-app_token = None
 
 
 def assign_vars(json_auth: auth_details, config, site_settings, site_name):
-    global json_config, json_global_settings, max_threads, json_settings, auto_choice, csv_export_only, profile_directory, download_directory, metadata_directory, metadata_directory_format, delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, text_length, app_token
+    global json_config, json_global_settings, max_threads, json_settings, auto_choice, profile_directory, download_directory, metadata_directory, metadata_directory_format, delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, text_length, csv_export_only
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -83,7 +82,6 @@ def assign_vars(json_auth: auth_details, config, site_settings, site_name):
     blacklist_name = json_settings["blacklist_name"]
     webhook = json_settings["webhook"]
     text_length = json_settings["text_length"]
-    app_token = json_auth.app_token
 
 
 def account_setup(auth: create_auth, identifiers: list = [], jobs: dict = {}, auth_count=0):

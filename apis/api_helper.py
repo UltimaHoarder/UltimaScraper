@@ -55,6 +55,7 @@ class session_manager():
         self.headers = headers
         self.session_rules = session_rules
         self.session_retry_rules = session_retry_rules
+        self.dynamic_rules = None
 
     def copy_sessions(self, original_sessions):
         sessions = []
@@ -68,7 +69,7 @@ class session_manager():
         return self.sessions
 
     def stimulate_sessions(self):
-        # Some proxies switch IP addresses if no request have been made for x amount of seconds
+        # Some proxies switch IP addresses if no request have been made for x amount of secondss
         def do(session_manager):
             while not session_manager.kill:
                 for session in session_manager.sessions:
@@ -96,7 +97,8 @@ class session_manager():
         t1 = threading.Thread(target=do, args=[self])
         t1.start()
 
-    def json_request(self, link: str, session: Union[Session] = None, Session=None, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20, ignore_rules=False, headers: dict = {}) -> Any:
+    def json_request(self, link: str, session: Union[Session] = None, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20, ignore_rules=False, force_json=False) -> Any:
+        headers = {}
         if not session:
             session = self.sessions[0]
         if self.session_rules and not ignore_rules:
@@ -125,7 +127,7 @@ class session_manager():
                 if json_format:
                     content_type = r.headers['Content-Type']
                     matches = ["application/json;", "application/vnd.api+json"]
-                    if all(match not in content_type for match in matches):
+                    if not force_json and all(match not in content_type for match in matches):
                         continue
                     text = r.text
                     if not text:

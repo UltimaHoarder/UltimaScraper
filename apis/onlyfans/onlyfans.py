@@ -24,31 +24,25 @@ def create_headers(auth_id, user_agent="", x_bc="", sess="", link="https://onlyf
     headers["referer"] = link
     headers["user-id"] = auth_id
     headers["x-bc"] = x_bc
-    a = [link, auth_id]
-    headers2 = create_signed_headers(*a)
-    headers |= headers2
     return headers
 
 
-def create_signed_headers(link: str,  auth_id: int):
+def create_signed_headers(link: str,  auth_id: int, dynamic_rules: dict):
     # Users: 300000 | Creators: 301000
     time2 = str(int(round(time.time())))
     path = urlparse(link).path
     query = urlparse(link).query
     path = path if not query else f"{path}?{query}"
-    static_param = "Sx7FEcC7r5uKuCIzVljwS8gnZGhNprM5"
-    a = [static_param, time2, path, str(auth_id)]
+    a = [dynamic_rules["static_param"], time2, path, str(auth_id)]
     msg = "\n".join(a)
     message = msg.encode("utf-8")
     hash_object = hashlib.sha1(message)
     sha_1_sign = hash_object.hexdigest()
     sha_1_b = sha_1_sign.encode("ascii")
-    checksum = sum([sha_1_b[15], sha_1_b[37], sha_1_b[6], sha_1_b[9], sha_1_b[13], sha_1_b[34], sha_1_b[17], sha_1_b[14], sha_1_b[1], sha_1_b[37], sha_1_b[14], sha_1_b[18], sha_1_b[24], sha_1_b[28], sha_1_b[1], sha_1_b[31], 
-                    sha_1_b[13], sha_1_b[14], sha_1_b[15], sha_1_b[19], sha_1_b[9], sha_1_b[29], sha_1_b[30], sha_1_b[23], 
-                    sha_1_b[16], sha_1_b[13], sha_1_b[28], sha_1_b[35],
-                    sha_1_b[15], sha_1_b[23], sha_1_b[28], sha_1_b[39]])-112
+    checksum = sum([sha_1_b[number] for number in dynamic_rules["checksum_indexes"]]
+                   )+dynamic_rules["checksum_constant"]
     headers = {}
-    headers["sign"] = "5:{}:{:x}:6091065f".format(
+    headers["sign"] = dynamic_rules["format"].format(
         sha_1_sign, abs(checksum))
     headers["time"] = time2
     return headers
@@ -57,27 +51,30 @@ def create_signed_headers(link: str,  auth_id: int):
 def session_rules(session_manager: api_helper.session_manager, link) -> dict:
     headers = session_manager.headers
     if "https://onlyfans.com/api2/v2/" in link:
+        dynamic_rules = session_manager.dynamic_rules
         headers["app-token"] = "33d57ade8c02dbc5a333db99ff9ae26a"
         auth_id = headers["user-id"]
-        a = [link, auth_id]
+        a = [link, auth_id, dynamic_rules]
         headers2 = create_signed_headers(*a)
         headers |= headers2
     return headers
 
 
-def session_retry_rules(r, link):
-    # 0 Fine, 1 Continue, 2 Break
-    boolean = 0
+def session_retry_rules(r, link: str) -> int:
+    """
+    0 Fine, 1 Continue, 2 Break
+    """
+    status_code = 0
     if "https://onlyfans.com/api2/v2/" in link:
         text = r.text
         if "Invalid request sign" in text:
-            boolean = 1
+            status_code = 1
         elif "Access Denied" in text:
-            boolean = 2
+            status_code = 2
     else:
         if not r.status_code == 200:
-            boolean = 1
-    return boolean
+            status_code = 1
+    return status_code
 
 
 class content_types():
@@ -139,15 +136,14 @@ class auth_details():
     def __init__(self, option: dict = {}):
         self.username = option.get('username', "")
         self.auth_id = option.get('auth_id', "")
+        self.sess = option.get('sess', "")
+        self.user_agent = option.get('user_agent', "")
         self.auth_hash = option.get('auth_hash', "")
         self.auth_uniq_ = option.get('auth_uniq_', "")
-        self.sess = option.get('sess', "")
         self.x_bc = option.get('x_bc', "")
-        self.app_token = option.get(
-            'app_token', '33d57ade8c02dbc5a333db99ff9ae26a')
-        self.user_agent = option.get('user_agent', "")
         self.email = option.get('email', "")
         self.password = option.get('password', "")
+        self.hashed = option.get('hashed', False)
         self.support_2fa = option.get('support_2fa', True)
         self.active = option.get('active', True)
 

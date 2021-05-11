@@ -59,6 +59,7 @@ def start_datascraper(json_config: dict, site_name_lower: str, api: Optional[Onl
             api = api if api else OnlyFans.start()
             api = main_helper.process_profiles(
                 json_settings, original_sessions, site_name, api)
+            print
 
         subscription_array = []
         auth_count = 0
@@ -73,6 +74,8 @@ def start_datascraper(json_config: dict, site_name_lower: str, api: Optional[Onl
         for auth in api.auths:
             if not auth.auth_details:
                 continue
+            dr_link = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json"
+            auth.session_manager.dynamic_rules = auth.session_manager.json_request(dr_link, force_json=True)
             module.assign_vars(auth.auth_details, json_config,
                                json_site_settings, site_name)
             setup = False

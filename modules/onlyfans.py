@@ -921,6 +921,9 @@ def media_scraper(results, authed: create_auth, subscription: create_subscriptio
             print(
                 f"Scraping [{seperator.join(alt_media_type)}]. Should take less than a minute.")
         for media_api in results:
+            isReportedByMe = media_api.get("isReportedByMe")
+            if isReportedByMe:
+                continue
             post_id = media_api["id"]
             new_post = {}
             new_post["medias"] = []

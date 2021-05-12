@@ -472,6 +472,7 @@ class create_subscription():
 class start():
     def __init__(self, custom_request=callable) -> None:
         self.auths: list[create_auth] = []
+        self.subscriptions: list[create_subscription] = []
         self.custom_request = custom_request
         self.max_threads = -1
         self.lists = None
@@ -502,7 +503,7 @@ class create_auth():
         self.isPerformer: bool = option.get("isPerformer")
         self.chatMessagesCount = option.get("chatMessagesCount")
         self.subscribesCount = option.get("subscribesCount")
-        self.subscriptions = []
+        self.subscriptions: list[create_subscription] = []
         self.chats = None
         self.archived_stories = {}
         self.mass_messages = []
@@ -513,6 +514,7 @@ class create_auth():
         self.profile_directory = option.get("profile_directory", "")
         self.active = False
         self.errors: list[error_details] = []
+        self.extras = {}
         if api:
             api.auths.append(self)
         valid_counts = ["chatMessagesCount"]
@@ -679,7 +681,7 @@ class create_auth():
                 break
         return valid
 
-    def get_subscriptions(self, resume=None, refresh=True, identifiers: list = [], extra_info=True, limit=20, offset=0) -> list[Union[create_subscription, None]]:
+    def get_subscriptions(self, resume=None, refresh=True, identifiers: list = [], extra_info=True, limit=20, offset=0) -> list[Union[create_subscription]]:
         if not self.active:
             return []
         if not refresh:

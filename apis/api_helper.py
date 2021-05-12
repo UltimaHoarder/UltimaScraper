@@ -55,7 +55,8 @@ class session_manager():
         self.headers = headers
         self.session_rules = session_rules
         self.session_retry_rules = session_retry_rules
-        self.dynamic_rules = None
+        dr_link = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json"
+        self.dynamic_rules = requests.get(dr_link).json()
 
     def copy_sessions(self, original_sessions):
         sessions = []

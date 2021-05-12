@@ -14,6 +14,7 @@ from apis.starsavn import starsavn as StarsAVN
 import modules.patreon as m_patreon
 import modules.starsavn as m_starsavn
 import time
+import requests
 
 api_helper = OnlyFans.api_helper
 
@@ -74,9 +75,6 @@ def start_datascraper(json_config: dict, site_name_lower: str, api: Optional[Onl
         for auth in api.auths:
             if not auth.auth_details:
                 continue
-            dr_link = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json"
-            auth.session_manager.dynamic_rules = auth.session_manager.json_request(
-                dr_link, force_json=True)
             module.assign_vars(auth.auth_details, json_config,
                                json_site_settings, site_name)
             setup = False

@@ -608,7 +608,7 @@ def process_profiles(json_settings, original_sessions, site_name, api: Union[Onl
                 datas["auth"] = auth.auth_details.__dict__
             if datas:
                 export_data(
-                    datas, user_auth_filepath, encoding="cp1252")
+                    datas, user_auth_filepath)
             print
         print
     return api
@@ -679,9 +679,12 @@ def export_data(metadata: Union[list, dict], path: str, encoding: Optional[str] 
         ujson.dump(metadata, outfile, indent=2, escape_forward_slashes=False)
 
 
-def grouper(n, iterable, fillvalue=None):
+def grouper(n, iterable, fillvalue:Optional[Union[str,int]]=None):
     args = [iter(iterable)] * n
-    return list(zip_longest(fillvalue=fillvalue, *args))
+    grouped =  list(zip_longest(fillvalue=fillvalue, *args))
+    if not fillvalue:
+        grouped = [x for x in grouped if x]
+    return grouped
 
 
 def create_link_group(max_threads):
@@ -834,7 +837,6 @@ def module_chooser(domain, json_sites):
             string += seperator
 
         count += 1
-    string += "x = Exit"
     if domain and domain not in site_names:
         string = f"{domain} not supported"
         site_names = []

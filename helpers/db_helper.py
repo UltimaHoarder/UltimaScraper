@@ -67,7 +67,7 @@ class database_collection(object):
 
 
 def create_auth_array(item):
-    auth_array = dict(item)
+    auth_array = item.__dict__
     auth_array["support_2fa"] = False
     return auth_array
 

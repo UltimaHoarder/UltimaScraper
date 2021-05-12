@@ -1,13 +1,13 @@
+import json
 from apis.onlyfans import onlyfans as OnlyFans
 import math
 from types import SimpleNamespace
-from typing import Any, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
 from sqlalchemy.ext.declarative import api
 from sqlalchemy.ext.declarative.api import declarative_base
 from classes.prepare_metadata import format_variables
 import copy
-import json
 import os
 import platform
 import re
@@ -489,13 +489,13 @@ def downloader(r, download_path, d_session, count=0):
 
 def get_config(config_path):
     if os.path.exists(config_path):
-        json_config = json.load(open(config_path))
+        json_config = ujson.load(open(config_path))
     else:
         json_config = {}
     json_config2 = copy.deepcopy(json_config)
     json_config, string = make_settings.fix(json_config)
     file_name = os.path.basename(config_path)
-    json_config = json.loads(json.dumps(make_settings.config(
+    json_config = ujson.loads(json.dumps(make_settings.config(
         **json_config), default=lambda o: o.__dict__))
     updated = False
     if json_config != json_config2:
@@ -504,7 +504,7 @@ def get_config(config_path):
     if not json_config:
         input(
             f"The .settings\\{file_name} file has been created. Fill in whatever you need to fill in and then press enter when done.\n")
-        json_config = json.load(open(config_path))
+        json_config = ujson.load(open(config_path))
     return json_config, updated
 
 
@@ -513,7 +513,7 @@ def update_config(json_config, file_name="config.json"):
     os.makedirs(directory, exist_ok=True)
     path = os.path.join(directory, file_name)
     with open(path, 'w', encoding='utf-8') as f:
-        json.dump(json_config, f, ensure_ascii=False, indent=2)
+        ujson.dump(json_config, f, ensure_ascii=False, indent=2)
 
 
 def choose_auth(array):
@@ -608,7 +608,7 @@ def process_profiles(json_settings, original_sessions, site_name, api: Union[Onl
                 datas["auth"] = auth.auth_details.__dict__
             if datas:
                 export_data(
-                    datas, user_auth_filepath, encoding=None)
+                    datas, user_auth_filepath, encoding="cp1252")
             print
         print
     return api
@@ -672,11 +672,11 @@ def is_me(user_api):
         return False
 
 
-def export_data(metadata: Union[list, dict], path: str, encoding: Union[str, None] = "utf-8"):
+def export_data(metadata: Union[list, dict], path: str, encoding: Optional[str] = "utf-8"):
     directory = os.path.dirname(path)
     os.makedirs(directory, exist_ok=True)
     with open(path, 'w', encoding=encoding) as outfile:
-        ujson.dump(metadata, outfile, indent=2)
+        ujson.dump(metadata, outfile, indent=2, escape_forward_slashes=False)
 
 
 def grouper(n, iterable, fillvalue=None):
@@ -706,7 +706,7 @@ def legacy_metadata(directory):
         if items:
             for item in items:
                 path = os.path.join(directory, item)
-                metadata = json.load(open(path))
+                metadata = ujson.load(open(path))
                 metadatas.append(metadata)
                 print
         print
@@ -755,7 +755,7 @@ def send_webhook(item, webhook_hide_sensitive_info, webhook_links, category, cat
             embed.title = f"Auth {category2.capitalize()}"
             embed.add_field("username", username)
             message.embeds.append(embed)
-            message = json.loads(json.dumps(
+            message = ujson.loads(json.dumps(
                 message, default=lambda o: o.__dict__))
             x = requests.post(webhook_link, json=message)
     if category == "download_webhook":
@@ -772,7 +772,7 @@ def send_webhook(item, webhook_hide_sensitive_info, webhook_links, category, cat
                     embed.add_field("link", subscription.link)
                     embed.image.url = subscription.avatar
                     message.embeds.append(embed)
-                    message = json.loads(json.dumps(
+                    message = ujson.loads(json.dumps(
                         message, default=lambda o: o.__dict__))
                     x = requests.post(webhook_link, json=message)
                     print

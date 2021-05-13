@@ -493,7 +493,7 @@ def get_config(config_path):
     else:
         json_config = {}
     json_config2 = copy.deepcopy(json_config)
-    json_config, string = make_settings.fix(json_config)
+    json_config = make_settings.fix(json_config)
     file_name = os.path.basename(config_path)
     json_config = ujson.loads(json.dumps(make_settings.config(
         **json_config), default=lambda o: o.__dict__))
@@ -543,25 +543,30 @@ def choose_auth(array):
     return names
 
 
-def choose_option(subscription_list, auto_scrape: Union[str, bool]):
+def choose_option(subscription_list, auto_scrape: Union[str, bool], use_default_message=False):
     names = subscription_list[0]
+    default_message = ""
+    seperator = " | "
+    if use_default_message:
+        default_message = f"Names: Username = username {seperator}"
     new_names = []
     if names:
-        seperator = " | "
         if isinstance(auto_scrape, bool):
             if auto_scrape:
                 values = [x[1] for x in names]
             else:
                 print(
-                    f"Names: Username = username {seperator} {subscription_list[1]}")
+                    f"{default_message}{subscription_list[1]}")
                 values = input().strip().split(",")
         else:
             if not auto_scrape:
                 print(
-                    f"Names: Username = username {seperator} {subscription_list[1]}")
+                    f"{default_message}{subscription_list[1]}")
                 values = input().strip().split(",")
             else:
-                values = auto_scrape.split(",")
+                values = auto_scrape
+                if isinstance(auto_scrape, str):
+                    values = auto_scrape.split(",")
         for value in values:
             if value.isdigit():
                 if value == "0":
@@ -616,7 +621,7 @@ def process_profiles(json_settings, original_sessions, site_name, api: Union[Onl
 
 def process_names(module, subscription_list, auto_scrape, api, json_config, site_name_lower, site_name) -> list:
     names = choose_option(
-        subscription_list, auto_scrape)
+        subscription_list, auto_scrape, True)
     if not names:
         print("There's nothing to scrape.")
     for name in names:
@@ -679,9 +684,9 @@ def export_data(metadata: Union[list, dict], path: str, encoding: Optional[str] 
         ujson.dump(metadata, outfile, indent=2, escape_forward_slashes=False)
 
 
-def grouper(n, iterable, fillvalue:Optional[Union[str,int]]=None):
+def grouper(n, iterable, fillvalue: Optional[Union[str, int]] = None):
     args = [iter(iterable)] * n
-    grouped =  list(zip_longest(fillvalue=fillvalue, *args))
+    grouped = list(zip_longest(fillvalue=fillvalue, *args))
     if not fillvalue:
         grouped = [x for x in grouped if x]
     return grouped

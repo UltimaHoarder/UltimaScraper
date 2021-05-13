@@ -25,7 +25,7 @@ import sqlite3
 import sqlalchemy
 from sqlalchemy.ext.declarative import declarative_base
 from sqlalchemy.orm import session, sessionmaker
-from helpers.main_helper import download_session, export_data, import_archive
+from helpers.main_helper import choose_option, download_session, export_data, import_archive
 import time
 from queue import Queue
 from threading import Thread
@@ -38,7 +38,7 @@ json_config = None
 json_global_settings = None
 max_threads = -1
 json_settings = None
-auto_choice = None
+auto_media_choice = ""
 profile_directory = ""
 download_directory = ""
 metadata_directory = ""
@@ -56,13 +56,13 @@ text_length = None
 
 
 def assign_vars(json_auth: auth_details, config, site_settings, site_name):
-    global json_config, json_global_settings, max_threads, json_settings, auto_choice, profile_directory, download_directory, metadata_directory, metadata_directory_format, delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, text_length
+    global json_config, json_global_settings, max_threads, json_settings, auto_media_choice, profile_directory, download_directory, metadata_directory, metadata_directory_format, delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, text_length
 
     json_config = config
     json_global_settings = json_config["settings"]
     max_threads = json_global_settings["max_threads"]
     json_settings = site_settings
-    auto_choice = json_settings["auto_choice"]
+    auto_media_choice = json_settings["auto_media_choice"]
     profile_directory = main_helper.get_directory(
         json_global_settings['profile_directories'], ".profiles")
     download_directory = main_helper.get_directory(
@@ -169,12 +169,11 @@ def scrape_choice(authed: create_auth, subscription):
     user_id = subscription.id
     post_count = subscription.postsCount
     archived_count = subscription.archivedPostsCount
-    media_types = ["Images", "Videos", "Audios", "Texts"]
-    if auto_choice:
-        input_choice = auto_choice
-    else:
-        print('Scrape: a = Everything | b = Images | c = Videos | d = Audios | e = Texts')
-        input_choice = input().strip()
+    message = "Scrape: 0 = All | 1 = Images | 2 = Videos | 3 = Audios | 4 = Texts"
+    media_types = [[["", "All"], ["", "Images"], [
+        "", "Videos"], ["", "Audios"], ["", "Texts"]], message]
+    choice_list = choose_option(
+        media_types, auto_media_choice)
     user_api = OnlyFans.links(user_id).users
     message_api = OnlyFans.links(user_id).message_api
     mass_messages_api = OnlyFans.links().mass_messages_api
@@ -184,9 +183,6 @@ def scrape_choice(authed: create_auth, subscription):
     archived_api = OnlyFans.links(user_id).archived_posts
     # ARGUMENTS
     only_links = False
-    if "-l" in input_choice:
-        only_links = True
-        input_choice = input_choice.replace(" -l", "")
     mandatory = [download_directory, only_links]
     y = ["photo", "video", "stream", "gif", "audio", "text"]
     u_array = ["You have chosen to scrape {}", [
@@ -224,26 +220,12 @@ def scrape_choice(authed: create_auth, subscription):
         new_item["api_array"]["only_links"] = xxx[1][3]
         new_item["api_array"]["post_count"] = xxx[1][4]
         formatted = format_media_types()
-        if input_choice == "a":
-            name = "All"
-            new_item["api_array"]["media_types"] = formatted
-        elif input_choice == "b":
-            name = "Images"
-            new_item["api_array"]["media_types"] = [formatted[0]]
-            print
-        elif input_choice == "c":
-            name = "Videos"
-            new_item["api_array"]["media_types"] = [formatted[1]]
-        elif input_choice == "d":
-            name = "Audios"
-            new_item["api_array"]["media_types"] = [formatted[2]]
-        elif input_choice == "e":
-            name = "Texts"
-            new_item["api_array"]["media_types"] = [formatted[3]]
-        else:
-            print("Invalid Choice")
-            valid_input = False
-            break
+        final_format = []
+        for choice in choice_list:
+            choice = choice[1]
+            final_format.extend(
+                [result for result in formatted if result[0] == choice])
+        new_item["api_array"]["media_types"] = final_format
         new_item["api_type"] = xxx[2]
         if valid_input:
             new_array.append(new_item)
@@ -291,7 +273,7 @@ def profile_scraper(authed: create_auth, site_name, api_type, username, base_dir
             if os.path.isfile(download_path):
                 continue
         r = authed.session_manager.json_request(media_link, stream=True,
-                                             json_format=False, sleep=False)
+                                                json_format=False, sleep=False)
         if not isinstance(r, requests.Response):
             continue
         tsize = r.headers.get("content-length")
@@ -1114,7 +1096,7 @@ def media_scraper(results, authed: create_auth, subscription: create_subscriptio
 
 # Downloads scraped content
 class download_media():
-    def __init__(self, authed:create_auth=None, subscription=None) -> None:
+    def __init__(self, authed: create_auth = None, subscription=None) -> None:
         username = subscription.username
         download_info = subscription.download_info
         if download_info:
@@ -1158,7 +1140,7 @@ class download_media():
         else:
             self.downloaded = False
 
-    def prepare_download(self, media, authed:create_auth, api_type, subscription: create_subscription, d_session):
+    def prepare_download(self, media, authed: create_auth, api_type, subscription: create_subscription, d_session):
         return_bool = True
         if not overwrite_files and media.downloaded:
             return
@@ -1174,7 +1156,7 @@ class download_media():
             def choose_link(session, links):
                 for link in links:
                     r = authed.session_manager.json_request(link, session, "HEAD",
-                                         stream=False, json_format=False)
+                                                            stream=False, json_format=False)
                     if not isinstance(r, requests.Response):
                         continue
 
@@ -1306,7 +1288,7 @@ def manage_subscriptions(authed: create_auth, auth_count=0, identifiers: list = 
     return results2
 
 
-def format_options(f_list: Union[list[create_auth], list[create_subscription], list[dict]], choice_type: str) -> list:
+def format_options(f_list: Union[list[create_auth], list[create_subscription], list[dict], list[str]], choice_type: str) -> list:
     new_item = {}
     new_item["auth_count"] = -1
     new_item["username"] = "All"

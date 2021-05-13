@@ -6,12 +6,9 @@ from typing import Optional, Union
 
 import helpers.main_helper as main_helper
 from helpers.main_helper import choose_option
-import modules.bbwchan as m_bbwchan
-import modules.fourchan as m_fourchan
 import modules.onlyfans as m_onlyfans
 from apis.onlyfans import onlyfans as OnlyFans
 from apis.starsavn import starsavn as StarsAVN
-import modules.patreon as m_patreon
 import modules.starsavn as m_starsavn
 import time
 import requests
@@ -37,9 +34,9 @@ def start_datascraper(json_config: dict, site_name_lower: str, api: Optional[Onl
 
     json_site_settings = json_sites[site_name_lower]["settings"]
 
-    auto_scrape_names = json_site_settings["auto_scrape_names"]
-    if isinstance(auto_scrape_names, str):
-        temp_identifiers = auto_scrape_names.split(",")
+    auto_model_choice = json_site_settings["auto_model_choice"]
+    if isinstance(auto_model_choice, str):
+        temp_identifiers = auto_model_choice.split(",")
         identifiers = [x for x in temp_identifiers if x]
     else:
         identifiers = []
@@ -70,7 +67,7 @@ def start_datascraper(json_config: dict, site_name_lower: str, api: Optional[Onl
         if not auto_profile_choice:
             print("Choose Profile")
         auths = choose_option(
-            subscription_list, auto_profile_choice)
+            subscription_list, auto_profile_choice, True)
         api.auths = [x.pop(0) for x in auths]
         for auth in api.auths:
             if not auth.auth_details:
@@ -105,7 +102,7 @@ def start_datascraper(json_config: dict, site_name_lower: str, api: Optional[Onl
         if jobs["scrape_names"]:
             print("Scraping Subscriptions")
             names = main_helper.process_names(
-                module, subscription_list, auto_scrape_names, api, json_config, site_name_lower, site_name)
+                module, subscription_list, auto_model_choice, api, json_config, site_name_lower, site_name)
         x = main_helper.process_downloads(api, module)
         if webhooks:
             x = main_helper.process_webhooks(
@@ -151,7 +148,7 @@ def start_datascraper(json_config: dict, site_name_lower: str, api: Optional[Onl
         # if jobs["scrape_names"]:
         #     print("Scraping Subscriptions")
         #     names = main_helper.process_names(
-        #         module, subscription_list, auto_scrape_names, apis, json_config, site_name_lower, site_name)
+        #         module, subscription_list, auto_model_choice, apis, json_config, site_name_lower, site_name)
         # x = main_helper.process_downloads(apis, module)
     stop_time = str(
         int(timeit.default_timer() - archive_time) / 60)[:4]

@@ -25,7 +25,7 @@ json_config = None
 json_global_settings = None
 max_threads = -1
 json_settings = None
-auto_choice = None
+auto_media_choice = None
 j_directory = ""
 metadata_directory_format = ""
 file_directory_format = None
@@ -41,13 +41,13 @@ app_token = None
 
 
 def assign_vars(json_auth: auth_details, config, site_settings, site_name):
-    global json_config, json_global_settings, max_threads, json_settings, auto_choice, j_directory, metadata_directory_format, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, maximum_length, app_token
+    global json_config, json_global_settings, max_threads, json_settings, auto_media_choice, j_directory, metadata_directory_format, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, maximum_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
     max_threads = json_global_settings["max_threads"]
     json_settings = site_settings
-    auto_choice = json_settings["auto_choice"]
+    auto_media_choice = json_settings["auto_media_choice"]
     j_directory = main_helper.get_directory(
         json_settings['download_directories'], site_name)
     metadata_directory_format = json_settings["metadata_directory_format"]
@@ -157,8 +157,8 @@ def scrape_choice(api: start, subscription):
     post_count = subscription.postsCount
     archived_count = subscription.archivedPostsCount
     media_types = ["Images", "Videos", "Audios", "Texts"]
-    if auto_choice:
-        input_choice = auto_choice
+    if auto_media_choice:
+        input_choice = auto_media_choice
     else:
         print('Scrape: a = Everything | b = Images | c = Videos | d = Audios | e = Texts')
         input_choice = input().strip()

@@ -206,7 +206,7 @@ Usage: You can automatically choose which site you want to scrape.
 
     OnlyFans = "onlyfans"
 
-### auto_choice:
+### auto_media_choice:
 
 Usage: You can automatically choose which media type you want to scrape.
 Default = ""
@@ -218,7 +218,7 @@ Default = ""
 
     You can automatically choose which type of media you want to scrape.
 
-### auto_scrape_names:
+### auto_model_choice:
 
     Default = false
 

@@ -251,7 +251,7 @@ class create_subscription():
         self.link = option.get("link")
         self.links = content_types()
         self.scraped = content_types()
-        self.auth_id:Optional[int] = None
+        self.auth_id: Optional[int] = None
         self.auth_count = None
         self.session_manager: api_helper.session_manager = option.get(
             "session_manager")
@@ -480,8 +480,8 @@ class start():
         self.links = links
         self.session_manager = api_helper.session_manager
 
-    def set_auth_details(self, option={}):
-        if not option.get("active"):
+    def set_auth_details(self, option={}, only_active=False):
+        if only_active and not option.get("active"):
             return
         auth = create_auth()
         auth.auth_details = auth_details(option)

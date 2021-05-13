@@ -224,7 +224,7 @@ Default = ""
 
     If set to true, the script will scrape all the names.
 
-### auto_scrape_apis:
+### auto_api_choice:
 
     Default = true
 

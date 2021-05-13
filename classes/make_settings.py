@@ -201,8 +201,8 @@ class config(object):
                             'auto_model_choice', False)
                         self.auto_media_choice = option.get(
                             'auto_media_choice', "")
-                        self.auto_scrape_apis = option.get(
-                            'auto_scrape_apis', True)
+                        self.auto_api_choice = option.get(
+                            'auto_api_choice', True)
                         self.browser = browser(option.get(
                             'browser', {}))
                         self.jobs = jobs(option.get(

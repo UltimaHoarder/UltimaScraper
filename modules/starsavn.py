@@ -121,7 +121,7 @@ def start_datascraper(api: start, identifier, site_name, choice_type=None):
     api_array = format_options(api_array, "apis")
     apis = api_array[0]
     api_string = api_array[1]
-    if not json_settings["auto_scrape_apis"]:
+    if not json_settings["auto_api_choice"]:
         print("Apis: "+api_string)
         value = int(input().strip())
     else:

@@ -94,8 +94,10 @@ class config(object):
             for key, value in options.items():
                 if "auto_scrape_names" == key:
                     new_options["auto_model_choice"] = value
-                elif "auto_media_choice" == key:
+                elif "auto_choice" == key:
                     new_options["auto_media_choice"] = value
+                elif "auto_scrape_apis" == key:
+                    new_options["auto_api_choice"] = value
             return new_options
 
         class Supported(object):

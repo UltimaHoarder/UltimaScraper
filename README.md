@@ -199,6 +199,7 @@ Usage: Select the resolution of the video.
     240p = "240" | "240p"
 
 ### auto_site_choice:
+Types: list|int|str|bool
 
 Usage: You can automatically choose which site you want to scrape.
 
@@ -207,18 +208,19 @@ Usage: You can automatically choose which site you want to scrape.
     OnlyFans = "onlyfans"
 
 ### auto_media_choice:
+Types: list|int|str|bool
 
 Usage: You can automatically choose which media type you want to scrape.
-Default = ""
 
-    Everything = "a"
-    Images = "b"
-    Videos = "c"
-    Audios = "d"
+    Default = ""
+
+    Inputs: Images, Videos, etc
+    Inputs: 0,1,etc
 
     You can automatically choose which type of media you want to scrape.
 
 ### auto_model_choice:
+Types: list|int|str|bool
 
     Default = false
 

@@ -251,6 +251,7 @@ class create_subscription():
         self.link = option.get("link")
         self.links = content_types()
         self.scraped = content_types()
+        self.auth_id:Optional[int] = None
         self.auth_count = None
         self.session_manager: api_helper.session_manager = option.get(
             "session_manager")
@@ -732,6 +733,7 @@ class create_auth():
                         subscription2 = self.get_user(subscription["username"])
                         subscription = subscription | subscription2
                     subscription = create_subscription(subscription)
+                    subscription.auth_id = self.id
                     subscription.link = f"https://onlyfans.com/{subscription.username}"
                     valid_subscriptions.append(subscription)
                 return valid_subscriptions

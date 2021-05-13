@@ -57,7 +57,7 @@ def start_datascraper(json_config: dict, site_name_lower: str, api: Optional[Onl
         site_name = "OnlyFans"
         module = m_onlyfans
         if not api:
-            api = api if api else OnlyFans.start()
+            api = OnlyFans.start()
             api = main_helper.process_profiles(
                 json_settings, original_sessions, site_name, api)
             print

@@ -16,6 +16,8 @@ from mergedeep import merge, Strategy
 import jsonpickle
 import copy
 from random import random
+from user_agent import generate_user_agent
+
 
 
 def create_headers(auth_id, user_agent="", x_bc="", sess="", link="https://onlyfans.com/"):
@@ -479,6 +481,7 @@ class start():
         self.lists = None
         self.links = links
         self.session_manager = api_helper.session_manager
+        self.settings = {}
 
     def set_auth_details(self, option={}, only_active=False):
         if only_active and not option.get("active"):
@@ -513,6 +516,7 @@ class create_auth():
             session_rules=session_rules, session_retry_rules=session_retry_rules)
         self.auth_details: Optional[auth_details] = None
         self.profile_directory = option.get("profile_directory", "")
+        self.guest = False
         self.active = False
         self.errors: list[error_details] = []
         self.extras = {}
@@ -540,8 +544,11 @@ class create_auth():
                             getattr(self.links, key_name).append(link.replace(
                                 "offset=0", "offset=" + str(b)))
 
-    def login(self, full=False, max_attempts=10):
+    def login(self, full=False, max_attempts=10, guest=False):
         auth_version = "(V1)"
+        if guest:
+            self.auth_details.auth_id = "0"
+            self.auth_details.user_agent = generate_user_agent()
         auth_items = self.auth_details
         link = links().customer
         user_agent = auth_items.user_agent
@@ -557,6 +564,9 @@ class create_auth():
         ]
         a = [auth_id, user_agent, x_bc, auth_items.sess, link]
         self.session_manager.headers = create_headers(*a)
+        if guest:
+            print("Guest Authentication")
+            return self
         for session in self.session_manager.sessions:
             for auth_cookie in auth_cookies:
                 session.cookies.set(**auth_cookie)

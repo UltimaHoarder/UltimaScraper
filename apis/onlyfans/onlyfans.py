@@ -20,14 +20,15 @@ from user_agent import generate_user_agent
 
 
 
-def create_headers(auth_id, user_agent="", x_bc="", sess="", link="https://onlyfans.com/"):
+def create_headers(dynamic_rules,auth_id, user_agent="", x_bc="", sess="", link="https://onlyfans.com/"):
     headers = {}
     headers["user-agent"] = user_agent
     headers["referer"] = link
     headers["user-id"] = auth_id
     headers["x-bc"] = x_bc
+    for remove_header in dynamic_rules["remove_headers"]:
+        headers.pop(remove_header)
     return headers
-
 
 def create_signed_headers(link: str,  auth_id: int, dynamic_rules: dict):
     # Users: 300000 | Creators: 301000
@@ -55,8 +56,8 @@ def session_rules(session_manager: api_helper.session_manager, link) -> dict:
     if "https://onlyfans.com/api2/v2/" in link:
         dynamic_rules = session_manager.dynamic_rules
         headers["app-token"] = "33d57ade8c02dbc5a333db99ff9ae26a"
-        auth_id = headers["user-id"]
-        a = [link, auth_id, dynamic_rules]
+        # auth_id = headers["user-id"]
+        a = [link, 0, dynamic_rules]
         headers2 = create_signed_headers(*a)
         headers |= headers2
     return headers
@@ -562,7 +563,8 @@ class create_auth():
             {'name': f'auth_uniq_{auth_id}', 'value': auth_items.auth_uniq_},
             {'name': f'auth_uid_{auth_id}', 'value': None},
         ]
-        a = [auth_id, user_agent, x_bc, auth_items.sess, link]
+        dynamic_rules = self.session_manager.dynamic_rules
+        a = [dynamic_rules,auth_id, user_agent, x_bc, auth_items.sess, link]
         self.session_manager.headers = create_headers(*a)
         if guest:
             print("Guest Authentication")

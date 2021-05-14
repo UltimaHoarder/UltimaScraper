@@ -19,8 +19,7 @@ from random import random
 from user_agent import generate_user_agent
 
 
-
-def create_headers(dynamic_rules,auth_id, user_agent="", x_bc="", sess="", link="https://onlyfans.com/"):
+def create_headers(dynamic_rules, auth_id, user_agent="", x_bc="", sess="", link="https://onlyfans.com/"):
     headers = {}
     headers["user-agent"] = user_agent
     headers["referer"] = link
@@ -29,6 +28,7 @@ def create_headers(dynamic_rules,auth_id, user_agent="", x_bc="", sess="", link=
     for remove_header in dynamic_rules["remove_headers"]:
         headers.pop(remove_header)
     return headers
+
 
 def create_signed_headers(link: str,  auth_id: int, dynamic_rules: dict):
     # Users: 300000 | Creators: 301000
@@ -545,6 +545,12 @@ class create_auth():
                             getattr(self.links, key_name).append(link.replace(
                                 "offset=0", "offset=" + str(b)))
 
+    def update(self, data):
+        for key, value in data.items():
+            found_attr = hasattr(self, key)
+            if found_attr:
+                setattr(self, key, value)
+
     def login(self, full=False, max_attempts=10, guest=False):
         auth_version = "(V1)"
         if guest:
@@ -564,7 +570,7 @@ class create_auth():
             {'name': f'auth_uid_{auth_id}', 'value': None},
         ]
         dynamic_rules = self.session_manager.dynamic_rules
-        a = [dynamic_rules,auth_id, user_agent, x_bc, auth_items.sess, link]
+        a = [dynamic_rules, auth_id, user_agent, x_bc, auth_items.sess, link]
         self.session_manager.headers = create_headers(*a)
         if guest:
             print("Guest Authentication")
@@ -612,6 +618,8 @@ class create_auth():
                         break
                     if "Code wrong" in error_message:
                         break
+                    if "Please refresh" in error_message:
+                        break
                 else:
                     print("Auth 404'ed")
                 continue
@@ -628,10 +636,8 @@ class create_auth():
             if r:
                 self.resolve_auth_errors(r)
                 if not self.errors:
-                    me_api = create_auth(r)
-                    me_api.active = True
-                    me_api.session_manager = self.session_manager
-                    self.__dict__.update(me_api.__dict__)
+                    self.active = True
+                    self.update(r)
             else:
                 # 404'ed
                 self.active = False
@@ -646,11 +652,16 @@ class create_auth():
             error = error_details()
             if error_code == 0:
                 pass
-            if error_code == 101:
+            elif error_code == 101:
                 error_message = "Blocked by 2FA."
+            elif error_code == 401:
+                # Session/Refresh
+                pass
             error.code = error_code
             error.message = error_message
             self.errors.append(error)
+        else:
+            self.errors.clear()
 
     def get_lists(self, refresh=True, limit=100, offset=0):
         api_type = "lists"

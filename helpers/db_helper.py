@@ -81,7 +81,7 @@ def get_or_create(session, model, defaults=None, fbkwargs={}):
         instance = model(**fbkwargs)
         try:
             session.add(instance)
-            session.flush()
+            session.commit()
         except IntegrityError:
             session.rollback()
             instance = session.query(model).filter_by(**fbkwargs).one()

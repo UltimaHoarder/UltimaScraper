@@ -4,8 +4,8 @@ import math
 from types import SimpleNamespace
 from typing import Any, Optional, Tuple, Union
 
-from sqlalchemy.ext.declarative import api
-from sqlalchemy.ext.declarative.api import declarative_base
+from sqlalchemy import inspect
+from sqlalchemy.orm import declarative_base
 from classes.prepare_metadata import format_variables
 import copy
 import os
@@ -157,7 +157,7 @@ def legacy_database_fixer(database_path, database, database_name, database_exist
     if database_exists:
         Session, engine = db_helper.create_database_session(database_path)
         database_session = Session()
-        result = engine.dialect.has_table(engine, 'alembic_version')
+        result = inspect(engine).has_table('alembic_version')
         if not result:
             if not pre_alembic_database_exists:
                 os.rename(old_database_path, pre_alembic_path)

@@ -1,9 +1,7 @@
 import hashlib
 import shutil
-import timeit
 from apis.onlyfans import onlyfans as OnlyFans
 from helpers import db_helper
-from helpers.db_helper import database_collection
 from typing import Union
 from apis.onlyfans.onlyfans import auth_details, content_types, create_auth, create_subscription, media_types, start
 from classes.prepare_metadata import create_metadata, format_content, prepare_reformat
@@ -21,14 +19,8 @@ import requests
 import helpers.main_helper as main_helper
 from types import SimpleNamespace
 from mergedeep import merge, Strategy
-import sqlite3
-import sqlalchemy
-from sqlalchemy.ext.declarative import declarative_base
-from sqlalchemy.orm import session, sessionmaker
+from sqlalchemy.orm import session, sessionmaker, declarative_base
 from helpers.main_helper import choose_option, download_session, export_data, import_archive
-import time
-from queue import Queue
-from threading import Thread
 import extras.OFLogin.start_ofl as oflogin
 
 multiprocessing = main_helper.multiprocessing

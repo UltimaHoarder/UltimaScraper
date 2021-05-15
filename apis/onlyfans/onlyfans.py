@@ -254,7 +254,7 @@ class create_subscription():
         self.link = option.get("link")
         self.links = content_types()
         self.scraped = content_types()
-        self.auth_id: Optional[int] = None
+        self.authed: create_auth = option.get("authed")
         self.auth_count = None
         self.session_manager: api_helper.session_manager = option.get(
             "session_manager")
@@ -474,30 +474,34 @@ class create_subscription():
 
 
 class start():
-    def __init__(self, custom_request=callable) -> None:
+    def __init__(self, custom_request=callable, max_threads=-1) -> None:
         self.auths: list[create_auth] = []
         self.subscriptions: list[create_subscription] = []
         self.custom_request = custom_request
-        self.max_threads = -1
+        self.max_threads = max_threads
         self.lists = None
         self.links = links
-        self.session_manager = api_helper.session_manager
+        self.pool = api_helper.multiprocessing()
+        self.session_manager = api_helper.session_manager(
+            session_rules=session_rules, session_retry_rules=session_retry_rules, max_threads=max_threads)
         self.settings = {}
 
     def set_auth_details(self, option={}, only_active=False):
         if only_active and not option.get("active"):
             return
-        auth = create_auth()
+        auth = create_auth(session_manager2=self.session_manager,
+                           pool=self.pool)
         auth.auth_details = auth_details(option)
         self.auths.append(auth)
         return auth
 
-    def set_auth(self, me):
-        self.auth = me
+    def close_pools(self):
+        self.pool.close()
+        self.session_manager.pool.close()
 
 
 class create_auth():
-    def __init__(self, option={}, api: Optional[start] = None, init=False) -> None:
+    def __init__(self, session_manager2: api_helper.session_manager, option={}, init=False, pool=None, ) -> None:
         self.id = option.get("id")
         self.username = option.get("username")
         if not self.username:
@@ -513,16 +517,15 @@ class create_auth():
         self.archived_stories = {}
         self.mass_messages = []
         self.paid_content = {}
-        self.session_manager = api_helper.session_manager(
-            session_rules=session_rules, session_retry_rules=session_retry_rules)
+        session_manager2 = copy.copy(session_manager2)
+        self.session_manager = session_manager2
+        self.pool = pool
         self.auth_details: Optional[auth_details] = None
         self.profile_directory = option.get("profile_directory", "")
         self.guest = False
         self.active = False
         self.errors: list[error_details] = []
         self.extras = {}
-        if api:
-            api.auths.append(self)
         valid_counts = ["chatMessagesCount"]
         args = [self.username, False, False]
         link_info = links(*args).full
@@ -725,14 +728,18 @@ class create_auth():
         results = []
         if self.isPerformer:
             temp_session_manager = self.session_manager
+            temp_pool = self.pool
             delattr(self, "session_manager")
+            delattr(self, "pool")
             json_authed = jsonpickle.encode(
                 self, unpicklable=False)
             json_authed = jsonpickle.decode(json_authed)
             self.session_manager = temp_session_manager
+            self.pool = temp_pool
             json_authed = json_authed | self.get_user(self.username)
 
             subscription = create_subscription(json_authed)
+            subscription.authed = self
             subscription.session_manager = self.session_manager
             subscription = [subscription]
             results.append(subscription)
@@ -756,11 +763,11 @@ class create_auth():
                         subscription2 = self.get_user(subscription["username"])
                         subscription = subscription | subscription2
                     subscription = create_subscription(subscription)
-                    subscription.auth_id = self.id
+                    subscription.authed = self
                     subscription.link = f"https://onlyfans.com/{subscription.username}"
                     valid_subscriptions.append(subscription)
                 return valid_subscriptions
-            pool = api_helper.multiprocessing()
+            pool = self.pool
             # offset_array= offset_array[:16]
             results += pool.starmap(multi, product(
                 offset_array))

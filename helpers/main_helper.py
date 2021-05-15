@@ -12,7 +12,6 @@ import os
 import platform
 import re
 from datetime import datetime
-import time
 from itertools import chain, zip_longest, groupby
 import psutil
 import shutil
@@ -29,8 +28,6 @@ import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
 from mergedeep import merge, Strategy
 import helpers.db_helper as db_helper
-from alembic.config import Config
-from alembic import command
 import traceback
 json_global_settings = None
 min_drive_space = 0

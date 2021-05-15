@@ -22,7 +22,7 @@ if __name__ == "__main__":
     json_sites = json_config["supported"]
     domain = json_settings["auto_site_choice"]
     string, site_names = main_helper.module_chooser(domain, json_sites)
-    
+
     # logging.basicConfig(level=logging.DEBUG, format="%(message)s")
     while True:
         try:
@@ -40,7 +40,10 @@ if __name__ == "__main__":
                 x = int(x)
                 site_name = site_names[x]
             site_name_lower = site_name.lower()
-            apis = main_datascraper.start_datascraper(json_config, site_name_lower)
+            api = main_datascraper.start_datascraper(
+                json_config, site_name_lower)
+            if api:
+                api.close_pools()
             if exit_on_completion:
                 print("Now exiting.")
                 exit(0)

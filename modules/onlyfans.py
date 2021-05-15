@@ -23,8 +23,6 @@ from sqlalchemy.orm import session, sessionmaker, declarative_base
 from helpers.main_helper import choose_option, download_session, export_data, import_archive
 import extras.OFLogin.start_ofl as oflogin
 
-multiprocessing = main_helper.multiprocessing
-
 site_name = "OnlyFans"
 json_config = None
 json_global_settings = None
@@ -340,7 +338,7 @@ def paid_content_scraper(api: start, identifiers=[]):
                         authed, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
                     parent_type = ""
                     new_metadata = new_metadata + old_metadata
-                    w = process_metadata(metadata_path, formatted_directories, new_metadata,
+                    w = process_metadata(api, metadata_path, formatted_directories, new_metadata,
                                          site_name, parent_type, api_path, subscription, delete_metadatas)
                     print
 
@@ -554,7 +552,7 @@ def process_legacy_metadata(authed: create_auth, new_metadata_set, formatted_dir
     return final_set, delete_metadatas
 
 
-def process_metadata(archive_path: str, formatted_directories: dict, new_metadata_object, site_name, parent_type, api_path, subscription, delete_metadatas):
+def process_metadata(api, archive_path: str, formatted_directories: dict, new_metadata_object, site_name, parent_type, api_path, subscription, delete_metadatas):
     print
     Session, api_type, folder = main_helper.export_sqlite(
         archive_path, new_metadata_object, parent_type)
@@ -568,7 +566,7 @@ def process_metadata(archive_path: str, formatted_directories: dict, new_metadat
     if json_global_settings["helpers"]["renamer"]:
         print("Renaming files.")
         new_metadata_object = ofrenamer.start(
-            Session, parent_type, api_type, api_path, site_name, subscription, folder, json_settings)
+            api, Session, parent_type, api_type, api_path, site_name, subscription, folder, json_settings)
     if delete_legacy_metadata:
         for old_metadata in delete_metadatas:
             if os.path.exists(old_metadata):
@@ -627,7 +625,7 @@ def prepare_scraper(authed: create_auth, site_name, item):
     media_type = api_array["media_types"]
     username = api_array["username"]
     master_set = []
-    pool = multiprocessing()
+    pool = authed.pool
     mandatory_directories = {}
     mandatory_directories["profile_directory"] = profile_directory
     mandatory_directories["download_directory"] = download_directory
@@ -696,13 +694,12 @@ def prepare_scraper(authed: create_auth, site_name, item):
         new_metadata = new_metadata + old_metadata
         subscription.set_scraped(api_type, new_metadata)
         print
-        w = process_metadata(metadata_path, formatted_directories, new_metadata,
+        w = process_metadata(authed, metadata_path, formatted_directories, new_metadata,
                              site_name, parent_type, api_path, subscription, delete_metadatas)
         print
     else:
         print("No "+api_type+" Found.")
         delattr(subscription.scraped, api_type)
-
     return True
 
 
@@ -1124,7 +1121,7 @@ class download_media():
                         d_session = download_session()
                         d_session.start(unit='B', unit_scale=True,
                                         miniters=1)
-                        pool = multiprocessing()
+                        pool = authed.session_manager.pool
                         pool.starmap(self.prepare_download, product(
                             media_set, [authed], [api_type], [subscription], [d_session]))
                         d_session.close()

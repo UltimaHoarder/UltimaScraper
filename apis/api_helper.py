@@ -37,7 +37,7 @@ def chunks(l, n):
 
 def multiprocessing(max_threads=None):
     if not max_threads:
-        max_threads = global_settings.get("max_threads", -1)
+        max_threads = -1
     max_threads2 = cpu_count()
     if max_threads < 1 or max_threads >= max_threads2:
         pool = ThreadPool()
@@ -47,10 +47,10 @@ def multiprocessing(max_threads=None):
 
 
 class session_manager():
-    def __init__(self, original_sessions=[], headers: dict = {}, session_rules=None, session_retry_rules=None) -> None:
+    def __init__(self, original_sessions=[], headers: dict = {}, session_rules=None, session_retry_rules=None,max_threads=-1) -> None:
         self.sessions = self.copy_sessions(original_sessions)
-        self.pool = multiprocessing()
-        self.max_threads = self.pool._processes
+        self.pool = multiprocessing(max_threads)
+        self.max_threads = max_threads
         self.kill = False
         self.headers = headers
         self.session_rules = session_rules
@@ -184,8 +184,9 @@ def create_session(settings={}, custom_proxy="", test_ip=True):
     while not sessions:
         proxies = [custom_proxy] if custom_proxy else proxies
         if proxies:
-            sessions = pool.starmap(test_session, product(
-                proxies, [cert], [max_threads]))
+            with pool:
+                sessions = pool.starmap(test_session, product(
+                    proxies, [cert], [max_threads]))
         else:
             session = test_session(max_threads=max_threads)
             sessions.append(session)
@@ -268,7 +269,7 @@ def scrape_check(links, session_manager: session_manager, api_type):
             continue
         items = assign_session(links, session_manager.sessions)
         # item_groups = grouper(300,items)
-        pool = multiprocessing()
+        pool = session_manager.pool
         results = pool.starmap(multi, product(
             items))
         not_faulty = [x for x in results if x]

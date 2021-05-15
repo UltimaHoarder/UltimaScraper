@@ -25,7 +25,7 @@ api_helper = OnlyFans.api_helper
 #     return text
 
 
-def start_datascraper(json_config: dict, site_name_lower: str, api: Optional[OnlyFans.start] = None, webhooks=True):
+def start_datascraper(json_config: dict, site_name_lower: str, api: Optional[OnlyFans.start] = None, webhooks=True)->Optional[OnlyFans.start]:
     json_settings = json_config["settings"]
     json_webhooks = json_settings["webhooks"]
     json_sites = json_config["supported"]
@@ -48,13 +48,13 @@ def start_datascraper(json_config: dict, site_name_lower: str, api: Optional[Onl
     original_sessions = [x for x in original_sessions if x]
     if not original_sessions:
         print("Unable to create session")
-        return False
+        return None
     archive_time = timeit.default_timer()
     if site_name_lower == "onlyfans":
         site_name = "OnlyFans"
         module = m_onlyfans
         if not api:
-            api = OnlyFans.start()
+            api = OnlyFans.start(max_threads=json_settings["max_threads"])
             api = main_helper.process_profiles(
                 json_settings, original_sessions, site_name, api)
             print

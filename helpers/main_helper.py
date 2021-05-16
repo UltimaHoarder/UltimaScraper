@@ -603,9 +603,9 @@ def process_profiles(json_settings, original_sessions, site_name, api: Union[Onl
                 if not json_auth.get("active", None):
                     continue
                 json_auth["username"] = user
-                auth = api.set_auth_details(
+                auth = api.add_auth(
                     json_auth)
-                auth.session_manager.copy_sessions(original_sessions)
+                auth.session_manager.add_sessions(original_sessions)
                 auth.profile_directory = user_profile
                 datas["auth"] = auth.auth_details.__dict__
             if datas:

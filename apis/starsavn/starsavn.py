@@ -452,7 +452,7 @@ class create_subscription():
 
 class start():
     def __init__(self, sessions=[], custom_request=callable) -> None:
-        sessions = api_helper.copy_sessions(sessions)
+        sessions = api_helper.add_sessions(sessions)
         self.sessions = sessions
         self.auth = create_auth(init=True)
         self.custom_request = custom_request
@@ -480,7 +480,7 @@ class start():
     #         print("Could not authenticate")
     #     return result
 
-    def set_auth_details(self, option):
+    def add_auth(self, option):
         if not option["active"]:
             return
         self.auth.auth_details.username = option["username"]

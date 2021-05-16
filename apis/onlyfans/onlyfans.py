@@ -1,6 +1,6 @@
 import time
 import base64
-from typing import Optional, Union
+from typing import List, Optional, Union
 from urllib.parse import urlparse
 from urllib import parse
 import hashlib
@@ -474,7 +474,7 @@ class create_subscription():
 
 
 class start():
-    def __init__(self, custom_request=callable, max_threads=-1) -> None:
+    def __init__(self, custom_request=callable, max_threads=-1, original_sessions: List[requests.Session] = []) -> None:
         self.auths: list[create_auth] = []
         self.subscriptions: list[create_subscription] = []
         self.custom_request = custom_request
@@ -483,10 +483,10 @@ class start():
         self.links = links
         self.pool = api_helper.multiprocessing()
         self.session_manager = api_helper.session_manager(
-            session_rules=session_rules, session_retry_rules=session_retry_rules, max_threads=max_threads)
+            session_rules=session_rules, session_retry_rules=session_retry_rules, max_threads=max_threads, original_sessions=original_sessions)
         self.settings = {}
 
-    def set_auth_details(self, option={}, only_active=False):
+    def add_auth(self, option={}, only_active=False):
         if only_active and not option.get("active"):
             return
         auth = create_auth(session_manager2=self.session_manager,
@@ -503,10 +503,11 @@ class start():
 class create_auth():
     def __init__(self, session_manager2: api_helper.session_manager, option={}, init=False, pool=None, ) -> None:
         self.id = option.get("id")
-        self.username = option.get("username")
+        self.username: str = option.get("username")
         if not self.username:
             self.username = f"u{self.id}"
         self.name = option.get("name")
+        self.email: str = option.get("email")
         self.lists = {}
         self.links = content_types()
         self.isPerformer: bool = option.get("isPerformer")
@@ -516,7 +517,7 @@ class create_auth():
         self.chats = None
         self.archived_stories = {}
         self.mass_messages = []
-        self.paid_content = {}
+        self.paid_content = []
         session_manager2 = copy.copy(session_manager2)
         self.session_manager = session_manager2
         self.pool = pool
@@ -575,6 +576,8 @@ class create_auth():
         dynamic_rules = self.session_manager.dynamic_rules
         a = [dynamic_rules, auth_id, user_agent, x_bc, auth_items.sess, link]
         self.session_manager.headers = create_headers(*a)
+        if not self.session_manager.sessions:
+            self.session_manager.add_sessions([requests.Session()])
         if guest:
             print("Guest Authentication")
             return self
@@ -875,3 +878,9 @@ class create_auth():
             results.extend(results2)
         self.paid_content = results
         return results
+
+    def buy_subscription(self, user: dict):
+        user_id = user.get("id")
+        amount = user.get("amount")
+        x = {"paymentType": "subscribe", "userId": user_id, "subscribeSource": "profile",
+             "amount": amount, "token": "", "unavailablePaymentGates": []}

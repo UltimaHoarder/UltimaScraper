@@ -47,8 +47,8 @@ def multiprocessing(max_threads=None):
 
 
 class session_manager():
-    def __init__(self, original_sessions=[], headers: dict = {}, session_rules=None, session_retry_rules=None,max_threads=-1) -> None:
-        self.sessions = self.copy_sessions(original_sessions)
+    def __init__(self, original_sessions=[], headers: dict = {}, session_rules=None, session_retry_rules=None, max_threads=-1) -> None:
+        self.sessions = self.add_sessions(original_sessions)
         self.pool = multiprocessing(max_threads)
         self.max_threads = max_threads
         self.kill = False
@@ -59,8 +59,11 @@ class session_manager():
         dynamic_rules = requests.get(dr_link).json()
         self.dynamic_rules = dynamic_rules
 
-    def copy_sessions(self, original_sessions):
-        sessions = []
+    def add_sessions(self, original_sessions: list, overwrite_old_sessions=True):
+        if overwrite_old_sessions:
+            sessions = []
+        else:
+            sessions = self.sessions
         for original_session in original_sessions:
             cloned_session = copy.deepcopy(original_session)
             ip = getattr(original_session, "ip", "")

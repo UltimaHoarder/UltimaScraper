@@ -164,13 +164,13 @@ def scrape_choice(authed: create_auth, subscription):
         "", "Videos"], ["", "Audios"], ["", "Texts"]], message]
     choice_list = choose_option(
         media_types, auto_media_choice)
-    user_api = OnlyFans.links(user_id).users
-    message_api = OnlyFans.links(user_id).message_api
-    mass_messages_api = OnlyFans.links().mass_messages_api
-    stories_api = OnlyFans.links(user_id).stories_api
-    list_highlights = OnlyFans.links(user_id).list_highlights
-    post_api = OnlyFans.links(user_id).post_api
-    archived_api = OnlyFans.links(user_id).archived_posts
+    user_api = OnlyFans.endpoint_links(user_id).users
+    message_api = OnlyFans.endpoint_links(user_id).message_api
+    mass_messages_api = OnlyFans.endpoint_links().mass_messages_api
+    stories_api = OnlyFans.endpoint_links(user_id).stories_api
+    list_highlights = OnlyFans.endpoint_links(user_id).list_highlights
+    post_api = OnlyFans.endpoint_links(user_id).post_api
+    archived_api = OnlyFans.endpoint_links(user_id).archived_posts
     # ARGUMENTS
     only_links = False
     mandatory = [download_directory, only_links]

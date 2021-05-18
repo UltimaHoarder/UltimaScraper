@@ -162,13 +162,13 @@ def scrape_choice(api: start, subscription):
     else:
         print('Scrape: a = Everything | b = Images | c = Videos | d = Audios | e = Texts')
         input_choice = input().strip()
-    user_api = api.links(user_id).users
-    message_api = api.links(user_id).message_api
-    mass_messages_api = api.links().mass_messages_api
-    stories_api = api.links(user_id).stories_api
-    list_highlights = api.links(user_id).list_highlights
-    post_api = api.links(user_id).post_api
-    archived_api = api.links(user_id).archived_posts
+    user_api = api.endpoint_links(user_id).users
+    message_api = api.endpoint_links(user_id).message_api
+    mass_messages_api = api.endpoint_links().mass_messages_api
+    stories_api = api.endpoint_links(user_id).stories_api
+    list_highlights = api.endpoint_links(user_id).list_highlights
+    post_api = api.endpoint_links(user_id).post_api
+    archived_api = api.endpoint_links(user_id).archived_posts
     # ARGUMENTS
     only_links = False
     if "-l" in input_choice:

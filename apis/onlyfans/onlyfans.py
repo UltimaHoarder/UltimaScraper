@@ -151,7 +151,7 @@ class auth_details():
         self.active = option.get('active', True)
 
 
-class links(object):
+class endpoint_links(object):
     def __init__(self, identifier=None, identifier2=None, text="", only_links=True, global_limit=None, global_offset=None, app_token="33d57ade8c02dbc5a333db99ff9ae26a"):
         self.customer = f"https://onlyfans.com/api2/v2/users/me"
         self.users = f'https://onlyfans.com/api2/v2/users/{identifier}?app-token={app_token}'
@@ -263,7 +263,7 @@ class create_subscription():
         # Modify self
         valid_counts = ["postsCount", "archivedPostsCount"]
         identifier = self.id
-        link_info = links(identifier=identifier).full
+        link_info = endpoint_links(identifier=identifier).full
         x2 = [link_info["post_api"],
               link_info["archived_posts"]]
         items = dict(zip(valid_counts, x2))
@@ -301,7 +301,7 @@ class create_subscription():
                 return result
         if not self.hasStories:
             return []
-        link = [links(identifier=self.id, global_limit=limit,
+        link = [endpoint_links(identifier=self.id, global_limit=limit,
                       global_offset=offset).stories_api]
         results = api_helper.scrape_check(link, self.session_manager, api_type)
         self.scraped.Stories = results
@@ -316,10 +316,10 @@ class create_subscription():
         if not identifier:
             identifier = self.id
         if not hightlight_id:
-            link = links(identifier=identifier, global_limit=limit,
+            link = endpoint_links(identifier=identifier, global_limit=limit,
                          global_offset=offset).list_highlights
         else:
-            link = links(identifier=hightlight_id, global_limit=limit,
+            link = endpoint_links(identifier=hightlight_id, global_limit=limit,
                          global_offset=offset).highlight
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
@@ -340,7 +340,7 @@ class create_subscription():
     def get_post(self, identifier=None, limit=10, offset=0):
         if not identifier:
             identifier = self.id
-        link = links(identifier=identifier, global_limit=limit,
+        link = endpoint_links(identifier=identifier, global_limit=limit,
                      global_offset=offset).post_by_id
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
@@ -361,7 +361,7 @@ class create_subscription():
                 return []
 
         def process():
-            link = links(identifier=identifier, global_limit=limit,
+            link = endpoint_links(identifier=identifier, global_limit=limit,
                          global_offset=offset).message_api
             session = self.session_manager.sessions[0]
             results = self.session_manager.json_request(link)
@@ -400,7 +400,7 @@ class create_subscription():
     def get_message_by_id(self, identifier=None, identifier2=None, refresh=True, limit=10, offset=0):
         if not identifier:
             identifier = self.id
-        link = links(identifier=identifier, identifier2=identifier2, global_limit=limit,
+        link = endpoint_links(identifier=identifier, identifier2=identifier2, global_limit=limit,
                      global_offset=offset).message_by_id
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
@@ -415,7 +415,7 @@ class create_subscription():
             result = handle_refresh(self, api_type)
             if result:
                 return result
-        link = links(global_limit=limit,
+        link = endpoint_links(global_limit=limit,
                      global_offset=offset).archived_stories
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
@@ -453,7 +453,7 @@ class create_subscription():
     def search_chat(self, identifier="", text="", refresh=True, limit=10, offset=0):
         if identifier:
             identifier = parse.urljoin(identifier, "messages")
-        link = links(identifier=identifier, text=text, global_limit=limit,
+        link = endpoint_links(identifier=identifier, text=text, global_limit=limit,
                      global_offset=offset).search_chat
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
@@ -463,7 +463,7 @@ class create_subscription():
         if identifier:
             identifier = parse.urljoin(identifier, "messages")
         text = parse.quote_plus(text)
-        link = links(identifier=identifier, text=text, global_limit=limit,
+        link = endpoint_links(identifier=identifier, text=text, global_limit=limit,
                      global_offset=offset).search_messages
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
@@ -480,7 +480,7 @@ class start():
         self.custom_request = custom_request
         self.max_threads = max_threads
         self.lists = None
-        self.links = links
+        self.endpoint_links = endpoint_links
         self.pool = api_helper.multiprocessing()
         self.session_manager = api_helper.session_manager(
             session_rules=session_rules, session_retry_rules=session_retry_rules, max_threads=max_threads, original_sessions=original_sessions)
@@ -529,7 +529,7 @@ class create_auth():
         self.extras = {}
         valid_counts = ["chatMessagesCount"]
         args = [self.username, False, False]
-        link_info = links(*args).full
+        link_info = endpoint_links(*args).full
         x2 = [link_info["list_chats"]]
         items = dict(zip(valid_counts, x2))
         if not init:
@@ -561,7 +561,7 @@ class create_auth():
             self.auth_details.auth_id = "0"
             self.auth_details.user_agent = generate_user_agent()
         auth_items = self.auth_details
-        link = links().customer
+        link = endpoint_links().customer
         user_agent = auth_items.user_agent
         auth_id = str(auth_items.auth_id)
         x_bc = auth_items.x_bc
@@ -636,7 +636,7 @@ class create_auth():
 
     def get_authed(self):
         if not self.active:
-            link = links().customer
+            link = endpoint_links().customer
             r = self.session_manager.json_request(
                 link, self.session_manager.sessions[0],  sleep=False)
             if r:
@@ -676,7 +676,7 @@ class create_auth():
         if not refresh:
             subscriptions = handle_refresh(self, api_type)
             return subscriptions
-        link = links(global_limit=limit,
+        link = endpoint_links(global_limit=limit,
                      global_offset=offset).lists
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
@@ -684,7 +684,7 @@ class create_auth():
         return results
 
     def get_user(self, identifier):
-        link = links(identifier).users
+        link = endpoint_links(identifier).users
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
         return results
@@ -692,7 +692,7 @@ class create_auth():
     def get_lists_users(self, identifier, check: bool = False, refresh=True, limit=100, offset=0):
         if not self.active:
             return
-        link = links(identifier, global_limit=limit,
+        link = endpoint_links(identifier, global_limit=limit,
                      global_offset=offset).lists_users
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
@@ -717,14 +717,14 @@ class create_auth():
         if not refresh:
             subscriptions = self.subscriptions
             return subscriptions
-        link = links(global_limit=limit, global_offset=offset).subscriptions
+        link = endpoint_links(global_limit=limit, global_offset=offset).subscriptions
         session = self.session_manager.sessions[0]
         ceil = math.ceil(self.subscribesCount / limit)
         a = list(range(ceil))
         offset_array = []
         for b in a:
             b = b * limit
-            link = links(global_limit=limit, global_offset=b).subscriptions
+            link = endpoint_links(global_limit=limit, global_offset=b).subscriptions
             offset_array.append(link)
 
         # Following logic is unique to creators only
@@ -778,7 +778,7 @@ class create_auth():
             for identifier in identifiers:
                 if self.id == identifier or self.username == identifier:
                     continue
-                link = links(identifier=identifier).users
+                link = endpoint_links(identifier=identifier).users
                 result = self.session_manager.json_request(link)
                 if "error" in result or not result["subscribedBy"]:
                     continue
@@ -801,7 +801,7 @@ class create_auth():
             result = handle_refresh(self, api_type)
             if result:
                 return result
-        link = links(global_limit=limit,
+        link = endpoint_links(global_limit=limit,
                      global_offset=offset).list_chats
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
@@ -834,7 +834,7 @@ class create_auth():
             result = handle_refresh(self, api_type)
             if result:
                 return result
-        link = links(global_limit=limit,
+        link = endpoint_links(global_limit=limit,
                      global_offset=offset).mass_messages_api
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
@@ -869,7 +869,7 @@ class create_auth():
             result = handle_refresh(self, api_type)
             if result:
                 return result
-        link = links(global_limit=limit,
+        link = endpoint_links(global_limit=limit,
                      global_offset=offset).paid_api
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)

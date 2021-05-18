@@ -301,7 +301,7 @@ class create_subscription():
             return []
         link = [endpoint_links(identifier=self.id, global_limit=limit,
                       global_offset=offset).stories_api]
-        results = api_helper.scrape_check(link, self.sessions, api_type)
+        results = api_helper.scrape_links(link, self.sessions, api_type)
         self.scraped.Stories = results
         return results
 
@@ -330,7 +330,7 @@ class create_subscription():
             if result:
                 return result
         links = self.links.Posts
-        results = api_helper.scrape_check(links, self.sessions, api_type)
+        results = api_helper.scrape_links(links, self.sessions, api_type)
         self.scraped.Posts = results
         return results
 
@@ -410,7 +410,7 @@ class create_subscription():
         results = []
         links = self.links.Archived.Posts
         if links:
-            results = api_helper.scrape_check(links, self.sessions, api_type)
+            results = api_helper.scrape_links(links, self.sessions, api_type)
         self.scraped.Archived.Posts = results
         return results
 

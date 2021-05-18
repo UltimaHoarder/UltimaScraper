@@ -246,7 +246,7 @@ def restore_missing_data(master_set2, media_set, split_by):
     return new_set
 
 
-def scrape_check(links, session_manager: session_manager, api_type):
+def scrape_links(links, session_manager: session_manager, api_type):
     def multi(item):
         link = item["link"]
         item = {}

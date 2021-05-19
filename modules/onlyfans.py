@@ -965,7 +965,7 @@ def media_scraper(results, authed: create_auth, subscription: create_subscriptio
                                 video_quality_json = video_quality_json.removesuffix(
                                     "p")
                                 if quality == video_quality_json:
-                                    if link:
+                                    if quality_link:
                                         link = quality_link
                                         break
                                     print

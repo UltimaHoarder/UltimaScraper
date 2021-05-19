@@ -55,7 +55,7 @@ def session_rules(session_manager: api_helper.session_manager, link) -> dict:
     headers = session_manager.headers
     if "https://onlyfans.com/api2/v2/" in link:
         dynamic_rules = session_manager.dynamic_rules
-        headers["app-token"] = "33d57ade8c02dbc5a333db99ff9ae26a"
+        headers["app-token"] = dynamic_rules["app_token"]
         # auth_id = headers["user-id"]
         a = [link, 0, dynamic_rules]
         headers2 = create_signed_headers(*a)
@@ -154,24 +154,24 @@ class auth_details():
 class endpoint_links(object):
     def __init__(self, identifier=None, identifier2=None, text="", only_links=True, global_limit=None, global_offset=None, app_token="33d57ade8c02dbc5a333db99ff9ae26a"):
         self.customer = f"https://onlyfans.com/api2/v2/users/me"
-        self.users = f'https://onlyfans.com/api2/v2/users/{identifier}?app-token={app_token}'
-        self.subscriptions = f"https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=100&offset=0&type=active&app-token={app_token}"
-        self.lists = f"https://onlyfans.com/api2/v2/lists?limit=100&offset=0&app-token={app_token}"
-        self.lists_users = f"https://onlyfans.com/api2/v2/lists/{identifier}/users?limit=100&offset=0&query=&app-token={app_token}"
-        self.list_chats = f"https://onlyfans.com/api2/v2/chats?limit=10&offset=0&order=desc&app-token={app_token}"
+        self.users = f'https://onlyfans.com/api2/v2/users/{identifier}'
+        self.subscriptions = f"https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=100&offset=0&type=active"
+        self.lists = f"https://onlyfans.com/api2/v2/lists?limit=100&offset=0"
+        self.lists_users = f"https://onlyfans.com/api2/v2/lists/{identifier}/users?limit=100&offset=0&query="
+        self.list_chats = f"https://onlyfans.com/api2/v2/chats?limit=10&offset=0&order=desc"
         self.post_by_id = f"https://onlyfans.com/api2/v2/posts/{identifier}"
         self.message_by_id = f"https://onlyfans.com/api2/v2/chats/{identifier}/messages?limit=10&offset=0&firstId={identifier2}&order=desc&skip_users=all&skip_users_dups=1"
-        self.search_chat = f"https://onlyfans.com/api2/v2/chats/{identifier}/messages/search?query={text}&app-token={app_token}"
-        self.message_api = f"https://onlyfans.com/api2/v2/chats/{identifier}/messages?limit=100&offset=0&order=desc&app-token={app_token}"
-        self.search_messages = f"https://onlyfans.com/api2/v2/chats/{identifier}?limit=10&offset=0&filter=&order=activity&query={text}&app-token={app_token}"
-        self.mass_messages_api = f"https://onlyfans.com/api2/v2/messages/queue/stats?limit=100&offset=0&format=infinite&app-token={app_token}"
-        self.stories_api = f"https://onlyfans.com/api2/v2/users/{identifier}/stories?limit=100&offset=0&order=desc&app-token={app_token}"
-        self.list_highlights = f"https://onlyfans.com/api2/v2/users/{identifier}/stories/highlights?limit=100&offset=0&order=desc&app-token={app_token}"
-        self.highlight = f"https://onlyfans.com/api2/v2/stories/highlights/{identifier}?app-token={app_token}"
+        self.search_chat = f"https://onlyfans.com/api2/v2/chats/{identifier}/messages/search?query={text}"
+        self.message_api = f"https://onlyfans.com/api2/v2/chats/{identifier}/messages?limit=100&offset=0&order=desc"
+        self.search_messages = f"https://onlyfans.com/api2/v2/chats/{identifier}?limit=10&offset=0&filter=&order=activity&query={text}"
+        self.mass_messages_api = f"https://onlyfans.com/api2/v2/messages/queue/stats?limit=100&offset=0&format=infinite"
+        self.stories_api = f"https://onlyfans.com/api2/v2/users/{identifier}/stories?limit=100&offset=0&order=desc"
+        self.list_highlights = f"https://onlyfans.com/api2/v2/users/{identifier}/stories/highlights?limit=100&offset=0&order=desc"
+        self.highlight = f"https://onlyfans.com/api2/v2/stories/highlights/{identifier}"
         self.post_api = f"https://onlyfans.com/api2/v2/users/{identifier}/posts?limit=100&offset=0&order=publish_date_desc&skip_users_dups=0"
-        self.archived_posts = f"https://onlyfans.com/api2/v2/users/{identifier}/posts/archived?limit=100&offset=0&order=publish_date_desc&app-token={app_token}"
-        self.archived_stories = f"https://onlyfans.com/api2/v2/stories/archive/?limit=100&offset=0&order=publish_date_desc&app-token={app_token}"
-        self.paid_api = f"https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0&app-token={app_token}"
+        self.archived_posts = f"https://onlyfans.com/api2/v2/users/{identifier}/posts/archived?limit=100&offset=0&order=publish_date_desc"
+        self.archived_stories = f"https://onlyfans.com/api2/v2/stories/archive/?limit=100&offset=0&order=publish_date_desc"
+        self.paid_api = f"https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0"
         self.pay = f"https://onlyfans.com/api2/v2/payments/pay"
         self.transactions = f"https://onlyfans.com/api2/v2/payments/all/transactions?limit=10&offset=0"
         self.two_factor = f"https://onlyfans.com/api2/v2/users/otp/check"
@@ -302,7 +302,7 @@ class create_subscription():
         if not self.hasStories:
             return []
         link = [endpoint_links(identifier=self.id, global_limit=limit,
-                      global_offset=offset).stories_api]
+                               global_offset=offset).stories_api]
         results = api_helper.scrape_links(link, self.session_manager, api_type)
         self.scraped.Stories = results
         return results
@@ -317,10 +317,10 @@ class create_subscription():
             identifier = self.id
         if not hightlight_id:
             link = endpoint_links(identifier=identifier, global_limit=limit,
-                         global_offset=offset).list_highlights
+                                  global_offset=offset).list_highlights
         else:
             link = endpoint_links(identifier=hightlight_id, global_limit=limit,
-                         global_offset=offset).highlight
+                                  global_offset=offset).highlight
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
         return results
@@ -341,7 +341,7 @@ class create_subscription():
         if not identifier:
             identifier = self.id
         link = endpoint_links(identifier=identifier, global_limit=limit,
-                     global_offset=offset).post_by_id
+                              global_offset=offset).post_by_id
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
         item = {}
@@ -362,7 +362,7 @@ class create_subscription():
 
         def process():
             link = endpoint_links(identifier=identifier, global_limit=limit,
-                         global_offset=offset).message_api
+                                  global_offset=offset).message_api
             session = self.session_manager.sessions[0]
             results = self.session_manager.json_request(link)
             item = {}
@@ -401,7 +401,7 @@ class create_subscription():
         if not identifier:
             identifier = self.id
         link = endpoint_links(identifier=identifier, identifier2=identifier2, global_limit=limit,
-                     global_offset=offset).message_by_id
+                              global_offset=offset).message_by_id
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
         item = {}
@@ -416,7 +416,7 @@ class create_subscription():
             if result:
                 return result
         link = endpoint_links(global_limit=limit,
-                     global_offset=offset).archived_stories
+                              global_offset=offset).archived_stories
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
         self.archived_stories = results
@@ -454,7 +454,7 @@ class create_subscription():
         if identifier:
             identifier = parse.urljoin(identifier, "messages")
         link = endpoint_links(identifier=identifier, text=text, global_limit=limit,
-                     global_offset=offset).search_chat
+                              global_offset=offset).search_chat
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
         return results
@@ -464,7 +464,7 @@ class create_subscription():
             identifier = parse.urljoin(identifier, "messages")
         text = parse.quote_plus(text)
         link = endpoint_links(identifier=identifier, text=text, global_limit=limit,
-                     global_offset=offset).search_messages
+                              global_offset=offset).search_messages
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
         return results
@@ -677,7 +677,7 @@ class create_auth():
             subscriptions = handle_refresh(self, api_type)
             return subscriptions
         link = endpoint_links(global_limit=limit,
-                     global_offset=offset).lists
+                              global_offset=offset).lists
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
         self.lists = results
@@ -693,7 +693,7 @@ class create_auth():
         if not self.active:
             return
         link = endpoint_links(identifier, global_limit=limit,
-                     global_offset=offset).lists_users
+                              global_offset=offset).lists_users
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
         if len(results) >= limit and not check:
@@ -717,14 +717,16 @@ class create_auth():
         if not refresh:
             subscriptions = self.subscriptions
             return subscriptions
-        link = endpoint_links(global_limit=limit, global_offset=offset).subscriptions
+        link = endpoint_links(global_limit=limit,
+                              global_offset=offset).subscriptions
         session = self.session_manager.sessions[0]
         ceil = math.ceil(self.subscribesCount / limit)
         a = list(range(ceil))
         offset_array = []
         for b in a:
             b = b * limit
-            link = endpoint_links(global_limit=limit, global_offset=b).subscriptions
+            link = endpoint_links(global_limit=limit,
+                                  global_offset=b).subscriptions
             offset_array.append(link)
 
         # Following logic is unique to creators only
@@ -802,7 +804,7 @@ class create_auth():
             if result:
                 return result
         link = endpoint_links(global_limit=limit,
-                     global_offset=offset).list_chats
+                              global_offset=offset).list_chats
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
         items = results["list"]
@@ -835,7 +837,7 @@ class create_auth():
             if result:
                 return result
         link = endpoint_links(global_limit=limit,
-                     global_offset=offset).mass_messages_api
+                              global_offset=offset).mass_messages_api
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
         items = results.get("list", [])
@@ -870,7 +872,7 @@ class create_auth():
             if result:
                 return result
         link = endpoint_links(global_limit=limit,
-                     global_offset=offset).paid_api
+                              global_offset=offset).paid_api
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
         if len(results) >= limit and not check:

@@ -531,7 +531,7 @@ class start():
                         error_message = "Blocked by 2FA."
                         print(error_message)
                         if auth_items.support_2fa:
-                            link = f"https://onlyfans.com/api2/v2/users/otp/check?app-token={app_token}"
+                            link = f"https://onlyfans.com/api2/v2/users/otp/check"
                             count = 1
                             max_count = 3
                             while count < max_count+1:

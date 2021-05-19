@@ -32,11 +32,11 @@ def create_headers(dynamic_rules, auth_id, user_agent="", x_bc="", sess="", link
 
 def create_signed_headers(link: str,  auth_id: int, dynamic_rules: dict):
     # Users: 300000 | Creators: 301000
-    time2 = str(int(round(time.time())))
+    final_time = str(int(round(time.time())))
     path = urlparse(link).path
     query = urlparse(link).query
     path = path if not query else f"{path}?{query}"
-    a = [dynamic_rules["static_param"], time2, path, str(auth_id)]
+    a = [dynamic_rules["static_param"], final_time, path, str(auth_id)]
     msg = "\n".join(a)
     message = msg.encode("utf-8")
     hash_object = hashlib.sha1(message)
@@ -47,7 +47,7 @@ def create_signed_headers(link: str,  auth_id: int, dynamic_rules: dict):
     headers = {}
     headers["sign"] = dynamic_rules["format"].format(
         sha_1_sign, abs(checksum))
-    headers["time"] = time2
+    headers["time"] = final_time
     return headers
 
 

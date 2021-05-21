@@ -344,12 +344,12 @@ def reformat(prepared_format, unformatted):
     maximum_length = maximum_length - (directory_count+path_count-extra_count)
     text_length = text_length if text_length < maximum_length else maximum_length
     if has_text:
-       #https://stackoverflow.com/a/43848928
-       def utf8_lead_byte(b):
+       # https://stackoverflow.com/a/43848928
+        def utf8_lead_byte(b):
             '''A UTF-8 intermediate byte starts with the bits 10xxxxxx.'''
             return (b & 0xC0) != 0x80
 
-       def utf8_byte_truncate(text, max_bytes):
+        def utf8_byte_truncate(text, max_bytes):
             '''If text[max_bytes] is not a lead byte, back up until a lead byte is
             found and truncate before that character.'''
             utf8 = text.encode('utf8')
@@ -360,7 +360,7 @@ def reformat(prepared_format, unformatted):
                 i -= 1
             return utf8[:i]
 
-        filtered_text = utf8_byte_truncate(text,text_length).decode('utf8')
+        filtered_text = utf8_byte_truncate(text, text_length).decode('utf8')
         path = path.replace("{text}", filtered_text)
     else:
         path = path.replace("{text}", "")

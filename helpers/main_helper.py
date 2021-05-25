@@ -513,20 +513,13 @@ def get_config(config_path):
     updated = False
     if json_config != json_config2:
         updated = True
-        update_config(json_config, file_name=file_name)
+        filepath = os.path.join(".settings", "config.json")
+        export_data(json_config, filepath)
     if not json_config:
         input(
             f"The .settings\\{file_name} file has been created. Fill in whatever you need to fill in and then press enter when done.\n")
         json_config = ujson.load(open(config_path))
     return json_config, updated
-
-
-def update_config(json_config, file_name="config.json"):
-    directory = '.settings'
-    os.makedirs(directory, exist_ok=True)
-    path = os.path.join(directory, file_name)
-    with open(path, 'w', encoding='utf-8') as f:
-        ujson.dump(json_config, f, ensure_ascii=False, indent=2)
 
 
 def choose_auth(array):

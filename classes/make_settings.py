@@ -7,20 +7,10 @@ import ujson
 from classes.prepare_metadata import format_types
 import uuid as uuid
 
-
-def export_json(path, metadata):
-    if "auth" not in metadata:
-        auth = {}
-        auth["auth"] = metadata
-        metadata = auth
-    with open(path, 'w', encoding='utf-8') as outfile:
-        ujson.dump(metadata, outfile, indent=2, escape_forward_slashes=False)
-
-
 def fix(config={}):
     info = config.get("info")
     if not info:
-        print("If you're not using >= v7 release, please download said release so the script can properly update your config. \nIf you're using >= v7 release or you don't care about your current config settings, press enter to continue.")
+        print("If you're not using >= v7 release, please download said release so the script can properly update your config. \nIf you're using >= v7 release or you don't care about your current config settings, press enter to continue. If script crashes, delete config.")
         input()
     return config
 
@@ -32,7 +22,7 @@ class config(object):
                 self.version = 7.1
 
         class Settings(object):
-            def __init__(self, auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, helpers={}, webhooks={}, exit_on_completion=False, infinite_loop=True, loop_timeout="0", proxies=[], cert="",  random_string=""):
+            def __init__(self, auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, helpers={}, webhooks={}, exit_on_completion=False, infinite_loop=True, loop_timeout="0", dynamic_rules_link="https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json", proxies=[], cert="",  random_string=""):
                 class webhooks_settings:
                     def __init__(self, option={}) -> None:
                         class webhook_template:
@@ -85,6 +75,7 @@ class config(object):
                 self.exit_on_completion = exit_on_completion
                 self.infinite_loop = infinite_loop
                 self.loop_timeout = loop_timeout
+                self.dynamic_rules_link = dynamic_rules_link
                 self.proxies = proxies
                 self.cert = cert
                 self.random_string = random_string if random_string else uuid.uuid1().hex
@@ -129,7 +120,7 @@ class config(object):
                                     'posts', True)
                                 self.comments = option.get(
                                     'comments', True)
-                        self.auto_profile_choice:Union[List] = option.get(
+                        self.auto_profile_choice: Union[List] = option.get(
                             'auto_profile_choice', [])
                         self.auto_model_choice = option.get(
                             'auto_model_choice', False)

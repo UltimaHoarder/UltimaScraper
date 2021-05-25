@@ -55,7 +55,7 @@ class session_manager():
         self.headers = headers
         self.session_rules = session_rules
         self.session_retry_rules = session_retry_rules
-        dr_link = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json"
+        dr_link = global_settings["dynamic_rules_link"]
         dynamic_rules = requests.get(dr_link).json()
         self.dynamic_rules = dynamic_rules
 

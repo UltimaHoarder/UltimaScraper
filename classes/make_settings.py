@@ -1,10 +1,11 @@
 import copy
 from typing import List, Union
+from urllib.parse import urlparse
 from apis.onlyfans.onlyfans import auth_details
 import os
 
 import ujson
-from classes.prepare_metadata import format_types
+from classes.prepare_metadata import format_types, prepare_reformat
 import uuid as uuid
 
 def fix(config={}):
@@ -75,6 +76,11 @@ class config(object):
                 self.exit_on_completion = exit_on_completion
                 self.infinite_loop = infinite_loop
                 self.loop_timeout = loop_timeout
+                if "github.com" in dynamic_rules_link:
+                    if "raw" not in dynamic_rules_link:
+                        parsed_link = urlparse(dynamic_rules_link)
+                        path = parsed_link.path.replace("blob/","")
+                        dynamic_rules_link = f"https://raw.githubusercontent.com/{path}"
                 self.dynamic_rules_link = dynamic_rules_link
                 self.proxies = proxies
                 self.cert = cert

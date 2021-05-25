@@ -19,6 +19,7 @@ os.chdir(path)
 
 
 global_settings = {}
+global_settings["dynamic_rules_link"] = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json"
 
 
 class set_settings():

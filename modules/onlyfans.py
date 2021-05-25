@@ -297,7 +297,7 @@ def paid_content_scraper(api: start, identifiers=[]):
                     # input()
                     # exit()
             api_type = paid_content["responseType"].capitalize()+"s"
-            api_media = getattr(subscription.scraped, api_type)
+            api_media = getattr(subscription.temp_scraped, api_type)
             api_media.append(paid_content)
         count = 0
         max_count = len(authed.subscriptions)
@@ -311,7 +311,7 @@ def paid_content_scraper(api: start, identifiers=[]):
             site_name = "OnlyFans"
             media_type = format_media_types()
             count += 1
-            for api_type, paid_content in subscription.scraped:
+            for api_type, paid_content in subscription.temp_scraped:
                 if api_type == "Archived":
                     if any(x for k, x in paid_content if not x):
                         input(
@@ -338,6 +338,7 @@ def paid_content_scraper(api: start, identifiers=[]):
                         authed, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
                     parent_type = ""
                     new_metadata = new_metadata + old_metadata
+                    subscription.set_scraped(api_type, new_metadata)
                     w = process_metadata(api, metadata_path, formatted_directories, new_metadata,
                                          site_name, parent_type, api_path, subscription, delete_metadatas)
                     print
@@ -693,13 +694,11 @@ def prepare_scraper(authed: create_auth, site_name, item):
             authed, new_metadata, formatted_directories, subscription, api_type, api_path, metadata_path, site_name)
         new_metadata = new_metadata + old_metadata
         subscription.set_scraped(api_type, new_metadata)
-        print
         w = process_metadata(authed, metadata_path, formatted_directories, new_metadata,
                              site_name, parent_type, api_path, subscription, delete_metadatas)
         print
     else:
         print("No "+api_type+" Found.")
-        delattr(subscription.scraped, api_type)
     return True
 
 
@@ -1042,7 +1041,7 @@ def media_scraper(results, authed: create_auth, subscription: create_subscriptio
                 if file_directory not in directories:
                     directories.append(file_directory)
                 new_media["linked"] = None
-                for k, v in subscription.scraped:
+                for k, v in subscription.temp_scraped:
                     if k == api_type:
                         continue
                     if k == "Archived":

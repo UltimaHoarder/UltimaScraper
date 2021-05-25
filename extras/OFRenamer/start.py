@@ -128,7 +128,7 @@ def start(api,Session, parent_type, api_type, api_path, site_name, subscription,
     media_table = folder.media_table
     database_session = Session()
     result = database_session.query(api_table).all()
-    metadata = getattr(subscription.scraped, api_type)
+    metadata = getattr(subscription.temp_scraped, api_type)
     download_info = subscription.download_info
     root_directory = download_info["directory"]
     date_format = json_settings["date_format"]

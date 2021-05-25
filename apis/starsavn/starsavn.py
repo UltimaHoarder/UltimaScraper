@@ -253,6 +253,7 @@ class create_subscription():
         self.hasStories = option.get("hasStories")
         self.link = option.get("link")
         self.links = content_types()
+        self.temp_scraped = content_types()
         self.scraped = content_types()
         self.auth_count = None
         self.sessions = option.get("sessions")
@@ -302,7 +303,7 @@ class create_subscription():
         link = [endpoint_links(identifier=self.id, global_limit=limit,
                       global_offset=offset).stories_api]
         results = api_helper.scrape_links(link, self.sessions, api_type)
-        self.scraped.Stories = results
+        self.temp_scraped.Stories = results
         return results
 
     def get_highlights(self, identifier="", refresh=True, limit=100, offset=0, hightlight_id="") -> list:
@@ -331,7 +332,7 @@ class create_subscription():
                 return result
         links = self.links.Posts
         results = api_helper.scrape_links(links, self.sessions, api_type)
-        self.scraped.Posts = results
+        self.temp_scraped.Posts = results
         return results
 
     def get_messages(self, identifier=None, resume=None, refresh=True, limit=10, offset=0):
@@ -364,7 +365,7 @@ class create_subscription():
                     for item in list:
                         if any(x["id"] == item["id"] for x in resume):
                             resume.sort(key=lambda x: x["id"], reverse=True)
-                            self.scraped.Messages = resume
+                            self.temp_scraped.Messages = resume
                             return resume
                         else:
                             resume.append(item)
@@ -375,7 +376,7 @@ class create_subscription():
                 break
             offset += limit
         results = merge({}, *unmerged, strategy=Strategy.ADDITIVE)
-        self.scraped.Messages = [results]
+        self.temp_scraped.Messages = [results]
         return results
 
     def get_message_by_id(self, identifier=None, identifier2=None, refresh=True, limit=10, offset=0):
@@ -411,7 +412,7 @@ class create_subscription():
         links = self.links.Archived.Posts
         if links:
             results = api_helper.scrape_links(links, self.sessions, api_type)
-        self.scraped.Archived.Posts = results
+        self.temp_scraped.Archived.Posts = results
         return results
 
     def get_archived(self, api):

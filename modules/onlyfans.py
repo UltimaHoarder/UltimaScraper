@@ -622,7 +622,7 @@ def format_directories(directories, site_name, username, unformatted, locations:
 def prepare_scraper(authed: create_auth, site_name, item):
     api_type = item["api_type"]
     api_array = item["api_array"]
-    subscription = api_array["subscription"]
+    subscription: create_subscription = api_array["subscription"]
     media_type = api_array["media_types"]
     username = api_array["username"]
     master_set = []
@@ -654,7 +654,6 @@ def prepare_scraper(authed: create_auth, site_name, item):
         print
     if api_type == "Posts":
         master_set = subscription.get_posts()
-        print
     if api_type == "Archived":
         master_set = subscription.get_archived(authed)
     if api_type == "Messages":

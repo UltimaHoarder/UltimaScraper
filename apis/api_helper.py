@@ -1,6 +1,9 @@
 import copy
+import math
+import re
 import time
 from typing import Any, Union
+from urllib.parse import urlparse
 
 import requests
 from requests.sessions import Session
@@ -154,6 +157,14 @@ class session_manager():
                 continue
         return result
 
+    def parallel_requests(self, items: list):
+        def multi(link):
+            result = self.json_request(link)
+            return result
+        results = self.pool.starmap(multi, product(
+            items))
+        return results
+
 
 def create_session(settings={}, custom_proxy="", test_ip=True):
 
@@ -255,24 +266,18 @@ def scrape_links(links, session_manager: session_manager, api_type):
         result = session_manager.json_request(link, session)
         if "error" in result:
             result = []
-        # if result:
-        #     print(f"Found: {link}")
-        # else:
-        #     print(f"Not Found: {link}")
         if result:
             item["session"] = session
             item["result"] = result
         return item
     media_set = []
     max_attempts = 100
-    count = len(links)
     api_type = api_type.capitalize()
     for attempt in list(range(max_attempts)):
-        print("Scrape Attempt: "+str(attempt+1)+"/"+str(max_attempts))
         if not links:
             continue
+        print("Scrape Attempt: "+str(attempt+1)+"/"+str(max_attempts))
         items = assign_session(links, session_manager.sessions)
-        # item_groups = grouper(300,items)
         pool = session_manager.pool
         results = pool.starmap(multi, product(
             items))
@@ -306,3 +311,17 @@ def scrape_links(links, session_manager: session_manager, api_type):
 def grouper(n, iterable, fillvalue=None):
     args = [iter(iterable)] * n
     return list(zip_longest(fillvalue=fillvalue, *args))
+
+
+def calculate_the_unpredictable(link, limit, multiplier=1):
+    final_links = []
+    a = list(range(1, multiplier+1))
+    for b in a:
+        parsed_link = urlparse(link)
+        q = parsed_link.query.split("&")
+        offset = q[1]
+        old_offset_num = int(re.findall("\\d+", offset)[0])
+        new_offset_num = old_offset_num+(limit*b)
+        new_link = link.replace(offset, f"offset={new_offset_num}")
+        final_links.append(new_link)
+    return final_links

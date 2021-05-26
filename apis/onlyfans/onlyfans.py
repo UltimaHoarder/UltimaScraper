@@ -152,13 +152,13 @@ class auth_details():
 
 
 class endpoint_links(object):
-    def __init__(self, identifier=None, identifier2=None, text="", only_links=True, global_limit=None, global_offset=None, app_token="33d57ade8c02dbc5a333db99ff9ae26a"):
+    def __init__(self, identifier=None, identifier2=None, text="", only_links=True, global_limit=10, global_offset=0, app_token="33d57ade8c02dbc5a333db99ff9ae26a"):
         self.customer = f"https://onlyfans.com/api2/v2/users/me"
         self.users = f'https://onlyfans.com/api2/v2/users/{identifier}'
         self.subscriptions = f"https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=100&offset=0&type=active"
         self.lists = f"https://onlyfans.com/api2/v2/lists?limit=100&offset=0"
         self.lists_users = f"https://onlyfans.com/api2/v2/lists/{identifier}/users?limit=100&offset=0&query="
-        self.list_chats = f"https://onlyfans.com/api2/v2/chats?limit=10&offset=0&order=desc"
+        self.list_chats = f"https://onlyfans.com/api2/v2/chats?limit={global_limit}&offset={global_offset}&order=desc"
         self.post_by_id = f"https://onlyfans.com/api2/v2/posts/{identifier}"
         self.message_by_id = f"https://onlyfans.com/api2/v2/chats/{identifier}/messages?limit=10&offset=0&firstId={identifier2}&order=desc&skip_users=all&skip_users_dups=1"
         self.search_chat = f"https://onlyfans.com/api2/v2/chats/{identifier}/messages/search?query={text}"
@@ -168,40 +168,13 @@ class endpoint_links(object):
         self.stories_api = f"https://onlyfans.com/api2/v2/users/{identifier}/stories?limit=100&offset=0&order=desc"
         self.list_highlights = f"https://onlyfans.com/api2/v2/users/{identifier}/stories/highlights?limit=100&offset=0&order=desc"
         self.highlight = f"https://onlyfans.com/api2/v2/stories/highlights/{identifier}"
-        self.post_api = f"https://onlyfans.com/api2/v2/users/{identifier}/posts?limit=100&offset=0&order=publish_date_desc&skip_users_dups=0"
-        self.archived_posts = f"https://onlyfans.com/api2/v2/users/{identifier}/posts/archived?limit=100&offset=0&order=publish_date_desc"
+        self.post_api = f"https://onlyfans.com/api2/v2/users/{identifier}/posts?limit={global_limit}&offset={global_offset}&order=publish_date_desc&skip_users_dups=0"
+        self.archived_posts = f"https://onlyfans.com/api2/v2/users/{identifier}/posts/archived?limit={global_limit}&offset={global_offset}&order=publish_date_desc"
         self.archived_stories = f"https://onlyfans.com/api2/v2/stories/archive/?limit=100&offset=0&order=publish_date_desc"
         self.paid_api = f"https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0"
         self.pay = f"https://onlyfans.com/api2/v2/payments/pay"
         self.transactions = f"https://onlyfans.com/api2/v2/payments/all/transactions?limit=10&offset=0"
         self.two_factor = f"https://onlyfans.com/api2/v2/users/otp/check"
-        full = {}
-        items = self.__dict__.items()
-        for key, link in items:
-            parsed = urlparse(link)
-            parameters = parse.parse_qsl(parsed.query)
-            item2 = {}
-            item2["link"] = link
-            item2["max_limit"] = 0
-            for parameter in parameters:
-                if "limit" in parameter:
-                    item2["max_limit"] = int(parameter[-1])
-                    break
-            max_limit = item2["max_limit"]
-            for parameter in parameters:
-                if "limit" in parameter and global_limit:
-                    limit = max_limit if global_limit > max_limit else global_limit
-                    og = "=".join(parameter)
-                    item3 = f"limit={limit}"
-                    link = link.replace(og, item3)
-                if "offset" in parameter and global_offset:
-                    og = "=".join(parameter)
-                    item3 = f"offset={global_offset}"
-                    link = link.replace(og, item3)
-            item2["link"] = link
-            full[key] = item2
-            setattr(self, key, link)
-        self.full = full
 
 
 def handle_refresh(argument, argument2):
@@ -261,39 +234,6 @@ class create_subscription():
             "session_manager")
         self.download_info = {}
 
-        # Modify self
-        valid_counts = ["postsCount", "archivedPostsCount"]
-        identifier = self.id
-        link_info = endpoint_links(identifier=identifier).full
-        x2 = [link_info["post_api"],
-              link_info["archived_posts"]]
-        items = dict(zip(valid_counts, x2))
-        for key, value in items.items():
-            if key in items:
-                placement = ""
-                key_name = ""
-                if key == "postsCount":
-                    key_name = "Posts"
-                    placement = self.links
-                elif key == "archivedPostsCount":
-                    key_name = "Posts"
-                    placement = self.links.Archived
-                link = value["link"]
-                max_limit = value["max_limit"]
-                api_count = getattr(self, key)
-                if api_count > 1500:
-                    max_limit = 10
-                ceil = math.ceil(api_count / max_limit)
-                a = list(range(ceil))
-                for b in a:
-                    b = b * max_limit
-                    link = link.replace(
-                        f"limit={value['max_limit']}", f"limit={max_limit}")
-                    new_link = link.replace(
-                        "offset=0", f"offset={b}")
-                    getattr(placement, key_name).append(new_link)
-        print
-
     def get_stories(self, refresh=True, limit=100, offset=0) -> list:
         api_type = "stories"
         if not refresh:
@@ -326,13 +266,27 @@ class create_subscription():
         results = self.session_manager.json_request(link)
         return results
 
-    def get_posts(self, refresh=True, limit=99, offset=0) -> list:
+    def get_posts(self, links: Optional[list] = None, limit=10, offset=0, refresh=True) -> list:
         api_type = "posts"
         if not refresh:
             result = handle_refresh(self, api_type)
             if result:
                 return result
-        links = self.links.Posts
+        if links is None:
+            links = []
+        api_count = self.postsCount
+        if api_count and not links:
+            link = endpoint_links(identifier=self.id, global_limit=limit,
+                                  global_offset=offset).post_api
+            ceil = math.ceil(api_count / limit)
+            numbers = list(range(ceil))
+            for num in numbers:
+                num = num * limit
+                link = link.replace(
+                    f"limit={limit}", f"limit={limit}")
+                new_link = link.replace(
+                    "offset=0", f"offset={num}")
+                links.append(new_link)
         results = api_helper.scrape_links(
             links, self.session_manager, api_type)
         self.temp_scraped.Posts = results
@@ -423,17 +377,29 @@ class create_subscription():
         self.archived_stories = results
         return results
 
-    def get_archived_posts(self, refresh=True, limit=99, offset=0) -> list:
+    def get_archived_posts(self, links: Optional[list] = None, limit=10, offset=0, refresh=True) -> list:
         api_type = "archived_posts"
         if not refresh:
             result = handle_refresh(self, api_type)
             if result:
                 return result
-        results = []
-        links = self.links.Archived.Posts
-        if links:
-            results = api_helper.scrape_links(
-                links, self.session_manager, api_type)
+        if links is None:
+            links = []
+        api_count = self.archivedPostsCount
+        if api_count and not links:
+            link = endpoint_links(identifier=self.id, global_limit=limit,
+                                  global_offset=offset).archived_posts
+            ceil = math.ceil(api_count / limit)
+            numbers = list(range(ceil))
+            for num in numbers:
+                num = num * limit
+                link = link.replace(
+                    f"limit={limit}", f"limit={limit}")
+                new_link = link.replace(
+                    "offset=0", f"offset={num}")
+                links.append(new_link)
+        results = api_helper.scrape_links(
+            links, self.session_manager, api_type)
         self.temp_scraped.Archived.Posts = results
         return results
 
@@ -528,27 +494,6 @@ class create_auth():
         self.active = False
         self.errors: list[error_details] = []
         self.extras = {}
-        valid_counts = ["chatMessagesCount"]
-        args = [self.username, False, False]
-        link_info = endpoint_links(*args).full
-        x2 = [link_info["list_chats"]]
-        items = dict(zip(valid_counts, x2))
-        if not init:
-            for key, value in items.items():
-                if key in items:
-                    key_name = ""
-                    if key == "chatMessagesCount":
-                        key_name = "Chats"
-                    link = value["link"]
-                    max_limit = value["max_limit"]
-                    api_count = getattr(self, key)
-                    if api_count:
-                        ceil = math.ceil(api_count / max_limit)
-                        a = list(range(ceil))
-                        for b in a:
-                            b = b * max_limit
-                            getattr(self.links, key_name).append(link.replace(
-                                "offset=0", "offset=" + str(b)))
 
     def update(self, data):
         for key, value in data.items():
@@ -590,7 +535,6 @@ class create_auth():
             string = f"Auth {auth_version} Attempt {count}/{max_attempts}"
             print(string)
             self.get_authed()
-            count += 1
 
             def resolve_auth(auth: create_auth):
                 if self.errors:
@@ -796,38 +740,54 @@ class create_auth():
         self.subscriptions = results
         return results
 
-    def get_chats(self, resume=None, refresh=True, limit=10, offset=0):
+    def get_chats(self, links: Optional[list] = None, limit=100, offset=0, refresh=True, inside_loop=False) -> list:
         api_type = "chats"
         if not self.active:
-            return
+            return []
         if not refresh:
             result = handle_refresh(self, api_type)
             if result:
                 return result
-        link = endpoint_links(global_limit=limit,
-                              global_offset=offset).list_chats
-        session = self.session_manager.sessions[0]
-        results = self.session_manager.json_request(link)
-        items = results["list"]
-        if resume:
-            for item in items:
-                if any(x["id"] == item["id"] for x in resume):
-                    resume.sort(key=lambda x: x["id"], reverse=True)
-                    self.chats = resume
-                    return resume
-                else:
-                    resume.append(item)
+        if links is None:
+            links = []
+        api_count = self.chatMessagesCount
+        if api_count and not links:
+            link = endpoint_links(identifier=self.id, global_limit=limit,
+                                  global_offset=offset).list_chats
+            ceil = math.ceil(api_count / limit)
+            numbers = list(range(ceil))
+            for num in numbers:
+                num = num * limit
+                link = link.replace(
+                    f"limit={limit}", f"limit={limit}")
+                new_link = link.replace(
+                    "offset=0", f"offset={num}")
+                links.append(new_link)
+        multiplier = self.session_manager.pool._processes
+        if links:
+            link = links[-1]
+        else:
+            link = endpoint_links(identifier=self.id, global_limit=limit,
+                                  global_offset=offset).list_chats
+        links2 = api_helper.calculate_the_unpredictable(
+            link, limit, multiplier)
+        if not inside_loop:
+            links += links2
+        else:
+            links = links2
+        results = self.session_manager.parallel_requests(links)
+        has_more = results[-1]["hasMore"]
+        final_results = [x["list"] for x in results]
+        final_results = list(chain.from_iterable(final_results))
 
-        if results["hasMore"]:
+        if has_more:
             results2 = self.get_chats(
-                resume=resume, limit=limit, offset=limit+offset)
-            items.extend(results2)
-        if resume:
-            items = resume
+                links=[links[-1]], limit=limit, offset=limit+offset, inside_loop=True)
+            final_results.extend(results2)
 
-        items.sort(key=lambda x: x["withUser"]["id"], reverse=True)
-        self.chats = items
-        return items
+        final_results.sort(key=lambda x: x["withUser"]["id"], reverse=True)
+        self.chats = final_results
+        return final_results
 
     def get_mass_messages(self, resume=None, refresh=True, limit=10, offset=0) -> list:
         api_type = "mass_messages"

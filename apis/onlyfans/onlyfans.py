@@ -152,7 +152,7 @@ class auth_details():
 
 
 class endpoint_links(object):
-    def __init__(self, identifier=None, identifier2=None, text="", only_links=True, global_limit=10, global_offset=0, app_token="33d57ade8c02dbc5a333db99ff9ae26a"):
+    def __init__(self, identifier=None, identifier2=None, identifier3=None, text="", only_links=True, global_limit=10, global_offset=0):
         self.customer = f"https://onlyfans.com/api2/v2/users/me"
         self.users = f'https://onlyfans.com/api2/v2/users/{identifier}'
         self.subscriptions = f"https://onlyfans.com/api2/v2/subscriptions/subscribes?limit=100&offset=0&type=active"
@@ -173,6 +173,8 @@ class endpoint_links(object):
         self.archived_stories = f"https://onlyfans.com/api2/v2/stories/archive/?limit=100&offset=0&order=publish_date_desc"
         self.paid_api = f"https://onlyfans.com/api2/v2/posts/paid?limit=100&offset=0"
         self.pay = f"https://onlyfans.com/api2/v2/payments/pay"
+        self.like = f"https://onlyfans.com/api2/v2/{identifier}/{identifier2}/like"
+        self.favorite = f"https://onlyfans.com/api2/v2/{identifier}/{identifier2}/favorites/{identifier3}"
         self.transactions = f"https://onlyfans.com/api2/v2/payments/all/transactions?limit=10&offset=0"
         self.two_factor = f"https://onlyfans.com/api2/v2/users/otp/check"
 
@@ -434,6 +436,22 @@ class create_subscription():
                               global_offset=offset).search_messages
         session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
+        return results
+
+    def like(self, category: str, identifier: int):
+        link = endpoint_links(identifier=category, identifier2=identifier).like
+        results = self.session_manager.json_request(link, method="POST")
+        return results
+
+    def unlike(self, category: str, identifier: int):
+        link = endpoint_links(identifier=category, identifier2=identifier).like
+        results = self.session_manager.json_request(link, method="DELETE")
+        return results
+
+    def favorite(self, category: str, identifier: int, identifier2: int):
+        link = endpoint_links(
+            identifier=category, identifier2=identifier, identifier3=identifier2).favorite
+        results = self.session_manager.json_request(link, method="POST")
         return results
 
     def set_scraped(self, name, scraped: media_types):

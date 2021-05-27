@@ -300,6 +300,13 @@ def paid_content_scraper(api: start, identifiers=[]):
             api_media = getattr(subscription.temp_scraped, api_type)
             api_media.append(paid_content)
         count = 0
+        my_final_list = []
+        last_name = ""
+        for subscription in authed.subscriptions:
+            if (last_name != subscription.username):
+                my_final_list.append(subscription)
+                last_name = subscription.username
+        authed.subscriptions = my_final_list
         max_count = len(authed.subscriptions)
         for subscription in authed.subscriptions:
             if any(subscription.username != x for x in identifiers):
@@ -1288,6 +1295,7 @@ def format_options(f_list: Union[list[create_auth], list[create_subscription], l
     names = []
     string = ""
     seperator = " | "
+    last_name = ""
     if name_count > 1:
         if "users" == choice_type:
             for auth in f_list:
@@ -1304,12 +1312,14 @@ def format_options(f_list: Union[list[create_auth], list[create_subscription], l
             for x in f_list:
                 if isinstance(x, create_auth) or isinstance(x, dict):
                     continue
-                name = x.username
-                string += str(count)+" = "+name
-                names.append([x.auth_count, name])
-                if count+1 != name_count:
-                    string += seperator
-                count += 1
+                if (last_name != x.username):
+                    name = x.username
+                    last_name = name
+                    string += str(count)+" = "+name
+                    names.append([x.auth_count, name])
+                    if count+1 != name_count:
+                        string += seperator
+                    count += 1
         if "apis" == choice_type:
             names = f_list
             for api in f_list:

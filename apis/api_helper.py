@@ -157,7 +157,7 @@ class session_manager():
                 continue
         return result
 
-    def parallel_requests(self, items: list):
+    def parallel_requests(self, items: list[str]):
         def multi(link):
             result = self.json_request(link)
             return result
@@ -258,7 +258,7 @@ def restore_missing_data(master_set2, media_set, split_by):
     return new_set
 
 
-def scrape_links(links, session_manager: session_manager, api_type):
+def scrape_endpoint_links(links, session_manager: session_manager, api_type):
     def multi(item):
         link = item["link"]
         item = {}
@@ -277,10 +277,7 @@ def scrape_links(links, session_manager: session_manager, api_type):
         if not links:
             continue
         print("Scrape Attempt: "+str(attempt+1)+"/"+str(max_attempts))
-        items = assign_session(links, session_manager.sessions)
-        pool = session_manager.pool
-        results = pool.starmap(multi, product(
-            items))
+        results = session_manager.parallel_requests(links)
         not_faulty = [x for x in results if x]
         faulty = [{"key": k, "value": v, "link": links[k]}
                   for k, v in enumerate(results) if not v]
@@ -304,7 +301,7 @@ def scrape_links(links, session_manager: session_manager, api_type):
             media_set.extend(results)
             print("Found: "+api_type)
             break
-    media_set = [x for x in media_set]
+    media_set = list(chain(*media_set))
     return media_set
 
 

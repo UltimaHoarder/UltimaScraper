@@ -1,3 +1,4 @@
+from apis.onlyfans.classes import create_user
 import json
 from apis.onlyfans import onlyfans as OnlyFans
 import math
@@ -773,7 +774,7 @@ def send_webhook(item, webhook_hide_sensitive_info, webhook_links, category, cat
                 message, default=lambda o: o.__dict__))
             x = requests.post(webhook_link, json=message)
     if category == "download_webhook":
-        subscriptions = item.get_subscriptions(refresh=False)
+        subscriptions:list[create_user] = item.get_subscriptions(refresh=False)
         for subscription in subscriptions:
             download_info = subscription.download_info
             if download_info:
@@ -783,7 +784,7 @@ def send_webhook(item, webhook_hide_sensitive_info, webhook_links, category, cat
                     embed.title = f"Downloaded: {subscription.username}"
                     embed.add_field("username", subscription.username)
                     embed.add_field("post_count", subscription.postsCount)
-                    embed.add_field("link", subscription.link)
+                    embed.add_field("link", subscription.get_link())
                     embed.image.url = subscription.avatar
                     message.embeds.append(embed)
                     message = ujson.loads(json.dumps(

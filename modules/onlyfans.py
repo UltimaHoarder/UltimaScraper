@@ -314,20 +314,18 @@ def paid_content_scraper(api: start, identifiers=[]):
             return
         authed.subscriptions = authed.subscriptions
         for paid_content in paid_contents:
-            author = paid_content.get("author")
-            author = paid_content.get("fromUser", author)
+            author = None
+            if isinstance(paid_content, create_message):
+                author = paid_content.fromUser
+            elif isinstance(paid_content, create_post):
+                author = paid_content.author
+            if not author:
+                continue
             subscription = authed.get_subscription(check=True, identifier=author["id"])
             if not subscription:
                 subscription = create_user(author)
                 authed.subscriptions.append(subscription)
-            if paid_content["responseType"] == "post":
-                if paid_content["isArchived"]:
-                    print(f"Model: {author['username']}")
-                    # print(
-                    #     "ERROR, PLEASE REPORT THIS AS AN ISSUE AND TELL ME WHICH MODEL YOU'RE SCRAPIMG, THANKS")
-                    # input()
-                    # exit()
-            api_type = paid_content["responseType"].capitalize() + "s"
+            api_type = paid_content.responseType.capitalize() + "s"
             api_media = getattr(subscription.temp_scraped, api_type)
             api_media.append(paid_content)
         count = 0
@@ -342,13 +340,15 @@ def paid_content_scraper(api: start, identifiers=[]):
             site_name = "OnlyFans"
             media_type = format_media_types()
             count += 1
-            for api_type, paid_content in subscription.temp_scraped:
+            for api_type, paid_contents in subscription.temp_scraped:
                 if api_type == "Archived":
-                    if any(x for k, x in paid_content if not x):
+                    if any(x for k, x in paid_contents if not x):
                         input(
                             "OPEN A ISSUE GITHUB ON GITHUB WITH THE MODEL'S USERNAME AND THIS ERROR, THANKS"
                         )
                         exit(0)
+                    continue
+                if not paid_contents:
                     continue
                 mandatory_directories = {}
                 mandatory_directories["profile_directory"] = profile_directory
@@ -368,16 +368,19 @@ def paid_content_scraper(api: start, identifiers=[]):
                 metadata_path = os.path.join(
                     formatted_metadata_directory, api_type + ".db"
                 )
-                unrefined_set = media_scraper(
-                    paid_content,
-                    authed,
-                    subscription,
-                    formatted_directories,
-                    username,
-                    api_type,
+                pool = subscription.session_manager.pool
+                unrefined_result = pool.starmap(
+                    media_scraper,
+                    product(
+                        paid_contents,
+                        [authed],
+                        [subscription],
+                        [formatted_directories],
+                        [username],
+                        [api_type],
+                    ),
                 )
-                unrefined_set = [x for x in [unrefined_set]]
-                new_metadata = main_helper.format_media_set(unrefined_set)
+                new_metadata = main_helper.format_media_set(unrefined_result)
                 new_metadata = new_metadata["content"]
                 if new_metadata:
                     api_path = os.path.join(api_type, "")
@@ -1065,7 +1068,7 @@ def media_scraper(
                 if media_username != username:
                     continue
         final_text = rawText if rawText else text
-        
+
         if date == "-001-11-30T00:00:00+00:00":
             date_string = master_date
             date_object = datetime.strptime(master_date, "%d-%m-%Y %H:%M:%S")
@@ -1075,7 +1078,7 @@ def media_scraper(
             date_object = datetime.fromisoformat(date)
             date_string = date_object.replace(tzinfo=None).strftime("%d-%m-%Y %H:%M:%S")
             master_date = date_string
-        new_post["post_id"] = post_result.id
+        new_post["post_id"] = post_id
         new_post["text"] = final_text
         new_post["postedAt"] = date_string
         new_post["paid"] = False

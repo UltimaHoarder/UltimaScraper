@@ -1,10 +1,12 @@
+from apis.onlyfans.classes.create_post import create_post
+from apis.onlyfans.classes.create_message import create_message
 from itertools import chain, product
 from apis import api_helper
 from apis.onlyfans.classes.extras import auth_details, content_types, create_headers, endpoint_links, error_details, handle_refresh
 from apis.onlyfans.classes.create_user import create_user
 
 import requests
-from typing import Optional, Union
+from typing import Any, Optional, Union
 from apis.api_helper import session_manager
 import copy
 from user_agent import generate_user_agent
@@ -408,19 +410,24 @@ class create_auth:
         refresh: bool = True,
         limit: int = 99,
         offset: int = 0,
-    ):
+        inside_loop:bool = False
+    )->list[Union[create_message,create_post]]:
         api_type = "paid_content"
         if not self.active:
-            return
+            return []
         if not refresh:
             result = handle_refresh(self, api_type)
             if result:
                 return result
         link = endpoint_links(global_limit=limit, global_offset=offset).paid_api
-        session = self.session_manager.sessions[0]
-        results = self.session_manager.json_request(link)
-        if len(results) >= limit and not check:
-            results2 = self.get_paid_content(limit=limit, offset=limit + offset)
-            results.extend(results2)
-        self.paid_content = results
-        return results
+        final_results = self.session_manager.json_request(link)
+        if len(final_results) >= limit and not check:
+            results2 = self.get_paid_content(limit=limit, offset=limit + offset, inside_loop=True)
+            final_results.extend(results2)
+        if not inside_loop:
+            temp = []
+            temp += [create_message(x) for x in final_results if x["responseType"] == "message"]
+            temp +=  [create_post(x) for x in final_results if x["responseType"] == "post"]
+            final_results = temp
+        self.paid_content = final_results
+        return final_results

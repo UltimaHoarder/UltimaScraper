@@ -209,7 +209,6 @@ class create_auth:
         link = endpoint_links(
             identifier, global_limit=limit, global_offset=offset
         ).lists_users
-        session = self.session_manager.sessions[0]
         results = self.session_manager.json_request(link)
         if len(results) >= limit and not check:
             results2 = self.get_lists_users(

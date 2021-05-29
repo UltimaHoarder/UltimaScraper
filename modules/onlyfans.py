@@ -8,7 +8,7 @@ import hashlib
 import shutil
 from apis.onlyfans import onlyfans as OnlyFans
 from helpers import db_helper
-from typing import Optional, Union
+from typing import Any, Optional, Union
 from apis.onlyfans.onlyfans import start
 from classes.prepare_metadata import create_metadata, format_content, prepare_reformat
 import os
@@ -1302,17 +1302,13 @@ class download_media:
 
             result = choose_link(session, links)
             if not result:
-                result_list = []
+                new_result: Any = None
                 if api_type == "Messages":
-                    result = subscription.get_message_by_id(
+                    new_result = subscription.get_message_by_id(
                         identifier2=media.post_id, limit=1
-                    )["result"]
-                    result_list = result.get("list")
-                    if not result_list:
-                        print
+                    )
                 elif api_type == "Posts":
-                    result = subscription.get_post(media.post_id)
-                    result_list = [result.get("result")]
+                    new_result = subscription.get_post(media.post_id)
                 else:
                     print
                 mandatory_directories = {}
@@ -1328,17 +1324,17 @@ class download_media:
                     media_type,
                     api_type,
                 )
-                unrefined_set = media_scraper(
-                    result_list,
+                unrefined_result = [media_scraper(
+                    new_result,
                     authed,
                     subscription,
                     formatted_directories,
                     subscription.username,
                     api_type,
                     print_output=False,
-                )
-                unrefined_set = [x for x in [unrefined_set]]
-                new_metadata = main_helper.format_media_set(unrefined_set)
+                )]
+
+                new_metadata = main_helper.format_media_set(unrefined_result)
                 new_metadata = new_metadata["content"]
                 found_post = main_helper.format_media_set(new_metadata)
                 if found_post:

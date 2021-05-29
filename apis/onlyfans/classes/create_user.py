@@ -302,12 +302,9 @@ class create_user:
         link = endpoint_links(
             identifier=identifier, global_limit=limit, global_offset=offset
         ).post_by_id
-        session = self.session_manager.sessions[0]
-        results = self.session_manager.json_request(link)
-        item = {}
-        item["session"] = session
-        item["result"] = results
-        return item
+        result = self.session_manager.json_request(link)
+        final_result = create_post(result)
+        return final_result
 
     def get_messages(
         self,
@@ -368,12 +365,9 @@ class create_user:
             global_limit=limit,
             global_offset=offset,
         ).message_by_id
-        session = self.session_manager.sessions[0]
-        results = self.session_manager.json_request(link)
-        item = {}
-        item["session"] = session
-        item["result"] = results
-        return item
+        result = self.session_manager.json_request(link)
+        final_result = create_message(result)
+        return final_result
 
     def get_archived_stories(self, refresh=True, limit=100, offset=0):
         api_type = "archived_stories"

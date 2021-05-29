@@ -1,3 +1,4 @@
+from apis.onlyfans.classes.create_highlight import create_highlight
 from apis.onlyfans.classes.create_message import create_message
 from itertools import chain
 from apis.onlyfans.classes.create_post import create_post
@@ -256,12 +257,14 @@ class create_user:
             link = endpoint_links(
                 identifier=identifier, global_limit=limit, global_offset=offset
             ).list_highlights
+            results = self.session_manager.json_request(link)
+            results = [create_highlight(x) for x in results]
         else:
             link = endpoint_links(
                 identifier=hightlight_id, global_limit=limit, global_offset=offset
             ).highlight
-        session = self.session_manager.sessions[0]
-        results = self.session_manager.json_request(link)
+            results = self.session_manager.json_request(link)
+            results = [create_story(x) for x in results["stories"]]
         return results
 
     def get_posts(

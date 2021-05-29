@@ -748,10 +748,8 @@ def prepare_scraper(authed: create_auth, site_name, item):
         highlights = subscription.get_highlights()
         valid_highlights = []
         for highlight in highlights:
-            if "error" == highlight:
-                continue
-            highlight = subscription.get_highlights(hightlight_id=highlight["id"])
-            valid_highlights.append(highlight)
+            highlight = subscription.get_highlights(hightlight_id=highlight.id)
+            valid_highlights.extend(highlight)
         master_set.extend(valid_highlights)
         print
     if api_type == "Posts":

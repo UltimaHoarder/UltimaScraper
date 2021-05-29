@@ -1,8 +1,12 @@
+from apis import api_helper
+from apis.onlyfans.classes.extras import endpoint_links
 from typing import Any
 
 
 class create_post:
-    def __init__(self, option={}) -> None:
+    def __init__(
+        self, option={}, session_manager: api_helper.session_manager = None
+    ) -> None:
         self.responseType: str = option.get("responseType")
         self.id: int = option.get("id")
         self.postedAt: str = option.get("postedAt")
@@ -40,3 +44,14 @@ class create_post:
         self.canViewMedia: bool = option.get("canViewMedia")
         self.preview: list = option.get("preview")
         self.canPurchase: bool = option.get("canPurchase")
+        self.session_manager = session_manager
+
+    def favorite(self):
+        link = endpoint_links(
+            identifier=f"{self.responseType}s",
+            identifier2=self.id,
+            identifier3=self.author["id"],
+        ).favorite
+        results = self.session_manager.json_request(link, method="POST")
+        self.isFavorite = True
+        return results

@@ -292,7 +292,7 @@ class create_user:
         results = api_helper.scrape_endpoint_links(
             links, self.session_manager, api_type
         )
-        final_results = [create_post(x) for x in results]
+        final_results = [create_post(x,self.session_manager) for x in results]
         self.temp_scraped.Posts = final_results
         return final_results
 
@@ -411,7 +411,7 @@ class create_user:
         results = api_helper.scrape_endpoint_links(
             links, self.session_manager, api_type
         )
-        final_results = [create_post(x) for x in results if x]
+        final_results = [create_post(x,self.session_manager) for x in results if x]
         self.temp_scraped.Archived.Posts = final_results
         return final_results
 
@@ -458,13 +458,6 @@ class create_user:
     def unlike(self, category: str, identifier: int):
         link = endpoint_links(identifier=category, identifier2=identifier).like
         results = self.session_manager.json_request(link, method="DELETE")
-        return results
-
-    def favorite(self, category: str, identifier: int, identifier2: int):
-        link = endpoint_links(
-            identifier=category, identifier2=identifier, identifier3=identifier2
-        ).favorite
-        results = self.session_manager.json_request(link, method="POST")
         return results
 
     def buy_subscription(self):

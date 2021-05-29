@@ -430,7 +430,7 @@ class create_auth:
         if not inside_loop:
             temp = []
             temp += [create_message(x) for x in final_results if x["responseType"] == "message"]
-            temp +=  [create_post(x) for x in final_results if x["responseType"] == "post"]
+            temp +=  [create_post(x,self.session_manager) for x in final_results if x["responseType"] == "post"]
             final_results = temp
         self.paid_content = final_results
         return final_results

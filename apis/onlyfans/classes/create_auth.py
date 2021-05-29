@@ -88,6 +88,7 @@ class create_auth:
             string = f"Auth {auth_version} Attempt {count}/{max_attempts}"
             print(string)
             self.get_authed()
+            count += 1
 
             def resolve_auth(auth: create_auth):
                 if self.errors:

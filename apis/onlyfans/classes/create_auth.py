@@ -282,6 +282,9 @@ class create_auth:
                     subscription["session_manager"] = self.session_manager
                     if extra_info:
                         subscription2 = self.get_user(subscription["username"])
+                        if isinstance(subscription2,dict):
+                            if "error" in subscription2:
+                                continue
                         subscription = subscription | subscription2.__dict__
                     subscription = create_user(subscription)
                     subscription.session_manager = self.session_manager

@@ -1422,7 +1422,7 @@ def manage_subscriptions(
             if subscribedByData
             else datetime.utcnow().isoformat()
         )
-        subscribePrice = subscribedByData["subscribePrice"]
+        subscribePrice = result.subscribePrice
         result_date = datetime.fromisoformat(result_date).replace(tzinfo=None).date()
         if ignore_type in ["paid"]:
             if subscribePrice > 0:

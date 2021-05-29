@@ -292,7 +292,7 @@ class create_user:
         results = api_helper.scrape_endpoint_links(
             links, self.session_manager, api_type
         )
-        final_results = [create_post(x,self.session_manager) for x in results]
+        final_results = [create_post(x, self.session_manager) for x in results]
         self.temp_scraped.Posts = final_results
         return final_results
 
@@ -405,7 +405,7 @@ class create_user:
         results = api_helper.scrape_endpoint_links(
             links, self.session_manager, api_type
         )
-        final_results = [create_post(x,self.session_manager) for x in results if x]
+        final_results = [create_post(x, self.session_manager) for x in results if x]
         self.temp_scraped.Archived.Posts = final_results
         return final_results
 

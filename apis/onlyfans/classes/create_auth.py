@@ -1,8 +1,16 @@
+from datetime import datetime
 from apis.onlyfans.classes.create_post import create_post
 from apis.onlyfans.classes.create_message import create_message
 from itertools import chain, product
 from apis import api_helper
-from apis.onlyfans.classes.extras import auth_details, content_types, create_headers, endpoint_links, error_details, handle_refresh
+from apis.onlyfans.classes.extras import (
+    auth_details,
+    content_types,
+    create_headers,
+    endpoint_links,
+    error_details,
+    handle_refresh,
+)
 from apis.onlyfans.classes.create_user import create_user
 
 import requests
@@ -12,6 +20,7 @@ import copy
 from user_agent import generate_user_agent
 import math
 import jsonpickle
+from dateutil.relativedelta import relativedelta
 
 
 class create_auth:
@@ -185,7 +194,7 @@ class create_auth:
         self.lists = results
         return results
 
-    def get_user(self, identifier:Union[str,int]):
+    def get_user(self, identifier: Union[str, int]):
         link = endpoint_links(identifier).users
         result = self.session_manager.json_request(link)
         result["session_manager"] = self.session_manager
@@ -259,6 +268,9 @@ class create_auth:
 
             subscription = create_user(json_authed)
             subscription.subscriber = self
+            subscription.subscribedByData = {}
+            new_date = datetime.now() + relativedelta(years=1)
+            subscription.subscribedByData["expiredAt"] = new_date.isoformat()
             subscription = [subscription]
             results.append(subscription)
         if not identifiers:
@@ -283,7 +295,7 @@ class create_auth:
                     subscription["session_manager"] = self.session_manager
                     if extra_info:
                         subscription2 = self.get_user(subscription["username"])
-                        if isinstance(subscription2,dict):
+                        if isinstance(subscription2, dict):
                             if "error" in subscription2:
                                 continue
                         subscription = subscription | subscription2.__dict__
@@ -414,8 +426,8 @@ class create_auth:
         refresh: bool = True,
         limit: int = 99,
         offset: int = 0,
-        inside_loop:bool = False
-    )->list[Union[create_message,create_post]]:
+        inside_loop: bool = False,
+    ) -> list[Union[create_message, create_post]]:
         api_type = "paid_content"
         if not self.active:
             return []
@@ -426,12 +438,22 @@ class create_auth:
         link = endpoint_links(global_limit=limit, global_offset=offset).paid_api
         final_results = self.session_manager.json_request(link)
         if len(final_results) >= limit and not check:
-            results2 = self.get_paid_content(limit=limit, offset=limit + offset, inside_loop=True)
+            results2 = self.get_paid_content(
+                limit=limit, offset=limit + offset, inside_loop=True
+            )
             final_results.extend(results2)
         if not inside_loop:
             temp = []
-            temp += [create_message(x) for x in final_results if x["responseType"] == "message"]
-            temp +=  [create_post(x,self.session_manager) for x in final_results if x["responseType"] == "post"]
+            temp += [
+                create_message(x)
+                for x in final_results
+                if x["responseType"] == "message"
+            ]
+            temp += [
+                create_post(x, self.session_manager)
+                for x in final_results
+                if x["responseType"] == "post"
+            ]
             final_results = temp
         self.paid_content = final_results
         return final_results

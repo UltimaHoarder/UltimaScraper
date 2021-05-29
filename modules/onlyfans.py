@@ -1479,8 +1479,7 @@ def format_options(
                 name = x.username
                 string += str(count) + " = " + name
                 if isinstance(x, create_user):
-                    subscriber = x.get_subscriber(match_list)
-                    auth_count = match_list.index(subscriber)
+                    auth_count = match_list.index(x.subscriber)
                 names.append([auth_count, name])
                 if count + 1 != name_count:
                     string += seperator

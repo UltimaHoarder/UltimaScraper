@@ -214,11 +214,6 @@ class create_user:
         self.download_info = {}
         self.__raw__ = option
 
-    def get_subscriber(self, auth_list: list[create_auth]):
-        subscribes = self.subscribedByData["subscribes"][-1]
-        subscriber = [x for x in auth_list if x.id == subscribes["subscriberId"]][0]
-        return subscriber
-
     def get_link(self):
         link = f"https://onlyfans.com/{self.username}"
         return link

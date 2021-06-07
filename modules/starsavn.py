@@ -25,7 +25,7 @@ json_config = None
 json_global_settings = None
 max_threads = -1
 json_settings = None
-auto_choice = None
+auto_media_choice = None
 j_directory = ""
 metadata_directory_format = ""
 file_directory_format = None
@@ -41,13 +41,13 @@ app_token = None
 
 
 def assign_vars(json_auth: auth_details, config, site_settings, site_name):
-    global json_config, json_global_settings, max_threads, json_settings, auto_choice, j_directory, metadata_directory_format, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, maximum_length, app_token
+    global json_config, json_global_settings, max_threads, json_settings, auto_media_choice, j_directory, metadata_directory_format, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, maximum_length, app_token
 
     json_config = config
     json_global_settings = json_config["settings"]
     max_threads = json_global_settings["max_threads"]
     json_settings = site_settings
-    auto_choice = json_settings["auto_choice"]
+    auto_media_choice = json_settings["auto_media_choice"]
     j_directory = main_helper.get_directory(
         json_settings['download_directories'], site_name)
     metadata_directory_format = json_settings["metadata_directory_format"]
@@ -121,7 +121,7 @@ def start_datascraper(api: start, identifier, site_name, choice_type=None):
     api_array = format_options(api_array, "apis")
     apis = api_array[0]
     api_string = api_array[1]
-    if not json_settings["auto_scrape_apis"]:
+    if not json_settings["auto_api_choice"]:
         print("Apis: "+api_string)
         value = int(input().strip())
     else:
@@ -157,18 +157,18 @@ def scrape_choice(api: start, subscription):
     post_count = subscription.postsCount
     archived_count = subscription.archivedPostsCount
     media_types = ["Images", "Videos", "Audios", "Texts"]
-    if auto_choice:
-        input_choice = auto_choice
+    if auto_media_choice:
+        input_choice = auto_media_choice
     else:
         print('Scrape: a = Everything | b = Images | c = Videos | d = Audios | e = Texts')
         input_choice = input().strip()
-    user_api = api.links(user_id).users
-    message_api = api.links(user_id).message_api
-    mass_messages_api = api.links().mass_messages_api
-    stories_api = api.links(user_id).stories_api
-    list_highlights = api.links(user_id).list_highlights
-    post_api = api.links(user_id).post_api
-    archived_api = api.links(user_id).archived_posts
+    user_api = api.endpoint_links(user_id).users
+    message_api = api.endpoint_links(user_id).message_api
+    mass_messages_api = api.endpoint_links().mass_messages_api
+    stories_api = api.endpoint_links(user_id).stories_api
+    list_highlights = api.endpoint_links(user_id).list_highlights
+    post_api = api.endpoint_links(user_id).post_api
+    archived_api = api.endpoint_links(user_id).archived_posts
     # ARGUMENTS
     only_links = False
     if "-l" in input_choice:

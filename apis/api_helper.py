@@ -1,6 +1,9 @@
 import copy
+import math
+import re
 import time
 from typing import Any, Union
+from urllib.parse import urlparse
 
 import requests
 from requests.sessions import Session
@@ -19,6 +22,7 @@ os.chdir(path)
 
 
 global_settings = {}
+global_settings["dynamic_rules_link"] = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json"
 
 
 class set_settings():
@@ -37,7 +41,7 @@ def chunks(l, n):
 
 def multiprocessing(max_threads=None):
     if not max_threads:
-        max_threads = global_settings.get("max_threads", -1)
+        max_threads = -1
     max_threads2 = cpu_count()
     if max_threads < 1 or max_threads >= max_threads2:
         pool = ThreadPool()
@@ -47,18 +51,23 @@ def multiprocessing(max_threads=None):
 
 
 class session_manager():
-    def __init__(self, original_sessions=[], headers: dict = {}, session_rules=None, session_retry_rules=None) -> None:
-        self.sessions = self.copy_sessions(original_sessions)
-        self.pool = multiprocessing()
-        self.max_threads = self.pool._processes
+    def __init__(self, original_sessions=[], headers: dict = {}, session_rules=None, session_retry_rules=None, max_threads=-1) -> None:
+        self.sessions = self.add_sessions(original_sessions)
+        self.pool = multiprocessing(max_threads)
+        self.max_threads = max_threads
         self.kill = False
         self.headers = headers
         self.session_rules = session_rules
         self.session_retry_rules = session_retry_rules
-        self.dynamic_rules = None
+        dr_link = global_settings["dynamic_rules_link"]
+        dynamic_rules = requests.get(dr_link).json()
+        self.dynamic_rules = dynamic_rules
 
-    def copy_sessions(self, original_sessions):
-        sessions = []
+    def add_sessions(self, original_sessions: list, overwrite_old_sessions=True):
+        if overwrite_old_sessions:
+            sessions = []
+        else:
+            sessions = self.sessions
         for original_session in original_sessions:
             cloned_session = copy.deepcopy(original_session)
             ip = getattr(original_session, "ip", "")
@@ -148,6 +157,14 @@ class session_manager():
                 continue
         return result
 
+    def parallel_requests(self, items: list[str]):
+        def multi(link):
+            result = self.json_request(link)
+            return result
+        results = self.pool.starmap(multi, product(
+            items))
+        return results
+
 
 def create_session(settings={}, custom_proxy="", test_ip=True):
 
@@ -182,8 +199,9 @@ def create_session(settings={}, custom_proxy="", test_ip=True):
     while not sessions:
         proxies = [custom_proxy] if custom_proxy else proxies
         if proxies:
-            sessions = pool.starmap(test_session, product(
-                proxies, [cert], [max_threads]))
+            with pool:
+                sessions = pool.starmap(test_session, product(
+                    proxies, [cert], [max_threads]))
         else:
             session = test_session(max_threads=max_threads)
             sessions.append(session)
@@ -240,7 +258,7 @@ def restore_missing_data(master_set2, media_set, split_by):
     return new_set
 
 
-def scrape_check(links, session_manager: session_manager, api_type):
+def scrape_endpoint_links(links, session_manager: session_manager, api_type):
     def multi(item):
         link = item["link"]
         item = {}
@@ -248,27 +266,18 @@ def scrape_check(links, session_manager: session_manager, api_type):
         result = session_manager.json_request(link, session)
         if "error" in result:
             result = []
-        # if result:
-        #     print(f"Found: {link}")
-        # else:
-        #     print(f"Not Found: {link}")
         if result:
             item["session"] = session
             item["result"] = result
         return item
     media_set = []
     max_attempts = 100
-    count = len(links)
     api_type = api_type.capitalize()
     for attempt in list(range(max_attempts)):
-        print("Scrape Attempt: "+str(attempt+1)+"/"+str(max_attempts))
         if not links:
             continue
-        items = assign_session(links, session_manager.sessions)
-        # item_groups = grouper(300,items)
-        pool = multiprocessing()
-        results = pool.starmap(multi, product(
-            items))
+        print("Scrape Attempt: "+str(attempt+1)+"/"+str(max_attempts))
+        results = session_manager.parallel_requests(links)
         not_faulty = [x for x in results if x]
         faulty = [{"key": k, "value": v, "link": links[k]}
                   for k, v in enumerate(results) if not v]
@@ -292,10 +301,24 @@ def scrape_check(links, session_manager: session_manager, api_type):
             media_set.extend(results)
             print("Found: "+api_type)
             break
-    media_set = [x for x in media_set]
+    media_set = list(chain(*media_set))
     return media_set
 
 
 def grouper(n, iterable, fillvalue=None):
     args = [iter(iterable)] * n
     return list(zip_longest(fillvalue=fillvalue, *args))
+
+
+def calculate_the_unpredictable(link, limit, multiplier=1):
+    final_links = []
+    a = list(range(1, multiplier+1))
+    for b in a:
+        parsed_link = urlparse(link)
+        q = parsed_link.query.split("&")
+        offset = q[1]
+        old_offset_num = int(re.findall("\\d+", offset)[0])
+        new_offset_num = old_offset_num+(limit*b)
+        new_link = link.replace(offset, f"offset={new_offset_num}")
+        final_links.append(new_link)
+    return final_links

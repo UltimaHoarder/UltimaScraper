@@ -121,7 +121,7 @@ class auth_details():
         self.active = option.get('active', True)
 
 
-class links(object):
+class endpoint_links(object):
     def __init__(self, identifier=None, identifier2=None, text="", only_links=True, global_limit=None, global_offset=None, access_token="33d57ade8c02dbc5a333db99ff9ae26a"):
         self.customer = f"https://stars.avn.com/api2/v2/users/me"
         self.users = f'https://onlyfans.com/api2/v2/users/{identifier}?app-token={access_token}'
@@ -199,7 +199,7 @@ class create_auth():
         self.active = False
         valid_counts = ["chatMessagesCount"]
         args = [self.username, False, False]
-        link_info = links(*args).full
+        link_info = endpoint_links(*args).full
         x2 = [link_info["list_chats"]]
         items = dict(zip(valid_counts, x2))
         if not init:
@@ -253,6 +253,7 @@ class create_subscription():
         self.hasStories = option.get("hasStories")
         self.link = option.get("link")
         self.links = content_types()
+        self.temp_scraped = content_types()
         self.scraped = content_types()
         self.auth_count = None
         self.sessions = option.get("sessions")
@@ -261,7 +262,7 @@ class create_subscription():
         # Modify self
         valid_counts = ["postsCount", "archivedPostsCount"]
         identifier = self.id
-        link_info = links(identifier=identifier).full
+        link_info = endpoint_links(identifier=identifier).full
         x2 = [link_info["post_api"],
               link_info["archived_posts"]]
         items = dict(zip(valid_counts, x2))
@@ -299,10 +300,10 @@ class create_subscription():
                 return result
         if not self.hasStories:
             return []
-        link = [links(identifier=self.id, global_limit=limit,
+        link = [endpoint_links(identifier=self.id, global_limit=limit,
                       global_offset=offset).stories_api]
-        results = api_helper.scrape_check(link, self.sessions, api_type)
-        self.scraped.Stories = results
+        results = api_helper.scrape_endpoint_links(link, self.sessions, api_type)
+        self.temp_scraped.Stories = results
         return results
 
     def get_highlights(self, identifier="", refresh=True, limit=100, offset=0, hightlight_id="") -> list:
@@ -314,10 +315,10 @@ class create_subscription():
         if not identifier:
             identifier = self.id
         if not hightlight_id:
-            link = links(identifier=identifier, global_limit=limit,
+            link = endpoint_links(identifier=identifier, global_limit=limit,
                          global_offset=offset).list_highlights
         else:
-            link = links(identifier=hightlight_id, global_limit=limit,
+            link = endpoint_links(identifier=hightlight_id, global_limit=limit,
                          global_offset=offset).highlight
         session = self.sessions[0]
         results = api_helper.json_request(link=link, session=session)
@@ -330,8 +331,8 @@ class create_subscription():
             if result:
                 return result
         links = self.links.Posts
-        results = api_helper.scrape_check(links, self.sessions, api_type)
-        self.scraped.Posts = results
+        results = api_helper.scrape_endpoint_links(links, self.sessions, api_type)
+        self.temp_scraped.Posts = results
         return results
 
     def get_messages(self, identifier=None, resume=None, refresh=True, limit=10, offset=0):
@@ -346,7 +347,7 @@ class create_subscription():
                 return []
 
         def process():
-            link = links(identifier=identifier, global_limit=limit,
+            link = endpoint_links(identifier=identifier, global_limit=limit,
                          global_offset=offset).message_api
             session = self.sessions[0]
             results = api_helper.json_request(link=link, session=session)
@@ -364,7 +365,7 @@ class create_subscription():
                     for item in list:
                         if any(x["id"] == item["id"] for x in resume):
                             resume.sort(key=lambda x: x["id"], reverse=True)
-                            self.scraped.Messages = resume
+                            self.temp_scraped.Messages = resume
                             return resume
                         else:
                             resume.append(item)
@@ -375,11 +376,11 @@ class create_subscription():
                 break
             offset += limit
         results = merge({}, *unmerged, strategy=Strategy.ADDITIVE)
-        self.scraped.Messages = [results]
+        self.temp_scraped.Messages = [results]
         return results
 
     def get_message_by_id(self, identifier=None, identifier2=None, refresh=True, limit=10, offset=0):
-        link = links(identifier=identifier, identifier2=identifier2, global_limit=limit,
+        link = endpoint_links(identifier=identifier, identifier2=identifier2, global_limit=limit,
                      global_offset=offset).message_by_id
         session = self.sessions[0]
         results = api_helper.json_request(link=link, session=session)
@@ -394,7 +395,7 @@ class create_subscription():
             result = handle_refresh(self, api_type)
             if result:
                 return result
-        link = links(global_limit=limit,
+        link = endpoint_links(global_limit=limit,
                      global_offset=offset).archived_stories
         session = self.sessions[0]
         results = api_helper.json_request(link=link, session=session)
@@ -410,8 +411,8 @@ class create_subscription():
         results = []
         links = self.links.Archived.Posts
         if links:
-            results = api_helper.scrape_check(links, self.sessions, api_type)
-        self.scraped.Archived.Posts = results
+            results = api_helper.scrape_endpoint_links(links, self.sessions, api_type)
+        self.temp_scraped.Archived.Posts = results
         return results
 
     def get_archived(self, api):
@@ -431,7 +432,7 @@ class create_subscription():
     def search_chat(self, identifier="", text="", refresh=True, limit=10, offset=0):
         if identifier:
             identifier = parse.urljoin(identifier, "messages")
-        link = links(identifier=identifier, text=text, global_limit=limit,
+        link = endpoint_links(identifier=identifier, text=text, global_limit=limit,
                      global_offset=offset).search_chat
         session = self.sessions[0]
         results = api_helper.json_request(link=link, session=session)
@@ -440,7 +441,7 @@ class create_subscription():
     def search_messages(self, identifier="", text="", refresh=True, limit=10, offset=0):
         if identifier:
             identifier = parse.urljoin(identifier, "messages")
-        link = links(identifier=identifier, text=text, global_limit=limit,
+        link = endpoint_links(identifier=identifier, text=text, global_limit=limit,
                      global_offset=offset).search_messages
         session = self.sessions[0]
         results = api_helper.json_request(link=link, session=session)
@@ -452,7 +453,7 @@ class create_subscription():
 
 class start():
     def __init__(self, sessions=[], custom_request=callable) -> None:
-        sessions = api_helper.copy_sessions(sessions)
+        sessions = api_helper.add_sessions(sessions)
         self.sessions = sessions
         self.auth = create_auth(init=True)
         self.custom_request = custom_request
@@ -480,7 +481,7 @@ class start():
     #         print("Could not authenticate")
     #     return result
 
-    def set_auth_details(self, option):
+    def add_auth(self, option):
         if not option["active"]:
             return
         self.auth.auth_details.username = option["username"]
@@ -496,7 +497,7 @@ class start():
     def login(self, full=False, max_attempts=10) -> Union[create_auth, None]:
         auth_version = "(V1)"
         auth_items = self.auth.auth_details
-        link = links().customer
+        link = endpoint_links().customer
         user_agent = auth_items.user_agent
         auth_cookies = [
             {'name': 'sess', 'value': auth_items.sess}
@@ -531,7 +532,7 @@ class start():
                         error_message = "Blocked by 2FA."
                         print(error_message)
                         if auth_items.support_2fa:
-                            link = f"https://onlyfans.com/api2/v2/users/otp/check?app-token={app_token}"
+                            link = f"https://onlyfans.com/api2/v2/users/otp/check"
                             count = 1
                             max_count = 3
                             while count < max_count+1:
@@ -564,7 +565,7 @@ class start():
 
     def get_authed(self):
         if not self.auth.active:
-            link = links().customer
+            link = endpoint_links().customer
             r = api_helper.json_request(link, self.sessions[0],  sleep=False)
             if r:
                 r["sessions"] = self.sessions
@@ -576,7 +577,7 @@ class start():
         self.auth = me
 
     def get_user(self, identifier):
-        link = links(identifier).users
+        link = endpoint_links(identifier).users
         session = self.sessions[0]
         results = api_helper.json_request(link=link, session=session)
         return results
@@ -588,14 +589,14 @@ class start():
         if not refresh:
             subscriptions = authed.subscriptions
             return subscriptions
-        link = links(global_limit=limit, global_offset=offset).subscriptions
+        link = endpoint_links(global_limit=limit, global_offset=offset).subscriptions
         session = self.sessions[0]
         ceil = math.ceil(authed.subscribesCount / limit)
         a = list(range(ceil))
         offset_array = []
         for b in a:
             b = b * limit
-            link = links(global_limit=limit, global_offset=b).subscriptions
+            link = endpoint_links(global_limit=limit, global_offset=b).subscriptions
             offset_array.append(link)
 
         # Following logic is unique to creators only
@@ -645,7 +646,7 @@ class start():
                 valid = subscription
                 break
         if not valid and not check:
-            link = links(identifier=identifier, global_limit=limit,
+            link = endpoint_links(identifier=identifier, global_limit=limit,
                          global_offset=offset).users
             session = self.sessions[0]
             results = api_helper.json_request(link=link, session=session)
@@ -674,7 +675,7 @@ class start():
         if not refresh:
             subscriptions = handle_refresh(self, api_type)
             return subscriptions
-        link = links(global_limit=limit,
+        link = endpoint_links(global_limit=limit,
                      global_offset=offset).lists
         session = self.sessions[0]
         results = api_helper.json_request(link=link, session=session)
@@ -685,7 +686,7 @@ class start():
         authed = self.auth
         if not authed:
             return
-        link = links(identifier, global_limit=limit,
+        link = endpoint_links(identifier, global_limit=limit,
                      global_offset=offset).lists_users
         session = self.sessions[0]
         results = api_helper.json_request(link=link, session=session)
@@ -700,7 +701,7 @@ class start():
             result = handle_refresh(self, api_type)
             if result:
                 return result
-        link = links(global_limit=limit,
+        link = endpoint_links(global_limit=limit,
                      global_offset=offset).list_chats
         session = self.sessions[0]
         results = api_helper.json_request(link=link, session=session)
@@ -734,7 +735,7 @@ class start():
             result = handle_refresh(self, api_type)
             if result:
                 return result
-        link = links(global_limit=limit,
+        link = endpoint_links(global_limit=limit,
                      global_offset=offset).mass_messages_api
         session = self.sessions[0]
         results = api_helper.json_request(link=link, session=session)
@@ -770,7 +771,7 @@ class start():
             result = handle_refresh(authed, api_type)
             if result:
                 return result
-        link = links(global_limit=limit,
+        link = endpoint_links(global_limit=limit,
                      global_offset=offset).paid_api
         session = self.sessions[0]
         results = api_helper.json_request(link=link, session=session)

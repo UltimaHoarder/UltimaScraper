@@ -1,4 +1,5 @@
-from apis.onlyfans.onlyfans import create_auth, media_types
+from apis.onlyfans.classes.extras import media_types
+from apis.onlyfans.classes.create_auth import create_auth
 import copy
 from enum import unique
 import os

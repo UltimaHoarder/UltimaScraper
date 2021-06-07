@@ -1,5 +1,4 @@
 import os
-import json
 from itertools import chain
 import shutil
 import filecmp

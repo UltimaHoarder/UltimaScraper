@@ -1,7 +1,7 @@
 ### posts.py ###
 
 import sqlalchemy
-from sqlalchemy.ext.declarative import declarative_base
+from sqlalchemy.orm import declarative_base
 from database.models.api_table import api_table
 from database.models.media_table import media_table
 

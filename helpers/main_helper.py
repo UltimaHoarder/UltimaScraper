@@ -1,18 +1,18 @@
+from apis.onlyfans.classes import create_user
+import json
 from apis.onlyfans import onlyfans as OnlyFans
 import math
 from types import SimpleNamespace
-from typing import Any, Tuple, Union
+from typing import Any, Optional, Tuple, Union
 
-from sqlalchemy.ext.declarative import api
-from sqlalchemy.ext.declarative.api import declarative_base
+from sqlalchemy import inspect
+from sqlalchemy.orm import declarative_base
 from classes.prepare_metadata import format_variables
 import copy
-import json
 import os
 import platform
 import re
 from datetime import datetime
-import time
 from itertools import chain, zip_longest, groupby
 import psutil
 import shutil
@@ -29,8 +29,6 @@ import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
 from mergedeep import merge, Strategy
 import helpers.db_helper as db_helper
-from alembic.config import Config
-from alembic import command
 import traceback
 json_global_settings = None
 min_drive_space = 0
@@ -157,7 +155,7 @@ def legacy_database_fixer(database_path, database, database_name, database_exist
     if database_exists:
         Session, engine = db_helper.create_database_session(database_path)
         database_session = Session()
-        result = engine.dialect.has_table(engine, 'alembic_version')
+        result = inspect(engine).has_table('alembic_version')
         if not result:
             if not pre_alembic_database_exists:
                 os.rename(old_database_path, pre_alembic_path)
@@ -347,7 +345,23 @@ def reformat(prepared_format, unformatted):
     maximum_length = maximum_length - (directory_count+path_count-extra_count)
     text_length = text_length if text_length < maximum_length else maximum_length
     if has_text:
-        filtered_text = text[:text_length]
+       # https://stackoverflow.com/a/43848928
+        def utf8_lead_byte(b):
+            '''A UTF-8 intermediate byte starts with the bits 10xxxxxx.'''
+            return (b & 0xC0) != 0x80
+
+        def utf8_byte_truncate(text, max_bytes):
+            '''If text[max_bytes] is not a lead byte, back up until a lead byte is
+            found and truncate before that character.'''
+            utf8 = text.encode('utf8')
+            if len(utf8) <= max_bytes:
+                return utf8
+            i = max_bytes
+            while i > 0 and not utf8_lead_byte(utf8[i]):
+                i -= 1
+            return utf8[:i]
+
+        filtered_text = utf8_byte_truncate(text, text_length).decode('utf8')
         path = path.replace("{text}", filtered_text)
     else:
         path = path.replace("{text}", "")
@@ -489,31 +503,24 @@ def downloader(r, download_path, d_session, count=0):
 
 def get_config(config_path):
     if os.path.exists(config_path):
-        json_config = json.load(open(config_path))
+        json_config = ujson.load(open(config_path))
     else:
         json_config = {}
     json_config2 = copy.deepcopy(json_config)
-    json_config, string = make_settings.fix(json_config)
+    json_config = make_settings.fix(json_config)
     file_name = os.path.basename(config_path)
-    json_config = json.loads(json.dumps(make_settings.config(
+    json_config = ujson.loads(json.dumps(make_settings.config(
         **json_config), default=lambda o: o.__dict__))
     updated = False
     if json_config != json_config2:
         updated = True
-        update_config(json_config, file_name=file_name)
+        filepath = os.path.join(".settings", "config.json")
+        export_data(json_config, filepath)
     if not json_config:
         input(
             f"The .settings\\{file_name} file has been created. Fill in whatever you need to fill in and then press enter when done.\n")
-        json_config = json.load(open(config_path))
+        json_config = ujson.load(open(config_path))
     return json_config, updated
-
-
-def update_config(json_config, file_name="config.json"):
-    directory = '.settings'
-    os.makedirs(directory, exist_ok=True)
-    path = os.path.join(directory, file_name)
-    with open(path, 'w', encoding='utf-8') as f:
-        json.dump(json_config, f, ensure_ascii=False, indent=2)
 
 
 def choose_auth(array):
@@ -543,25 +550,30 @@ def choose_auth(array):
     return names
 
 
-def choose_option(subscription_list, auto_scrape: Union[str, bool]):
+def choose_option(subscription_list, auto_scrape: Union[str, bool], use_default_message=False):
     names = subscription_list[0]
+    default_message = ""
+    seperator = " | "
+    if use_default_message:
+        default_message = f"Names: Username = username {seperator}"
     new_names = []
     if names:
-        seperator = " | "
         if isinstance(auto_scrape, bool):
             if auto_scrape:
                 values = [x[1] for x in names]
             else:
                 print(
-                    f"Names: Username = username {seperator} {subscription_list[1]}")
+                    f"{default_message}{subscription_list[1]}")
                 values = input().strip().split(",")
         else:
             if not auto_scrape:
                 print(
-                    f"Names: Username = username {seperator} {subscription_list[1]}")
+                    f"{default_message}{subscription_list[1]}")
                 values = input().strip().split(",")
             else:
-                values = auto_scrape.split(",")
+                values = auto_scrape
+                if isinstance(auto_scrape, str):
+                    values = auto_scrape.split(",")
         for value in values:
             if value.isdigit():
                 if value == "0":
@@ -601,14 +613,14 @@ def process_profiles(json_settings, original_sessions, site_name, api: Union[Onl
                 if not json_auth.get("active", None):
                     continue
                 json_auth["username"] = user
-                auth = api.set_auth_details(
+                auth = api.add_auth(
                     json_auth)
-                auth.session_manager.copy_sessions(original_sessions)
+                auth.session_manager.add_sessions(original_sessions)
                 auth.profile_directory = user_profile
                 datas["auth"] = auth.auth_details.__dict__
             if datas:
                 export_data(
-                    datas, user_auth_filepath, encoding=None)
+                    datas, user_auth_filepath)
             print
         print
     return api
@@ -616,7 +628,7 @@ def process_profiles(json_settings, original_sessions, site_name, api: Union[Onl
 
 def process_names(module, subscription_list, auto_scrape, api, json_config, site_name_lower, site_name) -> list:
     names = choose_option(
-        subscription_list, auto_scrape)
+        subscription_list, auto_scrape, True)
     if not names:
         print("There's nothing to scrape.")
     for name in names:
@@ -672,16 +684,19 @@ def is_me(user_api):
         return False
 
 
-def export_data(metadata: Union[list, dict], path: str, encoding: Union[str, None] = "utf-8"):
+def export_data(metadata: Union[list, dict], path: str, encoding: Optional[str] = "utf-8"):
     directory = os.path.dirname(path)
     os.makedirs(directory, exist_ok=True)
     with open(path, 'w', encoding=encoding) as outfile:
-        ujson.dump(metadata, outfile, indent=2)
+        ujson.dump(metadata, outfile, indent=2, escape_forward_slashes=False)
 
 
-def grouper(n, iterable, fillvalue=None):
+def grouper(n, iterable, fillvalue: Optional[Union[str, int]] = None):
     args = [iter(iterable)] * n
-    return list(zip_longest(fillvalue=fillvalue, *args))
+    grouped = list(zip_longest(fillvalue=fillvalue, *args))
+    if not fillvalue:
+        grouped = [x for x in grouped if x]
+    return grouped
 
 
 def create_link_group(max_threads):
@@ -706,7 +721,7 @@ def legacy_metadata(directory):
         if items:
             for item in items:
                 path = os.path.join(directory, item)
-                metadata = json.load(open(path))
+                metadata = ujson.load(open(path))
                 metadatas.append(metadata)
                 print
         print
@@ -755,11 +770,11 @@ def send_webhook(item, webhook_hide_sensitive_info, webhook_links, category, cat
             embed.title = f"Auth {category2.capitalize()}"
             embed.add_field("username", username)
             message.embeds.append(embed)
-            message = json.loads(json.dumps(
+            message = ujson.loads(json.dumps(
                 message, default=lambda o: o.__dict__))
             x = requests.post(webhook_link, json=message)
     if category == "download_webhook":
-        subscriptions = item.get_subscriptions(refresh=False)
+        subscriptions:list[create_user] = item.get_subscriptions(refresh=False)
         for subscription in subscriptions:
             download_info = subscription.download_info
             if download_info:
@@ -769,10 +784,10 @@ def send_webhook(item, webhook_hide_sensitive_info, webhook_links, category, cat
                     embed.title = f"Downloaded: {subscription.username}"
                     embed.add_field("username", subscription.username)
                     embed.add_field("post_count", subscription.postsCount)
-                    embed.add_field("link", subscription.link)
+                    embed.add_field("link", subscription.get_link())
                     embed.image.url = subscription.avatar
                     message.embeds.append(embed)
-                    message = json.loads(json.dumps(
+                    message = ujson.loads(json.dumps(
                         message, default=lambda o: o.__dict__))
                     x = requests.post(webhook_link, json=message)
                     print
@@ -834,7 +849,6 @@ def module_chooser(domain, json_sites):
             string += seperator
 
         count += 1
-    string += "x = Exit"
     if domain and domain not in site_names:
         string = f"{domain} not supported"
         site_names = []

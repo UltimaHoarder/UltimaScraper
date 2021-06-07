@@ -10,7 +10,7 @@ from itertools import chain, product
 import traceback
 
 
-def fix_directories(posts, all_files, database_session: scoped_session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
+def fix_directories(api,posts, all_files, database_session: scoped_session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
     new_directories = []
 
     def fix_directories(post: api_table, media_db: list[media_table]):
@@ -111,9 +111,9 @@ def fix_directories(posts, all_files, database_session: scoped_session, folder, 
         return delete_rows
     result = database_session.query(folder.media_table)
     media_db = result.all()
-    pool = multiprocessing()
+    pool = api.pool
     delete_rows = pool.starmap(fix_directories, product(
-        posts, [media_db]))
+    posts, [media_db]))
     delete_rows = list(chain(*delete_rows))
     for delete_row in delete_rows:
         database_session.query(folder.media_table).filter(
@@ -123,12 +123,12 @@ def fix_directories(posts, all_files, database_session: scoped_session, folder, 
     return posts, new_directories
 
 
-def start(Session, parent_type, api_type, api_path, site_name, subscription, folder, json_settings):
+def start(api,Session, parent_type, api_type, api_path, site_name, subscription, folder, json_settings):
     api_table = folder.api_table
     media_table = folder.media_table
     database_session = Session()
     result = database_session.query(api_table).all()
-    metadata = getattr(subscription.scraped, api_type)
+    metadata = getattr(subscription.temp_scraped, api_type)
     download_info = subscription.download_info
     root_directory = download_info["directory"]
     date_format = json_settings["date_format"]
@@ -162,7 +162,7 @@ def start(Session, parent_type, api_type, api_path, site_name, subscription, fol
         all_files.extend(x)
 
     fixed, new_directories = fix_directories(
-        result, all_files, database_session, folder, site_name, parent_type, api_type, username, root_directory, json_settings)
+        api,result, all_files, database_session, folder, site_name, parent_type, api_type, username, root_directory, json_settings)
     database_session.close()
     return metadata
 

@@ -1,7 +1,7 @@
 import os
 import sqlalchemy
 from sqlalchemy.engine.base import Engine
-from sqlalchemy.orm.session import sessionmaker
+from sqlalchemy.orm.session import Session, sessionmaker
 from sqlalchemy.orm import scoped_session
 from alembic.config import Config
 from alembic import command
@@ -17,6 +17,7 @@ def create_database_session(connection_info, connection_type="sqlite:///", autoc
         kwargs["pool_size"] = pool_size
         kwargs["pool_pre_ping"] = True
         kwargs["max_overflow"] = -1
+        kwargs["isolation_level"] = "READ COMMITTED"
 
     engine = sqlalchemy.create_engine(
         f'{connection_type}{connection_info}?charset=utf8mb4', **kwargs)
@@ -67,12 +68,12 @@ class database_collection(object):
 
 
 def create_auth_array(item):
-    auth_array = dict(item)
+    auth_array = item.__dict__
     auth_array["support_2fa"] = False
     return auth_array
 
 
-def get_or_create(session, model, defaults=None, fbkwargs={}):
+def get_or_create(session: Session, model, defaults=None, fbkwargs={}):
     instance = session.query(model).filter_by(**fbkwargs).one_or_none()
     if instance:
         return instance, True
@@ -81,7 +82,7 @@ def get_or_create(session, model, defaults=None, fbkwargs={}):
         instance = model(**fbkwargs)
         try:
             session.add(instance)
-            session.flush()
+            session.commit()
         except IntegrityError:
             session.rollback()
             instance = session.query(model).filter_by(**fbkwargs).one()

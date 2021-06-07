@@ -1,140 +1,29 @@
+import copy
+from typing import List, Union
+from urllib.parse import urlparse
 from apis.onlyfans.onlyfans import auth_details
 import os
 
 import ujson
-from classes.prepare_metadata import format_types
+from classes.prepare_metadata import format_types, prepare_reformat
 import uuid as uuid
 
-
-def export_json(path, metadata):
-    if "auth" not in metadata:
-        auth = {}
-        auth["auth"] = metadata
-        metadata = auth
-    with open(path, 'w', encoding='utf-8') as outfile:
-        ujson.dump(metadata, outfile, indent=2)
-
-
 def fix(config={}):
-    added = []
-    changed = []
-    fix = []
-    settings = {}
-    global_user_agent = ""
-    for key, value in config.items():
-        if key == "settings":
-            settings = value
-            auto_profile_choice = settings.pop("auto_profile_choice", None)
-            socks5_proxies = settings.pop(
-                "socks5_proxy", None)
-            if socks5_proxies:
-                fixed_socks5_proxies = []
-                for socks5_proxy in socks5_proxies:
-                    fixed_socks5_proxy = f"socks5h://{socks5_proxy}"
-                    fixed_socks5_proxies.append(fixed_socks5_proxy)
-                settings["proxies"] = fixed_socks5_proxies
-            global_user_agent = settings.pop(
-                "global_user_agent", None)
-            if isinstance(settings.get(
-                    "webhooks", {}), list):
-                webhook = settings["webhooks"]
-                settings["webhooks"] = {}
-                settings["webhooks"]["global_webhooks"] = webhook
-        if key == "supported":
-            for key2, value2 in value.items():
-                temp_auth = value2.pop("auth", None)
-                if temp_auth:
-                    q = os.path.abspath(".settings")
-                    backup_config_filepath = os.path.join(
-                        q, "config_backup.json")
-                    print(
-                        f"LEGACY CONFIG FOUND, BACKING IT UP AND CREATING A NEW ONE. ({backup_config_filepath})")
-                    export_json(backup_config_filepath, config)
-                    print
-                    temp_auth["user_agent"] = global_user_agent
-                    auth = {}
-                    temp_auth = auth_details(temp_auth).__dict__
-                    auth["auth"] = temp_auth
-                    if "profile_directories" in settings:
-                        dpd = settings["profile_directories"][0]
-                        default_profile_directory = os.path.join(
-                            os.path.abspath(dpd), key2, "default")
-                        os.makedirs(default_profile_directory, exist_ok=True)
-                        profile_auth_filepath = os.path.join(
-                            default_profile_directory, "auth.json")
-                        export_json(profile_auth_filepath, auth)
-                        print(
-                            f"{profile_auth_filepath} HAS BEEN CREATED, CHECK IF IT'S CORRECT.")
-                print
-                for key3, settings in value2.items():
-                    if key3 == "settings":
-                        settings["text_length"] = int(settings["text_length"])
-                        re = settings.pop("download_paths", None)
-                        if re:
-                            settings["download_directories"] = re
-                            string = f"download_paths to download_directories in {key2}"
-                            changed.append(string)
-                        re = settings.get("metadata_directory_format", None)
-                        if not re:
-                            settings["metadata_directory_format"] = "{site_name}/{username}/Metadata"
-                            string = f"metadata_directory_format in {key2}"
-                            added.append(string)
-                        delete_legacy_metadata = settings.get(
-                            "delete_legacy_metadata", None)
-                        if delete_legacy_metadata == None:
-                            message_string = f"{key2} - IN THIS COMMIT I CHANGED HOW STORING METADATA WORKS. 'METADATA_DIRECTORIES' (config.json) NOW CONTROLS WHERE METADATA IS STORED SO MAKE SURE IT'S THE CORRECT DIRECTORY TO AVOID DOWNLOADING DUPES.\nPRESS ENTER TO CONTINUE"
-                            print(message_string)
-                        filename_format = settings.pop(
-                            "file_name_format", None)
-                        if filename_format:
-                            settings["filename_format"] = filename_format
-                        reformats = {k: v for k,
-                                     v in settings.items() if "_format" in k}
-                        bl = ["date_format"]
-                        reformats = {k: v for k,
-                                     v in reformats.items() if k not in bl}
-                        for re_name, re_value in reformats.items():
-                            top = ["{id}", "{file_name}"]
-                            bottom = ["{media_id}", "{filename}"]
-                            z = list(zip(top, bottom))
-                            for x in z:
-                                if x[0] in re_value:
-                                    settings[re_name] = settings[re_name].replace(
-                                        x[0], x[1])
-                                    reformats[re_name] = settings[re_name]
-                        x = format_types(reformats)
-                        q = x.check_rules()
-                        if not q[1]:
-                            fix.append(f"{key2} - {q[0]}")
-                        c = x.check_unique()
-                        if not c["bool_status"]:
-                            s = f"{key2} - {c['string']}"
-                            s_list = s.split("\n")
-                            fix.extend(s_list)
-                        print
-            value.pop("fourchan", None)
-            value.pop("bbwchan", None)
-    added = "\n".join([f"Added {x}" for x in added if x])
-    changed = "\n".join([f"Changed {x}" for x in changed if x])
-    fix = "\n".join([f"Fix: {x}" for x in fix if x])
-    seperator = "\n"*2
-    changed2 = seperator.join([added, changed, fix])
-    if not all(x for x in changed2.split("\n") if not x):
-        changed2 = changed2.strip()
-        if changed2:
-            print(f"\n{changed2}")
-        if fix:
-            string = "\nFix the problems above and then restart the script."
-            print(string.upper())
-            input()
-            exit(0)
-    return config, changed2
+    info = config.get("info")
+    if not info:
+        print("If you're not using >= v7 release, please download said release so the script can properly update your config. \nIf you're using >= v7 release or you don't care about your current config settings, press enter to continue. If script crashes, delete config.")
+        input()
+    return config
 
 
 class config(object):
-    def __init__(self, settings={}, supported={}):
+    def __init__(self, info={}, settings={}, supported={}):
+        class Info(object):
+            def __init__(self) -> None:
+                self.version = 7.1
+
         class Settings(object):
-            def __init__(self, auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, helpers={}, webhooks={}, exit_on_completion=False, infinite_loop=True, loop_timeout="0", proxies=[], cert="",  random_string=""):
+            def __init__(self, auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, helpers={}, webhooks={}, exit_on_completion=False, infinite_loop=True, loop_timeout="0", dynamic_rules_link="https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json", proxies=[], cert="",  random_string=""):
                 class webhooks_settings:
                     def __init__(self, option={}) -> None:
                         class webhook_template:
@@ -171,8 +60,10 @@ class config(object):
                 class helpers_settings:
                     def __init__(self, option={}) -> None:
                         self.renamer = option.get('renamer', True)
-                        self.reformat_media = option.get('reformat_media', True)
-                        self.delete_empty_directories = option.get('delete_empty_directories', False)
+                        self.reformat_media = option.get(
+                            'reformat_media', True)
+                        self.delete_empty_directories = option.get(
+                            'delete_empty_directories', False)
                 self.auto_site_choice = auto_site_choice
                 self.export_type = export_type
                 self.profile_directories = profile_directories
@@ -185,9 +76,24 @@ class config(object):
                 self.exit_on_completion = exit_on_completion
                 self.infinite_loop = infinite_loop
                 self.loop_timeout = loop_timeout
+                if "github.com" in dynamic_rules_link:
+                    if "raw" not in dynamic_rules_link:
+                        parsed_link = urlparse(dynamic_rules_link)
+                        path = parsed_link.path.replace("blob/","")
+                        dynamic_rules_link = f"https://raw.githubusercontent.com/{path}"
+                self.dynamic_rules_link = dynamic_rules_link
                 self.proxies = proxies
                 self.cert = cert
                 self.random_string = random_string if random_string else uuid.uuid1().hex
+
+        def update_site_settings(options) -> dict:
+            new_options = copy.copy(options)
+            for key, value in options.items():
+                if "auto_scrape_names" == key:
+                    new_options["auto_model_choice"] = value
+                elif "auto_scrape_apis" == key:
+                    new_options["auto_api_choice"] = value
+            return new_options
 
         class Supported(object):
             def __init__(self, onlyfans={}, patreon={}, starsavn={}):
@@ -200,6 +106,8 @@ class config(object):
 
                 class Settings():
                     def __init__(self, option={}):
+                        option = update_site_settings(option)
+
                         class jobs:
                             def __init__(self, option={}) -> None:
                                 self.scrape_names = option.get(
@@ -218,13 +126,14 @@ class config(object):
                                     'posts', True)
                                 self.comments = option.get(
                                     'comments', True)
-                        self.auto_profile_choice = option.get(
-                            'auto_profile_choice', "")
-                        self.auto_scrape_names = option.get(
-                            'auto_scrape_names', False)
-                        self.auto_choice = option.get('auto_choice', "")
-                        self.auto_scrape_apis = option.get(
-                            'auto_scrape_apis', True)
+                        self.auto_profile_choice: Union[List] = option.get(
+                            'auto_profile_choice', [])
+                        self.auto_model_choice = option.get(
+                            'auto_model_choice', False)
+                        self.auto_media_choice = option.get(
+                            'auto_media_choice', "")
+                        self.auto_api_choice = option.get(
+                            'auto_api_choice', True)
                         self.browser = browser(option.get(
                             'browser', {}))
                         self.csv_export_only = option.get(
@@ -272,6 +181,8 @@ class config(object):
 
                 class Settings():
                     def __init__(self, option={}):
+                        option = update_site_settings(option)
+
                         class jobs:
                             def __init__(self, option={}) -> None:
                                 self.scrape_names = option.get(
@@ -285,11 +196,12 @@ class config(object):
                                     'auth', True)
                         self.auto_profile_choice = option.get(
                             'auto_profile_choice', "")
-                        self.auto_scrape_names = option.get(
-                            'auto_scrape_names', False)
-                        self.auto_choice = option.get('auto_choice', "")
-                        self.auto_scrape_apis = option.get(
-                            'auto_scrape_apis', True)
+                        self.auto_model_choice = option.get(
+                            'auto_model_choice', False)
+                        self.auto_media_choice = option.get(
+                            'auto_media_choice', "")
+                        self.auto_api_choice = option.get(
+                            'auto_api_choice', True)
                         self.browser = browser(option.get(
                             'browser', {}))
                         self.jobs = jobs(option.get(
@@ -322,5 +234,6 @@ class config(object):
                             'blacklist_name', "")
                         self.webhook = option.get(
                             'webhook', True)
+        self.info = Info()
         self.settings = Settings(**settings)
         self.supported = Supported(**supported)

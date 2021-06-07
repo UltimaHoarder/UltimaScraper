@@ -3,8 +3,7 @@ import tests.main_test as main_test
 import os
 import time
 import traceback
-import logging
-
+import asyncio
 
 main_test.version_check()
 main_test.check_config()
@@ -25,34 +24,38 @@ if __name__ == "__main__":
     string, site_names = main_helper.module_chooser(domain, json_sites)
 
     # logging.basicConfig(level=logging.DEBUG, format="%(message)s")
-    while True:
-        try:
-            if domain:
-                if site_names:
-                    site_name = domain
+    async def main():
+        while True:
+            try:
+                if domain:
+                    if site_names:
+                        site_name = domain
+                    else:
+                        print(string)
+                        continue
                 else:
                     print(string)
-                    continue
-            else:
-                print(string)
-                x = input()
-                if x == "x":
-                    break
-                x = int(x)
-                site_name = site_names[x]
-            site_name_lower = site_name.lower()
-            api = main_datascraper.start_datascraper(json_config, site_name_lower)
-            if api:
-                api.close_pools()
-            if exit_on_completion:
-                print("Now exiting.")
-                exit(0)
-            elif not infinite_loop:
-                print("Input anything to continue")
+                    x = input()
+                    if x == "x":
+                        break
+                    x = int(x)
+                    site_name = site_names[x]
+                site_name_lower = site_name.lower()
+                api = await main_datascraper.start_datascraper(json_config, site_name_lower)
+                if api:
+                    api.close_pools()
+                if exit_on_completion:
+                    print("Now exiting.")
+                    exit(0)
+                elif not infinite_loop:
+                    print("Input anything to continue")
+                    input()
+                elif loop_timeout:
+                    print("Pausing scraper for " + loop_timeout + " seconds.")
+                    time.sleep(int(loop_timeout))
+            except Exception as e:
+                print(traceback.format_exc())
                 input()
-            elif loop_timeout:
-                print("Pausing scraper for " + loop_timeout + " seconds.")
-                time.sleep(int(loop_timeout))
-        except Exception as e:
-            print(traceback.format_exc())
-            input()
+
+
+    asyncio.run(main())

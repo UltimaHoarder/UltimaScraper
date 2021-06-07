@@ -3,7 +3,7 @@ from apis.onlyfans.classes.create_auth import create_auth
 import copy
 from enum import unique
 import os
-from typing import Dict
+from typing import Dict, MutableMapping, Union
 
 from requests.api import get
 from helpers import main_helper
@@ -15,7 +15,7 @@ global_version = 2
 
 
 class create_metadata(object):
-    def __init__(self, authed: create_auth = None, metadata: dict = {}, standard_format=False, api_type: str = "") -> None:
+    def __init__(self, authed: create_auth = None, metadata: Union[list,dict,MutableMapping] = {}, standard_format=False, api_type: str = "") -> None:
         self.version = global_version
         fixed_metadata = self.fix_metadata(metadata, standard_format, api_type)
         self.content = format_content(
@@ -367,6 +367,7 @@ class prepare_reformat(object):
         self.text = option.get('text', format_variables2.text)
         self.date = option.get('postedAt', format_variables2.date)
         self.price = option.get('price', 0)
+        self.archived = option.get('archived', False)
         self.date_format = option.get('date_format')
         self.maximum_length = 255
         self.text_length = option.get('text_length', self.maximum_length)

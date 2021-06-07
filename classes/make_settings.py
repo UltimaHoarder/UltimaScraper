@@ -1,11 +1,7 @@
 import copy
 from typing import List, Union
 from urllib.parse import urlparse
-from apis.onlyfans.onlyfans import auth_details
 import os
-
-import ujson
-from classes.prepare_metadata import format_types, prepare_reformat
 import uuid as uuid
 
 def fix(config={}):

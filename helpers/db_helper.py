@@ -6,6 +6,7 @@ from sqlalchemy.orm import scoped_session
 from alembic.config import Config
 from alembic import command
 from sqlalchemy.exc import IntegrityError
+from sqlalchemy.sql.functions import func
 from database.databases.stories import stories
 from database.databases.posts import posts
 from database.databases.messages import messages
@@ -37,7 +38,7 @@ def run_revisions(alembic_directory: str, database_path: str = ""):
     x = command.revision(alembic_cfg, autogenerate=True, message="content")
 
 
-def run_migrations(alembic_directory: str, database_path: str, api) -> None:
+def run_migrations(alembic_directory: str, database_path: str) -> None:
     ini_path = os.path.join(alembic_directory, "alembic.ini")
     script_location = os.path.join(alembic_directory, "alembic")
     full_database_path = f'sqlite:///{database_path}'
@@ -89,3 +90,8 @@ def get_or_create(session: Session, model, defaults=None, fbkwargs={}):
             return instance, False
         else:
             return instance, True
+            
+def get_count(q):
+    count_q = q.statement.with_only_columns([func.count()]).order_by(None)
+    count = q.session.execute(count_q).scalar()
+    return count

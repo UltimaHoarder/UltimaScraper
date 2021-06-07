@@ -1,35 +1,38 @@
-from apis.onlyfans.classes import create_user
+from database.models.media_table import media_table
+from sqlalchemy.orm.session import Session
+from apis.onlyfans.classes.extras import content_types
+import copy
 import json
-from apis.onlyfans import onlyfans as OnlyFans
 import math
+import os
+import platform
+import random
+import re
+import shutil
+import string
+import traceback
+from datetime import datetime
+from itertools import chain, groupby, zip_longest
+from multiprocessing.dummy import Pool as ThreadPool
 from types import SimpleNamespace
 from typing import Any, Optional, Tuple, Union
 
-from sqlalchemy import inspect
-from sqlalchemy.orm import declarative_base
-from classes.prepare_metadata import format_variables
-import copy
-import os
-import platform
-import re
-from datetime import datetime
-from itertools import chain, zip_longest, groupby
-import psutil
-import shutil
-from multiprocessing.dummy import Pool as ThreadPool
-import ujson
-from tqdm import tqdm
-import string
-import random
-
-import requests
-from bs4 import BeautifulSoup
-
 import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
-from mergedeep import merge, Strategy
+import psutil
+import requests
+import ujson
+from apis.onlyfans import onlyfans as OnlyFans
+from apis.onlyfans.classes import create_user
+from bs4 import BeautifulSoup
+from classes.prepare_metadata import format_variables, prepare_reformat
+from mergedeep import Strategy, merge
+from sqlalchemy import inspect
+from sqlalchemy.orm import declarative_base
+from tqdm import tqdm
+
 import helpers.db_helper as db_helper
-import traceback
+
 json_global_settings = None
 min_drive_space = 0
 webhooks = None
@@ -58,7 +61,7 @@ def rename_duplicates(seen, filename):
     else:
         count = 1
         while filename_lower in seen:
-            filename = filename+" ("+str(count)+")"
+            filename = filename + " (" + str(count) + ")"
             filename_lower = filename.lower()
             count += 1
         seen.add(filename_lower)
@@ -67,7 +70,7 @@ def rename_duplicates(seen, filename):
 
 def parse_links(site_name, input_link):
     if site_name in {"onlyfans", "starsavn"}:
-        username = input_link.rsplit('/', 1)[-1]
+        username = input_link.rsplit("/", 1)[-1]
         return username
 
     if site_name in {"patreon", "fourchan", "bbwchan"}:
@@ -85,15 +88,13 @@ def parse_links(site_name, input_link):
 def clean_text(string, remove_spaces=False):
     matches = ["\n", "<br>"]
     for m in matches:
-        string = string.replace(
-            m, " ").strip()
-    string = ' '.join(string.split())
+        string = string.replace(m, " ").strip()
+    string = " ".join(string.split())
     string = BeautifulSoup(string, "lxml").get_text()
     SAFE_PTN = r"[|\^&+\-%*/=!:\"?><]"
-    string = re.sub(SAFE_PTN, ' ',  string.strip()
-                    ).strip()
+    string = re.sub(SAFE_PTN, " ", string.strip()).strip()
     if remove_spaces:
-        string = string.replace(' ', '_')
+        string = string.replace(" ", "_")
     return string
 
 
@@ -112,6 +113,7 @@ def format_image(filepath, timestamp):
             try:
                 if os_name == "Windows":
                     from win32_setctime import setctime
+
                     setctime(filepath, timestamp)
                     # print(f"Updated Creation Time {filepath}")
                 os.utime(filepath, (timestamp, timestamp))
@@ -132,7 +134,7 @@ def filter_metadata(datas):
 def import_archive(archive_path) -> Any:
     metadata = {}
     if os.path.exists(archive_path) and os.path.getsize(archive_path):
-        with open(archive_path, 'r', encoding='utf-8') as outfile:
+        with open(archive_path, "r", encoding="utf-8") as outfile:
             while not metadata:
                 try:
                     metadata = ujson.load(outfile)
@@ -155,7 +157,7 @@ def legacy_database_fixer(database_path, database, database_name, database_exist
     if database_exists:
         Session, engine = db_helper.create_database_session(database_path)
         database_session = Session()
-        result = inspect(engine).has_table('alembic_version')
+        result = inspect(engine).has_table("alembic_version")
         if not result:
             if not pre_alembic_database_exists:
                 os.rename(old_database_path, pre_alembic_path)
@@ -200,9 +202,79 @@ def legacy_database_fixer(database_path, database, database_name, database_exist
             datas.append(new_item)
         print
         database_session.close()
-        x = export_sqlite(old_database_path, datas,
-                          database_name, legacy_fixer=True)
+        x = export_sqlite(old_database_path, datas, database_name, legacy_fixer=True)
     print
+
+
+def fix_sqlite(
+    profile_directory,
+    download_directory,
+    metadata_directory,
+    format_directories,
+    site_name,
+    username,
+    metadata_directory_format,
+):
+    items = content_types().__dict__.items()
+    final_metadatas = []
+    for api_type, value in items:
+        mandatory_directories = {}
+        mandatory_directories["profile_directory"] = profile_directory
+        mandatory_directories["download_directory"] = download_directory
+        mandatory_directories["metadata_directory"] = metadata_directory
+        formatted_directories = format_directories(
+            mandatory_directories,
+            site_name,
+            username,
+            metadata_directory_format,
+            "",
+            api_type,
+        )
+        final_metadata_directory = formatted_directories["metadata_directory"]
+        if all(final_metadata_directory != x for x in final_metadatas):
+            final_metadatas.append(final_metadata_directory)
+        print
+    print
+    for final_metadata in final_metadatas:
+        archived_database_path = os.path.join(final_metadata, "Archived.db")
+        if os.path.exists(archived_database_path):
+            Session2, engine = db_helper.create_database_session(archived_database_path)
+            database_session: Session = Session2()
+            cwd = os.getcwd()
+            for api_type, value in items:
+                database_path = os.path.join(final_metadata, f"{api_type}.db")
+                database_name = api_type.lower()
+                alembic_location = os.path.join(
+                    cwd, "database", "databases", database_name
+                )
+                result = inspect(engine).has_table(database_name)
+                if result:
+                    db_helper.run_migrations(alembic_location, archived_database_path)
+                    db_helper.run_migrations(alembic_location, database_path)
+                    Session3, engine2 = db_helper.create_database_session(database_path)
+                    db_collection = db_helper.database_collection()
+                    database_session2: Session = Session3()
+                    database = db_collection.chooser(database_name)
+                    api_table = database.api_table
+                    archived_result = database_session.query(api_table).all()
+                    for item in archived_result:
+                        result2 = (
+                            database_session2.query(api_table)
+                            .filter(api_table.post_id == item.post_id)
+                            .first()
+                        )
+                        if not result2:
+                            item2 = item.__dict__
+                            item2.pop("id")
+                            item2.pop("_sa_instance_state")
+                            item = api_table(**item2)
+                            item.archived = True
+                            database_session2.add(item)
+                    database_session2.commit()
+                    database_session2.close()
+            database_session.commit()
+            database_session.close()
+            os.remove(archived_database_path)
 
 
 def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None):
@@ -215,8 +287,7 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None
     database_name = database_name.lower()
     db_collection = db_helper.database_collection()
     database = db_collection.chooser(database_name)
-    alembic_location = os.path.join(
-        cwd, "database", "databases", database_name)
+    alembic_location = os.path.join(cwd, "database", "databases", database_name)
     database_exists = os.path.exists(database_path)
     if database_exists:
         if os.path.getsize(database_path) == 0:
@@ -224,15 +295,14 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None
             database_exists = False
     if not legacy_fixer:
         x = legacy_database_fixer(
-            database_path, database, database_name, database_exists)
-    db_helper.run_migrations(alembic_location, database_path, api)
+            database_path, database, database_name, database_exists
+        )
+    db_helper.run_migrations(alembic_location, database_path)
     print
     Session, engine = db_helper.create_database_session(database_path)
     database_session = Session()
     api_table = database.api_table
     media_table = database.media_table
-    # api_table = db_helper.api_table()
-    # media_table = db_helper.media_table()
 
     for post in datas:
         post_id = post["post_id"]
@@ -240,8 +310,7 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None
         date_object = None
         if postedAt:
             if not isinstance(postedAt, datetime):
-                date_object = datetime.strptime(
-                    postedAt, "%d-%m-%Y %H:%M:%S")
+                date_object = datetime.strptime(postedAt, "%d-%m-%Y %H:%M:%S")
             else:
                 date_object = postedAt
         result = database_session.query(api_table)
@@ -254,6 +323,7 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None
             post["price"] = 0
         post_db.price = post["price"]
         post_db.paid = post["paid"]
+        post_db.archived = post["archived"]
         if date_object:
             post_db.created_at = date_object
         database_session.add(post_db)
@@ -265,7 +335,8 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None
             media_db = result.filter_by(media_id=media_id).first()
             if not media_db:
                 media_db = result.filter_by(
-                    filename=media["filename"], created_at=date_object).first()
+                    filename=media["filename"], created_at=date_object
+                ).first()
                 if not media_db:
                     media_db = media_table()
             if legacy_fixer:
@@ -298,7 +369,7 @@ def format_paths(j_directories, site_name):
     return paths
 
 
-def reformat(prepared_format, unformatted):
+def reformat(prepared_format: prepare_reformat, unformatted):
     post_id = prepared_format.post_id
     media_id = prepared_format.media_id
     date = prepared_format.date
@@ -312,8 +383,7 @@ def reformat(prepared_format, unformatted):
     if type(date) is str:
         format_variables2 = format_variables()
         if date != format_variables2.date and date != "":
-            date = datetime.strptime(
-                date, "%d-%m-%Y %H:%M:%S")
+            date = datetime.strptime(date, "%d-%m-%Y %H:%M:%S")
             date = date.strftime(prepared_format.date_format)
     else:
         if date != None:
@@ -329,8 +399,7 @@ def reformat(prepared_format, unformatted):
                 value = "Paid"
     directory = prepared_format.directory
     path = unformatted.replace("{site_name}", prepared_format.site_name)
-    path = path.replace(
-        "{first_letter}", prepared_format.username[0].capitalize())
+    path = path.replace("{first_letter}", prepared_format.username[0].capitalize())
     path = path.replace("{post_id}", post_id)
     path = path.replace("{media_id}", media_id)
     path = path.replace("{username}", prepared_format.username)
@@ -342,18 +411,18 @@ def reformat(prepared_format, unformatted):
     path = path.replace("{date}", date)
     directory_count = len(directory)
     path_count = len(path)
-    maximum_length = maximum_length - (directory_count+path_count-extra_count)
+    maximum_length = maximum_length - (directory_count + path_count - extra_count)
     text_length = text_length if text_length < maximum_length else maximum_length
     if has_text:
-       # https://stackoverflow.com/a/43848928
+        # https://stackoverflow.com/a/43848928
         def utf8_lead_byte(b):
-            '''A UTF-8 intermediate byte starts with the bits 10xxxxxx.'''
+            """A UTF-8 intermediate byte starts with the bits 10xxxxxx."""
             return (b & 0xC0) != 0x80
 
         def utf8_byte_truncate(text, max_bytes):
-            '''If text[max_bytes] is not a lead byte, back up until a lead byte is
-            found and truncate before that character.'''
-            utf8 = text.encode('utf8')
+            """If text[max_bytes] is not a lead byte, back up until a lead byte is
+            found and truncate before that character."""
+            utf8 = text.encode("utf8")
             if len(utf8) <= max_bytes:
                 return utf8
             i = max_bytes
@@ -361,7 +430,7 @@ def reformat(prepared_format, unformatted):
                 i -= 1
             return utf8[:i]
 
-        filtered_text = utf8_byte_truncate(text, text_length).decode('utf8')
+        filtered_text = utf8_byte_truncate(text, text_length).decode("utf8")
         path = path.replace("{text}", filtered_text)
     else:
         path = path.replace("{text}", "")
@@ -388,7 +457,9 @@ def get_directory(directories: list[str], extra_path):
     return directory
 
 
-def check_space(download_paths, min_size=min_drive_space, priority="download", create_directory=True):
+def check_space(
+    download_paths, min_size=min_drive_space, priority="download", create_directory=True
+):
     root = ""
     while not root:
         paths = []
@@ -429,9 +500,10 @@ def find_model_directory(username, directories) -> Tuple[str, bool]:
 def are_long_paths_enabled():
     if os_name == "Windows":
         from ctypes import WinDLL, c_ubyte
-        ntdll = WinDLL('ntdll')
 
-        if hasattr(ntdll, 'RtlAreLongPathsEnabled'):
+        ntdll = WinDLL("ntdll")
+
+        if hasattr(ntdll, "RtlAreLongPathsEnabled"):
 
             ntdll.RtlAreLongPathsEnabled.restype = c_ubyte
             ntdll.RtlAreLongPathsEnabled.argtypes = ()
@@ -452,8 +524,7 @@ def check_for_dupe_file(download_path, content_length):
 
 
 class download_session(tqdm):
-    def start(self, unit='B', unit_scale=True,
-              miniters=1, tsize=0):
+    def start(self, unit="B", unit_scale=True, miniters=1, tsize=0):
         self.unit = unit
         self.unit_scale = unit_scale
         self.miniters = miniters
@@ -464,41 +535,14 @@ class download_session(tqdm):
             self.total += tsize
 
     def update_total_size(self, tsize):
-        tsize = int(tsize)
-        self.total += tsize
+        if tsize:
+            tsize = int(tsize)
+            self.total += tsize
 
     def update_to(self, b=1, bsize=1, tsize=None):
         x = bsize
         print
         self.update(b)
-
-
-def downloader(r, download_path, d_session, count=0):
-    delete = False
-    try:
-        with open(download_path, 'wb') as f:
-            delete = True
-            for chunk in r.iter_content(chunk_size=4096):
-                if chunk:  # filter out keep-alive new chunks
-                    size = f.write(chunk)
-                    d_session.update(size)
-    except (ConnectionResetError) as e:
-        if delete:
-            os.unlink(download_path)
-        return
-    except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError) as e:
-        return
-    except Exception as e:
-        if delete:
-            deleted = None
-            while not deleted:
-                try:
-                    os.unlink(download_path)
-                    deleted = True
-                except PermissionError as e2:
-                    print(e2)
-        return
-    return True
 
 
 def get_config(config_path):
@@ -509,8 +553,9 @@ def get_config(config_path):
     json_config2 = copy.deepcopy(json_config)
     json_config = make_settings.fix(json_config)
     file_name = os.path.basename(config_path)
-    json_config = ujson.loads(json.dumps(make_settings.config(
-        **json_config), default=lambda o: o.__dict__))
+    json_config = ujson.loads(
+        json.dumps(make_settings.config(**json_config), default=lambda o: o.__dict__)
+    )
     updated = False
     if json_config != json_config2:
         updated = True
@@ -518,14 +563,15 @@ def get_config(config_path):
         export_data(json_config, filepath)
     if not json_config:
         input(
-            f"The .settings\\{file_name} file has been created. Fill in whatever you need to fill in and then press enter when done.\n")
+            f"The .settings\\{file_name} file has been created. Fill in whatever you need to fill in and then press enter when done.\n"
+        )
         json_config = ujson.load(open(config_path))
     return json_config, updated
 
 
 def choose_auth(array):
     names = []
-    array = [{"auth_count": -1, "username": "All"}]+array
+    array = [{"auth_count": -1, "username": "All"}] + array
     string = ""
     seperator = " | "
     name_count = len(array)
@@ -534,14 +580,14 @@ def choose_auth(array):
         count = 0
         for x in array:
             name = x["username"]
-            string += str(count)+" = "+name
+            string += str(count) + " = " + name
             names.append(x)
-            if count+1 != name_count:
+            if count + 1 != name_count:
                 string += seperator
 
             count += 1
 
-    print("Auth Usernames: "+string)
+    print("Auth Usernames: " + string)
     value = int(input().strip())
     if value:
         names = [names[value]]
@@ -550,7 +596,9 @@ def choose_auth(array):
     return names
 
 
-def choose_option(subscription_list, auto_scrape: Union[str, bool], use_default_message=False):
+def choose_option(
+    subscription_list, auto_scrape: Union[str, bool], use_default_message=False
+):
     names = subscription_list[0]
     default_message = ""
     seperator = " | "
@@ -562,13 +610,11 @@ def choose_option(subscription_list, auto_scrape: Union[str, bool], use_default_
             if auto_scrape:
                 values = [x[1] for x in names]
             else:
-                print(
-                    f"{default_message}{subscription_list[1]}")
+                print(f"{default_message}{subscription_list[1]}")
                 values = input().strip().split(",")
         else:
             if not auto_scrape:
-                print(
-                    f"{default_message}{subscription_list[1]}")
+                print(f"{default_message}{subscription_list[1]}")
                 values = input().strip().split(",")
             else:
                 values = auto_scrape
@@ -589,7 +635,7 @@ def choose_option(subscription_list, auto_scrape: Union[str, bool], use_default_
     return new_names
 
 
-def process_profiles(json_settings, original_sessions, site_name, api: Union[OnlyFans.start]):
+def process_profiles(json_settings, proxies, site_name, api: Union[OnlyFans.start]):
     profile_directories = json_settings["profile_directories"]
     for profile_directory in profile_directories:
         x = os.path.join(profile_directory, site_name)
@@ -603,32 +649,29 @@ def process_profiles(json_settings, original_sessions, site_name, api: Union[Onl
             temp_users.append("default")
         for user in temp_users:
             user_profile = os.path.join(x, user)
-            user_auth_filepath = os.path.join(
-                user_profile, "auth.json")
+            user_auth_filepath = os.path.join(user_profile, "auth.json")
             datas = {}
             if os.path.exists(user_auth_filepath):
-                temp_json_auth = ujson.load(
-                    open(user_auth_filepath))
+                temp_json_auth = ujson.load(open(user_auth_filepath))
                 json_auth = temp_json_auth["auth"]
                 if not json_auth.get("active", None):
                     continue
                 json_auth["username"] = user
-                auth = api.add_auth(
-                    json_auth)
-                auth.session_manager.add_sessions(original_sessions)
+                auth = api.add_auth(json_auth)
+                auth.session_manager.proxies = proxies
                 auth.profile_directory = user_profile
                 datas["auth"] = auth.auth_details.__dict__
             if datas:
-                export_data(
-                    datas, user_auth_filepath)
+                export_data(datas, user_auth_filepath)
             print
         print
     return api
 
 
-def process_names(module, subscription_list, auto_scrape, api, json_config, site_name_lower, site_name) -> list:
-    names = choose_option(
-        subscription_list, auto_scrape, True)
+async def process_names(
+    module, subscription_list, auto_scrape, api, json_config, site_name_lower, site_name
+) -> list:
+    names = choose_option(subscription_list, auto_scrape, True)
     if not names:
         print("There's nothing to scrape.")
     for name in names:
@@ -638,24 +681,22 @@ def process_names(module, subscription_list, auto_scrape, api, json_config, site
         name = name[-1]
         assign_vars(json_config)
         username = parse_links(site_name_lower, name)
-        result = module.start_datascraper(
-            authed, username, site_name)
+        result = await module.start_datascraper(authed, username, site_name)
     return names
 
 
-def process_downloads(api, module):
+async def process_downloads(api, module):
     for auth in api.auths:
-        subscriptions = auth.get_subscriptions(refresh=False)
+        subscriptions = await auth.get_subscriptions(refresh=False)
         for subscription in subscriptions:
-            download_info = subscription.download_info
-            if download_info:
-                module.download_media(auth, subscription)
-                if json_global_settings["helpers"]["delete_empty_directories"]:
-                    delete_empty_directories(
-                        download_info.get("base_directory", ""))
+            await module.prepare_downloads(subscription)
+            if json_global_settings["helpers"]["delete_empty_directories"]:
+                delete_empty_directories(
+                    subscription.download_info.get("base_directory", "")
+                )
 
 
-def process_webhooks(api: Union[OnlyFans.start], category, category2):
+async def process_webhooks(api: Union[OnlyFans.start], category, category2):
     global_webhooks = webhooks["global_webhooks"]
     global_status = webhooks["global_status"]
     webhook = webhooks[category]
@@ -671,8 +712,9 @@ def process_webhooks(api: Union[OnlyFans.start], category, category2):
         webhook_links = webhook_state["webhooks"]
     if webhook_status:
         for auth in api.auths:
-            send_webhook(auth, webhook_hide_sensitive_info,
-                         webhook_links, category, category2)
+            await send_webhook(
+                auth, webhook_hide_sensitive_info, webhook_links, category, category2
+            )
         print
     print
 
@@ -684,24 +726,30 @@ def is_me(user_api):
         return False
 
 
-def export_data(metadata: Union[list, dict], path: str, encoding: Optional[str] = "utf-8"):
+async def write_data(download_path:str, data:bytes):
+    with open(download_path, "wb") as f:
+        f.write(data)
+
+
+def export_data(
+    metadata: Union[list, dict], path: str, encoding: Optional[str] = "utf-8"
+):
     directory = os.path.dirname(path)
     os.makedirs(directory, exist_ok=True)
-    with open(path, 'w', encoding=encoding) as outfile:
+    with open(path, "w", encoding=encoding) as outfile:
         ujson.dump(metadata, outfile, indent=2, escape_forward_slashes=False)
 
 
 def grouper(n, iterable, fillvalue: Optional[Union[str, int]] = None):
     args = [iter(iterable)] * n
-    grouped = list(zip_longest(fillvalue=fillvalue, *args))
+    final_grouped = list(zip_longest(fillvalue=fillvalue, *args))
     if not fillvalue:
-        grouped = [x for x in grouped if x]
-    return grouped
-
-
-def create_link_group(max_threads):
-    x = range
-    print
+        grouped = []
+        for group in final_grouped:
+            group = [x for x in group if x]
+            grouped.append(group)
+        final_grouped = grouped
+    return final_grouped
 
 
 def remove_mandatory_files(files, keep=[]):
@@ -736,29 +784,31 @@ def metadata_fixer(directory):
         shutil.move(archive_file, new)
 
 
-def ordinal(n): return "%d%s" % (
-    n, "tsnrhtdd"[(n/10 % 10 != 1)*(n % 10 < 4)*n % 10::4])
+def ordinal(n):
+    return "%d%s" % (n, "tsnrhtdd"[(n / 10 % 10 != 1) * (n % 10 < 4) * n % 10 :: 4])
 
 
 def id_generator(size=6, chars=string.ascii_uppercase + string.digits):
-    return ''.join(random.choice(chars) for _ in range(size))
+    return "".join(random.choice(chars) for _ in range(size))
 
 
 def humansize(nbytes):
     i = 0
-    suffixes = ['B', 'KB', 'MB', 'GB', 'TB', 'PB']
-    while nbytes >= 1024 and i < len(suffixes)-1:
-        nbytes /= 1024.
+    suffixes = ["B", "KB", "MB", "GB", "TB", "PB"]
+    while nbytes >= 1024 and i < len(suffixes) - 1:
+        nbytes /= 1024.0
         i += 1
-    f = ('%.2f' % nbytes).rstrip('0').rstrip('.')
-    return '%s %s' % (f, suffixes[i])
+    f = ("%.2f" % nbytes).rstrip("0").rstrip(".")
+    return "%s %s" % (f, suffixes[i])
 
 
 def byteToGigaByte(n):
-    return (n / math.pow(10, 9))
+    return n / math.pow(10, 9)
 
 
-def send_webhook(item, webhook_hide_sensitive_info, webhook_links, category, category2: str):
+async def send_webhook(
+    item, webhook_hide_sensitive_info, webhook_links, category, category2: str
+):
     if category == "auth_webhook":
         for webhook_link in webhook_links:
             auth = item
@@ -770,11 +820,10 @@ def send_webhook(item, webhook_hide_sensitive_info, webhook_links, category, cat
             embed.title = f"Auth {category2.capitalize()}"
             embed.add_field("username", username)
             message.embeds.append(embed)
-            message = ujson.loads(json.dumps(
-                message, default=lambda o: o.__dict__))
+            message = ujson.loads(json.dumps(message, default=lambda o: o.__dict__))
             x = requests.post(webhook_link, json=message)
     if category == "download_webhook":
-        subscriptions:list[create_user] = item.get_subscriptions(refresh=False)
+        subscriptions: list[create_user] = await item.get_subscriptions(refresh=False)
         for subscription in subscriptions:
             download_info = subscription.download_info
             if download_info:
@@ -787,14 +836,15 @@ def send_webhook(item, webhook_hide_sensitive_info, webhook_links, category, cat
                     embed.add_field("link", subscription.get_link())
                     embed.image.url = subscription.avatar
                     message.embeds.append(embed)
-                    message = ujson.loads(json.dumps(
-                        message, default=lambda o: o.__dict__))
+                    message = ujson.loads(
+                        json.dumps(message, default=lambda o: o.__dict__)
+                    )
                     x = requests.post(webhook_link, json=message)
                     print
 
 
 def find_between(s, start, end):
-    format = f'{start}(.+?){end}'
+    format = f"{start}(.+?){end}"
     x = re.search(format, s)
     if x:
         x = x.group(1)
@@ -815,6 +865,7 @@ def delete_empty_directories(directory):
                     content_count = len(contents)
                     if content_count == 1 and "desktop.ini" in contents:
                         shutil.rmtree(full_path, ignore_errors=True)
+
     x = start(directory)
     if os.path.exists(directory):
         if not os.listdir(directory):
@@ -843,9 +894,9 @@ def module_chooser(domain, json_sites):
                 continue
         elif x not in wl:
             continue
-        string += str(count)+" = "+x
+        string += str(count) + " = " + x
         site_names.append(x)
-        if count+1 != site_count:
+        if count + 1 != site_count:
             string += seperator
 
         count += 1
@@ -853,3 +904,29 @@ def module_chooser(domain, json_sites):
         string = f"{domain} not supported"
         site_names = []
     return string, site_names
+
+
+def link_picker(media,video_quality):
+    link = ""
+    if "source" in media:
+        quality_key = "source"
+        source = media[quality_key]
+        link = source[quality_key]
+        if link:
+            if media["type"] == "video":
+                qualities = media["videoSources"]
+                qualities = dict(sorted(qualities.items(), reverse=False))
+                qualities[quality_key] = source[quality_key]
+                for quality, quality_link in qualities.items():
+                    video_quality = video_quality.removesuffix("p")
+                    if quality == video_quality:
+                        if quality_link:
+                            link = quality_link
+                            break
+                        print
+                    print
+                print
+    if "src" in media:
+        link = media["src"]
+    return link
+                

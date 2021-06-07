@@ -15,10 +15,7 @@ def fix_directories(api,posts, all_files, database_session: scoped_session, fold
 
     def fix_directories(post: api_table, media_db: list[media_table]):
         delete_rows = []
-        final_type = ""
-        if parent_type:
-            final_type = f"{api_type}{os.path.sep}{parent_type}"
-        final_type = final_type if final_type else api_type
+        final_api_type = os.path.join("Archived",api_type) if post.archived else api_type
         post_id = post.post_id
         media_db = [x for x in media_db if x.post_id == post_id]
         for media in media_db:
@@ -42,7 +39,7 @@ def fix_directories(api,posts, all_files, database_session: scoped_session, fold
             option["post_id"] = post_id
             option["media_id"] = media_id
             option["username"] = username
-            option["api_type"] = final_type if parent_type else api_type
+            option["api_type"] = final_api_type
             option["media_type"] = media.media_type
             option["filename"] = original_filename
             option["ext"] = ext
@@ -53,6 +50,7 @@ def fix_directories(api,posts, all_files, database_session: scoped_session, fold
             option["text_length"] = text_length
             option["directory"] = download_path
             option["preview"] = media.preview
+            option["archived"] = post.archived
             prepared_format = prepare_reformat(option)
             file_directory = main_helper.reformat(
                 prepared_format, file_directory_format)
@@ -173,5 +171,5 @@ if __name__ == "__main__":
     exit()
 else:
     import helpers.main_helper as main_helper
-    from apis.api_helper import multiprocessing
     from classes.prepare_metadata import format_types, prepare_reformat
+

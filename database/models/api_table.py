@@ -12,6 +12,7 @@ class api_table():
     text = sqlalchemy.Column(sqlalchemy.String)
     price = cast(int,sqlalchemy.Column(sqlalchemy.Integer))
     paid = sqlalchemy.Column(sqlalchemy.Integer)
+    archived = cast(bool,sqlalchemy.Column(sqlalchemy.Boolean,default=False))
     created_at = cast(datetime,sqlalchemy.Column(sqlalchemy.TIMESTAMP))
 
     def legacy(self,Base,table_name):

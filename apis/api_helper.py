@@ -200,7 +200,6 @@ class session_manager:
             except ClientConnectorError as e:
                 return
             except ClientPayloadError as e:
-                print(e)
                 continue
 
     async def async_requests(self, items: list[str], json_format=True):

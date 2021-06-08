@@ -68,6 +68,7 @@ class endpoint_links(object):
         self.archived_stories = f"https://onlyfans.com/api2/v2/stories/archive/?limit=100&offset=0&order=publish_date_desc"
         self.paid_api = f"https://onlyfans.com/api2/v2/posts/paid?{global_limit}&offset={global_offset}"
         self.pay = f"https://onlyfans.com/api2/v2/payments/pay"
+        self.subscribe = f"https://onlyfans.com/api2/v2/users/{identifier}/subscribe"
         self.like = f"https://onlyfans.com/api2/v2/{identifier}/{identifier2}/like"
         self.favorite = f"https://onlyfans.com/api2/v2/{identifier}/{identifier2}/favorites/{identifier3}"
         self.transactions = (

@@ -14,6 +14,7 @@ from typing import Any, Optional
 from urllib.parse import urlparse
 
 import aiohttp
+from aiohttp.client_exceptions import ClientConnectorError, ClientPayloadError
 import helpers.main_helper as main_helper
 import python_socks
 import requests
@@ -139,7 +140,7 @@ class session_manager:
         method="GET",
         stream=False,
         json_format=True,
-        data={},
+        payload={},
         progress_bar=None,
         sleep=True,
         timeout=20,
@@ -168,33 +169,39 @@ class session_manager:
             request_method = session.post
         elif method == "DELETE":
             request_method = session.delete
-        try:
-            async with request_method(link, headers=headers) as response:
-                if method == "HEAD":
-                    result = response
-                else:
-                    if json_format and not stream:
-                        result = await response.json()
-                    elif stream and not json_format:
-                        buffer = []
-                        if response.status == 200:
-                            async for data in response.content.iter_chunked(4096):
-                                buffer.append(data)
-                                length = len(data)
-                                progress_bar.update(length)
-                        else:
-                            if response.content_length:
-                                progress_bar.update_total_size(-response.content_length)
-                        final_buffer = b"".join(buffer)
-                        result = [response, final_buffer]
-                        print
+        while True:
+            try:
+                async with request_method(link, headers=headers,data=payload) as response:
+                    if method == "HEAD":
+                        result = response
                     else:
-                        result = await response.read()
-                if custom_session:
-                    await session.close()
-                return result
-        except aiohttp.ClientConnectorError as e:
-            return
+                        if json_format and not stream:
+                            result = await response.json()
+                        elif stream and not json_format:
+                            buffer = []
+                            if response.status == 200:
+                                async for data in response.content.iter_chunked(4096):
+                                    buffer.append(data)
+                                    length = len(data)
+                                    progress_bar.update(length)
+                            else:
+                                if response.content_length:
+                                    progress_bar.update_total_size(
+                                        -response.content_length
+                                    )
+                            final_buffer = b"".join(buffer)
+                            result = [response, final_buffer]
+                            print
+                        else:
+                            result = await response.read()
+                    if custom_session:
+                        await session.close()
+                    return result
+            except ClientConnectorError as e:
+                return
+            except ClientPayloadError as e:
+                print(e)
+                continue
 
     async def async_requests(self, items: list[str], json_format=True):
         tasks = []

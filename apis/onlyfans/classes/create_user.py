@@ -63,6 +63,7 @@ class create_user:
         self.videosCount: int = option.get("videosCount")
         self.audiosCount: int = option.get("audiosCount")
         self.mediasCount: int = option.get("mediasCount")
+        self.promotions:list = option.get("promotions")
         self.lastSeen: Any = option.get("lastSeen")
         self.favoritesCount: int = option.get("favoritesCount")
         self.favoritedCount: int = option.get("favoritedCount")
@@ -451,16 +452,27 @@ class create_user:
         results = await self.session_manager.json_request(link, method="DELETE")
         return results
 
-    def buy_subscription(self):
+    async def buy_subscription(self):
+        """
+        This function will subscribe to a model. If the model has a promotion available, it will use it.
+        """
+        subscription_price = self.subscribePrice
+        if self.promotions:
+            for promotion in self.promotions:
+                promotion_price = promotion["price"]
+                if promotion_price < subscription_price:
+                    subscription_price = promotion_price
         x = {
             "paymentType": "subscribe",
             "userId": self.id,
             "subscribeSource": "profile",
-            "amount": self.subscribePrice,
+            "amount": subscription_price,
             "token": "",
             "unavailablePaymentGates": [],
         }
-        print
+        link = endpoint_links().pay
+        result = await self.session_manager.json_request(link,method="POST",payload=x)
+        return result
 
     def set_scraped(self, name, scraped):
         setattr(self.scraped, name, scraped)

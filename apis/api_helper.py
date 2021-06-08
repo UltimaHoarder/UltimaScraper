@@ -14,11 +14,12 @@ from typing import Any, Optional
 from urllib.parse import urlparse
 
 import aiohttp
-from aiohttp.client_exceptions import ClientConnectorError, ClientPayloadError
 import helpers.main_helper as main_helper
 import python_socks
 import requests
 from aiohttp import ClientSession
+from aiohttp.client_exceptions import (ClientConnectorError, ClientOSError,
+                                       ClientPayloadError, ContentTypeError)
 from aiohttp.client_reqrep import ClientResponse
 from aiohttp_socks import ChainProxyConnector, ProxyConnector, ProxyType
 from database.models.media_table import media_table
@@ -171,7 +172,9 @@ class session_manager:
             request_method = session.delete
         while True:
             try:
-                async with request_method(link, headers=headers,data=payload) as response:
+                async with request_method(
+                    link, headers=headers, data=payload
+                ) as response:
                     if method == "HEAD":
                         result = response
                     else:
@@ -199,7 +202,7 @@ class session_manager:
                     return result
             except ClientConnectorError as e:
                 return
-            except ClientPayloadError as e:
+            except (ClientPayloadError, ContentTypeError, ClientOSError) as e:
                 continue
 
     async def async_requests(self, items: list[str], json_format=True):

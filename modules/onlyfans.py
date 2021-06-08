@@ -617,12 +617,15 @@ def process_legacy_metadata(
         delete_metadatas.append(legacy_archive_path)
     old_metadata_set_type = type(old_metadata_set)
     old_metadata_set2_type = type(old_metadata_set2)
+    delete_status = False
     if all(v == dict for v in [old_metadata_set_type,old_metadata_set2_type]):
         old_metadata_set = merge({}, *[old_metadata_set,old_metadata_set2], strategy=Strategy.ADDITIVE)
+        delete_status = True
     else:
         if isinstance(old_metadata_set,dict) and not old_metadata_set:
             old_metadata_set = []
             old_metadata_set.append(old_metadata_set2)
+            delete_status = True
     old_metadata_object = create_metadata(authed, old_metadata_set, api_type=api_type)
     if old_metadata_set:
         print("Merging new metadata with old metadata.")
@@ -638,7 +641,7 @@ def process_legacy_metadata(
             print
         print
     print
-    if old_metadata_set:
+    if old_metadata_set and delete_status:
         delete_metadatas.append(archive_path)
     final_set = []
     for item in old_metadata_set:

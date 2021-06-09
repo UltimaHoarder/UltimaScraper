@@ -19,7 +19,7 @@ import python_socks
 import requests
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import (ClientConnectorError, ClientOSError,
-                                       ClientPayloadError, ContentTypeError)
+                                       ClientPayloadError, ContentTypeError,ServerDisconnectedError)
 from aiohttp.client_reqrep import ClientResponse
 from aiohttp_socks import ChainProxyConnector, ProxyConnector, ProxyType
 from database.models.media_table import media_table
@@ -202,7 +202,7 @@ class session_manager:
                     return result
             except ClientConnectorError as e:
                 return
-            except (ClientPayloadError, ContentTypeError, ClientOSError) as e:
+            except (ClientPayloadError, ContentTypeError, ClientOSError,ServerDisconnectedError) as e:
                 continue
 
     async def async_requests(self, items: list[str], json_format=True):

@@ -311,7 +311,7 @@ class create_user:
         inside_loop=False,
     ):
         api_type = "messages"
-        if not self.subscriber:
+        if not self.subscriber or self.is_me():
             return []
         if not refresh:
             result = handle_refresh(self, api_type)

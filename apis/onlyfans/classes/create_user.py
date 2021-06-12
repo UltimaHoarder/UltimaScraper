@@ -3,8 +3,8 @@ from itertools import chain
 from typing import Any, Optional
 from urllib import parse
 
-import apis.onlyfans.classes.create_auth as create_auth
 from apis import api_helper
+from apis.onlyfans.classes import create_auth
 from apis.onlyfans.classes.create_highlight import create_highlight
 from apis.onlyfans.classes.create_message import create_message
 from apis.onlyfans.classes.create_post import create_post
@@ -14,7 +14,9 @@ from apis.onlyfans.classes.extras import (content_types, endpoint_links,
 
 
 class create_user:
-    def __init__(self, option={}) -> None:
+    def __init__(
+        self, option={}, subscriber: create_auth = None
+    ) -> None:
         self.view: str = option.get("view")
         self.avatar: Any = option.get("avatar")
         self.avatarThumbs: Any = option.get("avatarThumbs")
@@ -63,7 +65,7 @@ class create_user:
         self.videosCount: int = option.get("videosCount")
         self.audiosCount: int = option.get("audiosCount")
         self.mediasCount: int = option.get("mediasCount")
-        self.promotions:list = option.get("promotions")
+        self.promotions: list = option.get("promotions")
         self.lastSeen: Any = option.get("lastSeen")
         self.favoritesCount: int = option.get("favoritesCount")
         self.favoritedCount: int = option.get("favoritedCount")
@@ -204,10 +206,10 @@ class create_user:
         self.pinnedPostsCount: int = option.get("pinnedPostsCount")
         self.maxPinnedPostsCount: int = option.get("maxPinnedPostsCount")
         # Custom
-        self.subscriber: Optional[create_auth.create_auth] = None
+        self.subscriber = subscriber
         self.scraped = content_types()
         self.temp_scraped = content_types()
-        self.session_manager: api_helper.session_manager = option.get("session_manager")
+        self.session_manager = subscriber.session_manager
         self.download_info = {}
         self.__raw__ = option
 
@@ -234,7 +236,9 @@ class create_user:
                 identifier=self.id, global_limit=limit, global_offset=offset
             ).stories_api
         ]
-        results = await api_helper.scrape_endpoint_links(link, self.session_manager, api_type)
+        results = await api_helper.scrape_endpoint_links(
+            link, self.session_manager, api_type
+        )
         results = [create_story(x) for x in results]
         self.temp_scraped.Stories = results
         return results
@@ -288,7 +292,7 @@ class create_user:
         results = await api_helper.scrape_endpoint_links(
             links, self.session_manager, api_type
         )
-        final_results = [create_post(x, self.session_manager) for x in results]
+        final_results = [create_post(x, self) for x in results]
         self.temp_scraped.Posts = final_results
         return final_results
 
@@ -299,7 +303,7 @@ class create_user:
             identifier=identifier, global_limit=limit, global_offset=offset
         ).post_by_id
         result = await self.session_manager.json_request(link)
-        final_result = create_post(result)
+        final_result = create_post(result,self)
         return final_result
 
     async def get_messages(
@@ -344,7 +348,7 @@ class create_user:
             final_results.extend(results2)
         print
         if not inside_loop:
-            final_results = [create_message(x) for x in final_results if x]
+            final_results = [create_message(x,self) for x in final_results if x]
         else:
             final_results.sort(key=lambda x: x["fromUser"]["id"], reverse=True)
         self.temp_scraped.Messages = final_results
@@ -364,7 +368,7 @@ class create_user:
         results = await self.session_manager.json_request(link)
         results = [x for x in results["list"] if x["id"] == message_id]
         result = result = results[0] if results else {}
-        final_result = create_message(result)
+        final_result = create_message(result,self)
         return final_result
 
     async def get_archived_stories(self, refresh=True, limit=100, offset=0):
@@ -405,7 +409,7 @@ class create_user:
         results = await api_helper.scrape_endpoint_links(
             links, self.session_manager, api_type
         )
-        final_results = [create_post(x, self.session_manager) for x in results if x]
+        final_results = [create_post(x, self) for x in results if x]
         self.temp_scraped.Archived.Posts = final_results
         return final_results
 
@@ -423,7 +427,9 @@ class create_user:
         items.append(item)
         return items
 
-    async def search_chat(self, identifier="", text="", refresh=True, limit=10, offset=0):
+    async def search_chat(
+        self, identifier="", text="", refresh=True, limit=10, offset=0
+    ):
         if identifier:
             identifier = parse.urljoin(identifier, "messages")
         link = endpoint_links(
@@ -432,7 +438,9 @@ class create_user:
         results = await self.session_manager.json_request(link)
         return results
 
-    async def search_messages(self, identifier="", text="", refresh=True, limit=10, offset=0):
+    async def search_messages(
+        self, identifier="", text="", refresh=True, limit=10, offset=0
+    ):
         if identifier:
             identifier = parse.urljoin(identifier, "messages")
         text = parse.quote_plus(text)
@@ -471,7 +479,7 @@ class create_user:
             "unavailablePaymentGates": [],
         }
         link = endpoint_links().pay
-        result = await self.session_manager.json_request(link,method="POST",payload=x)
+        result = await self.session_manager.json_request(link, method="POST", payload=x)
         return result
 
     def set_scraped(self, name, scraped):

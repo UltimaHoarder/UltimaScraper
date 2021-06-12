@@ -12,6 +12,7 @@ from urllib.parse import urlparse
 
 import extras.OFLogin.start_ofl as oflogin
 import extras.OFRenamer.start as ofrenamer
+import helpers.db_helper as db_helper
 import helpers.main_helper as main_helper
 import requests
 from apis.onlyfans import onlyfans as OnlyFans
@@ -22,20 +23,14 @@ from apis.onlyfans.classes.create_story import create_story
 from apis.onlyfans.classes.create_user import create_user
 from apis.onlyfans.classes.extras import auth_details, media_types
 from apis.onlyfans.onlyfans import start
-from classes.prepare_metadata import create_metadata, format_content, prepare_reformat
+from classes.prepare_metadata import (create_metadata, format_content,
+                                      prepare_reformat)
 from helpers import db_helper
-from helpers.main_helper import (
-    choose_option,
-    download_session,
-    export_data,
-    export_sqlite,
-    fix_sqlite,
-    import_archive,
-)
+from helpers.main_helper import (choose_option, download_session, export_data,
+                                 export_sqlite, fix_sqlite, import_archive)
 from mergedeep import Strategy, merge
 from sqlalchemy.orm import declarative_base, session, sessionmaker
 from sqlalchemy.orm.scoping import scoped_session
-import helpers.db_helper as db_helper
 
 site_name = "OnlyFans"
 json_config = None
@@ -305,10 +300,7 @@ async def profile_scraper(
         directory2 = os.path.join(b, media_type)
         os.makedirs(directory2, exist_ok=True)
         download_path = os.path.join(directory2, media_link.split("/")[-2] + ".jpg")
-        response = await authed.session_manager.json_request(
-            media_link,
-            method="HEAD"
-        )
+        response = await authed.session_manager.json_request(media_link, method="HEAD")
         if overwrite_files:
             if os.path.isfile(download_path):
                 if os.path.getsize(download_path) == response.content_length:
@@ -346,7 +338,7 @@ async def paid_content_scraper(api: start, identifiers=[]):
                 check=True, identifier=author["id"]
             )
             if not subscription:
-                subscription = create_user(author)
+                subscription = paid_content.user
                 authed.subscriptions.append(subscription)
             subscription.subscriber = authed
             api_type = paid_content.responseType.capitalize() + "s"
@@ -618,11 +610,13 @@ def process_legacy_metadata(
     old_metadata_set_type = type(old_metadata_set)
     old_metadata_set2_type = type(old_metadata_set2)
     delete_status = False
-    if all(v == dict for v in [old_metadata_set_type,old_metadata_set2_type]):
-        old_metadata_set = merge({}, *[old_metadata_set,old_metadata_set2], strategy=Strategy.ADDITIVE)
+    if all(v == dict for v in [old_metadata_set_type, old_metadata_set2_type]):
+        old_metadata_set = merge(
+            {}, *[old_metadata_set, old_metadata_set2], strategy=Strategy.ADDITIVE
+        )
         delete_status = True
     else:
-        if isinstance(old_metadata_set,dict) and not old_metadata_set:
+        if isinstance(old_metadata_set, dict) and not old_metadata_set:
             old_metadata_set = []
             old_metadata_set.append(old_metadata_set2)
             delete_status = True
@@ -1127,7 +1121,7 @@ def media_scraper(
         for media in post_result.media:
             media_id = media["id"]
             preview_link = ""
-            link = main_helper.link_picker(media,json_settings["video_quality"])
+            link = main_helper.link_picker(media, json_settings["video_quality"])
             matches = ["us", "uk", "ca", "ca2", "de"]
 
             if not link:
@@ -1248,7 +1242,9 @@ async def prepare_downloads(subscription: create_user):
         database = db_collection.chooser(database_name)
         api_table = database.api_table
         media_table = database.media_table
-        settings = subscription.subscriber.extras["settings"]["supported"]["onlyfans"]["settings"]
+        settings = subscription.subscriber.extras["settings"]["supported"]["onlyfans"][
+            "settings"
+        ]
         overwrite_files = settings["overwrite_files"]
         if overwrite_files:
             download_list: Any = database_session.query(media_table).all()
@@ -1347,7 +1343,7 @@ def format_options(
         if "users" == choice_type:
             for auth in f_list:
                 if not isinstance(auth, create_auth):
-                    name = getattr(auth, "username", None)
+                    name = getattr(auth, "username", "")
                 else:
                     name = auth.auth_details.username
                 names.append([auth, name])

@@ -107,7 +107,7 @@ class create_auth:
                                 code = input("Enter 2FA Code\n")
                                 data = {"code": code, "rememberMe": True}
                                 r = await self.session_manager.json_request(
-                                    link, method="POST", data=data
+                                    link, method="POST", payload=data
                                 )
                                 if "error" in r:
                                     error.message = r["error"]["message"]
@@ -187,7 +187,7 @@ class create_auth:
         link = endpoint_links(identifier).users
         result = await self.session_manager.json_request(link)
         result["session_manager"] = self.session_manager
-        result = create_user(result) if "error" not in result else result
+        result = create_user(result,self) if "error" not in result else result
         return result
 
     async def get_lists_users(
@@ -254,7 +254,7 @@ class create_auth:
             temp_auth = await self.get_user(self.username)
             json_authed = json_authed | temp_auth.__dict__
 
-            subscription = create_user(json_authed)
+            subscription = create_user(json_authed,self)
             subscription.subscriber = self
             subscription.subscribedByData = {}
             new_date = datetime.now() + relativedelta(years=1)
@@ -287,7 +287,7 @@ class create_auth:
                             if "error" in subscription2:
                                 continue
                         subscription = subscription | subscription2.__dict__
-                    subscription = create_user(subscription)
+                    subscription = create_user(subscription,self)
                     subscription.session_manager = self.session_manager
                     subscription.subscriber = self
                     valid_subscriptions.append(subscription)
@@ -305,7 +305,7 @@ class create_auth:
                 result = await self.session_manager.json_request(link)
                 if "error" in result or not result["subscribedBy"]:
                     continue
-                subscription = create_user(result)
+                subscription = create_user(result,self)
                 subscription.session_manager = self.session_manager
                 subscription.subscriber = self
                 results.append([subscription])
@@ -434,16 +434,17 @@ class create_auth:
             final_results.extend(results2)
         if not inside_loop:
             temp = []
-            temp += [
-                create_message(x)
-                for x in final_results
-                if x["responseType"] == "message"
-            ]
-            temp += [
-                create_post(x, self.session_manager)
-                for x in final_results
-                if x["responseType"] == "post"
-            ]
+            for final_result in final_results:
+                content = None
+                if final_result["responseType"] == "message":
+                    user = create_user(final_result["fromUser"],self)
+                    content = create_message(final_result,user)
+                    print
+                elif final_result["responseType"] == "post":
+                    user = create_user(final_result["author"],self)
+                    content = create_post(final_result, user)
+                if content:
+                    temp.append(content)
             final_results = temp
         self.paid_content = final_results
         return final_results

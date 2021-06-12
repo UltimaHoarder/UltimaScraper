@@ -193,6 +193,7 @@ class session_manager:
                                         -response.content_length
                                     )
                             final_buffer = b"".join(buffer)
+                            buffer.clear()
                             result = [response, final_buffer]
                             print
                         else:

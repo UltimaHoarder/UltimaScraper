@@ -288,6 +288,7 @@ async def profile_scraper(
     header = y.header
     if avatar:
         override_media_types.append(["Avatars", avatar])
+    if header:
         override_media_types.append(["Headers", header])
     progress_bar = download_session()
     progress_bar.start(unit="B", unit_scale=True, miniters=1)

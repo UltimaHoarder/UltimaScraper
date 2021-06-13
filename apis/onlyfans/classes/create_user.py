@@ -9,14 +9,16 @@ from apis.onlyfans.classes.create_highlight import create_highlight
 from apis.onlyfans.classes.create_message import create_message
 from apis.onlyfans.classes.create_post import create_post
 from apis.onlyfans.classes.create_story import create_story
-from apis.onlyfans.classes.extras import (content_types, endpoint_links,
-                                          handle_refresh, media_types)
+from apis.onlyfans.classes.extras import (
+    content_types,
+    endpoint_links,
+    handle_refresh,
+    media_types,
+)
 
 
 class create_user:
-    def __init__(
-        self, option={}, subscriber: create_auth = None
-    ) -> None:
+    def __init__(self, option={}, subscriber: create_auth = None) -> None:
         self.view: str = option.get("view")
         self.avatar: Any = option.get("avatar")
         self.avatarThumbs: Any = option.get("avatarThumbs")
@@ -303,7 +305,7 @@ class create_user:
             identifier=identifier, global_limit=limit, global_offset=offset
         ).post_by_id
         result = await self.session_manager.json_request(link)
-        final_result = create_post(result,self)
+        final_result = create_post(result, self)
         return final_result
 
     async def get_messages(
@@ -338,7 +340,7 @@ class create_user:
             links = links2
         results = await self.session_manager.async_requests(links)
         has_more = results[-1]["hasMore"]
-        final_results = [x["list"] for x in results]
+        final_results = [x["list"] for x in results if "list" in x]
         final_results = list(chain.from_iterable(final_results))
 
         if has_more:
@@ -348,7 +350,7 @@ class create_user:
             final_results.extend(results2)
         print
         if not inside_loop:
-            final_results = [create_message(x,self) for x in final_results if x]
+            final_results = [create_message(x, self) for x in final_results if x]
         else:
             final_results.sort(key=lambda x: x["fromUser"]["id"], reverse=True)
         self.temp_scraped.Messages = final_results
@@ -368,7 +370,7 @@ class create_user:
         results = await self.session_manager.json_request(link)
         results = [x for x in results["list"] if x["id"] == message_id]
         result = result = results[0] if results else {}
-        final_result = create_message(result,self)
+        final_result = create_message(result, self)
         return final_result
 
     async def get_archived_stories(self, refresh=True, limit=100, offset=0):

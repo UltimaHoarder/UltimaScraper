@@ -295,22 +295,30 @@ class session_manager:
                     [progress_bar.update_total_size(x.size) for x in download_list]
 
                 async def process_download(download_item: media_table):
-                    result = await self.download_content(
-                        download_item, session, progress_bar, subscription
-                    )
-                    if result:
-                        response, download_item = result.values()
-                        if response:
-                            download_path = os.path.join(
-                                download_item.directory, download_item.filename
-                            )
-                            await main_helper.write_data(
-                                response, download_path, progress_bar
-                            )
-                            timestamp = download_item.created_at.timestamp()
-                            await main_helper.format_image(download_path, timestamp)
-                            download_item.size = response.content_length
-                            download_item.downloaded = True
+                    while True:
+                        result = await self.download_content(
+                            download_item, session, progress_bar, subscription
+                        )
+                        if result:
+                            response, download_item = result.values()
+                            if response:
+                                download_path = os.path.join(
+                                    download_item.directory, download_item.filename
+                                )
+                                status_code = await main_helper.write_data(
+                                    response, download_path, progress_bar
+                                )
+                                if not status_code:
+                                    pass
+                                elif status_code == 1:
+                                    continue
+                                elif status_code == 2:
+                                    break
+                                timestamp = download_item.created_at.timestamp()
+                                await main_helper.format_image(download_path, timestamp)
+                                download_item.size = response.content_length
+                                download_item.downloaded = True
+                        break
 
                 max_threads = calculate_max_threads(self.max_threads)
                 download_groups = main_helper.grouper(max_threads, download_list)

@@ -1,9 +1,10 @@
 #!/usr/bin/env python3
-import tests.main_test as main_test
+import asyncio
 import os
 import time
 import traceback
-import asyncio
+
+import tests.main_test as main_test
 
 main_test.version_check()
 main_test.check_config()
@@ -41,7 +42,9 @@ if __name__ == "__main__":
                     x = int(x)
                     site_name = site_names[x]
                 site_name_lower = site_name.lower()
-                api = await main_datascraper.start_datascraper(json_config, site_name_lower)
+                api = await main_datascraper.start_datascraper(
+                    json_config, site_name_lower
+                )
                 if api:
                     api.close_pools()
                 if exit_on_completion:
@@ -56,7 +59,6 @@ if __name__ == "__main__":
             except Exception as e:
                 print(traceback.format_exc())
                 input()
-
 
     loop = asyncio.get_event_loop()
     loop.run_until_complete(main())

@@ -37,7 +37,7 @@ class create_message:
 
     async def buy_message(self):
         """
-        This function will buy a ppv message to a model.
+        This function will buy a ppv message from a model.
         """
         message_price = self.price
         x = {

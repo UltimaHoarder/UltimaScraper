@@ -19,6 +19,13 @@ import classes.prepare_webhooks as prepare_webhooks
 import psutil
 import requests
 import ujson
+from aiohttp.client_exceptions import (
+    ClientConnectorError,
+    ClientOSError,
+    ClientPayloadError,
+    ContentTypeError,
+    ServerDisconnectedError,
+)
 from aiohttp.client_reqrep import ClientResponse
 from apis.onlyfans import onlyfans as OnlyFans
 from apis.onlyfans.classes import create_user
@@ -728,18 +735,29 @@ def is_me(user_api):
 
 
 async def write_data(response: ClientResponse, download_path: str, progress_bar):
+    status_code = 0
     if response.status == 200:
+        total_length = 0
         os.makedirs(os.path.dirname(download_path), exist_ok=True)
         with open(download_path, "wb") as f:
-            async for data in response.content.iter_chunked(4096):
-                length = len(data)
-                progress_bar.update(length)
-                f.write(data)
-        return True
+            try:
+                async for data in response.content.iter_chunked(4096):
+                    length = len(data)
+                    total_length += length
+                    progress_bar.update(length)
+                    f.write(data)
+            except (
+                ClientPayloadError,
+                ContentTypeError,
+                ClientOSError,
+                ServerDisconnectedError,
+            ) as e:
+                status_code = 1
     else:
         if response.content_length:
             progress_bar.update_total_size(-response.content_length)
-        return False
+        status_code = 2
+    return status_code
 
 
 def export_data(

@@ -18,14 +18,19 @@ import helpers.main_helper as main_helper
 import python_socks
 import requests
 from aiohttp import ClientSession
-from aiohttp.client_exceptions import (ClientConnectorError, ClientOSError,
-                                       ClientPayloadError, ContentTypeError,
-                                       ServerDisconnectedError)
+from aiohttp.client_exceptions import (
+    ClientConnectorError,
+    ClientOSError,
+    ClientPayloadError,
+    ContentTypeError,
+    ServerDisconnectedError,
+)
 from aiohttp.client_reqrep import ClientResponse
 from aiohttp_socks import ChainProxyConnector, ProxyConnector, ProxyType
 from database.models.media_table import media_table
 
 from apis.onlyfans.classes import create_user
+from yarl import URL
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
@@ -273,7 +278,8 @@ class session_manager:
                     temp_response = [
                         response
                         for response in responses
-                        if response and response.url.name == download_item.filename
+                        if response
+                        and URL.human_repr(response.url) == download_item.link
                     ]
                     if temp_response:
                         temp_response = temp_response[0]

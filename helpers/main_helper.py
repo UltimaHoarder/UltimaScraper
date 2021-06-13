@@ -108,7 +108,7 @@ def format_media_set(media_set):
     return merged
 
 
-def format_image(filepath, timestamp):
+async def format_image(filepath: str, timestamp: float):
     if json_global_settings["helpers"]["reformat_media"]:
         while True:
             try:

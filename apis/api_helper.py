@@ -307,6 +307,8 @@ class session_manager:
                             await main_helper.write_data(
                                 response, download_path, progress_bar
                             )
+                            timestamp = download_item.created_at.timestamp()
+                            await main_helper.format_image(download_path, timestamp)
                             download_item.size = response.content_length
                             download_item.downloaded = True
 

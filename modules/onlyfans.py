@@ -23,11 +23,16 @@ from apis.onlyfans.classes.create_story import create_story
 from apis.onlyfans.classes.create_user import create_user
 from apis.onlyfans.classes.extras import auth_details, media_types
 from apis.onlyfans.onlyfans import start
-from classes.prepare_metadata import (create_metadata, format_content,
-                                      prepare_reformat)
+from classes.prepare_metadata import create_metadata, format_content, prepare_reformat
 from helpers import db_helper
-from helpers.main_helper import (choose_option, download_session, export_data,
-                                 export_sqlite, fix_sqlite, import_archive)
+from helpers.main_helper import (
+    choose_option,
+    download_session,
+    export_data,
+    export_sqlite,
+    fix_sqlite,
+    import_archive,
+)
 from mergedeep import Strategy, merge
 from sqlalchemy.orm import declarative_base, session, sessionmaker
 from sqlalchemy.orm.scoping import scoped_session
@@ -314,7 +319,7 @@ async def profile_scraper(
             sleep=False,
             progress_bar=progress_bar,
         )
-        downloaded = await main_helper.write_data(response,download_path,progress_bar)
+        downloaded = await main_helper.write_data(response, download_path, progress_bar)
     await session.close()
     progress_bar.close()
 
@@ -1195,15 +1200,16 @@ def media_scraper(
                     v = getattr(v, api_type, [])
                 if v:
                     for post in v:
-                        medias = post.media
                         found_medias = []
-                        for temp_media in medias:
-                            temp_filename = temp_media.get("filename")
-                            if temp_filename:
-                                if temp_filename == new_media["filename"]:
-                                    found_medias.append(temp_media)
-                            else:
-                                continue
+                        medias = post.media
+                        if medias:
+                            for temp_media in medias:
+                                temp_filename = temp_media.get("filename")
+                                if temp_filename:
+                                    if temp_filename == new_media["filename"]:
+                                        found_medias.append(temp_media)
+                                else:
+                                    continue
                         # found_medias = [x for x in medias
                         #                 if x["filename"] == new_media["filename"]]
                         if found_medias:

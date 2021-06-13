@@ -19,7 +19,8 @@ import python_socks
 import requests
 from aiohttp import ClientSession
 from aiohttp.client_exceptions import (ClientConnectorError, ClientOSError,
-                                       ClientPayloadError, ContentTypeError,ServerDisconnectedError)
+                                       ClientPayloadError, ContentTypeError,
+                                       ServerDisconnectedError)
 from aiohttp.client_reqrep import ClientResponse
 from aiohttp_socks import ChainProxyConnector, ProxyConnector, ProxyType
 from database.models.media_table import media_table
@@ -87,6 +88,17 @@ class session_manager:
         self.dynamic_rules = dynamic_rules
         self.auth = auth
 
+    def create_client_session(self):
+        proxies = self.proxies
+        proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
+        connector = ProxyConnector.from_url(proxy) if proxy else None
+
+        final_cookies = self.auth.cookies if hasattr(self.auth, "cookies") else {}
+        client_session = ClientSession(
+            connector=connector, cookies=final_cookies, read_timeout=None
+        )
+        return client_session
+
     def add_sessions(self, original_sessions: list, overwrite_old_sessions=True):
         if overwrite_old_sessions:
             sessions = []
@@ -152,12 +164,7 @@ class session_manager:
         custom_session = False
         if not session:
             custom_session = True
-            proxies = self.proxies
-            proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
-            connector = ProxyConnector.from_url(proxy) if proxy else None
-            session = ClientSession(
-                connector=connector, cookies=self.auth.cookies, read_timeout=None
-            )
+            session = self.create_client_session()
         headers = self.session_rules(link)
         headers["accept"] = "application/json, text/plain, */*"
         headers["Connection"] = "keep-alive"
@@ -170,41 +177,32 @@ class session_manager:
             request_method = session.post
         elif method == "DELETE":
             request_method = session.delete
+        result = None
         while True:
             try:
-                async with request_method(
-                    link, headers=headers, data=payload
-                ) as response:
-                    if method == "HEAD":
+                response = await request_method(link, headers=headers, data=payload)
+                if method == "HEAD":
+                    result = response
+                else:
+                    if json_format and not stream:
+                        result = await response.json()
+                    elif stream and not json_format:
                         result = response
                     else:
-                        if json_format and not stream:
-                            result = await response.json()
-                        elif stream and not json_format:
-                            buffer = []
-                            if response.status == 200:
-                                async for data in response.content.iter_chunked(4096):
-                                    buffer.append(data)
-                                    length = len(data)
-                                    progress_bar.update(length)
-                            else:
-                                if response.content_length:
-                                    progress_bar.update_total_size(
-                                        -response.content_length
-                                    )
-                            final_buffer = b"".join(buffer)
-                            buffer.clear()
-                            result = [response, final_buffer]
-                            print
-                        else:
-                            result = await response.read()
-                    if custom_session:
-                        await session.close()
-                    return result
+                        result = await response.read()
+                break
             except ClientConnectorError as e:
-                return
-            except (ClientPayloadError, ContentTypeError, ClientOSError,ServerDisconnectedError) as e:
+                break
+            except (
+                ClientPayloadError,
+                ContentTypeError,
+                ClientOSError,
+                ServerDisconnectedError,
+            ) as e:
                 continue
+        if custom_session:
+            await session.close()
+        return result
 
     async def async_requests(self, items: list[str], json_format=True):
         tasks = []
@@ -256,7 +254,9 @@ class session_manager:
                     filepath = os.path.join(
                         download_item.directory, download_item.filename
                     )
+                    response_status = False
                     if response.status == 200:
+                        response_status = True
                         if response.content_length:
                             download_item.size = response.content_length
 
@@ -266,7 +266,8 @@ class session_manager:
                         else:
                             return download_item
                     else:
-                        return download_item
+                        if response_status:
+                            return download_item
 
                 for download_item in download_list:
                     temp_response = [
@@ -288,19 +289,19 @@ class session_manager:
                     [progress_bar.update_total_size(x.size) for x in download_list]
 
                 async def process_download(download_item: media_table):
-                    response = await self.download_content(
+                    result = await self.download_content(
                         download_item, session, progress_bar, subscription
                     )
-                    if response:
-                        data, download_item = response.values()
-                        if data:
+                    if result:
+                        response, download_item = result.values()
+                        if response:
                             download_path = os.path.join(
                                 download_item.directory, download_item.filename
                             )
-                            os.makedirs(os.path.dirname(download_path), exist_ok=True)
-                            with open(download_path, "wb") as f:
-                                f.write(data)
-                            download_item.size = len(data)
+                            await main_helper.write_data(
+                                response, download_path, progress_bar
+                            )
+                            download_item.size = response.content_length
                             download_item.downloaded = True
 
                 max_threads = calculate_max_threads(self.max_threads)
@@ -333,7 +334,7 @@ class session_manager:
             if not download_item.link:
                 continue
             response: ClientResponse
-            response, task = await asyncio.ensure_future(
+            response = await asyncio.ensure_future(
                 self.json_request(
                     download_item.link,
                     session,
@@ -368,7 +369,7 @@ class session_manager:
                         link = main_helper.link_picker(media, quality)
                         download_item.link = link
                     continue
-            new_task["response"] = task
+            new_task["response"] = response
             new_task["download_item"] = download_item
             break
         return new_task

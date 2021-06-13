@@ -288,10 +288,10 @@ async def profile_scraper(
     header = y.header
     if avatar:
         override_media_types.append(["Avatars", avatar])
-    elif header:
         override_media_types.append(["Headers", header])
     progress_bar = download_session()
     progress_bar.start(unit="B", unit_scale=True, miniters=1)
+    session = authed.session_manager.create_client_session()
     for override_media_type in override_media_types:
         new_dict = dict()
         media_type = override_media_type[0]
@@ -301,21 +301,20 @@ async def profile_scraper(
         os.makedirs(directory2, exist_ok=True)
         download_path = os.path.join(directory2, media_link.split("/")[-2] + ".jpg")
         response = await authed.session_manager.json_request(media_link, method="HEAD")
-        if overwrite_files:
-            if os.path.isfile(download_path):
-                if os.path.getsize(download_path) == response.content_length:
-                    continue
+        if os.path.isfile(download_path):
+            if os.path.getsize(download_path) == response.content_length:
+                continue
         progress_bar.update_total_size(response.content_length)
-        response, data = await authed.session_manager.json_request(
+        response = await authed.session_manager.json_request(
             media_link,
+            session=session,
             stream=True,
             json_format=False,
             sleep=False,
             progress_bar=progress_bar,
         )
-        downloaded = await main_helper.write_data(download_path, data)
-        if not downloaded:
-            continue
+        downloaded = await main_helper.write_data(response,download_path,progress_bar)
+    await session.close()
     progress_bar.close()
 
 

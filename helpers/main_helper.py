@@ -1,6 +1,3 @@
-from database.models.media_table import media_table
-from sqlalchemy.orm.session import Session
-from apis.onlyfans.classes.extras import content_types
 import copy
 import json
 import math
@@ -22,13 +19,17 @@ import classes.prepare_webhooks as prepare_webhooks
 import psutil
 import requests
 import ujson
+from aiohttp.client_reqrep import ClientResponse
 from apis.onlyfans import onlyfans as OnlyFans
 from apis.onlyfans.classes import create_user
+from apis.onlyfans.classes.extras import content_types
 from bs4 import BeautifulSoup
 from classes.prepare_metadata import format_variables, prepare_reformat
+from database.models.media_table import media_table
 from mergedeep import Strategy, merge
 from sqlalchemy import inspect
 from sqlalchemy.orm import declarative_base
+from sqlalchemy.orm.session import Session
 from tqdm import tqdm
 
 import helpers.db_helper as db_helper
@@ -726,9 +727,19 @@ def is_me(user_api):
         return False
 
 
-async def write_data(download_path:str, data:bytes):
-    with open(download_path, "wb") as f:
-        f.write(data)
+async def write_data(response: ClientResponse, download_path: str, progress_bar):
+    if response.status == 200:
+        os.makedirs(os.path.dirname(download_path), exist_ok=True)
+        with open(download_path, "wb") as f:
+            async for data in response.content.iter_chunked(4096):
+                length = len(data)
+                progress_bar.update(length)
+                f.write(data)
+        return True
+    else:
+        if response.content_length:
+            progress_bar.update_total_size(-response.content_length)
+        return False
 
 
 def export_data(
@@ -906,7 +917,7 @@ def module_chooser(domain, json_sites):
     return string, site_names
 
 
-def link_picker(media,video_quality):
+def link_picker(media, video_quality):
     link = ""
     if "source" in media:
         quality_key = "source"
@@ -929,4 +940,3 @@ def link_picker(media,video_quality):
     if "src" in media:
         link = media["src"]
     return link
-                

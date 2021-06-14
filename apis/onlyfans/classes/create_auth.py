@@ -245,12 +245,15 @@ class create_auth:
         if self.isPerformer:
             temp_session_manager = self.session_manager
             temp_pool = self.pool
+            temp_paid_content = self.paid_content
             delattr(self, "session_manager")
             delattr(self, "pool")
+            delattr(self, "paid_content")
             json_authed = jsonpickle.encode(self, unpicklable=False)
             json_authed = jsonpickle.decode(json_authed)
             self.session_manager = temp_session_manager
             self.pool = temp_pool
+            self.paid_content = temp_paid_content
             temp_auth = await self.get_user(self.username)
             json_authed = json_authed | temp_auth.__dict__
 

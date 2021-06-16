@@ -1,21 +1,36 @@
 #!/usr/bin/env python3
-from sqlalchemy.orm.scoping import scoped_session
+import os
+import shutil
+import traceback
+import urllib.parse as urlparse
+from datetime import datetime
+from itertools import chain, product
+
+from apis.onlyfans.classes.create_user import create_user
 from database.models.api_table import api_table
 from database.models.media_table import media_table
-import urllib.parse as urlparse
-import shutil
-from datetime import datetime
-import os
-from itertools import chain, product
-import traceback
+from sqlalchemy.orm.scoping import scoped_session
 
 
-def fix_directories(api,posts, all_files, database_session: scoped_session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
+def fix_directories(
+    posts,
+    api,
+    subscription: create_user,
+    all_files,
+    database_session: scoped_session,
+    folder,
+    site_name,
+    api_type,
+    base_directory,
+    json_settings,
+):
     new_directories = []
 
     def fix_directories2(post: api_table, media_db: list[media_table]):
         delete_rows = []
-        final_api_type = os.path.join("Archived",api_type) if post.archived else api_type
+        final_api_type = (
+            os.path.join("Archived", api_type) if post.archived else api_type
+        )
         post_id = post.post_id
         media_db = [x for x in media_db if x.post_id == post_id]
         for media in media_db:
@@ -36,7 +51,8 @@ def fix_directories(api,posts, all_files, database_session: scoped_session, fold
             option["site_name"] = site_name
             option["post_id"] = post_id
             option["media_id"] = media_id
-            option["username"] = username
+            option["profile_username"] = subscription.subscriber.username
+            option["model_username"] = subscription.username
             option["api_type"] = final_api_type
             option["media_type"] = media.media_type
             option["filename"] = original_filename
@@ -51,23 +67,25 @@ def fix_directories(api,posts, all_files, database_session: scoped_session, fold
             option["archived"] = post.archived
             prepared_format = prepare_reformat(option)
             file_directory = main_helper.reformat(
-                prepared_format, file_directory_format)
+                prepared_format, file_directory_format
+            )
             prepared_format.directory = file_directory
             old_filepath = ""
             if media.linked:
                 filename_format = f"linked_{filename_format}"
             old_filepaths = [
-                x for x in all_files if original_filename in os.path.basename(x)]
+                x for x in all_files if original_filename in os.path.basename(x)
+            ]
             if not old_filepaths:
                 old_filepaths = [
-                    x for x in all_files if str(media_id) in os.path.basename(x)]
+                    x for x in all_files if str(media_id) in os.path.basename(x)
+                ]
                 print
             if not media.linked:
                 old_filepaths = [x for x in old_filepaths if "linked_" not in x]
             if old_filepaths:
                 old_filepath = old_filepaths[0]
-            new_filepath = main_helper.reformat(
-                prepared_format, filename_format)
+            new_filepath = main_helper.reformat(prepared_format, filename_format)
             if old_filepath and old_filepath != new_filepath:
                 if os.path.exists(new_filepath):
                     os.remove(new_filepath)
@@ -78,12 +96,16 @@ def fix_directories(api,posts, all_files, database_session: scoped_session, fold
                             if media.size:
                                 media.downloaded = True
                             found_dupes = [
-                                x for x in media_db if x.filename == new_filename and x.id != media.id]
+                                x
+                                for x in media_db
+                                if x.filename == new_filename and x.id != media.id
+                            ]
                             delete_rows.extend(found_dupes)
-                            os.makedirs(os.path.dirname(
-                                new_filepath), exist_ok=True)
+                            os.makedirs(os.path.dirname(new_filepath), exist_ok=True)
                             if media.linked:
-                                if os.path.dirname(old_filepath) == os.path.dirname(new_filepath):
+                                if os.path.dirname(old_filepath) == os.path.dirname(
+                                    new_filepath
+                                ):
                                     moved = shutil.move(old_filepath, new_filepath)
                                 else:
                                     moved = shutil.copy(old_filepath, new_filepath)
@@ -105,21 +127,32 @@ def fix_directories(api,posts, all_files, database_session: scoped_session, fold
             media.filename = os.path.basename(new_filepath)
             new_directories.append(os.path.dirname(new_filepath))
         return delete_rows
+
     result = database_session.query(folder.media_table)
     media_db = result.all()
     pool = api.pool
-    delete_rows = pool.starmap(fix_directories2, product(
-    posts, [media_db]))
+    delete_rows = pool.starmap(fix_directories2, product(posts, [media_db]))
     delete_rows = list(chain(*delete_rows))
     for delete_row in delete_rows:
         database_session.query(folder.media_table).filter(
-            folder.media_table.id == delete_row.id).delete()
+            folder.media_table.id == delete_row.id
+        ).delete()
     database_session.commit()
     new_directories = list(set(new_directories))
     return posts, new_directories
 
 
-def start(api,Session, parent_type, api_type, api_path, site_name, subscription, folder, json_settings):
+def start(
+    api,
+    Session,
+    parent_type,
+    api_type,
+    api_path,
+    site_name,
+    subscription: create_user,
+    folder,
+    json_settings,
+):
     api_table = folder.api_table
     database_session = Session()
     result = database_session.query(api_table).all()
@@ -132,11 +165,12 @@ def start(api,Session, parent_type, api_type, api_path, site_name, subscription,
     reformats["metadata_directory_format"] = json_settings["metadata_directory_format"]
     reformats["file_directory_format"] = json_settings["file_directory_format"]
     reformats["filename_format"] = json_settings["filename_format"]
-    username = subscription.username
+    model_username = subscription.username
     option = {}
     option["site_name"] = site_name
     option["api_type"] = api_type
-    option["username"] = username
+    option["profile_username"] = subscription.subscriber.username
+    option["model_username"] = model_username
     option["date_format"] = date_format
     option["maximum_length"] = text_length
     option["directory"] = root_directory
@@ -144,11 +178,10 @@ def start(api,Session, parent_type, api_type, api_path, site_name, subscription,
     unique = formatted["unique"]
     for key, value in reformats.items():
         key2 = getattr(unique, key)[0]
-        reformats[key] = value.split(key2, 1)[0]+key2
+        reformats[key] = value.split(key2, 1)[0] + key2
         print
     print
-    a, base_directory, c = prepare_reformat(
-        option, keep_vars=True).reformat(reformats)
+    a, base_directory, c = prepare_reformat(option, keep_vars=True).reformat(reformats)
     download_info["base_directory"] = base_directory
     print
     all_files = []
@@ -157,7 +190,17 @@ def start(api,Session, parent_type, api_type, api_path, site_name, subscription,
         all_files.extend(x)
 
     fix_directories(
-        api,result, all_files, database_session, folder, site_name, parent_type, api_type, username, root_directory, json_settings)
+        result,
+        api,
+        subscription,
+        all_files,
+        database_session,
+        folder,
+        site_name,
+        api_type,
+        root_directory,
+        json_settings,
+    )
     database_session.close()
     return metadata
 
@@ -169,4 +212,3 @@ if __name__ == "__main__":
 else:
     import helpers.main_helper as main_helper
     from classes.prepare_metadata import format_types, prepare_reformat
-

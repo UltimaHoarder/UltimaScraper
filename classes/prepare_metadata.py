@@ -252,7 +252,8 @@ class format_variables(object):
         self.first_letter = "{first_letter}"
         self.post_id = "{post_id}"
         self.media_id = "{media_id}"
-        self.username = "{username}"
+        self.profile_username = "{profile_username}"
+        self.model_username = "{model_username}"
         self.api_type = "{api_type}"
         self.media_type = "{media_type}"
         self.filename = "{filename}"
@@ -303,7 +304,13 @@ class format_types:
                     if b in self.filename_format:
                         invalid_list.append(b)
             if key == "metadata_directory_format":
-                wl = ["{site_name}", "{first_letter}", "{model_id}", "{username}"]
+                wl = [
+                    "{site_name}",
+                    "{first_letter}",
+                    "{model_id}",
+                    "{profile_username}",
+                    "{model_username}",
+                ]
                 bl = format_variables().whitelist(wl)
                 invalid_list = []
                 for b in bl:
@@ -328,7 +335,7 @@ class format_types:
         f = format_variables()
         for key, value in self:
             if key == "file_directory_format":
-                unique = ["{media_id}", "{username}"]
+                unique = ["{media_id}", "{model_username}"]
                 value = os.path.normpath(value)
                 values = value.split(os.sep)
                 option["unique"].file_directory_format = unique
@@ -341,7 +348,7 @@ class format_types:
                         values.append(value2)
                 option["unique"].filename_format = unique
             elif key == "metadata_directory_format":
-                unique = ["{username}"]
+                unique = ["{model_username}"]
                 value = os.path.normpath(value)
                 values = value.split(os.sep)
                 option["unique"].metadata_directory_format = unique
@@ -369,7 +376,10 @@ class prepare_reformat(object):
         self.site_name = option.get("site_name", format_variables2.site_name)
         self.post_id = option.get("post_id", format_variables2.post_id)
         self.media_id = option.get("media_id", format_variables2.media_id)
-        self.username = option.get("username", format_variables2.username)
+        self.profile_username = option.get(
+            "profile_username", format_variables2.profile_username
+        )
+        self.model_username = option.get("model_username", format_variables2.model_username)
         self.api_type = option.get("api_type", format_variables2.api_type)
         self.media_type = option.get("media_type", format_variables2.media_type)
         self.filename = option.get("filename", format_variables2.filename)

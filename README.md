@@ -122,7 +122,9 @@ Overview for [file_directory_format](#file_directory_format), [filename_format](
 
     {media_id} = The media's ID.
 
-    {username} = The account's username.
+    {profile_username} = Your account's username.
+
+    {model_username} = The model's username.
 
     {api_type} = Posts, Messages, etc.
 
@@ -148,10 +150,10 @@ The list below are unique identifiers that you must include.
 
 You can choose one or more.
 
-    Default = "{site_name}/{username}/{api_type}/{value}/{media_type}"
+    Default = "{site_name}/{model_username}/{api_type}/{value}/{media_type}"
     Default Translated = "OnlyFans/belledelphine/Posts/Free/Images"
 
-    {username} = belledelphine
+    {model_username} = belledelphine
 
 ### filename_format:
 
@@ -175,10 +177,10 @@ The list below are unique identifiers that you must include.
 
 You must choose one or more.
 
-    Default = "{site_name}/{username}/Metadata"
+    Default = "{site_name}/{model_username}/Metadata"
     Default Translated = "OnlyFans/belledelphine/Metadata"
 
-    {username} = belledelphine
+    {model_username} = belledelphine
 
 ### text_length:
 

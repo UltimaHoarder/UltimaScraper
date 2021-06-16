@@ -5,12 +5,14 @@ import os
 import uuid as uuid
 
 from yarl import URL
-
+current_version = None
 def fix(config={}):
+    global current_version
     info = config.get("info")
     if not info:
         print("If you're not using >= v7 release, please download said release so the script can properly update your config. \nIf you're using >= v7 release or you don't care about your current config settings, press enter to continue. If script crashes, delete config.")
         input()
+    current_version = info["version"]
     return config
 
 
@@ -18,7 +20,7 @@ class config(object):
     def __init__(self, info={}, settings={}, supported={}):
         class Info(object):
             def __init__(self) -> None:
-                self.version = 7.1
+                self.version = 7.2
 
         class Settings(object):
             def __init__(self, auto_site_choice="", profile_directories=[".profiles"], export_type="json", max_threads=-1, min_drive_space=0, helpers={}, webhooks={}, exit_on_completion=False, infinite_loop=True, loop_timeout="0", dynamic_rules_link="https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json", proxies=[], cert="",  random_string=""):
@@ -92,6 +94,12 @@ class config(object):
                     new_options["auto_model_choice"] = value
                 elif "auto_scrape_apis" == key:
                     new_options["auto_api_choice"] = value
+                if "file_directory_format" == key:
+                    new_options["file_directory_format"] = value.replace("{username}","{model_username}")
+                if "filename_format" == key:
+                    new_options["filename_format"] = value.replace("{username}","{model_username}")
+                if "metadata_directory_format" == key:
+                    new_options["metadata_directory_format"] = value.replace("{username}","{model_username}")
             return new_options
 
         class Supported(object):
@@ -141,13 +149,13 @@ class config(object):
                             'download_directories', [".sites"])
                         normpath = os.path.normpath
                         self.file_directory_format = normpath(option.get(
-                            'file_directory_format', "{site_name}/{username}/{api_type}/{value}/{media_type}"))
+                            'file_directory_format', "{site_name}/{model_username}/{api_type}/{value}/{media_type}"))
                         self.filename_format = normpath(option.get(
                             'filename_format', "{filename}.{ext}"))
                         self.metadata_directories = option.get(
                             'metadata_directories', [".sites"])
                         self.metadata_directory_format = normpath(option.get(
-                            'metadata_directory_format', "{site_name}/{username}/Metadata"))
+                            'metadata_directory_format', "{site_name}/{model_username}/Metadata"))
                         self.delete_legacy_metadata = option.get(
                             'delete_legacy_metadata', False)
                         self.text_length = option.get('text_length', 255)
@@ -207,13 +215,13 @@ class config(object):
                             'download_directories', [".sites"])
                         normpath = os.path.normpath
                         self.file_directory_format = normpath(option.get(
-                            'file_directory_format', "{site_name}/{username}/{api_type}/{value}/{media_type}"))
+                            'file_directory_format', "{site_name}/{model_username}/{api_type}/{value}/{media_type}"))
                         self.filename_format = normpath(option.get(
                             'filename_format', "{filename}.{ext}"))
                         self.metadata_directories = option.get(
                             'metadata_directories', [".sites"])
                         self.metadata_directory_format = normpath(option.get(
-                            'metadata_directory_format', "{site_name}/{username}/Metadata"))
+                            'metadata_directory_format', "{site_name}/{model_username}/Metadata"))
                         self.delete_legacy_metadata = option.get(
                             'delete_legacy_metadata', False)
                         self.text_length = option.get('text_length', 255)

@@ -1,3 +1,4 @@
+from apis.onlyfans.classes.create_auth import create_auth
 import copy
 import json
 import math
@@ -216,6 +217,7 @@ def fix_sqlite(
     download_directory,
     metadata_directory,
     format_directories,
+    authed:create_auth,
     site_name,
     username,
     metadata_directory_format,
@@ -228,13 +230,14 @@ def fix_sqlite(
         mandatory_directories["download_directory"] = download_directory
         mandatory_directories["metadata_directory"] = metadata_directory
         formatted_directories = format_directories(
-            mandatory_directories,
-            site_name,
-            username,
-            metadata_directory_format,
-            "",
-            api_type,
-        )
+        mandatory_directories,
+        authed,
+        site_name,
+        username,
+        metadata_directory_format,
+        "",
+        api_type,
+    )
         final_metadata_directory = formatted_directories["metadata_directory"]
         if all(final_metadata_directory != x for x in final_metadatas):
             final_metadatas.append(final_metadata_directory)
@@ -404,10 +407,11 @@ def reformat(prepared_format: prepare_reformat, unformatted):
                 value = "Paid"
     directory = prepared_format.directory
     path = unformatted.replace("{site_name}", prepared_format.site_name)
-    path = path.replace("{first_letter}", prepared_format.username[0].capitalize())
+    path = path.replace("{first_letter}", prepared_format.model_username[0].capitalize())
     path = path.replace("{post_id}", post_id)
     path = path.replace("{media_id}", media_id)
-    path = path.replace("{username}", prepared_format.username)
+    path = path.replace("{profile_username}", prepared_format.profile_username)
+    path = path.replace("{model_username}", prepared_format.model_username)
     path = path.replace("{api_type}", prepared_format.api_type)
     path = path.replace("{media_type}", prepared_format.media_type)
     path = path.replace("{filename}", prepared_format.filename)

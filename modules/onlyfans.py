@@ -14,7 +14,6 @@ import extras.OFLogin.start_ofl as oflogin
 import extras.OFRenamer.start as ofrenamer
 import helpers.db_helper as db_helper
 import helpers.main_helper as main_helper
-import requests
 from apis.onlyfans import onlyfans as OnlyFans
 from apis.onlyfans.classes.create_auth import create_auth
 from apis.onlyfans.classes.create_message import create_message
@@ -23,13 +22,16 @@ from apis.onlyfans.classes.create_story import create_story
 from apis.onlyfans.classes.create_user import create_user
 from apis.onlyfans.classes.extras import auth_details, media_types
 from apis.onlyfans.onlyfans import start
-from classes.prepare_metadata import (create_metadata, format_content,
-                                      prepare_reformat)
+from classes.prepare_metadata import create_metadata, prepare_reformat
 from helpers import db_helper
-from helpers.main_helper import (choose_option, download_session, export_data,
-                                 export_sqlite, fix_sqlite, import_archive)
+from helpers.main_helper import (
+    choose_option,
+    download_session,
+    fix_sqlite,
+    import_archive,
+)
 from mergedeep import Strategy, merge
-from sqlalchemy.orm import declarative_base, session, sessionmaker
+from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 
 site_name = "OnlyFans"
@@ -137,6 +139,7 @@ async def start_datascraper(
         download_directory,
         metadata_directory,
         format_directories,
+        authed,
         site_name,
         username,
         metadata_directory_format,
@@ -260,7 +263,7 @@ def scrape_choice(authed: create_auth, subscription):
 
 # Downloads the model's avatar and header
 async def profile_scraper(
-    authed: create_auth, site_name, api_type, username, base_directory
+    authed: create_auth, site_name, api_type, model_username, base_directory
 ):
     reformats = {}
     reformats["metadata_directory_format"] = json_settings["metadata_directory_format"]
@@ -272,13 +275,14 @@ async def profile_scraper(
     option = {}
     option["site_name"] = site_name
     option["api_type"] = api_type
-    option["username"] = username
+    option["profile_username"] = authed.username
+    option["model_username"] = model_username
     option["date_format"] = date_format
     option["maximum_length"] = text_length
     option["directory"] = base_directory
     a, b, c = prepare_reformat(option, keep_vars=True).reformat(reformats)
     print
-    y = await authed.get_subscription(identifier=username)
+    y = await authed.get_subscription(identifier=model_username)
     override_media_types = []
     avatar = y.avatar
     header = y.header
@@ -368,6 +372,7 @@ async def paid_content_scraper(api: start, identifiers=[]):
                 mandatory_directories["metadata_directory"] = metadata_directory
                 formatted_directories = format_directories(
                     mandatory_directories,
+                    authed,
                     site_name,
                     username,
                     metadata_directory_format,
@@ -453,9 +458,8 @@ async def process_mass_messages(
 
     global_found = []
     chats = []
-    session = authed.session_manager.sessions[0]
     salt = json_global_settings["random_string"]
-    encoded = f"{session.ip}{salt}"
+    encoded = f"{salt}"
     encoded = encoded.encode("utf-8")
     hash = hashlib.md5(encoded).hexdigest()
     profile_directory = json_global_settings["profile_directories"][0]
@@ -686,7 +690,13 @@ def process_metadata(
 
 
 def format_directories(
-    directories, site_name, username, unformatted, locations: list = [], api_type=""
+    directories: dict[str, Any],
+    authed: create_auth,
+    site_name: str,
+    model_username: str,
+    unformatted: str,
+    locations: list = [],
+    api_type: str = "",
 ) -> dict:
     x = {}
     x["profile_directory"] = ""
@@ -694,7 +704,8 @@ def format_directories(
     for key, directory in directories.items():
         option = {}
         option["site_name"] = site_name
-        option["username"] = username
+        option["profile_username"] = authed.username
+        option["model_username"] = model_username
         option["directory"] = directory
         option["postedAt"] = datetime.today()
         option["date_format"] = date_format
@@ -705,7 +716,7 @@ def format_directories(
         if key == "download_directory":
             x["download_directory"] = prepared_format.directory
             legacy_model_directory = x["legacy_model_directory"] = os.path.join(
-                directory, site_name, username
+                directory, site_name, model_username
             )
             x["legacy_metadatas"]["legacy_metadata"] = os.path.join(
                 legacy_model_directory, api_type, "Metadata"
@@ -750,6 +761,7 @@ async def prepare_scraper(authed: create_auth, site_name, item):
     mandatory_directories["metadata_directory"] = metadata_directory
     formatted_directories = format_directories(
         mandatory_directories,
+        authed,
         site_name,
         username,
         metadata_directory_format,
@@ -1010,7 +1022,7 @@ def media_scraper(
     authed: create_auth,
     subscription: create_user,
     formatted_directories,
-    username,
+    model_username,
     api_type,
     parent_type="",
     print_output=True,
@@ -1083,7 +1095,7 @@ def media_scraper(
             if api_type == "Mass Messages":
                 media_user = post_result.fromUser
                 media_username = media_user["username"]
-                if media_username != username:
+                if media_username != model_username:
                     continue
         final_text = rawText if rawText else text
 
@@ -1163,7 +1175,8 @@ def media_scraper(
             option["api_type"] = final_api_type
             option["media_type"] = media_type
             option["ext"] = ext
-            option["username"] = username
+            option["profile_username"] = authed.username
+            option["model_username"] = model_username
             option["date_format"] = date_format
             option["text_length"] = text_length
             option["directory"] = download_path

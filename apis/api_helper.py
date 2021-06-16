@@ -338,8 +338,7 @@ class session_manager:
                     stream=True,
                 )
             )
-            if response.status != 200:
-                task = None
+            if response and response.status != 200:
                 if response.content_length:
                     progress_bar.update_total_size(-response.content_length)
                 api_type = download_item.__module__.split(".")[-1]

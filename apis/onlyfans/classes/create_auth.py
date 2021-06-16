@@ -199,10 +199,11 @@ class create_auth(create_user):
 
     async def get_user(self, identifier: Union[str, int]) -> Union[create_user, dict]:
         link = endpoint_links(identifier).users
-        result = await self.session_manager.json_request(link)
-        result["session_manager"] = self.session_manager
-        result = create_user(result, self) if "error" not in result else result
-        return result
+        response = await self.session_manager.json_request(link)
+        if isinstance(response, dict):
+            response["session_manager"] = self.session_manager
+            response = create_user(response, self)
+        return response
 
     async def get_lists_users(
         self, identifier, check: bool = False, refresh=True, limit=100, offset=0
@@ -301,10 +302,10 @@ class create_auth(create_user):
                         tasks.append(task)
                 tasks = await asyncio.gather(*tasks)
                 for task in tasks:
-                    subscription2: Union[create_user, dict] = task
+                    if isinstance(task, error_details):
+                        continue
+                    subscription2: create_user = task
                     for subscription in subscriptions:
-                        if isinstance(subscription2, dict):
-                            continue
                         if subscription["id"] != subscription2.id:
                             continue
                         subscription = subscription | subscription2.__dict__

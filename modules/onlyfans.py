@@ -169,12 +169,6 @@ async def start_datascraper(
     return [True, subscription]
 
 
-# Checks if the model is valid and grabs content count
-def link_check(authed: create_auth, identifier):
-    y = authed.get_user(identifier)
-    return y
-
-
 # Allows the user to choose which api they want to scrape
 def scrape_choice(authed: create_auth, subscription):
     user_id = subscription.id

@@ -1,3 +1,4 @@
+from multiprocessing.pool import Pool
 from typing import  Any, Dict, Optional, Union
 
 from apis.onlyfans.classes import create_user
@@ -35,7 +36,7 @@ class start:
         self.max_threads = max_threads
         self.lists = None
         self.endpoint_links = endpoint_links
-        self.pool = api_helper.multiprocessing()
+        self.pool:Pool = api_helper.multiprocessing()
         self.settings:Dict[str,dict[str,Any]] = {}
 
     def add_auth(self, option:Dict[str,bool]={}, only_active:bool=False):

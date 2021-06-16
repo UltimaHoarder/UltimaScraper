@@ -1,3 +1,5 @@
+from multiprocessing.pool import Pool
+from apis.onlyfans.classes.extras import error_details
 import asyncio
 import copy
 import hashlib
@@ -51,6 +53,17 @@ class set_settings:
         global_settings = self.json_global_settings
 
 
+async def remove_errors(results: list):
+    wrapped = False
+    if not isinstance(results, list):
+        wrapped = True
+        results = [results]
+    results = [x for x in results if not isinstance(x, error_details)]
+    if wrapped and results:
+        results = results[0]
+    return results
+
+
 def chunks(l, n):
     final = [l[i * n : (i + 1) * n] for i in range((len(l) + n - 1) // n)]
     return final
@@ -79,7 +92,7 @@ class session_manager:
         proxies: list[str] = [],
         max_threads: int = -1,
     ) -> None:
-        self.pool = multiprocessing()
+        self.pool:Pool = auth.pool if auth.pool else multiprocessing()
         self.max_threads = max_threads
         self.kill = False
         self.headers = headers
@@ -98,10 +111,12 @@ class session_manager:
             connector=connector, cookies=final_cookies, read_timeout=None
         )
         return client_session
-    def get_proxy(self)->str:
+
+    def get_proxy(self) -> str:
         proxies = self.proxies
         proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
         return proxy
+
     def stimulate_sessions(self):
         # Some proxies switch IP addresses if no request have been made for x amount of secondss
         def do(session_manager):
@@ -172,6 +187,8 @@ class session_manager:
                 else:
                     if json_format and not stream:
                         result = await response.json()
+                        if "error" in result:
+                            result = error_details(result)
                     elif stream and not json_format:
                         result = response
                     else:
@@ -190,10 +207,10 @@ class session_manager:
             await session.close()
         return result
 
-    async def async_requests(self, items: list[str], json_format=True):
+    async def async_requests(self, items: list[str]) -> list:
         tasks = []
 
-        async def run(links):
+        async def run(links) -> list:
             proxies = self.proxies
             proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
             connector = ProxyConnector.from_url(proxy) if proxy else None
@@ -203,7 +220,7 @@ class session_manager:
                 for link in links:
                     task = asyncio.ensure_future(self.json_request(link, session))
                     tasks.append(task)
-                responses = await asyncio.gather(*tasks)
+                responses = list(await asyncio.gather(*tasks))
                 return responses
 
         results = await asyncio.ensure_future(run(items))
@@ -452,6 +469,7 @@ async def scrape_endpoint_links(
             continue
         print("Scrape Attempt: " + str(attempt + 1) + "/" + str(max_attempts))
         results = await session_manager.async_requests(links)
+        results = await remove_errors(results)
         not_faulty = [x for x in results if x]
         faulty = [
             {"key": k, "value": v, "link": links[k]}

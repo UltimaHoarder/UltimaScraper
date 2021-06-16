@@ -80,9 +80,10 @@ class endpoint_links(object):
 
 # Lol?
 class error_details:
-    def __init__(self) -> None:
-        self.code = None
-        self.message = ""
+    def __init__(self,result) -> None:
+        error = result["error"]
+        self.code = error["code"]
+        self.message = error["message"]
 
 
 def create_headers(

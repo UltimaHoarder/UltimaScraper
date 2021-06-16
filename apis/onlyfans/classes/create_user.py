@@ -88,6 +88,7 @@ class create_user:
         self.canCreatePromotion: bool = option.get("canCreatePromotion")
         self.canCreateTrial: bool = option.get("canCreateTrial")
         self.isAdultContent: bool = option.get("isAdultContent")
+        self.isBlocked: bool = option.get("isBlocked")
         self.canTrialSend: bool = option.get("canTrialSend")
         self.canAddPhone: bool = option.get("canAddPhone")
         self.phoneLast4: Any = option.get("phoneLast4")
@@ -316,7 +317,7 @@ class create_user:
         offset=0,
         refresh=True,
         inside_loop=False,
-    ):
+    ) -> list:
         api_type = "messages"
         if not self.subscriber or self.is_me():
             return []
@@ -326,7 +327,7 @@ class create_user:
                 return result
         if links is None:
             links = []
-        multiplier = self.session_manager.pool._processes
+        multiplier = getattr(self.session_manager.pool,"_processes")
         if links:
             link = links[-1]
         else:
@@ -340,7 +341,8 @@ class create_user:
         else:
             links = links2
         results = await self.session_manager.async_requests(links)
-        has_more = results[-1]["hasMore"]
+        results = await api_helper.remove_errors(results)
+        has_more = results[-1]["hasMore"] if results else False
         final_results = [x["list"] for x in results if "list" in x]
         final_results = list(chain.from_iterable(final_results))
 
@@ -382,9 +384,8 @@ class create_user:
                 return result
         link = endpoint_links(global_limit=limit, global_offset=offset).archived_stories
         results = await self.session_manager.json_request(link)
-        results = [create_story(x) for x in results if "error" not in x]
-        if results:
-            print
+        results = await api_helper.remove_errors(results)
+        results = [create_story(x) for x in results]
         return results
 
     async def get_archived_posts(

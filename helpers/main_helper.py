@@ -28,7 +28,7 @@ from aiohttp.client_exceptions import (
 from aiohttp.client_reqrep import ClientResponse
 from apis.onlyfans import onlyfans as OnlyFans
 from apis.onlyfans.classes import create_user
-from apis.onlyfans.classes.extras import content_types
+from apis.onlyfans.classes.extras import content_types, error_details
 from bs4 import BeautifulSoup
 from classes.prepare_metadata import format_variables, prepare_reformat
 from mergedeep import Strategy, merge
@@ -955,3 +955,4 @@ def link_picker(media, video_quality):
     if "src" in media:
         link = media["src"]
     return link
+

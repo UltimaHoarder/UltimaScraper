@@ -1,6 +1,6 @@
 import asyncio
-from asyncio.tasks import gather
 import math
+from asyncio.tasks import gather
 from datetime import datetime
 from itertools import chain, product
 from multiprocessing.pool import Pool
@@ -47,8 +47,8 @@ class create_auth(create_user):
         self.archived_stories = {}
         self.mass_messages = []
         self.paid_content = []
-        self.session_manager = api_helper.session_manager(self, max_threads=max_threads)
         self.pool = pool
+        self.session_manager = api_helper.session_manager(self, max_threads=max_threads)
         self.auth_details: Optional[auth_details] = None
         self.cookies: Dict[str, Any] = {}
         self.profile_directory = option.get("profile_directory", "")
@@ -166,7 +166,7 @@ class create_auth(create_user):
             error = response["error"]
             error_message = response["error"]["message"]
             error_code = error["code"]
-            error = error_details()
+            error = error_details(error)
             if error_code == 0:
                 pass
             elif error_code == 101:
@@ -304,6 +304,8 @@ class create_auth(create_user):
                             continue
                         subscription = subscription | subscription2.__dict__
                         subscription = create_user(subscription, self)
+                        if subscription.isBlocked:
+                            continue
                         subscription.session_manager = self.session_manager
                         subscription.subscriber = self
                         valid_subscriptions.append(subscription)
@@ -321,6 +323,8 @@ class create_auth(create_user):
                 if "error" in result or not result["subscribedBy"]:
                     continue
                 subscription = create_user(result, self)
+                if subscription.isBlocked:
+                    continue
                 subscription.session_manager = self.session_manager
                 subscription.subscriber = self
                 results.append([subscription])
@@ -360,7 +364,7 @@ class create_auth(create_user):
                 link = link.replace(f"limit={limit}", f"limit={limit}")
                 new_link = link.replace("offset=0", f"offset={num}")
                 links.append(new_link)
-        multiplier = self.session_manager.pool._processes
+        multiplier = getattr(self.session_manager.pool, "_processes")
         if links:
             link = links[-1]
         else:

@@ -160,25 +160,30 @@ class create_auth(create_user):
                 self.active = False
         return self
 
-    def resolve_auth_errors(self, response: dict[str, Any]):
+    def resolve_auth_errors(self, response: Union[dict[str, Any], error_details]):
         # Adds an error object to self.auth.errors
-        if "error" in response:
+        if isinstance(response, error_details):
+            error = response
+        elif isinstance(response, dict) and "error" in response:
             error = response["error"]
             error_message = response["error"]["message"]
             error_code = error["code"]
             error = error_details(error)
-            if error_code == 0:
-                pass
-            elif error_code == 101:
-                error_message = "Blocked by 2FA."
-            elif error_code == 401:
-                # Session/Refresh
-                pass
-            error.code = error_code
-            error.message = error_message
-            self.errors.append(error)
         else:
             self.errors.clear()
+            return
+        error_message = error.message
+        error_code = error.code
+        if error_code == 0:
+            pass
+        elif error_code == 101:
+            error_message = "Blocked by 2FA."
+        elif error_code == 401:
+            # Session/Refresh
+            pass
+        error.code = error_code
+        error.message = error_message
+        self.errors.append(error)
 
     async def get_lists(self, refresh=True, limit=100, offset=0):
         api_type = "lists"

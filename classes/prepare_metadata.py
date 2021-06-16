@@ -1,15 +1,12 @@
 import copy
 import os
-from enum import unique
 from itertools import chain, groupby
-from math import exp
-from typing import Dict, MutableMapping, Union
+from typing import MutableMapping, Union
 
 import jsonpickle
 from apis.onlyfans.classes.create_auth import create_auth
 from apis.onlyfans.classes.extras import media_types
 from helpers import main_helper
-from requests.api import get
 
 global_version = 2
 

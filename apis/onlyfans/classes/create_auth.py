@@ -22,10 +22,11 @@ from apis.onlyfans.classes.extras import (
 from dateutil.relativedelta import relativedelta
 from user_agent import generate_user_agent
 
+
 class create_auth(create_user):
     def __init__(
         self,
-        option:dict[str,Any] = {},
+        option: dict[str, Any] = {},
         user: create_user = create_user(),
         pool: Optional[Pool] = None,
         max_threads: int = -1,
@@ -54,7 +55,7 @@ class create_auth(create_user):
         self.guest = False
         self.active: bool = False
         self.errors: list[error_details] = []
-        self.extras: Dict[str, dict[str, Any]] = {}
+        self.extras: Dict[str, Any] = {}
 
     def update(self, data: Dict[str, Any]):
         for key, value in data.items():
@@ -191,7 +192,7 @@ class create_auth(create_user):
         self.lists = results
         return results
 
-    async def get_user(self, identifier: Union[str, int])->Union[create_user,dict]:
+    async def get_user(self, identifier: Union[str, int]) -> Union[create_user, dict]:
         link = endpoint_links(identifier).users
         result = await self.session_manager.json_request(link)
         result["session_manager"] = self.session_manager
@@ -239,7 +240,6 @@ class create_auth(create_user):
         if not refresh:
             subscriptions = self.subscriptions
             return subscriptions
-        link = endpoint_links(global_limit=limit, global_offset=offset).subscriptions
         ceil = math.ceil(self.subscribesCount / limit)
         a = list(range(ceil))
         offset_array = []
@@ -276,8 +276,6 @@ class create_auth(create_user):
 
             async def multi(item):
                 link = item
-                # link = item["link"]
-                # session = item["session"]
                 subscriptions = await self.session_manager.json_request(link)
                 valid_subscriptions = []
                 extras = {}
@@ -298,7 +296,7 @@ class create_auth(create_user):
                         tasks.append(task)
                 tasks = await asyncio.gather(*tasks)
                 for task in tasks:
-                    subscription2:Union[create_user,dict] = task
+                    subscription2: Union[create_user, dict] = task
                     for subscription in subscriptions:
                         if isinstance(subscription2, dict):
                             continue

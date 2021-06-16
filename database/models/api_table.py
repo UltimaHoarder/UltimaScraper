@@ -3,7 +3,6 @@
 from datetime import datetime
 from typing import cast
 import sqlalchemy
-from sqlalchemy.orm import declarative_base
 
 class api_table():
     __tablename__ = ""

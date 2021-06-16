@@ -90,8 +90,7 @@ class session_manager:
         self.auth = auth
 
     def create_client_session(self):
-        proxies = self.proxies
-        proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
+        proxy = self.get_proxy()
         connector = ProxyConnector.from_url(proxy) if proxy else None
 
         final_cookies = self.auth.cookies if hasattr(self.auth, "cookies") else {}
@@ -99,7 +98,10 @@ class session_manager:
             connector=connector, cookies=final_cookies, read_timeout=None
         )
         return client_session
-
+    def get_proxy(self)->str:
+        proxies = self.proxies
+        proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
+        return proxy
     def stimulate_sessions(self):
         # Some proxies switch IP addresses if no request have been made for x amount of secondss
         def do(session_manager):
@@ -257,8 +259,7 @@ class session_manager:
                     temp_response = [
                         response
                         for response in responses
-                        if response
-                        and URL.human_repr(response.url) == download_item.link
+                        if response and str(response.url) == download_item.link
                     ]
                     if temp_response:
                         temp_response = temp_response[0]
@@ -441,7 +442,9 @@ def restore_missing_data(master_set2, media_set, split_by):
     return new_set
 
 
-async def scrape_endpoint_links(links, session_manager: Optional[session_manager], api_type):
+async def scrape_endpoint_links(
+    links, session_manager: Optional[session_manager], api_type
+):
     media_set = []
     max_attempts = 100
     api_type = api_type.capitalize()

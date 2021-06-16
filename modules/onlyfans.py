@@ -116,7 +116,7 @@ async def account_setup(
         and json_settings["browser"]["auth"]
     ):
         domain = "https://onlyfans.com"
-        cookies = oflogin.login(auth, domain, auth.session_manager.proxies[0])
+        cookies = oflogin.login(auth, domain, auth.session_manager.get_proxy())
     return status, subscriptions
 
 
@@ -404,7 +404,7 @@ async def paid_content_scraper(api: start, identifiers=[]):
                     parent_type = ""
                     new_metadata = new_metadata + old_metadata
                     subscription.set_scraped(api_type, new_metadata)
-                    w = process_metadata(
+                    process_metadata(
                         api,
                         metadata_path,
                         formatted_directories,
@@ -415,7 +415,6 @@ async def paid_content_scraper(api: start, identifiers=[]):
                         subscription,
                         delete_metadatas,
                     )
-                    print
 
 
 def format_media_types():
@@ -839,7 +838,7 @@ async def prepare_scraper(authed: create_auth, site_name, item):
         )
         new_metadata = new_metadata + old_metadata
         subscription.set_scraped(api_type, new_metadata)
-        w = process_metadata(
+        process_metadata(
             authed,
             metadata_path,
             formatted_directories,
@@ -850,7 +849,6 @@ async def prepare_scraper(authed: create_auth, site_name, item):
             subscription,
             delete_metadatas,
         )
-        print
     else:
         print("No " + api_type + " Found.")
     return True
@@ -1021,10 +1019,9 @@ def media_scraper(
     if api_type == "Stories":
         pass
     if api_type == "Archived":
-        print
         pass
     if api_type == "Posts":
-        print
+        pass
     if api_type == "Messages":
         pass
     download_path = formatted_directories["download_directory"]

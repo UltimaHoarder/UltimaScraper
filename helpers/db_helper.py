@@ -34,8 +34,8 @@ def run_revisions(alembic_directory: str, database_path: str = ""):
     alembic_cfg = Config(ini_path)
     alembic_cfg.set_main_option('script_location', script_location)
     alembic_cfg.set_main_option('sqlalchemy.url', full_database_path)
-    x = command.upgrade(alembic_cfg, 'head')
-    x = command.revision(alembic_cfg, autogenerate=True, message="content")
+    command.upgrade(alembic_cfg, 'head')
+    command.revision(alembic_cfg, autogenerate=True, message="content")
 
 
 def run_migrations(alembic_directory: str, database_path: str) -> None:
@@ -45,7 +45,7 @@ def run_migrations(alembic_directory: str, database_path: str) -> None:
     alembic_cfg = Config(ini_path)
     alembic_cfg.set_main_option('script_location', script_location)
     alembic_cfg.set_main_option('sqlalchemy.url', full_database_path)
-    x = command.upgrade(alembic_cfg, 'head')
+    command.upgrade(alembic_cfg, 'head')
 
 
 class database_collection(object):

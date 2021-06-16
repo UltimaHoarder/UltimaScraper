@@ -9,7 +9,7 @@ import shutil
 import string
 import traceback
 from datetime import datetime
-from itertools import chain, groupby, zip_longest
+from itertools import zip_longest
 from multiprocessing.dummy import Pool as ThreadPool
 from types import SimpleNamespace
 from typing import Any, Optional, Tuple, Union
@@ -20,7 +20,6 @@ import psutil
 import requests
 import ujson
 from aiohttp.client_exceptions import (
-    ClientConnectorError,
     ClientOSError,
     ClientPayloadError,
     ContentTypeError,
@@ -32,7 +31,6 @@ from apis.onlyfans.classes import create_user
 from apis.onlyfans.classes.extras import content_types
 from bs4 import BeautifulSoup
 from classes.prepare_metadata import format_variables, prepare_reformat
-from database.models.media_table import media_table
 from mergedeep import Strategy, merge
 from sqlalchemy import inspect
 from sqlalchemy.orm import declarative_base
@@ -210,8 +208,7 @@ def legacy_database_fixer(database_path, database, database_name, database_exist
             datas.append(new_item)
         print
         database_session.close()
-        x = export_sqlite(old_database_path, datas, database_name, legacy_fixer=True)
-    print
+        export_sqlite(old_database_path, datas, database_name, legacy_fixer=True)
 
 
 def fix_sqlite(
@@ -302,7 +299,7 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None
             os.remove(database_path)
             database_exists = False
     if not legacy_fixer:
-        x = legacy_database_fixer(
+        legacy_database_fixer(
             database_path, database, database_name, database_exists
         )
     db_helper.run_migrations(alembic_location, database_path)
@@ -327,7 +324,7 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None
             post_db = api_table()
         post_db.post_id = post_id
         post_db.text = post["text"]
-        if post["price"] == None:
+        if post["price"] is None:
             post["price"] = 0
         post_db.price = post["price"]
         post_db.paid = post["paid"]
@@ -850,7 +847,7 @@ async def send_webhook(
             embed.add_field("username", username)
             message.embeds.append(embed)
             message = ujson.loads(json.dumps(message, default=lambda o: o.__dict__))
-            x = requests.post(webhook_link, json=message)
+            requests.post(webhook_link, json=message)
     if category == "download_webhook":
         subscriptions: list[create_user] = await item.get_subscriptions(refresh=False)
         for subscription in subscriptions:
@@ -895,7 +892,7 @@ def delete_empty_directories(directory):
                     if content_count == 1 and "desktop.ini" in contents:
                         shutil.rmtree(full_path, ignore_errors=True)
 
-    x = start(directory)
+    start(directory)
     if os.path.exists(directory):
         if not os.listdir(directory):
             os.rmdir(directory)

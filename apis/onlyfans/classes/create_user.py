@@ -13,7 +13,6 @@ from apis.onlyfans.classes.extras import (
     content_types,
     endpoint_links,
     handle_refresh,
-    media_types,
 )
 
 
@@ -371,7 +370,7 @@ class create_user:
         ).message_by_id
         results = await self.session_manager.json_request(link)
         results = [x for x in results["list"] if x["id"] == message_id]
-        result = result = results[0] if results else {}
+        result = results[0] if results else {}
         final_result = create_message(result, self)
         return final_result
 

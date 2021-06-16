@@ -13,7 +13,7 @@ import traceback
 def fix_directories(api,posts, all_files, database_session: scoped_session, folder, site_name, parent_type, api_type, username, base_directory, json_settings):
     new_directories = []
 
-    def fix_directories(post: api_table, media_db: list[media_table]):
+    def fix_directories2(post: api_table, media_db: list[media_table]):
         delete_rows = []
         final_api_type = os.path.join("Archived",api_type) if post.archived else api_type
         post_id = post.post_id
@@ -32,8 +32,6 @@ def fix_directories(api,posts, all_files, database_session: scoped_session, fold
             date_format = json_settings["date_format"]
             text_length = json_settings["text_length"]
             download_path = base_directory
-            today = datetime.today()
-            today = today.strftime("%d-%m-%Y %H:%M:%S")
             option = {}
             option["site_name"] = site_name
             option["post_id"] = post_id
@@ -110,7 +108,7 @@ def fix_directories(api,posts, all_files, database_session: scoped_session, fold
     result = database_session.query(folder.media_table)
     media_db = result.all()
     pool = api.pool
-    delete_rows = pool.starmap(fix_directories, product(
+    delete_rows = pool.starmap(fix_directories2, product(
     posts, [media_db]))
     delete_rows = list(chain(*delete_rows))
     for delete_row in delete_rows:
@@ -123,7 +121,6 @@ def fix_directories(api,posts, all_files, database_session: scoped_session, fold
 
 def start(api,Session, parent_type, api_type, api_path, site_name, subscription, folder, json_settings):
     api_table = folder.api_table
-    media_table = folder.media_table
     database_session = Session()
     result = database_session.query(api_table).all()
     metadata = getattr(subscription.temp_scraped, api_type)
@@ -159,7 +156,7 @@ def start(api,Session, parent_type, api_type, api_path, site_name, subscription,
         x = [os.path.join(root, x) for x in files]
         all_files.extend(x)
 
-    fixed, new_directories = fix_directories(
+    fix_directories(
         api,result, all_files, database_session, folder, site_name, parent_type, api_type, username, root_directory, json_settings)
     database_session.close()
     return metadata

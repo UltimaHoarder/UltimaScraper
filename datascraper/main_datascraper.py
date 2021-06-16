@@ -1,16 +1,11 @@
-from itertools import product
 import os
 import timeit
-from typing import Optional, Union
+from typing import Optional
 
 import helpers.main_helper as main_helper
-from helpers.main_helper import choose_option
 import modules.onlyfans as m_onlyfans
 from apis.onlyfans import onlyfans as OnlyFans
-from apis.starsavn import starsavn as StarsAVN
-import modules.starsavn as m_starsavn
-import time
-import requests
+from helpers.main_helper import choose_option
 
 api_helper = OnlyFans.api_helper
 
@@ -57,9 +52,7 @@ async def start_datascraper(
         if not api:
             api = OnlyFans.start(max_threads=json_settings["max_threads"])
             api.settings = json_config
-            api = main_helper.process_profiles(
-                json_settings, proxies, site_name, api
-            )
+            api = main_helper.process_profiles(json_settings, proxies, site_name, api)
             print
 
         subscription_array = []
@@ -82,7 +75,7 @@ async def start_datascraper(
             )
             if not setup:
                 if webhooks:
-                    x = await main_helper.process_webhooks(api, "auth_webhook", "failed")
+                    await main_helper.process_webhooks(api, "auth_webhook", "failed")
                 auth_details = {}
                 auth_details["auth"] = auth.auth_details.__dict__
                 profile_directory = auth.profile_directory
@@ -94,8 +87,10 @@ async def start_datascraper(
                 continue
             auth_count += 1
             subscription_array += subscriptions
-            x = await main_helper.process_webhooks(api, "auth_webhook", "succeeded")
-        subscription_list = module.format_options(subscription_array, "usernames", api.auths)
+            await main_helper.process_webhooks(api, "auth_webhook", "succeeded")
+        subscription_list = module.format_options(
+            subscription_array, "usernames", api.auths
+        )
         if jobs["scrape_paid_content"]:
             print("Scraping Paid Content")
             paid_content = await module.paid_content_scraper(api, identifiers)
@@ -110,9 +105,9 @@ async def start_datascraper(
                 site_name_lower,
                 site_name,
             )
-        x = await main_helper.process_downloads(api, module)
+        await main_helper.process_downloads(api, module)
         if webhooks:
-            x = await main_helper.process_webhooks(api, "download_webhook", "succeeded")
+            await main_helper.process_webhooks(api, "download_webhook", "succeeded")
     elif site_name_lower == "starsavn":
         pass
         # site_name = "StarsAVN"

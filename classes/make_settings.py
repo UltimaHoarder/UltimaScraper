@@ -4,6 +4,8 @@ from urllib.parse import urlparse
 import os
 import uuid as uuid
 
+from yarl import URL
+
 def fix(config={}):
     info = config.get("info")
     if not info:
@@ -72,12 +74,13 @@ class config(object):
                 self.exit_on_completion = exit_on_completion
                 self.infinite_loop = infinite_loop
                 self.loop_timeout = loop_timeout
-                if "github.com" in dynamic_rules_link:
-                    if "raw" not in dynamic_rules_link:
-                        parsed_link = urlparse(dynamic_rules_link)
-                        path = parsed_link.path.replace("blob/","")
+                dynamic_rules_link = URL(dynamic_rules_link)
+                url_host = dynamic_rules_link.host
+                if "github.com" == url_host:
+                    if "raw" != url_host:
+                        path = dynamic_rules_link.path.replace("blob/","")
                         dynamic_rules_link = f"https://raw.githubusercontent.com/{path}"
-                self.dynamic_rules_link = dynamic_rules_link
+                self.dynamic_rules_link = str(dynamic_rules_link)
                 self.proxies = proxies
                 self.cert = cert
                 self.random_string = random_string if random_string else uuid.uuid1().hex

@@ -8,11 +8,12 @@ from yarl import URL
 current_version = None
 def fix(config={}):
     global current_version
-    info = config.get("info")
-    if not info:
-        print("If you're not using >= v7 release, please download said release so the script can properly update your config. \nIf you're using >= v7 release or you don't care about your current config settings, press enter to continue. If script crashes, delete config.")
-        input()
-    current_version = info["version"]
+    if config:
+        info = config.get("info")
+        if not info:
+            print("If you're not using >= v7 release, please download said release so the script can properly update your config. \nIf you're using >= v7 release or you don't care about your current config settings, press enter to continue. If script crashes, delete config.")
+            input()
+        current_version = info["version"]
     return config
 
 

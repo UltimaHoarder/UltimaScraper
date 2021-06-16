@@ -8,19 +8,19 @@ from apis.onlyfans.classes.extras import (auth_details,
 from .. import api_helper
 
 
-# def session_retry_rules(r, link: str) -> int:
+# def session_retry_rules(response, link: str) -> int:
 #     """
 #     0 Fine, 1 Continue, 2 Break
 #     """
 #     status_code = 0
 #     if "https://onlyfans.com/api2/v2/" in link:
-#         text = r.text
+#         text = response.text
 #         if "Invalid request sign" in text:
 #             status_code = 1
 #         elif "Access Denied" in text:
 #             status_code = 2
 #     else:
-#         if not r.status_code == 200:
+#         if not response.status_code == 200:
 #             status_code = 1
 #     return status_code
 

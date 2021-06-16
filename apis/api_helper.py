@@ -109,8 +109,8 @@ class session_manager:
                 for session in session_manager.sessions:
 
                     def process_links(link, session):
-                        r = session.get(link)
-                        text = r.text.strip("\n")
+                        response = session.get(link)
+                        text = response.text.strip("\n")
                         if text == session.ip:
                             print
                         else:

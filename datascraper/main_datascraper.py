@@ -12,8 +12,8 @@ api_helper = OnlyFans.api_helper
 # test_ip = None
 # def multi(link,session):
 #     global test_ip
-#     r = session.get(link)
-#     text = r.text.strip('\n')
+#     response = session.get(link)
+#     text = response.text.strip('\n')
 #     if test_ip == None:
 #         test_ip = text
 #     return text

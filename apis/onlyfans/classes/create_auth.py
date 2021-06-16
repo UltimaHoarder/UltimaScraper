@@ -115,11 +115,11 @@ class create_auth(create_user):
                                 )
                                 code = input("Enter 2FA Code\n")
                                 data = {"code": code, "rememberMe": True}
-                                r = await self.session_manager.json_request(
+                                response = await self.session_manager.json_request(
                                     link, method="POST", payload=data
                                 )
-                                if "error" in r:
-                                    error.message = r["error"]["message"]
+                                if "error" in response:
+                                    error.message = response["error"]["message"]
                                     count += 1
                                 else:
                                     print("Success")
@@ -149,22 +149,22 @@ class create_auth(create_user):
     async def get_authed(self):
         if not self.active:
             link = endpoint_links().customer
-            r = await self.session_manager.json_request(link)
-            if r:
-                self.resolve_auth_errors(r)
+            response = await self.session_manager.json_request(link)
+            if response:
+                self.resolve_auth_errors(response)
                 if not self.errors:
                     self.active = True
-                    self.update(r)
+                    self.update(response)
             else:
                 # 404'ed
                 self.active = False
         return self
 
-    def resolve_auth_errors(self, r: dict[str, Any]):
+    def resolve_auth_errors(self, response: dict[str, Any]):
         # Adds an error object to self.auth.errors
-        if "error" in r:
-            error = r["error"]
-            error_message = r["error"]["message"]
+        if "error" in response:
+            error = response["error"]
+            error_message = response["error"]["message"]
             error_code = error["code"]
             error = error_details()
             if error_code == 0:

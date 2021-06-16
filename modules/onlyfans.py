@@ -298,6 +298,8 @@ async def profile_scraper(
         os.makedirs(directory2, exist_ok=True)
         download_path = os.path.join(directory2, media_link.split("/")[-2] + ".jpg")
         response = await authed.session_manager.json_request(media_link, method="HEAD")
+        if not response:
+            continue
         if os.path.isfile(download_path):
             if os.path.getsize(download_path) == response.content_length:
                 continue
@@ -1265,10 +1267,10 @@ async def manage_subscriptions(
 ):
     results = await authed.get_subscriptions(identifiers=identifiers, refresh=refresh)
     if blacklist_name:
-        r = await authed.get_lists()
-        if not r:
+        response = await authed.get_lists()
+        if not response:
             return [False, []]
-        new_results = [c for c in r if blacklist_name == c["name"]]
+        new_results = [c for c in response if blacklist_name == c["name"]]
         if new_results:
             item = new_results[0]
             list_users = item["users"]

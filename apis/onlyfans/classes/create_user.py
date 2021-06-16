@@ -211,7 +211,9 @@ class create_user:
         self.subscriber = subscriber
         self.scraped = content_types()
         self.temp_scraped = content_types()
-        self.session_manager = subscriber.session_manager
+        self.session_manager = None
+        if subscriber:
+            self.session_manager = subscriber.session_manager
         self.download_info = {}
         self.__raw__ = option
 

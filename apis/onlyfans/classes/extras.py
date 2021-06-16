@@ -1,9 +1,10 @@
 import copy
 from itertools import chain
+from typing import Any
 
 
 class auth_details:
-    def __init__(self, option: dict = {}):
+    def __init__(self, option: dict[str,Any] = {}):
         self.username = option.get("username", "")
         self.auth_id = option.get("auth_id", "")
         self.sess = option.get("sess", "")
@@ -85,14 +86,14 @@ class error_details:
 
 
 def create_headers(
-    dynamic_rules,
-    auth_id,
+    dynamic_rules:dict[str,Any],
+    auth_id:str,
     user_agent: str = "",
     x_bc: str = "",
     sess: str = "",
     link: str = "https://onlyfans.com/",
 ):
-    headers = {}
+    headers:dict[str,Any] = {}
     headers["user-agent"] = user_agent
     headers["referer"] = link
     headers["user-id"] = auth_id

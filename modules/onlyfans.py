@@ -23,16 +23,11 @@ from apis.onlyfans.classes.create_story import create_story
 from apis.onlyfans.classes.create_user import create_user
 from apis.onlyfans.classes.extras import auth_details, media_types
 from apis.onlyfans.onlyfans import start
-from classes.prepare_metadata import create_metadata, format_content, prepare_reformat
+from classes.prepare_metadata import (create_metadata, format_content,
+                                      prepare_reformat)
 from helpers import db_helper
-from helpers.main_helper import (
-    choose_option,
-    download_session,
-    export_data,
-    export_sqlite,
-    fix_sqlite,
-    import_archive,
-)
+from helpers.main_helper import (choose_option, download_session, export_data,
+                                 export_sqlite, fix_sqlite, import_archive)
 from mergedeep import Strategy, merge
 from sqlalchemy.orm import declarative_base, session, sessionmaker
 from sqlalchemy.orm.scoping import scoped_session
@@ -120,12 +115,8 @@ async def account_setup(
         and auth.auth_details.password
         and json_settings["browser"]["auth"]
     ):
-        proxy = None
-        session = auth.session_manager.sessions[0]
-        if session.proxies:
-            proxy = session.proxies["https"]
         domain = "https://onlyfans.com"
-        cookies = oflogin.login(auth, domain, proxy)
+        cookies = oflogin.login(auth, domain, auth.session_manager.proxies[0])
     return status, subscriptions
 
 
@@ -316,8 +307,6 @@ async def profile_scraper(
             session=session,
             stream=True,
             json_format=False,
-            sleep=False,
-            progress_bar=progress_bar,
         )
         downloaded = await main_helper.write_data(response, download_path, progress_bar)
     await session.close()

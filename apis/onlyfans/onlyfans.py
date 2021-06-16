@@ -1,46 +1,44 @@
-from typing import List, Optional, Union
+from typing import  Any, Dict, Optional, Union
 
 from apis.onlyfans.classes import create_user
 from apis.onlyfans.classes.create_auth import create_auth
-from apis.onlyfans.classes.extras import (auth_details, content_types,
+from apis.onlyfans.classes.extras import (auth_details,
                                           endpoint_links)
 
 from .. import api_helper
 
 
-def session_retry_rules(r, link: str) -> int:
-    """
-    0 Fine, 1 Continue, 2 Break
-    """
-    status_code = 0
-    if "https://onlyfans.com/api2/v2/" in link:
-        text = r.text
-        if "Invalid request sign" in text:
-            status_code = 1
-        elif "Access Denied" in text:
-            status_code = 2
-    else:
-        if not r.status_code == 200:
-            status_code = 1
-    return status_code
+# def session_retry_rules(r, link: str) -> int:
+#     """
+#     0 Fine, 1 Continue, 2 Break
+#     """
+#     status_code = 0
+#     if "https://onlyfans.com/api2/v2/" in link:
+#         text = r.text
+#         if "Invalid request sign" in text:
+#             status_code = 1
+#         elif "Access Denied" in text:
+#             status_code = 2
+#     else:
+#         if not r.status_code == 200:
+#             status_code = 1
+#     return status_code
 
 
 class start:
     def __init__(
         self,
-        custom_request=callable,
-        max_threads=-1,
+        max_threads:int=-1,
     ) -> None:
         self.auths: list[create_auth] = []
         self.subscriptions: list[create_user] = []
-        self.custom_request = custom_request
         self.max_threads = max_threads
         self.lists = None
         self.endpoint_links = endpoint_links
         self.pool = api_helper.multiprocessing()
-        self.settings = {}
+        self.settings:Dict[str,dict[str,Any]] = {}
 
-    def add_auth(self, option={}, only_active=False):
+    def add_auth(self, option:Dict[str,bool]={}, only_active:bool=False):
         if only_active and not option.get("active"):
             return
         auth = create_auth(pool=self.pool, max_threads=self.max_threads)

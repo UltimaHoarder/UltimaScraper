@@ -10,7 +10,7 @@ from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool as ThreadPool
 from os.path import dirname as up
 from random import randint
-from typing import Any, Optional
+from typing import Any, Dict, List, Optional
 from urllib.parse import urlparse
 
 import aiohttp
@@ -28,15 +28,15 @@ from aiohttp.client_exceptions import (
 from aiohttp.client_reqrep import ClientResponse
 from aiohttp_socks import ChainProxyConnector, ProxyConnector, ProxyType
 from database.models.media_table import media_table
-
-from apis.onlyfans.classes import create_user
 from yarl import URL
+
+from apis.onlyfans.classes import create_auth, create_user
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
 
 
-global_settings = {}
+global_settings: dict[str, Any] = {}
 global_settings[
     "dynamic_rules_link"
 ] = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json"
@@ -65,7 +65,7 @@ def calculate_max_threads(max_threads=None):
     return max_threads
 
 
-def multiprocessing(max_threads=None):
+def multiprocessing(max_threads: Optional[int] = None):
     max_threads = calculate_max_threads(max_threads)
     pool = ThreadPool(max_threads)
     return pool
@@ -74,22 +74,18 @@ def multiprocessing(max_threads=None):
 class session_manager:
     def __init__(
         self,
-        auth,
-        original_sessions=[],
-        headers: dict = {},
+        auth: create_auth,
+        headers: dict[str, Any] = {},
         proxies: list[str] = [],
-        session_retry_rules=None,
-        max_threads=-1,
+        max_threads: int = -1,
     ) -> None:
-        self.sessions = self.add_sessions(original_sessions)
         self.pool = multiprocessing()
         self.max_threads = max_threads
         self.kill = False
         self.headers = headers
         self.proxies: list[str] = proxies
-        self.session_retry_rules = session_retry_rules
         dr_link = global_settings["dynamic_rules_link"]
-        dynamic_rules = requests.get(dr_link).json()
+        dynamic_rules = requests.get(dr_link).json()  # type: ignore
         self.dynamic_rules = dynamic_rules
         self.auth = auth
 
@@ -103,20 +99,6 @@ class session_manager:
             connector=connector, cookies=final_cookies, read_timeout=None
         )
         return client_session
-
-    def add_sessions(self, original_sessions: list, overwrite_old_sessions=True):
-        if overwrite_old_sessions:
-            sessions = []
-        else:
-            sessions = self.sessions
-        for original_session in original_sessions:
-            cloned_session = copy.deepcopy(original_session)
-            ip = getattr(original_session, "ip", "")
-            cloned_session.ip = ip
-            cloned_session.links = []
-            sessions.append(cloned_session)
-        self.sessions = sessions
-        return self.sessions
 
     def stimulate_sessions(self):
         # Some proxies switch IP addresses if no request have been made for x amount of secondss
@@ -155,15 +137,10 @@ class session_manager:
         self,
         link: str,
         session: Optional[ClientSession] = None,
-        method="GET",
-        stream=False,
-        json_format=True,
-        payload={},
-        progress_bar=None,
-        sleep=True,
-        timeout=20,
-        ignore_rules=False,
-        force_json=False,
+        method: str = "GET",
+        stream: bool = False,
+        json_format: bool = True,
+        payload: Dict[str, str] = {},
     ) -> Any:
         headers = {}
         custom_session = False
@@ -174,6 +151,7 @@ class session_manager:
         headers["accept"] = "application/json, text/plain, */*"
         headers["Connection"] = "keep-alive"
         request_method = None
+        result = None
         if method == "HEAD":
             request_method = session.head
         elif method == "GET":
@@ -182,7 +160,8 @@ class session_manager:
             request_method = session.post
         elif method == "DELETE":
             request_method = session.delete
-        result = None
+        else:
+            return None
         while True:
             try:
                 response = await request_method(link, headers=headers, data=payload)
@@ -196,14 +175,14 @@ class session_manager:
                     else:
                         result = await response.read()
                 break
-            except ClientConnectorError as e:
+            except ClientConnectorError:
                 break
             except (
                 ClientPayloadError,
                 ContentTypeError,
                 ClientOSError,
                 ServerDisconnectedError,
-            ) as e:
+            ):
                 continue
         if custom_session:
             await session.close()
@@ -356,7 +335,6 @@ class session_manager:
                     session,
                     json_format=False,
                     stream=True,
-                    progress_bar=progress_bar,
                 )
             )
             if response.status != 200:
@@ -390,7 +368,7 @@ class session_manager:
             break
         return new_task
 
-    def session_rules(self, link: str) -> dict:
+    def session_rules(self, link: str) -> dict[str, Any]:
         headers = self.headers
         if "https://onlyfans.com/api2/v2/" in link:
             dynamic_rules = self.dynamic_rules
@@ -463,7 +441,7 @@ def restore_missing_data(master_set2, media_set, split_by):
     return new_set
 
 
-async def scrape_endpoint_links(links, session_manager: session_manager, api_type):
+async def scrape_endpoint_links(links, session_manager: Optional[session_manager], api_type):
     media_set = []
     max_attempts = 100
     api_type = api_type.capitalize()

@@ -3,7 +3,6 @@ import asyncio
 import os
 import time
 import traceback
-
 import tests.main_test as main_test
 
 main_test.version_check()

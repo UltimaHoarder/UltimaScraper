@@ -1,6 +1,6 @@
 import math
 from itertools import chain
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from urllib import parse
 
 from apis import api_helper
@@ -12,6 +12,7 @@ from apis.onlyfans.classes.create_story import create_story
 from apis.onlyfans.classes.extras import (
     content_types,
     endpoint_links,
+    error_details,
     handle_refresh,
 )
 
@@ -273,7 +274,7 @@ class create_user:
 
     async def get_posts(
         self, links: Optional[list] = None, limit=10, offset=0, refresh=True
-    ) -> list:
+    ) ->Optional[list[create_post]]:
         api_type = "posts"
         if not refresh:
             result = handle_refresh(self, api_type)
@@ -300,15 +301,17 @@ class create_user:
         self.temp_scraped.Posts = final_results
         return final_results
 
-    async def get_post(self, identifier=None, limit=10, offset=0):
+    async def get_post(self, identifier=None, limit=10, offset=0)->Union[create_post,error_details]:
         if not identifier:
             identifier = self.id
         link = endpoint_links(
             identifier=identifier, global_limit=limit, global_offset=offset
         ).post_by_id
-        result = await self.session_manager.json_request(link)
-        final_result = create_post(result, self)
-        return final_result
+        response = await self.session_manager.json_request(link)
+        if isinstance(dict,response):
+            final_result = create_post(response, self)
+            return final_result
+        return response
 
     async def get_messages(
         self,

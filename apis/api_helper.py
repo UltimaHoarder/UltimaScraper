@@ -367,7 +367,8 @@ class session_manager:
                     )
                 elif api_type == "posts":
                     new_result = await subscription.get_post(post_id)
-                    print
+                if isinstance(new_result,error_details):
+                    continue
                 if new_result and new_result.media:
                     media_list = [
                         x for x in new_result.media if x["id"] == download_item.media_id

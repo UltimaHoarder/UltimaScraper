@@ -308,7 +308,7 @@ class create_user:
             identifier=identifier, global_limit=limit, global_offset=offset
         ).post_by_id
         response = await self.session_manager.json_request(link)
-        if isinstance(dict,response):
+        if isinstance(response,dict):
             final_result = create_post(response, self)
             return final_result
         return response

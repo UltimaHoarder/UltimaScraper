@@ -50,7 +50,6 @@ class create_auth(create_user):
         self.pool = pool
         self.session_manager = api_helper.session_manager(self, max_threads=max_threads)
         self.auth_details: Optional[auth_details] = None
-        self.cookies: Dict[str, Any] = {}
         self.profile_directory = option.get("profile_directory", "")
         self.guest = False
         self.active: bool = False
@@ -63,36 +62,25 @@ class create_auth(create_user):
             if found_attr:
                 setattr(self, key, value)
 
-    async def login(
-        self, full: bool = False, max_attempts: int = 10, guest: bool = False
-    ):
+    async def login(self, max_attempts: int = 10, guest: bool = False):
         auth_version = "(V1)"
         auth_items = self.auth_details
         if not auth_items:
             return self
         if guest and auth_items:
-            auth_items.auth_id = "0"
+            auth_items.cookie.auth_id = "0"
             auth_items.user_agent = generate_user_agent()  # type: ignore
         link = endpoint_links().customer
         user_agent = auth_items.user_agent  # type: ignore
-        auth_id = str(auth_items.auth_id)
-        x_bc = auth_items.x_bc
+        auth_id = str(auth_items.cookie.auth_id)
         # expected string error is fixed by auth_id
-        auth_cookies = [
-            {"name": "auth_id", "value": auth_id},
-            {"name": "sess", "value": auth_items.sess},
-            {"name": "auth_hash", "value": auth_items.auth_hash},
-            {"name": f"auth_uniq_{auth_id}", "value": auth_items.auth_uniq_},
-            {"name": f"auth_uid_{auth_id}", "value": None},
-        ]
         dynamic_rules = self.session_manager.dynamic_rules
-        a: List[Any] = [dynamic_rules, auth_id, user_agent, x_bc, auth_items.sess, link]
+        a: List[Any] = [dynamic_rules, auth_id, user_agent, link]
         self.session_manager.headers = create_headers(*a)
         if guest:
             print("Guest Authentication")
             return self
 
-        self.cookies = {d["name"]: d["value"] for d in auth_cookies}
         count = 1
         while count < max_attempts + 1:
             string = f"Auth {auth_version} Attempt {count}/{max_attempts}"

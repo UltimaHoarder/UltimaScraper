@@ -4,8 +4,7 @@ from typing import Any
 
 
 class create_post:
-    def __init__(
-        self, option, user:create_user) -> None:
+    def __init__(self, option, user: create_user) -> None:
         self.responseType: str = option.get("responseType")
         self.id: int = option.get("id")
         self.postedAt: str = option.get("postedAt")
@@ -39,7 +38,7 @@ class create_post:
         self.mentionedUsers: list = option.get("mentionedUsers")
         self.linkedUsers: list = option.get("linkedUsers")
         self.linkedPosts: list = option.get("linkedPosts")
-        self.media: list = option.get("media")
+        self.media: list = option.get("media", [])
         self.canViewMedia: bool = option.get("canViewMedia")
         self.preview: list = option.get("preview")
         self.canPurchase: bool = option.get("canPurchase")

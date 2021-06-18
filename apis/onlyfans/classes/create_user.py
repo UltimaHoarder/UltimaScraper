@@ -274,7 +274,7 @@ class create_user:
 
     async def get_posts(
         self, links: Optional[list] = None, limit=10, offset=0, refresh=True
-    ) ->Optional[list[create_post]]:
+    ) -> Optional[list[create_post]]:
         api_type = "posts"
         if not refresh:
             result = handle_refresh(self, api_type)
@@ -301,14 +301,16 @@ class create_user:
         self.temp_scraped.Posts = final_results
         return final_results
 
-    async def get_post(self, identifier=None, limit=10, offset=0)->Union[create_post,error_details]:
+    async def get_post(
+        self, identifier=None, limit=10, offset=0
+    ) -> Union[create_post, error_details]:
         if not identifier:
             identifier = self.id
         link = endpoint_links(
             identifier=identifier, global_limit=limit, global_offset=offset
         ).post_by_id
         response = await self.session_manager.json_request(link)
-        if isinstance(response,dict):
+        if isinstance(response, dict):
             final_result = create_post(response, self)
             return final_result
         return response
@@ -330,7 +332,7 @@ class create_user:
                 return result
         if links is None:
             links = []
-        multiplier = getattr(self.session_manager.pool,"_processes")
+        multiplier = getattr(self.session_manager.pool, "_processes")
         if links:
             link = links[-1]
         else:

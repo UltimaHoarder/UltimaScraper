@@ -92,7 +92,7 @@ class session_manager:
         proxies: list[str] = [],
         max_threads: int = -1,
     ) -> None:
-        self.pool:Pool = auth.pool if auth.pool else multiprocessing()
+        self.pool: Pool = auth.pool if auth.pool else multiprocessing()
         self.max_threads = max_threads
         self.kill = False
         self.headers = headers
@@ -106,7 +106,7 @@ class session_manager:
         proxy = self.get_proxy()
         connector = ProxyConnector.from_url(proxy) if proxy else None
 
-        final_cookies = self.auth.cookies if hasattr(self.auth, "cookies") else {}
+        final_cookies = self.auth.auth_details.cookie.format()
         client_session = ClientSession(
             connector=connector, cookies=final_cookies, read_timeout=None
         )
@@ -215,7 +215,9 @@ class session_manager:
             proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
             connector = ProxyConnector.from_url(proxy) if proxy else None
             async with ClientSession(
-                connector=connector, cookies=self.auth.cookies, read_timeout=None
+                connector=connector,
+                cookies=self.auth.auth_details.cookie.format(),
+                read_timeout=None,
             ) as session:
                 for link in links:
                     task = asyncio.ensure_future(self.json_request(link, session))
@@ -234,7 +236,9 @@ class session_manager:
             proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
             connector = ProxyConnector.from_url(proxy) if proxy else None
             async with ClientSession(
-                connector=connector, cookies=self.auth.cookies, read_timeout=None
+                connector=connector,
+                cookies=self.auth.auth_details.cookie.format(),
+                read_timeout=None,
             ) as session:
                 tasks = []
                 # Get content_lengths
@@ -367,7 +371,7 @@ class session_manager:
                     )
                 elif api_type == "posts":
                     new_result = await subscription.get_post(post_id)
-                if isinstance(new_result,error_details):
+                if isinstance(new_result, error_details):
                     continue
                 if new_result and new_result.media:
                     media_list = [

@@ -217,7 +217,7 @@ def fix_sqlite(
     download_directory,
     metadata_directory,
     format_directories,
-    authed:create_auth,
+    authed: create_auth,
     site_name,
     username,
     metadata_directory_format,
@@ -230,14 +230,14 @@ def fix_sqlite(
         mandatory_directories["download_directory"] = download_directory
         mandatory_directories["metadata_directory"] = metadata_directory
         formatted_directories = format_directories(
-        mandatory_directories,
-        authed,
-        site_name,
-        username,
-        metadata_directory_format,
-        "",
-        api_type,
-    )
+            mandatory_directories,
+            authed,
+            site_name,
+            username,
+            metadata_directory_format,
+            "",
+            api_type,
+        )
         final_metadata_directory = formatted_directories["metadata_directory"]
         if all(final_metadata_directory != x for x in final_metadatas):
             final_metadatas.append(final_metadata_directory)
@@ -302,9 +302,7 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None
             os.remove(database_path)
             database_exists = False
     if not legacy_fixer:
-        legacy_database_fixer(
-            database_path, database, database_name, database_exists
-        )
+        legacy_database_fixer(database_path, database, database_name, database_exists)
     db_helper.run_migrations(alembic_location, database_path)
     print
     Session, engine = db_helper.create_database_session(database_path)
@@ -407,7 +405,9 @@ def reformat(prepared_format: prepare_reformat, unformatted):
                 value = "Paid"
     directory = prepared_format.directory
     path = unformatted.replace("{site_name}", prepared_format.site_name)
-    path = path.replace("{first_letter}", prepared_format.model_username[0].capitalize())
+    path = path.replace(
+        "{first_letter}", prepared_format.model_username[0].capitalize()
+    )
     path = path.replace("{post_id}", post_id)
     path = path.replace("{media_id}", media_id)
     path = path.replace("{profile_username}", prepared_format.profile_username)
@@ -669,7 +669,7 @@ def process_profiles(json_settings, proxies, site_name, api: Union[OnlyFans.star
                 auth = api.add_auth(json_auth)
                 auth.session_manager.proxies = proxies
                 auth.profile_directory = user_profile
-                datas["auth"] = auth.auth_details.__dict__
+                datas["auth"] = auth.auth_details.export()
             if datas:
                 export_data(datas, user_auth_filepath)
             print
@@ -959,4 +959,3 @@ def link_picker(media, video_quality):
     if "src" in media:
         link = media["src"]
     return link
-

@@ -1,10 +1,9 @@
 from multiprocessing.pool import Pool
-from typing import  Any, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 from apis.onlyfans.classes import create_user
 from apis.onlyfans.classes.create_auth import create_auth
-from apis.onlyfans.classes.extras import (auth_details,
-                                          endpoint_links)
+from apis.onlyfans.classes.extras import auth_details, endpoint_links, legacy_auth_details
 
 from .. import api_helper
 
@@ -29,21 +28,24 @@ from .. import api_helper
 class start:
     def __init__(
         self,
-        max_threads:int=-1,
+        max_threads: int = -1,
     ) -> None:
         self.auths: list[create_auth] = []
         self.subscriptions: list[create_user] = []
         self.max_threads = max_threads
         self.lists = None
         self.endpoint_links = endpoint_links
-        self.pool:Pool = api_helper.multiprocessing()
-        self.settings:Dict[str,dict[str,Any]] = {}
+        self.pool: Pool = api_helper.multiprocessing()
+        self.settings: Dict[str, dict[str, Any]] = {}
 
-    def add_auth(self, option:Dict[str,bool]={}, only_active:bool=False):
-        if only_active and not option.get("active"):
+    def add_auth(self, options: Dict[str, bool] = {}, only_active: bool = False):
+        if only_active and not options.get("active"):
             return
         auth = create_auth(pool=self.pool, max_threads=self.max_threads)
-        auth.auth_details = auth_details(option)
+        temp_auth_details = auth_details(options)
+        if not options.get("cookie"):
+            temp_auth_details = legacy_auth_details(options).upgrade(temp_auth_details)
+        auth.auth_details = temp_auth_details
         auth.extras["settings"] = self.settings
         self.auths.append(auth)
         return auth

@@ -24,7 +24,7 @@ From the project folder open CMD/Terminal and run the command below:
 
 Start:
 
-`python start_ofd.py` or double click `start_ofd.py`
+`python start_ofd.py` | `python3 start_ofd.py` | double click `start_ofd.py`
 
 ---
 
@@ -34,32 +34,19 @@ Open and edit:
 
 [auth]
 
-Fill in the following:
+You have to fill in the following:
 
-- `{"auth_id":"your_auth_id"}`
-- `{"sess":"your_sess_token"}`
+- `{"cookie":"your_cookie"}`
 - `{"user-agent":"your_user-agent"}`
-
-If you're using 2FA or have these cookies:
-
-- `{"auth_hash":"your_auth_hash"}`
-- `{"auth_uniq_":"your_auth_uniq_"}`
-
-Optional change:
-
-- `{"app-token":"your_token"}`
-
-Only enter in cookies that reflect your OnlyFans account otherwise, you'll get auth errors.
 
 Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get said above cookies
 
-(Instead of typing "?app", type "api2")
-
-![app-token](examples/1.png)
+![app-token](examples/3.png)
+![app-token](examples/4.png)
 
 Your auth config should look similar to this
 
-![app-token](examples/2.png)
+![app-token](examples/5.png)
 
 If you want to auth via browser, add your email and password.
 
@@ -70,7 +57,7 @@ Note: If active is set to False, the script will ignore the profile.
 
 # USAGE
 
-`python start_ofd.py` or double click `start_ofd.py`
+`python start_ofd.py` | `python3 start_ofd.py` | double click `start_ofd.py`
 
 Enter in inputs as prompted by console.
 
@@ -360,7 +347,7 @@ Before troubleshooting, make sure you're using Python 3.9 and the latest commit 
 
 Error: Access Denied / Auth Loop
 
-> Make sure your cookies and user-agent are correct.
+> Make sure your cookie and user-agent are correct.
 > Use this tool [Cookie Helper](https://github.com/M-rcus/OnlyFans-Cookie-Helper)
 
 AttributeError: type object 'datetime.datetime' has no attribute 'fromisoformat'
@@ -400,13 +387,10 @@ Do you collect session information?
 
 > No. The code is on Github which allows you to audit the codebase yourself. You can use wireshark or any other network analysis program to verify the outgoing connections are respective to the modules you chose.
 
-Disclaimer:
+Disclaimer (lmao):
 
 > OnlyFans is a registered trademark of Fenix International Limited.
 
 > The contributors of this script isn't in any way affiliated with, sponsored by, or endorsed by Fenix International Limited.
 
-> The contributors of this script are not responsible for the end users' actions.
-
-
-> LMAO
+> The contributors of this script are not responsible for the end users' actions... lmao.

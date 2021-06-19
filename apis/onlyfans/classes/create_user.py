@@ -347,6 +347,7 @@ class create_user:
             links = links2
         results = await self.session_manager.async_requests(links)
         results = await api_helper.remove_errors(results)
+        results = [x for x in results if x]
         has_more = results[-1]["hasMore"] if results else False
         final_results = [x["list"] for x in results if "list" in x]
         final_results = list(chain.from_iterable(final_results))

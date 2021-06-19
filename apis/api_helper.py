@@ -498,7 +498,6 @@ async def scrape_endpoint_links(
             print
         else:
             media_set.extend(results)
-            print("Found: " + api_type)
             break
     media_set = list(chain(*media_set))
     return media_set

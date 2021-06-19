@@ -6,15 +6,17 @@ import urllib.parse as urlparse
 from datetime import datetime
 from itertools import chain, product
 
+from apis.onlyfans import onlyfans
 from apis.onlyfans.classes.create_user import create_user
 from database.models.api_table import api_table
 from database.models.media_table import media_table
 from sqlalchemy.orm.scoping import scoped_session
+from tqdm.asyncio import tqdm
 
 
-def fix_directories(
+async def fix_directories(
     posts,
-    api,
+    api: onlyfans.start,
     subscription: create_user,
     all_files,
     database_session: scoped_session,
@@ -26,7 +28,7 @@ def fix_directories(
 ):
     new_directories = []
 
-    def fix_directories2(post: api_table, media_db: list[media_table]):
+    async def fix_directories2(post: api_table, media_db: list[media_table]):
         delete_rows = []
         final_api_type = (
             os.path.join("Archived", api_type) if post.archived else api_type
@@ -131,7 +133,9 @@ def fix_directories(
     result = database_session.query(folder.media_table)
     media_db = result.all()
     pool = api.pool
-    delete_rows = pool.starmap(fix_directories2, product(posts, [media_db]))
+    tasks = pool.starmap(fix_directories2, product(posts, [media_db]))
+    settings = {"colour": "MAGENTA", "disable": False}
+    delete_rows = await tqdm.gather(tasks, **settings)
     delete_rows = list(chain(*delete_rows))
     for delete_row in delete_rows:
         database_session.query(folder.media_table).filter(
@@ -142,8 +146,8 @@ def fix_directories(
     return posts, new_directories
 
 
-def start(
-    api,
+async def start(
+    api: onlyfans.start,
     Session,
     parent_type,
     api_type,
@@ -155,6 +159,7 @@ def start(
 ):
     api_table = folder.api_table
     database_session = Session()
+    # Slow
     result = database_session.query(api_table).all()
     metadata = getattr(subscription.temp_scraped, api_type)
     download_info = subscription.download_info
@@ -189,7 +194,7 @@ def start(
         x = [os.path.join(root, x) for x in files]
         all_files.extend(x)
 
-    fix_directories(
+    await fix_directories(
         result,
         api,
         subscription,

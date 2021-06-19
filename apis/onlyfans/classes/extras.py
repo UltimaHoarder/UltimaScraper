@@ -41,6 +41,7 @@ class legacy_auth_details:
     def upgrade(self, new_auth_details: auth_details):
         new_dict = ""
         for key, value in self.__dict__.items():
+            value = value if value != None else ""
             skippable = ["username", "user_agent"]
             if key not in skippable:
                 new_dict += f"{key}={value}; "

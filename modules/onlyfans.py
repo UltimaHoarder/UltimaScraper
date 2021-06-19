@@ -33,6 +33,7 @@ from helpers.main_helper import (
 from mergedeep import Strategy, merge
 from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
+from tqdm.asyncio import tqdm
 
 site_name = "OnlyFans"
 json_config = None
@@ -284,9 +285,8 @@ async def profile_scraper(
         override_media_types.append(["Avatars", avatar])
     if header:
         override_media_types.append(["Headers", header])
-    progress_bar = download_session()
-    progress_bar.start(unit="B", unit_scale=True, miniters=1)
     session = authed.session_manager.create_client_session()
+    progress_bar = None
     for override_media_type in override_media_types:
         new_dict = dict()
         media_type = override_media_type[0]
@@ -301,6 +301,9 @@ async def profile_scraper(
         if os.path.isfile(download_path):
             if os.path.getsize(download_path) == response.content_length:
                 continue
+        if not progress_bar:
+            progress_bar = download_session()
+            progress_bar.start(unit="B", unit_scale=True, miniters=1)
         progress_bar.update_total_size(response.content_length)
         response = await authed.session_manager.json_request(
             media_link,
@@ -310,7 +313,8 @@ async def profile_scraper(
         )
         downloaded = await main_helper.write_data(response, download_path, progress_bar)
     await session.close()
-    progress_bar.close()
+    if progress_bar:
+        progress_bar.close()
 
 
 async def paid_content_scraper(api: start, identifiers=[]):
@@ -380,7 +384,7 @@ async def paid_content_scraper(api: start, identifiers=[]):
                     formatted_metadata_directory, api_type + ".db"
                 )
                 pool = subscription.session_manager.pool
-                unrefined_result = pool.starmap(
+                tasks = pool.starmap(
                     media_scraper,
                     product(
                         paid_contents,
@@ -391,7 +395,9 @@ async def paid_content_scraper(api: start, identifiers=[]):
                         [api_type],
                     ),
                 )
-                new_metadata = main_helper.format_media_set(unrefined_result)
+                settings = {"colour": "MAGENTA"}
+                unrefined_set = await tqdm.gather(tasks, **settings)
+                new_metadata = main_helper.format_media_set(unrefined_set)
                 new_metadata = new_metadata["content"]
                 if new_metadata:
                     api_path = os.path.join(api_type, "")
@@ -405,7 +411,7 @@ async def paid_content_scraper(api: start, identifiers=[]):
                     parent_type = ""
                     new_metadata = new_metadata + old_metadata
                     subscription.set_scraped(api_type, new_metadata)
-                    process_metadata(
+                    await process_metadata(
                         api,
                         metadata_path,
                         formatted_directories,
@@ -642,7 +648,7 @@ def process_legacy_metadata(
     return final_set, delete_metadatas
 
 
-def process_metadata(
+async def process_metadata(
     api,
     archive_path: str,
     formatted_directories: dict,
@@ -666,7 +672,7 @@ def process_metadata(
     subscription.download_info["metadata_locations"][api_type] = archive_path
     if json_global_settings["helpers"]["renamer"]:
         print("Renaming files.")
-        new_metadata_object = ofrenamer.start(
+        new_metadata_object = await ofrenamer.start(
             api,
             Session,
             parent_type,
@@ -782,6 +788,7 @@ async def prepare_scraper(authed: create_auth, site_name, item):
         print
     if api_type == "Posts":
         master_set = await subscription.get_posts()
+        print(f"Type: Archived Posts")
         master_set += await subscription.get_archived_posts()
     # if api_type == "Archived":
     #     master_set = await subscription.get_archived(authed)
@@ -797,29 +804,10 @@ async def prepare_scraper(authed: create_auth, site_name, item):
         master_set = unrefined_set
     master_set2 = master_set
     parent_type = ""
-    if "Archived" == api_type:
-        unrefined_set = []
-        for master_set3 in master_set2:
-            if not isinstance(master_set3, dict):
-                continue
-            parent_type = master_set3["type"]
-            results = master_set3["results"]
-            unrefined_result = pool.starmap(
-                media_scraper,
-                product(
-                    results,
-                    [authed],
-                    [subscription],
-                    [formatted_directories],
-                    [username],
-                    [api_type],
-                    [parent_type],
-                ),
-            )
-            unrefined_set.append(unrefined_result)
-        unrefined_set = list(chain(*unrefined_set))
-    else:
-        unrefined_set = pool.starmap(
+    unrefined_set = []
+    if master_set2:
+        print(f"Processing Scraped {api_type}")
+        tasks = pool.starmap(
             media_scraper,
             product(
                 master_set2,
@@ -828,10 +816,11 @@ async def prepare_scraper(authed: create_auth, site_name, item):
                 [formatted_directories],
                 [username],
                 [api_type],
-                [parent_type],
             ),
         )
-        unrefined_set = [x for x in unrefined_set]
+        settings = {"colour": "MAGENTA"}
+        unrefined_set = await tqdm.gather(tasks, **settings)
+    unrefined_set = [x for x in unrefined_set]
     new_metadata = main_helper.format_media_set(unrefined_set)
     metadata_path = os.path.join(formatted_metadata_directory, api_type + ".db")
     if new_metadata:
@@ -846,7 +835,7 @@ async def prepare_scraper(authed: create_auth, site_name, item):
         )
         new_metadata = new_metadata + old_metadata
         subscription.set_scraped(api_type, new_metadata)
-        process_metadata(
+        await process_metadata(
             authed,
             metadata_path,
             formatted_directories,
@@ -1011,15 +1000,13 @@ def compare_metadata(
 # Scrapes the API for content
 
 
-def media_scraper(
+async def media_scraper(
     post_result: Union[create_story, create_post, create_message],
     authed: create_auth,
     subscription: create_user,
     formatted_directories,
     model_username,
     api_type,
-    parent_type="",
-    print_output=True,
 ):
     new_set = {}
     new_set["content"] = []
@@ -1040,23 +1027,6 @@ def media_scraper(
         media_type = location["media_type"]
         alt_media_type = location["alt_media_type"]
         file_directory_format = json_settings["file_directory_format"]
-        if api_type == "Archived":
-            x = file_directory_format.split(os.sep)
-            for y in x:
-                substr = "{api_type}"
-                if substr == y:
-                    new_path = os.path.join(substr, parent_type)
-                    file_directory_format = file_directory_format.replace(
-                        substr, new_path
-                    )
-                    break
-                print
-            print
-        seperator = " | "
-        if print_output:
-            print(
-                f"Scraping [{seperator.join(alt_media_type)}]. Should take less than a minute.\n"
-            )
         post_id = post_result.id
         new_post = {}
         new_post["medias"] = []
@@ -1069,7 +1039,6 @@ def media_scraper(
 
         if isinstance(post_result, create_story):
             date = post_result.createdAt
-            print
         if isinstance(post_result, create_post):
             if post_result.isReportedByMe:
                 continue

@@ -3,7 +3,6 @@ from itertools import chain
 from typing import Any
 
 
-# Originally called "lazy_auth_details... lol"
 class auth_details:
     def __init__(self, options: dict[str, Any] = {}) -> None:
         self.username = options.get("username", "")
@@ -14,6 +13,11 @@ class auth_details:
         self.hashed = options.get("hashed", False)
         self.support_2fa = options.get("support_2fa", True)
         self.active = options.get("active", True)
+
+    def upgrade_legacy(self, options: dict[str, Any]):
+        if "cookie" not in options:
+            self = legacy_auth_details(options).upgrade(self)
+        return self
 
     def export(self):
         new_dict = copy.copy(self.__dict__)
@@ -45,7 +49,6 @@ class legacy_auth_details:
             skippable = ["username", "user_agent"]
             if key not in skippable:
                 new_dict += f"{key}={value}; "
-            print
         new_dict = new_dict.strip()
         new_auth_details.cookie = cookie_parser(new_dict)
         return new_auth_details
@@ -65,6 +68,9 @@ class cookie_parser:
         self.auth_uid_ = new_dict.get("auth_uid_", "")
 
     def format(self):
+        """
+        Typically used for adding cookies to requests
+        """
         return self.__dict__
 
     def convert(self):

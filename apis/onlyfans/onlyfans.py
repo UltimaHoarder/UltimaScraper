@@ -42,9 +42,7 @@ class start:
         if only_active and not options.get("active"):
             return
         auth = create_auth(pool=self.pool, max_threads=self.max_threads)
-        temp_auth_details = auth_details(options)
-        if not options.get("cookie"):
-            temp_auth_details = legacy_auth_details(options).upgrade(temp_auth_details)
+        temp_auth_details = auth_details(options).upgrade_legacy(options)
         auth.auth_details = temp_auth_details
         auth.extras["settings"] = self.settings
         self.auths.append(auth)

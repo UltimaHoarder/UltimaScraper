@@ -63,6 +63,8 @@ class config(object):
                         self.renamer = option.get('renamer', True)
                         self.reformat_media = option.get(
                             'reformat_media', True)
+                        self.downloader = option.get(
+                            'downloader', True)
                         self.delete_empty_directories = option.get(
                             'delete_empty_directories', False)
                 self.auto_site_choice = auto_site_choice

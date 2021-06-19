@@ -695,14 +695,15 @@ async def process_names(
 
 
 async def process_downloads(api, module):
-    for auth in api.auths:
-        subscriptions = await auth.get_subscriptions(refresh=False)
-        for subscription in subscriptions:
-            await module.prepare_downloads(subscription)
-            if json_global_settings["helpers"]["delete_empty_directories"]:
-                delete_empty_directories(
-                    subscription.download_info.get("base_directory", "")
-                )
+    if json_global_settings["helpers"]["downloader"]:
+        for auth in api.auths:
+            subscriptions = await auth.get_subscriptions(refresh=False)
+            for subscription in subscriptions:
+                await module.prepare_downloads(subscription)
+                if json_global_settings["helpers"]["delete_empty_directories"]:
+                    delete_empty_directories(
+                        subscription.download_info.get("base_directory", "")
+                    )
 
 
 async def process_webhooks(api: Union[OnlyFans.start], category, category2):

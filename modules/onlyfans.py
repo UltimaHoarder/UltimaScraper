@@ -659,7 +659,6 @@ async def process_metadata(
     subscription,
     delete_metadatas,
 ):
-    print
     Session, api_type, folder = main_helper.export_sqlite(
         archive_path, new_metadata_object, parent_type
     )

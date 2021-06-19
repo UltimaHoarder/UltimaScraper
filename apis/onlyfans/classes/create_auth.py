@@ -27,20 +27,12 @@ class create_auth(create_user):
     def __init__(
         self,
         option: dict[str, Any] = {},
-        user: create_user = create_user(),
         pool: Optional[Pool] = None,
         max_threads: int = -1,
     ) -> None:
-        self.id = user.id
-        self.username = user.username
+        create_user.__init__(self,option)
         if not self.username:
             self.username = f"u{self.id}"
-        self.name = user.name
-        self.email = user.email
-        self.isPerformer = user.isPerformer
-        self.chatMessagesCount = user.chatMessagesCount
-        self.subscribesCount = user.subscribesCount
-        self.creditBalance = user.creditBalance
         self.lists = {}
         self.links = content_types()
         self.subscriptions: list[create_user] = []
@@ -142,6 +134,8 @@ class create_auth(create_user):
             if response:
                 self.resolve_auth_errors(response)
                 if not self.errors:
+                    # merged = self.__dict__ | response
+                    # self = create_auth(merged,self.pool,self.session_manager.max_threads)
                     self.active = True
                     self.update(response)
             else:

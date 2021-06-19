@@ -376,11 +376,13 @@ class create_user:
             global_limit=limit,
             global_offset=offset,
         ).message_by_id
-        results = await self.session_manager.json_request(link)
-        results = [x for x in results["list"] if x["id"] == message_id]
-        result = results[0] if results else {}
-        final_result = create_message(result, self)
-        return final_result
+        response = await self.session_manager.json_request(link)
+        if isinstance(response, dict):
+            results = [x for x in response["list"] if x["id"] == message_id]
+            result = results[0] if results else {}
+            final_result = create_message(result, self)
+            return final_result
+        return response
 
     async def get_archived_stories(self, refresh=True, limit=100, offset=0):
         api_type = "archived_stories"
@@ -490,9 +492,13 @@ class create_user:
         }
         if self.subscriber.creditBalance >= subscription_price:
             link = endpoint_links().pay
-            result = await self.session_manager.json_request(link, method="POST", payload=x)
+            result = await self.session_manager.json_request(
+                link, method="POST", payload=x
+            )
         else:
-            result = error_details({"code":2011,"message":"Insufficient Credit Balance"})
+            result = error_details(
+                {"code": 2011, "message": "Insufficient Credit Balance"}
+            )
         return result
 
     def set_scraped(self, name, scraped):

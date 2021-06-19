@@ -1,5 +1,7 @@
 #!/usr/bin/env python3
+import asyncio
 import os
+from random import randint
 import shutil
 import traceback
 import urllib.parse as urlparse
@@ -68,7 +70,7 @@ async def fix_directories(
             option["preview"] = media.preview
             option["archived"] = post.archived
             prepared_format = prepare_reformat(option)
-            file_directory = main_helper.reformat(
+            file_directory = await main_helper.reformat(
                 prepared_format, file_directory_format
             )
             prepared_format.directory = file_directory
@@ -87,7 +89,9 @@ async def fix_directories(
                 old_filepaths = [x for x in old_filepaths if "linked_" not in x]
             if old_filepaths:
                 old_filepath = old_filepaths[0]
-            new_filepath = main_helper.reformat(prepared_format, filename_format)
+            # a = randint(0,1)
+            # await asyncio.sleep(a)
+            new_filepath = await main_helper.reformat(prepared_format, filename_format)
             if old_filepath and old_filepath != new_filepath:
                 if os.path.exists(new_filepath):
                     os.remove(new_filepath)
@@ -133,7 +137,8 @@ async def fix_directories(
     result = database_session.query(folder.media_table)
     media_db = result.all()
     pool = api.pool
-    tasks = pool.starmap(fix_directories2, product(posts, [media_db]))
+    # tasks = pool.starmap(fix_directories2, product(posts, [media_db]))
+    tasks = [asyncio.ensure_future(fix_directories2(post,media_db)) for post in posts]
     settings = {"colour": "MAGENTA", "disable": False}
     delete_rows = await tqdm.gather(tasks, **settings)
     delete_rows = list(chain(*delete_rows))
@@ -186,7 +191,7 @@ async def start(
         reformats[key] = value.split(key2, 1)[0] + key2
         print
     print
-    a, base_directory, c = prepare_reformat(option, keep_vars=True).reformat(reformats)
+    a, base_directory, c = await prepare_reformat(option, keep_vars=True).reformat(reformats)
     download_info["base_directory"] = base_directory
     print
     all_files = []

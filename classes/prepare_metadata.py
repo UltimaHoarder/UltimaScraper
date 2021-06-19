@@ -408,14 +408,14 @@ class prepare_reformat(object):
         for attr, value in self.__dict__.items():
             yield attr, value
 
-    def reformat(self, unformatted_list) -> list[str]:
+    async def reformat(self, unformatted_list) -> list[str]:
         x = []
         format_variables2 = format_variables()
         for key, unformatted_item in unformatted_list.items():
             if "filename_format" == key:
                 unformatted_item = os.path.join(x[1], unformatted_item)
                 print
-            string = main_helper.reformat(self, unformatted_item)
+            string = await main_helper.reformat(self, unformatted_item)
             final_path = []
             paths = string.split(os.sep)
             for path in paths:

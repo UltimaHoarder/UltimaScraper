@@ -9,7 +9,7 @@ lxml
 mergedeep
 jsonpickle
 ujson
-sqlalchemy==1.4.15
+sqlalchemy==1.4.18
 alembic
 tqdm
 selenium

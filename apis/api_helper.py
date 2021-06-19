@@ -157,7 +157,7 @@ class session_manager:
         method: str = "GET",
         stream: bool = False,
         json_format: bool = True,
-        payload: Dict[str, str] = {},
+        payload: dict[str, str] = {},
     ) -> Any:
         headers = {}
         custom_session = False

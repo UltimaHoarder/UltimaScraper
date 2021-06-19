@@ -185,10 +185,12 @@ class create_auth(create_user):
         self.lists = results
         return results
 
-    async def get_user(self, identifier: Union[str, int]) -> Union[create_user, dict]:
+    async def get_user(
+        self, identifier: Union[str, int]
+    ) -> Union[create_user, error_details]:
         link = endpoint_links(identifier).users
         response = await self.session_manager.json_request(link)
-        if isinstance(response, dict):
+        if not isinstance(response, error_details):
             response["session_manager"] = self.session_manager
             response = create_user(response, self)
         return response
@@ -257,7 +259,8 @@ class create_auth(create_user):
             self.pool = temp_pool
             self.paid_content = temp_paid_content
             temp_auth = await self.get_user(self.username)
-            json_authed = json_authed | temp_auth.__dict__
+            if isinstance(json_authed, dict):
+                json_authed = json_authed | temp_auth.__dict__
 
             subscription = create_user(json_authed, self)
             subscription.subscriber = self

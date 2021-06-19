@@ -212,7 +212,7 @@ def legacy_database_fixer(database_path, database, database_name, database_exist
         export_sqlite(old_database_path, datas, database_name, legacy_fixer=True)
 
 
-def fix_sqlite(
+async def fix_sqlite(
     profile_directory,
     download_directory,
     metadata_directory,
@@ -229,7 +229,7 @@ def fix_sqlite(
         mandatory_directories["profile_directory"] = profile_directory
         mandatory_directories["download_directory"] = download_directory
         mandatory_directories["metadata_directory"] = metadata_directory
-        formatted_directories = format_directories(
+        formatted_directories = await format_directories(
             mandatory_directories,
             authed,
             site_name,
@@ -375,7 +375,7 @@ def format_paths(j_directories, site_name):
     return paths
 
 
-def reformat(prepared_format: prepare_reformat, unformatted):
+async def reformat(prepared_format: prepare_reformat, unformatted):
     post_id = prepared_format.post_id
     media_id = prepared_format.media_id
     date = prepared_format.date

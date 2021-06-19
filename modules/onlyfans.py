@@ -11,7 +11,7 @@ from typing import Any, Optional, Union
 from urllib.parse import urlparse
 
 import extras.OFLogin.start_ofl as oflogin
-import extras.OFRenamer.start as ofrenamer
+import extras.OFRenamer.start_ofr as ofrenamer
 import helpers.db_helper as db_helper
 import helpers.main_helper as main_helper
 from apis.onlyfans import onlyfans as OnlyFans
@@ -145,7 +145,7 @@ async def start_datascraper(
         username,
         metadata_directory_format,
     ]
-    fix_sqlite(*some_list)
+    await fix_sqlite(*some_list)
     api_array = scrape_choice(authed, subscription)
     api_array = format_options(api_array, "apis")
     apis = api_array[0]
@@ -275,7 +275,7 @@ async def profile_scraper(
     option["date_format"] = date_format
     option["maximum_length"] = text_length
     option["directory"] = base_directory
-    a, b, c = prepare_reformat(option, keep_vars=True).reformat(reformats)
+    a, b, c = await prepare_reformat(option, keep_vars=True).reformat(reformats)
     print
     y = await authed.get_subscription(identifier=model_username)
     override_media_types = []
@@ -368,7 +368,7 @@ async def paid_content_scraper(api: start, identifiers=[]):
                 mandatory_directories["profile_directory"] = profile_directory
                 mandatory_directories["download_directory"] = download_directory
                 mandatory_directories["metadata_directory"] = metadata_directory
-                formatted_directories = format_directories(
+                formatted_directories = await format_directories(
                     mandatory_directories,
                     authed,
                     site_name,
@@ -689,7 +689,7 @@ async def process_metadata(
                 os.remove(old_metadata)
 
 
-def format_directories(
+async def format_directories(
     directories: dict[str, Any],
     authed: create_auth,
     site_name: str,
@@ -725,7 +725,7 @@ def format_directories(
                 legacy_model_directory, "Metadata"
             )
         if key == "metadata_directory":
-            x["metadata_directory"] = main_helper.reformat(prepared_format, unformatted)
+            x["metadata_directory"] = await main_helper.reformat(prepared_format, unformatted)
     x["locations"] = []
     for location in locations:
         directories = {}
@@ -759,7 +759,7 @@ async def prepare_scraper(authed: create_auth, site_name, item):
     mandatory_directories["profile_directory"] = profile_directory
     mandatory_directories["download_directory"] = download_directory
     mandatory_directories["metadata_directory"] = metadata_directory
-    formatted_directories = format_directories(
+    formatted_directories = await format_directories(
         mandatory_directories,
         authed,
         site_name,
@@ -1147,11 +1147,11 @@ async def media_scraper(
             option["archived"] = new_post["archived"]
 
             prepared_format = prepare_reformat(option)
-            file_directory = main_helper.reformat(
+            file_directory = await main_helper.reformat(
                 prepared_format, file_directory_format
             )
             prepared_format.directory = file_directory
-            file_path = main_helper.reformat(prepared_format, filename_format)
+            file_path = await main_helper.reformat(prepared_format, filename_format)
             new_media["directory"] = os.path.join(file_directory)
             new_media["filename"] = os.path.basename(file_path)
             if file_directory not in directories:

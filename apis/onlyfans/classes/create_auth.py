@@ -40,6 +40,7 @@ class create_auth(create_user):
         self.isPerformer = user.isPerformer
         self.chatMessagesCount = user.chatMessagesCount
         self.subscribesCount = user.subscribesCount
+        self.creditBalance = user.creditBalance
         self.lists = {}
         self.links = content_types()
         self.subscriptions: list[create_user] = []

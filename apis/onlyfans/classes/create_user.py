@@ -488,8 +488,11 @@ class create_user:
             "token": "",
             "unavailablePaymentGates": [],
         }
-        link = endpoint_links().pay
-        result = await self.session_manager.json_request(link, method="POST", payload=x)
+        if self.subscriber.creditBalance >= subscription_price:
+            link = endpoint_links().pay
+            result = await self.session_manager.json_request(link, method="POST", payload=x)
+        else:
+            result = error_details({"code":2011,"message":"Insufficient Credit Balance"})
         return result
 
     def set_scraped(self, name, scraped):

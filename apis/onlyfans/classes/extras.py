@@ -145,7 +145,7 @@ class endpoint_links(object):
 # Lol?
 class error_details:
     def __init__(self, result) -> None:
-        error = result["error"]
+        error = result["error"] if "error" in result else result
         self.code = error["code"]
         self.message = error["message"]
 

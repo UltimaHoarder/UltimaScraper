@@ -1,3 +1,5 @@
+from apis.onlyfans.classes.create_user import create_user
+from apis.onlyfans.classes.extras import error_details
 import os
 import timeit
 from typing import Optional
@@ -88,6 +90,7 @@ async def start_datascraper(
             auth_count += 1
             subscription_array += subscriptions
             await main_helper.process_webhooks(api, "auth_webhook", "succeeded")
+            # Do stuff with authed user
         subscription_list = module.format_options(
             subscription_array, "usernames", api.auths
         )

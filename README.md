@@ -20,7 +20,7 @@ https://github.com/DIGITALCRIMINAL/OnlyFans/discussions/889
 
 From the project folder open CMD/Terminal and run the command below:
 
-`pip install -r requirements.txt`
+`pip install --upgrade --user -r requirements.txt`
 
 Start:
 

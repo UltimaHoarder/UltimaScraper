@@ -1,5 +1,3 @@
-from apis.onlyfans.classes.create_user import create_user
-from apis.onlyfans.classes.extras import error_details
 import os
 import timeit
 from typing import Optional
@@ -7,18 +5,11 @@ from typing import Optional
 import helpers.main_helper as main_helper
 import modules.onlyfans as m_onlyfans
 from apis.onlyfans import onlyfans as OnlyFans
+from apis.onlyfans.classes.create_user import create_user
+from apis.onlyfans.classes.extras import error_details
 from helpers.main_helper import choose_option
 
 api_helper = OnlyFans.api_helper
-
-# test_ip = None
-# def multi(link,session):
-#     global test_ip
-#     response = session.get(link)
-#     text = response.text.strip('\n')
-#     if test_ip == None:
-#         test_ip = text
-#     return text
 
 
 async def start_datascraper(

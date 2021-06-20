@@ -14,6 +14,7 @@ class media_table():
     directory = cast(str,sqlalchemy.Column(sqlalchemy.String))
     filename = cast(str,sqlalchemy.Column(sqlalchemy.String))
     size = cast(int,sqlalchemy.Column(sqlalchemy.Integer, default=None))
+    api_type = cast(str,sqlalchemy.Column(sqlalchemy.String))
     media_type = sqlalchemy.Column(sqlalchemy.String)
     preview = sqlalchemy.Column(sqlalchemy.Integer, default=0)
     linked = sqlalchemy.Column(sqlalchemy.String, default=None)

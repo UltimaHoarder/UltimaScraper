@@ -5,7 +5,7 @@ import json
 import os
 import shutil
 from datetime import datetime, timedelta
-from itertools import chain, product
+from itertools import product
 from types import SimpleNamespace
 from typing import Any, Optional, Union
 from urllib.parse import urlparse
@@ -309,7 +309,7 @@ async def profile_scraper(
 
 
 async def paid_content_scraper(api: start, identifiers=[]):
-    
+
     for authed in api.auths:
         paid_contents = []
         paid_contents = await authed.get_paid_content()
@@ -715,7 +715,9 @@ async def format_directories(
                 legacy_model_directory, "Metadata"
             )
         if key == "metadata_directory":
-            x["metadata_directory"] = await main_helper.reformat(prepared_format, unformatted)
+            x["metadata_directory"] = await main_helper.reformat(
+                prepared_format, unformatted
+            )
     x["locations"] = []
     for location in locations:
         directories = {}
@@ -1079,7 +1081,7 @@ async def media_scraper(
         for media in post_result.media:
             media_id = media["id"]
             preview_link = ""
-            link = main_helper.link_picker(media, json_settings["video_quality"])
+            link = await post_result.link_picker(media, json_settings["video_quality"])
             matches = ["us", "uk", "ca", "ca2", "de"]
 
             if not link:
@@ -1219,9 +1221,7 @@ async def prepare_downloads(subscription: create_user):
         string += f"Name: {subscription.username} | Type: {api_type} | Count: {media_set_count}{location} | Directory: {directory}\n"
         if media_set_count:
             print(string)
-            await subscription.session_manager.async_downloads(
-                download_list, subscription
-            )
+            await main_helper.async_downloads(download_list, subscription)
         database_session.commit()
         database_session.close()
         print

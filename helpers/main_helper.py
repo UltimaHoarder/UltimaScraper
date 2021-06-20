@@ -1,5 +1,10 @@
-from apis.onlyfans.classes.create_auth import create_auth
+from apis import api_helper
+import asyncio
 import copy
+from aiohttp.client import ClientSession
+
+from aiohttp_socks.connector import ProxyConnector
+from database.models.media_table import media_table
 import json
 import math
 import os
@@ -29,6 +34,7 @@ from aiohttp.client_exceptions import (
 from aiohttp.client_reqrep import ClientResponse
 from apis.onlyfans import onlyfans as OnlyFans
 from apis.onlyfans.classes import create_user
+from apis.onlyfans.classes.create_auth import create_auth
 from apis.onlyfans.classes.extras import content_types
 from bs4 import BeautifulSoup
 from classes.prepare_metadata import format_variables, prepare_reformat
@@ -40,6 +46,7 @@ from tqdm import tqdm
 
 import helpers.db_helper as db_helper
 
+Base = declarative_base()
 json_global_settings = None
 min_drive_space = 0
 webhooks = None
@@ -130,6 +137,115 @@ async def format_image(filepath: str, timestamp: float):
             break
 
 
+
+async def async_downloads(download_list: list[media_table], subscription: create_user
+):
+    async def run(download_list: list[media_table]):
+        session_m = subscription.session_manager
+        proxies = session_m.proxies
+        proxy = session_m.proxies[random.randint(0, len(proxies) - 1)] if proxies else ""
+        connector = ProxyConnector.from_url(proxy) if proxy else None
+        async with ClientSession(
+            connector=connector,
+            cookies=session_m.auth.auth_details.cookie.format(),
+            read_timeout=None,
+        ) as session:
+            tasks = []
+            # Get content_lengths
+            for download_item in download_list:
+                link = download_item.link
+                if link:
+                    task = asyncio.ensure_future(
+                        session_m.json_request(
+                            download_item.link,
+                            session,
+                            method="HEAD",
+                            json_format=False,
+                        )
+                    )
+                    tasks.append(task)
+            responses = await asyncio.gather(*tasks)
+            tasks.clear()
+
+            async def check(download_item: media_table, response: ClientResponse):
+                filepath = os.path.join(
+                    download_item.directory, download_item.filename
+                )
+                response_status = False
+                if response.status == 200:
+                    response_status = True
+                    if response.content_length:
+                        download_item.size = response.content_length
+
+                if os.path.exists(filepath):
+                    if os.path.getsize(filepath) == response.content_length:
+                        download_item.downloaded = True
+                    else:
+                        return download_item
+                else:
+                    if response_status:
+                        return download_item
+
+            for download_item in download_list:
+                temp_response = [
+                    response
+                    for response in responses
+                    if response and str(response.url) == download_item.link
+                ]
+                if temp_response:
+                    temp_response = temp_response[0]
+                    task = check(download_item, temp_response)
+                    tasks.append(task)
+            result = await asyncio.gather(*tasks)
+            download_list = [x for x in result if x]
+            tasks.clear()
+            progress_bar = None
+            if download_list:
+                progress_bar = download_session()
+                progress_bar.start(unit="B", unit_scale=True, miniters=1)
+                [progress_bar.update_total_size(x.size) for x in download_list]
+
+            async def process_download(download_item: media_table):
+                while True:
+                    result = await session_m.download_content(
+                        download_item, session, progress_bar, subscription
+                    )
+                    if result:
+                        response, download_item = result.values()
+                        if response:
+                            download_path = os.path.join(
+                                download_item.directory, download_item.filename
+                            )
+                            status_code = await write_data(
+                                response, download_path, progress_bar
+                            )
+                            if not status_code:
+                                pass
+                            elif status_code == 1:
+                                continue
+                            elif status_code == 2:
+                                break
+                            timestamp = download_item.created_at.timestamp()
+                            await format_image(download_path, timestamp)
+                            download_item.size = response.content_length
+                            download_item.downloaded = True
+                    break
+
+            max_threads = api_helper.calculate_max_threads(session_m.max_threads)
+            download_groups = grouper(max_threads, download_list)
+            for download_group in download_groups:
+                tasks = []
+                for download_item in download_group:
+                    task = process_download(download_item)
+                    if task:
+                        tasks.append(task)
+                await asyncio.gather(*tasks)
+            if isinstance(progress_bar, download_session):
+                progress_bar.close()
+            return True
+
+    results = await asyncio.ensure_future(run(download_list))
+    return results
 def filter_metadata(datas):
     for key, item in datas.items():
         for items in item["valid"]:
@@ -174,7 +290,6 @@ def legacy_database_fixer(database_path, database, database_name, database_exist
         database_session = Session()
         api_table = database.api_table()
         media_table = database.media_table()
-        Base = declarative_base()
         # DON'T FORGET TO REMOVE
         # database_name = "posts"
         # DON'T FORGET TO REMOVE
@@ -354,6 +469,7 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None
             media_db.preview = media.get("preview", False)
             media_db.directory = media["directory"]
             media_db.filename = media["filename"]
+            media_db.api_type = api_type
             media_db.media_type = media["media_type"]
             media_db.linked = media.get("linked", None)
             if date_object:
@@ -934,26 +1050,3 @@ def module_chooser(domain, json_sites):
     return string, site_names
 
 
-def link_picker(media, video_quality):
-    link = ""
-    if "source" in media:
-        quality_key = "source"
-        source = media[quality_key]
-        link = source[quality_key]
-        if link:
-            if media["type"] == "video":
-                qualities = media["videoSources"]
-                qualities = dict(sorted(qualities.items(), reverse=False))
-                qualities[quality_key] = source[quality_key]
-                for quality, quality_link in qualities.items():
-                    video_quality = video_quality.removesuffix("p")
-                    if quality == video_quality:
-                        if quality_link:
-                            link = quality_link
-                            break
-                        print
-                    print
-                print
-    if "src" in media:
-        link = media["src"]
-    return link

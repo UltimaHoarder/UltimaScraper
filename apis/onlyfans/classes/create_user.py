@@ -3,10 +3,10 @@ from itertools import chain
 from typing import Any, Optional, Union
 from urllib import parse
 
+import apis.onlyfans.classes.create_message as create_message
 from apis import api_helper
 from apis.onlyfans.classes import create_auth
 from apis.onlyfans.classes.create_highlight import create_highlight
-from apis.onlyfans.classes.create_message import create_message
 from apis.onlyfans.classes.create_post import create_post
 from apis.onlyfans.classes.create_story import create_story
 from apis.onlyfans.classes.extras import (
@@ -15,6 +15,7 @@ from apis.onlyfans.classes.extras import (
     error_details,
     handle_refresh,
 )
+
 
 class create_user:
     def __init__(self, option={}, subscriber: create_auth = None) -> None:
@@ -313,6 +314,7 @@ class create_user:
             final_result = create_post(response, self)
             return final_result
         return response
+
     async def get_messages(
         self,
         links: Optional[list] = None,
@@ -357,7 +359,7 @@ class create_user:
             final_results.extend(results2)
         print
         if not inside_loop:
-            final_results = [create_message(x, self) for x in final_results if x]
+            final_results = [create_message.create_message(x, self) for x in final_results if x]
         else:
             final_results.sort(key=lambda x: x["fromUser"]["id"], reverse=True)
         self.temp_scraped.Messages = final_results

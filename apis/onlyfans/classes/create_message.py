@@ -1,11 +1,11 @@
 from typing import Optional
 
-from apis.onlyfans.classes import create_user
+import apis.onlyfans.classes.create_user as create_user
 from apis.onlyfans.classes.extras import endpoint_links
 
 
 class create_message:
-    def __init__(self, option: dict, user: create_user) -> None:
+    def __init__(self, option: dict, user: create_user.create_user) -> None:
         self.responseType: Optional[str] = option.get("responseType")
         self.text: Optional[str] = option.get("text")
         self.lockedText: Optional[bool] = option.get("lockedText")
@@ -52,3 +52,27 @@ class create_message:
             link, method="POST", payload=x
         )
         return result
+
+    async def link_picker(self,media, video_quality):
+        link = ""
+        if "source" in media:
+            quality_key = "source"
+            source = media[quality_key]
+            link = source[quality_key]
+            if link:
+                if media["type"] == "video":
+                    qualities = media["videoSources"]
+                    qualities = dict(sorted(qualities.items(), reverse=False))
+                    qualities[quality_key] = source[quality_key]
+                    for quality, quality_link in qualities.items():
+                        video_quality = video_quality.removesuffix("p")
+                        if quality == video_quality:
+                            if quality_link:
+                                link = quality_link
+                                break
+                            print
+                        print
+                    print
+        if "src" in media:
+            link = media["src"]
+        return link

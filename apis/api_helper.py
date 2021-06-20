@@ -14,7 +14,6 @@ from random import randint
 from typing import Any, Optional
 from urllib.parse import urlparse
 
-import helpers.main_helper as main_helper
 import python_socks
 import requests
 from aiohttp import ClientSession
@@ -226,115 +225,6 @@ class session_manager:
         results = await asyncio.ensure_future(run(items))
         return results
 
-    async def async_downloads(
-        self, download_list: list[media_table], subscription: create_user
-    ):
-        async def run(download_list: list[media_table]):
-            proxies = self.proxies
-            proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
-            connector = ProxyConnector.from_url(proxy) if proxy else None
-            async with ClientSession(
-                connector=connector,
-                cookies=self.auth.auth_details.cookie.format(),
-                read_timeout=None,
-            ) as session:
-                tasks = []
-                # Get content_lengths
-                for download_item in download_list:
-                    link = download_item.link
-                    if link:
-                        task = asyncio.ensure_future(
-                            self.json_request(
-                                download_item.link,
-                                session,
-                                method="HEAD",
-                                json_format=False,
-                            )
-                        )
-                        tasks.append(task)
-                responses = await asyncio.gather(*tasks)
-                tasks.clear()
-
-                async def check(download_item: media_table, response: ClientResponse):
-                    filepath = os.path.join(
-                        download_item.directory, download_item.filename
-                    )
-                    response_status = False
-                    if response.status == 200:
-                        response_status = True
-                        if response.content_length:
-                            download_item.size = response.content_length
-
-                    if os.path.exists(filepath):
-                        if os.path.getsize(filepath) == response.content_length:
-                            download_item.downloaded = True
-                        else:
-                            return download_item
-                    else:
-                        if response_status:
-                            return download_item
-
-                for download_item in download_list:
-                    temp_response = [
-                        response
-                        for response in responses
-                        if response and str(response.url) == download_item.link
-                    ]
-                    if temp_response:
-                        temp_response = temp_response[0]
-                        task = check(download_item, temp_response)
-                        tasks.append(task)
-                result = await asyncio.gather(*tasks)
-                download_list = [x for x in result if x]
-                tasks.clear()
-                progress_bar = None
-                if download_list:
-                    progress_bar = main_helper.download_session()
-                    progress_bar.start(unit="B", unit_scale=True, miniters=1)
-                    [progress_bar.update_total_size(x.size) for x in download_list]
-
-                async def process_download(download_item: media_table):
-                    while True:
-                        result = await self.download_content(
-                            download_item, session, progress_bar, subscription
-                        )
-                        if result:
-                            response, download_item = result.values()
-                            if response:
-                                download_path = os.path.join(
-                                    download_item.directory, download_item.filename
-                                )
-                                status_code = await main_helper.write_data(
-                                    response, download_path, progress_bar
-                                )
-                                if not status_code:
-                                    pass
-                                elif status_code == 1:
-                                    continue
-                                elif status_code == 2:
-                                    break
-                                timestamp = download_item.created_at.timestamp()
-                                await main_helper.format_image(download_path, timestamp)
-                                download_item.size = response.content_length
-                                download_item.downloaded = True
-                        break
-
-                max_threads = calculate_max_threads(self.max_threads)
-                download_groups = main_helper.grouper(max_threads, download_list)
-                for download_group in download_groups:
-                    tasks = []
-                    for download_item in download_group:
-                        task = process_download(download_item)
-                        if task:
-                            tasks.append(task)
-                    await asyncio.gather(*tasks)
-                if isinstance(progress_bar, main_helper.download_session):
-                    progress_bar.close()
-                return True
-
-        results = await asyncio.ensure_future(run(download_list))
-        return results
-
     async def download_content(
         self,
         download_item: media_table,
@@ -380,7 +270,7 @@ class session_manager:
                         quality = subscription.subscriber.extras["settings"][
                             "supported"
                         ]["onlyfans"]["settings"]["video_quality"]
-                        link = main_helper.link_picker(media, quality)
+                        link = await new_result.link_picker(media, quality)
                         download_item.link = link
                     continue
             new_task["response"] = response

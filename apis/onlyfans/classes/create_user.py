@@ -16,7 +16,6 @@ from apis.onlyfans.classes.extras import (
     handle_refresh,
 )
 
-
 class create_user:
     def __init__(self, option={}, subscriber: create_auth = None) -> None:
         self.view: str = option.get("view")
@@ -314,7 +313,6 @@ class create_user:
             final_result = create_post(response, self)
             return final_result
         return response
-
     async def get_messages(
         self,
         links: Optional[list] = None,

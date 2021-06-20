@@ -75,18 +75,19 @@ def create_auth_array(item):
 
 
 def get_or_create(session: Session, model, defaults=None, fbkwargs={}):
-    instance = session.query(model).filter_by(**fbkwargs).one_or_none()
+    fbkwargs2 = fbkwargs
+    instance = session.query(model).filter_by(**fbkwargs2).one_or_none()
     if instance:
         return instance, True
     else:
-        fbkwargs |= defaults or {}
-        instance = model(**fbkwargs)
+        fbkwargs2 |= defaults or {}
+        instance = model(**fbkwargs2)
         try:
             session.add(instance)
             session.commit()
         except IntegrityError:
             session.rollback()
-            instance = session.query(model).filter_by(**fbkwargs).one()
+            instance = session.query(model).filter_by(**fbkwargs2).one()
             return instance, False
         else:
             return instance, True

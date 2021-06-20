@@ -70,7 +70,7 @@ async def start_datascraper(
                 if webhooks:
                     await main_helper.process_webhooks(api, "auth_webhook", "failed")
                 auth_details = {}
-                auth_details["auth"] = auth.auth_details.__dict__
+                auth_details["auth"] = auth.auth_details.export()
                 profile_directory = auth.profile_directory
                 if profile_directory:
                     user_auth_filepath = os.path.join(
@@ -85,12 +85,12 @@ async def start_datascraper(
         subscription_list = module.format_options(
             subscription_array, "usernames", api.auths
         )
-        if jobs["scrape_paid_content"]:
+        if jobs["scrape_paid_content"] and api.has_active_auths():
             print("Scraping Paid Content")
-            paid_content = await module.paid_content_scraper(api, identifiers)
-        if jobs["scrape_names"]:
+            await module.paid_content_scraper(api, identifiers)
+        if jobs["scrape_names"] and api.has_active_auths():
             print("Scraping Subscriptions")
-            names = await main_helper.process_names(
+            await main_helper.process_names(
                 module,
                 subscription_list,
                 auto_model_choice,

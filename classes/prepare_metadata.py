@@ -149,11 +149,11 @@ class format_content(object):
             def __iter__(self):
                 for attr, value in self.__dict__.items():
                     yield attr, value
-
-        old_content.pop("directories", None)
+        old_content2 = old_content
+        old_content2.pop("directories", None)
         new_content = media_types(assign_states=assign_state)
         for key, new_item in new_content:
-            old_item = old_content.get(key)
+            old_item = old_content2.get(key)
             if not old_item:
                 continue
             for old_key, old_item2 in old_item.items():
@@ -193,6 +193,7 @@ class format_content(object):
 
     class post_item(create_metadata, object):
         def __init__(self, option={}):
+            create_metadata.__init__(self,option)
             self.post_id = option.get("post_id", None)
             self.text = option.get("text", "")
             self.price = option.get("price", 0)
@@ -216,6 +217,7 @@ class format_content(object):
 
     class media_item(create_metadata):
         def __init__(self, option={}):
+            create_metadata.__init__(self,option)
             self.media_id = option.get("media_id", None)
             link = option.get("link", [])
             if link:

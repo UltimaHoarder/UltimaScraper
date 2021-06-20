@@ -1,5 +1,3 @@
-from multiprocessing.pool import Pool
-from apis.onlyfans.classes.extras import error_details
 import asyncio
 import copy
 import hashlib
@@ -7,15 +5,15 @@ import os
 import re
 import threading
 import time
-from itertools import chain, groupby, product, zip_longest
+from itertools import chain
 from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool as ThreadPool
+from multiprocessing.pool import Pool
 from os.path import dirname as up
 from random import randint
-from typing import Any, Dict, List, Optional
+from typing import Any, Optional
 from urllib.parse import urlparse
 
-import aiohttp
 import helpers.main_helper as main_helper
 import python_socks
 import requests
@@ -28,11 +26,11 @@ from aiohttp.client_exceptions import (
     ServerDisconnectedError,
 )
 from aiohttp.client_reqrep import ClientResponse
-from aiohttp_socks import ChainProxyConnector, ProxyConnector, ProxyType
+from aiohttp_socks import ProxyConnector
 from database.models.media_table import media_table
-from yarl import URL
 
 from apis.onlyfans.classes import create_auth, create_user
+from apis.onlyfans.classes.extras import error_details
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
@@ -329,7 +327,7 @@ class session_manager:
                         task = process_download(download_item)
                         if task:
                             tasks.append(task)
-                    result = await asyncio.gather(*tasks)
+                    await asyncio.gather(*tasks)
                 if isinstance(progress_bar, main_helper.download_session):
                     progress_bar.close()
                 return True

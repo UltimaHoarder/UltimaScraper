@@ -24,14 +24,7 @@ from apis.onlyfans.classes.extras import auth_details, media_types
 from apis.onlyfans.onlyfans import start
 from classes.prepare_metadata import create_metadata, prepare_reformat
 from helpers import db_helper
-from helpers.main_helper import (
-    choose_option,
-    download_session,
-    fix_sqlite,
-    import_archive,
-)
 from mergedeep import Strategy, merge
-from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm.scoping import scoped_session
 from tqdm.asyncio import tqdm
 
@@ -101,7 +94,7 @@ async def account_setup(
         )
         print
         if authed.isPerformer:
-            imported = import_archive(metadata_filepath)
+            imported = main_helper.import_archive(metadata_filepath)
             if "auth" in imported:
                 imported = imported["auth"]
             mass_messages = await authed.get_mass_messages(resume=imported)
@@ -119,7 +112,7 @@ async def account_setup(
         and json_settings["browser"]["auth"]
     ):
         domain = "https://onlyfans.com"
-        cookies = oflogin.login(auth, domain, auth.session_manager.get_proxy())
+        oflogin.login(auth, domain, auth.session_manager.get_proxy())
     return status, subscriptions
 
 
@@ -145,7 +138,7 @@ async def start_datascraper(
         username,
         metadata_directory_format,
     ]
-    await fix_sqlite(*some_list)
+    await main_helper.fix_sqlite(*some_list)
     api_array = scrape_choice(authed, subscription)
     api_array = format_options(api_array, "apis")
     apis = api_array[0]
@@ -163,9 +156,7 @@ async def start_datascraper(
         print("Type: " + item["api_type"])
         item["api_array"]["username"] = username
         item["api_array"]["subscription"] = subscription
-        api_type = item["api_type"]
-        results = await prepare_scraper(authed, site_name, item)
-        print
+        await prepare_scraper(authed, site_name, item)
     print("Scrape Completed" + "\n")
     return [True, subscription]
 
@@ -180,10 +171,10 @@ def scrape_choice(authed: create_auth, subscription):
         [["", "All"], ["", "Images"], ["", "Videos"], ["", "Audios"], ["", "Texts"]],
         message,
     ]
-    choice_list = choose_option(media_types, auto_media_choice)
+    choice_list = main_helper.choose_option(media_types, auto_media_choice)
     user_api = OnlyFans.endpoint_links(user_id).users
     message_api = OnlyFans.endpoint_links(user_id).message_api
-    mass_messages_api = OnlyFans.endpoint_links().mass_messages_api
+    # mass_messages_api = OnlyFans.endpoint_links().mass_messages_api
     stories_api = OnlyFans.endpoint_links(user_id).stories_api
     list_highlights = OnlyFans.endpoint_links(user_id).list_highlights
     post_api = OnlyFans.endpoint_links(user_id).post_api
@@ -302,7 +293,7 @@ async def profile_scraper(
             if os.path.getsize(download_path) == response.content_length:
                 continue
         if not progress_bar:
-            progress_bar = download_session()
+            progress_bar = main_helper.download_session()
             progress_bar.start(unit="B", unit_scale=True, miniters=1)
         progress_bar.update_total_size(response.content_length)
         response = await authed.session_manager.json_request(
@@ -318,6 +309,7 @@ async def profile_scraper(
 
 
 async def paid_content_scraper(api: start, identifiers=[]):
+    
     for authed in api.auths:
         paid_contents = []
         paid_contents = await authed.get_paid_content()
@@ -469,7 +461,7 @@ async def process_mass_messages(
     mass_message_path = os.path.join(profile_metadata_directory, "Mass Messages.json")
     chats_path = os.path.join(profile_metadata_directory, "Chats.json")
     if os.path.exists(chats_path):
-        chats = import_archive(chats_path)
+        chats = main_helper.import_archive(chats_path)
     date_object = datetime.today()
     date_string = date_object.strftime("%d-%m-%Y %H:%M:%S")
     for mass_message in mass_messages:
@@ -602,8 +594,8 @@ def process_legacy_metadata(
     if delete_legacy_metadatas:
         print("Merging new metadata with legacy metadata.")
         delete_metadatas.extend(delete_legacy_metadatas)
-    old_metadata_set = import_archive(archive_path)
-    old_metadata_set2 = import_archive(legacy_archive_path)
+    old_metadata_set = main_helper.import_archive(archive_path)
+    old_metadata_set2 = main_helper.import_archive(legacy_archive_path)
     if old_metadata_set2:
         delete_metadatas.append(legacy_archive_path)
     old_metadata_set_type = type(old_metadata_set)
@@ -666,7 +658,6 @@ async def process_metadata(
         subscription.download_info["metadata_locations"] = {}
     subscription.download_info["directory"] = download_directory
     subscription.download_info["webhook"] = webhook
-    database_name = parent_type if parent_type else api_type
     subscription.download_info["metadata_locations"][api_type] = {}
     subscription.download_info["metadata_locations"][api_type] = archive_path
     if json_global_settings["helpers"]["renamer"]:
@@ -874,7 +865,7 @@ def legacy_metadata_fixer(
             for type_one_file in type_one_files:
                 api_type = type_one_file.removesuffix(".json")
                 legacy_metadata_path = os.path.join(legacy_directory, type_one_file)
-                legacy_metadata = import_archive(legacy_metadata_path)
+                legacy_metadata = main_helper.import_archive(legacy_metadata_path)
                 if legacy_metadata:
                     delete_legacy_metadatas.append(legacy_metadata_path)
                 legacy_metadata = create_metadata(
@@ -885,7 +876,7 @@ def legacy_metadata_fixer(
             old_metadata_object = create_metadata(authed, new_format)
             if legacy_directory != new_metadata_directory:
                 import_path = os.path.join(legacy_directory, metadata_name)
-                new_metadata_set = import_archive(import_path)
+                new_metadata_set = main_helper.import_archive(import_path)
                 if new_metadata_set:
                     new_metadata_object2 = create_metadata(authed, new_metadata_set)
                     old_metadata_object = compare_metadata(
@@ -1228,7 +1219,7 @@ async def prepare_downloads(subscription: create_user):
         string += f"Name: {subscription.username} | Type: {api_type} | Count: {media_set_count}{location} | Directory: {directory}\n"
         if media_set_count:
             print(string)
-            a = await subscription.session_manager.async_downloads(
+            await subscription.session_manager.async_downloads(
                 download_list, subscription
             )
         database_session.commit()

@@ -1,10 +1,9 @@
 import asyncio
 import math
-from asyncio.tasks import gather
 from datetime import datetime
 from itertools import chain, product
 from multiprocessing.pool import Pool
-from typing import Any, Dict, List, Optional, TypedDict, Union
+from typing import Any, Dict, List, Optional, Union
 
 import jsonpickle
 from apis import api_helper
@@ -30,7 +29,7 @@ class create_auth(create_user):
         pool: Optional[Pool] = None,
         max_threads: int = -1,
     ) -> None:
-        create_user.__init__(self,option)
+        create_user.__init__(self, option)
         if not self.username:
             self.username = f"u{self.id}"
         self.lists = {}
@@ -149,8 +148,6 @@ class create_auth(create_user):
             error = response
         elif isinstance(response, dict) and "error" in response:
             error = response["error"]
-            error_message = response["error"]["message"]
-            error_code = error["code"]
             error = error_details(error)
         else:
             self.errors.clear()

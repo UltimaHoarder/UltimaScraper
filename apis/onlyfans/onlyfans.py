@@ -63,3 +63,6 @@ class start:
         self.pool.close()
         for auth in self.auths:
             auth.session_manager.pool.close()
+
+    def has_active_auths(self):
+        return bool([x for x in self.auths if x.active])

@@ -1,12 +1,10 @@
 #!/usr/bin/env python3
 import asyncio
 import os
-from random import randint
 import shutil
 import traceback
 import urllib.parse as urlparse
-from datetime import datetime
-from itertools import chain, product
+from itertools import chain
 
 from apis.onlyfans import onlyfans
 from apis.onlyfans.classes.create_user import create_user

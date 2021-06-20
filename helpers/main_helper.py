@@ -29,7 +29,7 @@ from aiohttp.client_exceptions import (
 from aiohttp.client_reqrep import ClientResponse
 from apis.onlyfans import onlyfans as OnlyFans
 from apis.onlyfans.classes import create_user
-from apis.onlyfans.classes.extras import content_types, error_details
+from apis.onlyfans.classes.extras import content_types
 from bs4 import BeautifulSoup
 from classes.prepare_metadata import format_variables, prepare_reformat
 from mergedeep import Strategy, merge
@@ -549,8 +549,6 @@ class download_session(tqdm):
             self.total += tsize
 
     def update_to(self, b=1, bsize=1, tsize=None):
-        x = bsize
-        print
         self.update(b)
 
 
@@ -870,8 +868,7 @@ async def send_webhook(
                     message = ujson.loads(
                         json.dumps(message, default=lambda o: o.__dict__)
                     )
-                    x = requests.post(webhook_link, json=message)
-                    print
+                    requests.post(webhook_link, json=message)
 
 
 def find_between(s, start, end):

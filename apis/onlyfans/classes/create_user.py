@@ -380,7 +380,7 @@ class create_user:
         if isinstance(response, dict):
             results = [x for x in response["list"] if x["id"] == message_id]
             result = results[0] if results else {}
-            final_result = create_message(result, self)
+            final_result = create_message.create_message(result, self)
             return final_result
         return response
 

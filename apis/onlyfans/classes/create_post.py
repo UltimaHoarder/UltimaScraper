@@ -1,16 +1,16 @@
-from apis.onlyfans.classes import create_user
+import apis.onlyfans.classes.create_user as create_user
 from apis.onlyfans.classes.extras import endpoint_links
 from typing import Any
 
 
 class create_post:
-    def __init__(self, option, user: create_user) -> None:
+    def __init__(self, option, user) -> None:
         self.responseType: str = option.get("responseType")
         self.id: int = option.get("id")
         self.postedAt: str = option.get("postedAt")
         self.postedAtPrecise: str = option.get("postedAtPrecise")
         self.expiredAt: Any = option.get("expiredAt")
-        self.author: dict = option.get("author")
+        self.author = create_user.create_user(option["author"])
         self.text: str = option.get("text")
         self.rawText: str = option.get("rawText")
         self.lockedText: bool = option.get("lockedText")
@@ -42,19 +42,19 @@ class create_post:
         self.canViewMedia: bool = option.get("canViewMedia")
         self.preview: list = option.get("preview")
         self.canPurchase: bool = option.get("canPurchase")
-        self.user = user
+        self.user: create_user.create_user = user
 
     async def favorite(self):
         link = endpoint_links(
             identifier=f"{self.responseType}s",
             identifier2=self.id,
-            identifier3=self.author["id"],
+            identifier3=self.author.id,
         ).favorite
         results = await self.user.session_manager.json_request(link, method="POST")
         self.isFavorite = True
         return results
 
-    async def link_picker(self,media, video_quality):
+    async def link_picker(self, media, video_quality):
         link = ""
         if "source" in media:
             quality_key = "source"

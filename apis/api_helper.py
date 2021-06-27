@@ -25,8 +25,8 @@ from aiohttp.client_exceptions import (
     ServerDisconnectedError,
 )
 from aiohttp.client_reqrep import ClientResponse
-from aiohttp_socks import ProxyConnector
-from database.models.media_table import media_table
+from aiohttp_socks import ProxyConnectionError, ProxyConnector, ProxyError
+from database.models.media_table import template_media_table
 
 from apis.onlyfans.classes import create_auth, create_user
 from apis.onlyfans.classes.extras import error_details
@@ -191,13 +191,14 @@ class session_manager:
                     else:
                         result = await response.read()
                 break
-            except ClientConnectorError:
+            except (ClientConnectorError, ProxyError):
                 break
             except (
                 ClientPayloadError,
                 ContentTypeError,
                 ClientOSError,
                 ServerDisconnectedError,
+                ProxyConnectionError,
             ):
                 continue
         if custom_session:
@@ -227,7 +228,7 @@ class session_manager:
 
     async def download_content(
         self,
-        download_item: media_table,
+        download_item: template_media_table,
         session: ClientSession,
         progress_bar,
         subscription: create_user,
@@ -351,9 +352,7 @@ def restore_missing_data(master_set2, media_set, split_by):
     return new_set
 
 
-async def scrape_endpoint_links(
-    links, session_manager: Optional[session_manager], api_type
-):
+async def scrape_endpoint_links(links, session_manager: session_manager, api_type):
     media_set = []
     max_attempts = 100
     api_type = api_type.capitalize()
@@ -381,11 +380,11 @@ async def scrape_endpoint_links(
                 links = restore_missing_data(links, results, split_by)
                 media_set.extend(not_faulty)
             if not positives and false_positive:
-                media_set.extend(results)
+                media_set.extend(not_faulty)
                 break
             print
         else:
-            media_set.extend(results)
+            media_set.extend(not_faulty)
             break
     media_set = list(chain(*media_set))
     return media_set

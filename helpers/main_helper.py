@@ -1,10 +1,11 @@
+from database.models.api_table import api_table
 from apis import api_helper
 import asyncio
 import copy
 from aiohttp.client import ClientSession
 
 from aiohttp_socks.connector import ProxyConnector
-from database.models.media_table import media_table
+from database.models.media_table import template_media_table
 import json
 import math
 import os
@@ -40,13 +41,11 @@ from bs4 import BeautifulSoup
 from classes.prepare_metadata import format_variables, prepare_reformat
 from mergedeep import Strategy, merge
 from sqlalchemy import inspect
-from sqlalchemy.orm import declarative_base
 from sqlalchemy.orm.session import Session
 from tqdm import tqdm
 
 import helpers.db_helper as db_helper
 
-Base = declarative_base()
 json_global_settings = None
 min_drive_space = 0
 webhooks = None
@@ -137,13 +136,13 @@ async def format_image(filepath: str, timestamp: float):
             break
 
 
-
-async def async_downloads(download_list: list[media_table], subscription: create_user
-):
-    async def run(download_list: list[media_table]):
+async def async_downloads(download_list: list[template_media_table], subscription: create_user):
+    async def run(download_list: list[template_media_table]):
         session_m = subscription.session_manager
         proxies = session_m.proxies
-        proxy = session_m.proxies[random.randint(0, len(proxies) - 1)] if proxies else ""
+        proxy = (
+            session_m.proxies[random.randint(0, len(proxies) - 1)] if proxies else ""
+        )
         connector = ProxyConnector.from_url(proxy) if proxy else None
         async with ClientSession(
             connector=connector,
@@ -167,10 +166,8 @@ async def async_downloads(download_list: list[media_table], subscription: create
             responses = await asyncio.gather(*tasks)
             tasks.clear()
 
-            async def check(download_item: media_table, response: ClientResponse):
-                filepath = os.path.join(
-                    download_item.directory, download_item.filename
-                )
+            async def check(download_item: template_media_table, response: ClientResponse):
+                filepath = os.path.join(download_item.directory, download_item.filename)
                 response_status = False
                 if response.status == 200:
                     response_status = True
@@ -205,7 +202,7 @@ async def async_downloads(download_list: list[media_table], subscription: create
                 progress_bar.start(unit="B", unit_scale=True, miniters=1)
                 [progress_bar.update_total_size(x.size) for x in download_list]
 
-            async def process_download(download_item: media_table):
+            async def process_download(download_item: template_media_table):
                 while True:
                     result = await session_m.download_content(
                         download_item, session, progress_bar, subscription
@@ -246,6 +243,8 @@ async def async_downloads(download_list: list[media_table], subscription: create
 
     results = await asyncio.ensure_future(run(download_list))
     return results
+
+
 def filter_metadata(datas):
     for key, item in datas.items():
         for items in item["valid"]:
@@ -290,11 +289,8 @@ def legacy_database_fixer(database_path, database, database_name, database_exist
         database_session = Session()
         api_table = database.api_table()
         media_table = database.media_table()
-        # DON'T FORGET TO REMOVE
-        # database_name = "posts"
-        # DON'T FORGET TO REMOVE
-        legacy_api_table = api_table.legacy(Base, database_name)
-        legacy_media_table = media_table.legacy(Base)
+        legacy_api_table = api_table.legacy(database_name)
+        legacy_media_table = media_table.legacy()
         result = database_session.query(legacy_api_table)
         post_db = result.all()
         for post in post_db:
@@ -324,7 +320,7 @@ def legacy_database_fixer(database_path, database, database_name, database_exist
             datas.append(new_item)
         print
         database_session.close()
-        export_sqlite(old_database_path, datas, database_name, legacy_fixer=True)
+        export_sqlite2(old_database_path, datas, database_name, legacy_fixer=True)
 
 
 async def fix_sqlite(
@@ -368,7 +364,7 @@ async def fix_sqlite(
                 database_path = os.path.join(final_metadata, f"{api_type}.db")
                 database_name = api_type.lower()
                 alembic_location = os.path.join(
-                    cwd, "database", "databases", database_name
+                    cwd, "database", "archived_databases", database_name
                 )
                 result = inspect(engine).has_table(database_name)
                 if result:
@@ -377,20 +373,20 @@ async def fix_sqlite(
                     Session3, engine2 = db_helper.create_database_session(database_path)
                     db_collection = db_helper.database_collection()
                     database_session2: Session = Session3()
-                    database = db_collection.chooser(database_name)
-                    api_table = database.api_table
-                    archived_result = database_session.query(api_table).all()
+                    database = db_collection.database_picker("user_data")
+                    table_name = database.table_picker(api_type, True)
+                    archived_result = database_session.query(table_name).all()
                     for item in archived_result:
                         result2 = (
-                            database_session2.query(api_table)
-                            .filter(api_table.post_id == item.post_id)
+                            database_session2.query(table_name)
+                            .filter(table_name.post_id == item.post_id)
                             .first()
                         )
                         if not result2:
                             item2 = item.__dict__
                             item2.pop("id")
                             item2.pop("_sa_instance_state")
-                            item = api_table(**item2)
+                            item = table_name(**item2)
                             item.archived = True
                             database_session2.add(item)
                     database_session2.commit()
@@ -400,7 +396,7 @@ async def fix_sqlite(
             os.remove(archived_database_path)
 
 
-def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None):
+def export_sqlite2(archive_path, datas, parent_type, legacy_fixer=False):
     metadata_directory = os.path.dirname(archive_path)
     os.makedirs(metadata_directory, exist_ok=True)
     cwd = os.getcwd()
@@ -409,7 +405,7 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None
     database_name = parent_type if parent_type else api_type
     database_name = database_name.lower()
     db_collection = db_helper.database_collection()
-    database = db_collection.chooser(database_name)
+    database = db_collection.database_picker(database_name)
     alembic_location = os.path.join(cwd, "database", "databases", database_name)
     database_exists = os.path.exists(database_path)
     if database_exists:
@@ -479,6 +475,125 @@ def export_sqlite(archive_path, datas, parent_type, legacy_fixer=False, api=None
         print
     print
 
+    database_session.commit()
+    database_session.close()
+    return Session, api_type, database
+
+
+def legacy_sqlite_updater(
+    legacy_metadata_path:str, api_type:str, subscription:create_user, delete_metadatas:list
+):
+    final_result = []
+    if os.path.exists(legacy_metadata_path):
+        cwd = os.getcwd()
+        database_name = os.path.basename(legacy_metadata_path).replace(".db","")
+        alembic_location = os.path.join(cwd, "database", "archived_databases", api_type)
+        db_helper.run_migrations(alembic_location, legacy_metadata_path)
+        database_name = "user_data"
+        session, engine = db_helper.create_database_session(legacy_metadata_path)
+        database_session:Session = session()
+        db_collection = db_helper.database_collection()
+        database = db_collection.database_picker(database_name)
+        if api_type == "Messages":
+            api_table_table = database.table_picker(api_type, True)
+        else:
+            api_table_table = database.table_picker(api_type)
+        media_table_table = database.media_table.media_legacy_table
+        if api_table_table:
+            result = database_session.query(api_table_table).all()
+            result2 = database_session.query(media_table_table).all()
+            for item in result:
+                item = item.__dict__
+                item["medias"] = []
+                for item2 in result2:
+                    if item["post_id"] != item2.post_id:
+                        continue
+                    item2 = item2.__dict__
+                    item2["links"] = [item2["link"]]
+                    item["medias"].append(item2)
+                    print
+                item["user_id"] = subscription.id
+                item["postedAt"] = item["created_at"]
+                final_result.append(item)
+            delete_metadatas.append(legacy_metadata_path)
+        database_session.close()
+    return final_result, delete_metadatas
+
+
+def export_sqlite(database_path:str, api_type, datas):
+    metadata_directory = os.path.dirname(database_path)
+    os.makedirs(metadata_directory, exist_ok=True)
+    database_name = os.path.basename(database_path).replace(".db","")
+    cwd = os.getcwd()
+    alembic_location = os.path.join(cwd, "database", "databases", database_name)
+    db_helper.run_migrations(alembic_location, database_path)
+    Session, engine = db_helper.create_database_session(database_path)
+    db_collection = db_helper.database_collection()
+    database = db_collection.database_picker(database_name)
+    database_session = Session()
+    api_table = database.table_picker(api_type)
+    if not api_table:
+        return
+    for post in datas:
+        post_id = post["post_id"]
+        postedAt = post["postedAt"]
+        date_object = None
+        if postedAt:
+            if not isinstance(postedAt, datetime):
+                date_object = datetime.strptime(postedAt, "%d-%m-%Y %H:%M:%S")
+            else:
+                date_object = postedAt
+        result = database_session.query(api_table)
+        post_db = result.filter_by(post_id=post_id).first()
+        if not post_db:
+            post_db = api_table()
+        if api_type == "Messages":
+            post_db.user_id = post["user_id"]
+        post_db.post_id = post_id
+        post_db.text = post["text"]
+        if post["price"] is None:
+            post["price"] = 0
+        post_db.price = post["price"]
+        post_db.paid = post["paid"]
+        post_db.archived = post["archived"]
+        if date_object:
+            post_db.created_at = date_object
+        database_session.add(post_db)
+        for media in post["medias"]:
+            if media["media_type"] == "Texts":
+                continue
+            created_at = media["created_at"]
+            if not isinstance(created_at, datetime):
+                date_object = datetime.strptime(created_at, "%d-%m-%Y %H:%M:%S")
+            else:
+                date_object = postedAt
+            media_id = media.get("media_id", None)
+            result = database_session.query(database.media_table)
+            media_db = result.filter_by(media_id=media_id).first()
+            if not media_db:
+                media_db = result.filter_by(
+                    filename=media["filename"], created_at=date_object
+                ).first()
+                if not media_db:
+                    media_db = database.media_table()
+            media_db.media_id = media_id
+            media_db.post_id = post_id
+            if "_sa_instance_state" in post:
+                media_db.size = media["size"]
+                media_db.downloaded = media["downloaded"]
+            media_db.link = media["links"][0]
+            media_db.preview = media.get("preview", False)
+            media_db.directory = media["directory"]
+            media_db.filename = media["filename"]
+            media_db.api_type = api_type
+            media_db.media_type = media["media_type"]
+            media_db.linked = media.get("linked", None)
+            if date_object:
+                media_db.created_at = date_object
+            database_session.add(media_db)
+            print
+        print
+    print
     database_session.commit()
     database_session.close()
     return Session, api_type, database
@@ -1048,5 +1163,3 @@ def module_chooser(domain, json_sites):
         string = f"{domain} not supported"
         site_names = []
     return string, site_names
-
-

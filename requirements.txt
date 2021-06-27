@@ -2,7 +2,7 @@ requests
 beautifulsoup4
 urllib3
 win32-setctime
-pysocks
+python-socks[asyncio]
 psutil
 python-dateutil
 lxml

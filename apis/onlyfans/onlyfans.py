@@ -36,9 +36,9 @@ class start:
         self.lists = None
         self.endpoint_links = endpoint_links
         self.pool: Pool = api_helper.multiprocessing()
-        self.settings: Dict[str, dict[str, Any]] = {}
+        self.settings: dict[str, dict[str, Any]] = {}
 
-    def add_auth(self, options: Dict[str, bool] = {}, only_active: bool = False):
+    def add_auth(self, options: dict[str, str] = {}, only_active: bool = False):
         if only_active and not options.get("active"):
             return
         auth = create_auth(pool=self.pool, max_threads=self.max_threads)

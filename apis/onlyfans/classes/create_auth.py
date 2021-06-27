@@ -41,12 +41,12 @@ class create_auth(create_user):
         self.paid_content = []
         self.pool = pool
         self.session_manager = api_helper.session_manager(self, max_threads=max_threads)
-        self.auth_details: Optional[auth_details] = None
+        self.auth_details: auth_details = auth_details()
         self.profile_directory = option.get("profile_directory", "")
         self.guest = False
         self.active: bool = False
         self.errors: list[error_details] = []
-        self.extras: Dict[str, Any] = {}
+        self.extras: dict[str, Any] = {}
 
     def update(self, data: Dict[str, Any]):
         for key, value in data.items():

@@ -9,7 +9,7 @@ from itertools import chain
 from apis.onlyfans import onlyfans
 from apis.onlyfans.classes.create_user import create_user
 from database.models.api_table import api_table
-from database.models.media_table import media_table
+from database.models.media_table import template_media_table
 from sqlalchemy.orm.scoping import scoped_session
 from tqdm.asyncio import tqdm
 
@@ -28,7 +28,7 @@ async def fix_directories(
 ):
     new_directories = []
 
-    async def fix_directories2(post: api_table, media_db: list[media_table]):
+    async def fix_directories2(post: api_table, media_db: list[template_media_table]):
         delete_rows = []
         final_api_type = (
             os.path.join("Archived", api_type) if post.archived else api_type
@@ -152,15 +152,13 @@ async def fix_directories(
 async def start(
     api: onlyfans.start,
     Session,
-    parent_type,
     api_type,
-    api_path,
     site_name,
     subscription: create_user,
     folder,
     json_settings,
 ):
-    api_table = folder.api_table
+    api_table = folder.table_picker(api_type)
     database_session = Session()
     # Slow
     result = database_session.query(api_table).all()

@@ -325,7 +325,7 @@ async def paid_content_scraper(api: start, identifiers=[]):
             if not author:
                 continue
             subscription = await authed.get_subscription(
-                check=True, identifier=author["id"]
+                check=True, identifier=author.id
             )
             if not subscription:
                 subscription = paid_content.user
@@ -373,6 +373,9 @@ async def paid_content_scraper(api: start, identifiers=[]):
                     "metadata_directory"
                 ]
                 metadata_path = os.path.join(
+                    formatted_metadata_directory, "user_data.db"
+                )
+                legacy_metadata_path = os.path.join(
                     formatted_metadata_directory, api_type + ".db"
                 )
                 pool = subscription.session_manager.pool
@@ -392,7 +395,6 @@ async def paid_content_scraper(api: start, identifiers=[]):
                 new_metadata = main_helper.format_media_set(unrefined_set)
                 new_metadata = new_metadata["content"]
                 if new_metadata:
-                    api_path = os.path.join(api_type, "")
                     old_metadata, delete_metadatas = process_legacy_metadata(
                         authed,
                         new_metadata,
@@ -400,17 +402,15 @@ async def paid_content_scraper(api: start, identifiers=[]):
                         api_type,
                         metadata_path,
                     )
-                    parent_type = ""
                     new_metadata = new_metadata + old_metadata
                     subscription.set_scraped(api_type, new_metadata)
                     await process_metadata(
                         api,
                         metadata_path,
-                        formatted_directories,
+                        legacy_metadata_path,
                         new_metadata,
                         site_name,
-                        parent_type,
-                        api_path,
+                        api_type,
                         subscription,
                         delete_metadatas,
                     )
@@ -574,7 +574,6 @@ def process_legacy_metadata(
     api_type,
     archive_path,
 ):
-    print("Processing metadata.")
     delete_metadatas = []
     legacy_metadata2 = formatted_directories["legacy_metadatas"]["legacy_metadata2"]
     legacy_metadata_path2 = os.path.join(
@@ -643,17 +642,22 @@ def process_legacy_metadata(
 async def process_metadata(
     api,
     archive_path: str,
-    formatted_directories: dict,
+    legacy_metadata_path: str,
     new_metadata_object,
     site_name,
-    parent_type,
-    api_path,
+    api_type: str,
     subscription,
     delete_metadatas,
 ):
-    Session, api_type, folder = main_helper.export_sqlite(
-        archive_path, new_metadata_object, parent_type
+    final_result = []
+    final_result, delete_metadatas = main_helper.legacy_sqlite_updater(
+        legacy_metadata_path, api_type, subscription, delete_metadatas
     )
+    new_metadata_object = new_metadata_object + final_result
+    result = main_helper.export_sqlite(archive_path, api_type, new_metadata_object)
+    if not result:
+        return
+    Session, api_type, folder = result
     if not subscription.download_info:
         subscription.download_info["metadata_locations"] = {}
     subscription.download_info["directory"] = download_directory
@@ -665,9 +669,7 @@ async def process_metadata(
         new_metadata_object = await ofrenamer.start(
             api,
             Session,
-            parent_type,
             api_type,
-            api_path,
             site_name,
             subscription,
             folder,
@@ -814,10 +816,11 @@ async def prepare_scraper(authed: create_auth, site_name, item):
         unrefined_set = await tqdm.gather(tasks, **settings)
     unrefined_set = [x for x in unrefined_set]
     new_metadata = main_helper.format_media_set(unrefined_set)
-    metadata_path = os.path.join(formatted_metadata_directory, api_type + ".db")
+    metadata_path = os.path.join(formatted_metadata_directory, "user_data.db")
+    legacy_metadata_path = os.path.join(formatted_metadata_directory, api_type + ".db")
     if new_metadata:
         new_metadata = new_metadata["content"]
-        api_path = os.path.join(api_type, parent_type)
+        print("Processing metadata.")
         old_metadata, delete_metadatas = process_legacy_metadata(
             authed,
             new_metadata,
@@ -830,11 +833,10 @@ async def prepare_scraper(authed: create_auth, site_name, item):
         await process_metadata(
             authed,
             metadata_path,
-            formatted_directories,
+            legacy_metadata_path,
             new_metadata,
             site_name,
-            parent_type,
-            api_path,
+            api_type,
             subscription,
             delete_metadatas,
         )
@@ -1049,7 +1051,7 @@ async def media_scraper(
             price = post_result.price
             if api_type == "Mass Messages":
                 media_user = post_result.fromUser
-                media_username = media_user["username"]
+                media_username = media_user.username
                 if media_username != model_username:
                     continue
         final_text = rawText if rawText else text
@@ -1064,6 +1066,10 @@ async def media_scraper(
             date_string = date_object.replace(tzinfo=None).strftime("%d-%m-%Y %H:%M:%S")
             master_date = date_string
         new_post["post_id"] = post_id
+        new_post["user_id"] = subscription.id
+        if isinstance(post_result, create_message):
+            new_post["user_id"] = post_result.fromUser.id
+
         new_post["text"] = final_text
         new_post["postedAt"] = date_string
         new_post["paid"] = False
@@ -1103,6 +1109,13 @@ async def media_scraper(
             new_media["links"] = []
             new_media["media_type"] = media_type
             new_media["preview"] = False
+            new_media["created_at"] = new_post["postedAt"]
+            if isinstance(post_result, create_story):
+                date_object = datetime.fromisoformat(media["createdAt"])
+                date_string = date_object.replace(tzinfo=None).strftime(
+                    "%d-%m-%Y %H:%M:%S"
+                )
+                new_media["created_at"] = date_string
             if int(media_id) in new_post["preview_media_ids"]:
                 new_media["preview"] = True
             for xlink in link, preview_link:
@@ -1133,6 +1146,7 @@ async def media_scraper(
             option["profile_username"] = authed.username
             option["model_username"] = model_username
             option["date_format"] = date_format
+            option["postedAt"] = new_media["created_at"]
             option["text_length"] = text_length
             option["directory"] = download_path
             option["preview"] = new_media["preview"]
@@ -1199,31 +1213,36 @@ async def prepare_downloads(subscription: create_user):
     for api_type, metadata_path in download_info["metadata_locations"].items():
         Session, engine = db_helper.create_database_session(metadata_path)
         database_session: scoped_session = Session()
-        database_name = api_type.lower()
         db_collection = db_helper.database_collection()
-        database = db_collection.chooser(database_name)
-        api_table = database.api_table
-        media_table = database.media_table
-        settings = subscription.subscriber.extras["settings"]["supported"]["onlyfans"][
-            "settings"
-        ]
-        overwrite_files = settings["overwrite_files"]
-        if overwrite_files:
-            download_list: Any = database_session.query(media_table).all()
-            media_set_count = len(download_list)
-        else:
-            download_list: Any = database_session.query(media_table).filter(
-                media_table.downloaded == False
-            )
-            media_set_count = db_helper.get_count(download_list)
-        location = ""
-        string = "Download Processing\n"
-        string += f"Name: {subscription.username} | Type: {api_type} | Count: {media_set_count}{location} | Directory: {directory}\n"
-        if media_set_count:
-            print(string)
-            await main_helper.async_downloads(download_list, subscription)
-        database_session.commit()
-        database_session.close()
+        database = db_collection.database_picker("user_data")
+        if database:
+            media_table = database.media_table
+            settings = subscription.subscriber.extras["settings"]["supported"]["onlyfans"][
+                "settings"
+            ]
+            overwrite_files = settings["overwrite_files"]
+            if overwrite_files:
+                download_list: Any = (
+                    database_session.query(media_table)
+                    .filter(media_table.api_type == api_type)
+                    .all()
+                )
+                media_set_count = len(download_list)
+            else:
+                download_list: Any = (
+                    database_session.query(media_table)
+                    .filter(media_table.downloaded == False)
+                    .filter(media_table.api_type == api_type)
+                )
+                media_set_count = db_helper.get_count(download_list)
+            location = ""
+            string = "Download Processing\n"
+            string += f"Name: {subscription.username} | Type: {api_type} | Count: {media_set_count}{location} | Directory: {directory}\n"
+            if media_set_count:
+                print(string)
+                await main_helper.async_downloads(download_list, subscription)
+            database_session.commit()
+            database_session.close()
         print
     print
 

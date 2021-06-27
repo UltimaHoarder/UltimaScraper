@@ -487,7 +487,7 @@ def legacy_sqlite_updater(
     if os.path.exists(legacy_metadata_path):
         cwd = os.getcwd()
         database_name = os.path.basename(legacy_metadata_path).replace(".db","")
-        alembic_location = os.path.join(cwd, "database", "archived_databases", api_type)
+        alembic_location = os.path.join(cwd, "database", "archived_databases", api_type.lower())
         db_helper.run_migrations(alembic_location, legacy_metadata_path)
         database_name = "user_data"
         session, engine = db_helper.create_database_session(legacy_metadata_path)
@@ -525,7 +525,7 @@ def export_sqlite(database_path:str, api_type, datas):
     os.makedirs(metadata_directory, exist_ok=True)
     database_name = os.path.basename(database_path).replace(".db","")
     cwd = os.getcwd()
-    alembic_location = os.path.join(cwd, "database", "databases", database_name)
+    alembic_location = os.path.join(cwd, "database", "databases", database_name.lower())
     db_helper.run_migrations(alembic_location, database_path)
     Session, engine = db_helper.create_database_session(database_path)
     db_collection = db_helper.database_collection()

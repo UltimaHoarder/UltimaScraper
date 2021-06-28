@@ -70,8 +70,8 @@ def create_auth_array(item):
     return auth_array
 
 
-def get_or_create(session: Session, model, defaults=None, fbkwargs={}):
-    fbkwargs2 = fbkwargs
+def get_or_create(session: Session, model, defaults=None, fbkwargs:dict={}):
+    fbkwargs2 = fbkwargs.copy()
     instance = session.query(model).filter_by(**fbkwargs2).one_or_none()
     if instance:
         return instance, True

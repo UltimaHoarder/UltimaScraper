@@ -136,7 +136,7 @@ class format_content(object):
         self,
         authed=None,
         version=None,
-        old_content: dict = {},
+        temp_old_content: dict = {},
         export=False,
         reformat=False,
         args={},
@@ -149,11 +149,11 @@ class format_content(object):
             def __iter__(self):
                 for attr, value in self.__dict__.items():
                     yield attr, value
-        old_content2 = old_content
-        old_content2.pop("directories", None)
+        old_content = temp_old_content.copy()
+        old_content.pop("directories", None)
         new_content = media_types(assign_states=assign_state)
         for key, new_item in new_content:
-            old_item = old_content2.get(key)
+            old_item = old_content.get(key)
             if not old_item:
                 continue
             for old_key, old_item2 in old_item.items():

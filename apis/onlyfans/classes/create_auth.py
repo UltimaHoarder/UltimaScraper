@@ -269,8 +269,7 @@ class create_auth(create_user):
                 valid_subscriptions = []
                 extras = {}
                 extras["auth_check"] = ""
-                if isinstance(subscriptions, str):
-                    input(subscriptions)
+                if isinstance(subscriptions, error_details):
                     return
                 subscriptions = [
                     subscription

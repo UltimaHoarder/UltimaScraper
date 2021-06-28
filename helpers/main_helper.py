@@ -486,7 +486,6 @@ def legacy_sqlite_updater(
     final_result = []
     if os.path.exists(legacy_metadata_path):
         cwd = os.getcwd()
-        database_name = os.path.basename(legacy_metadata_path).replace(".db","")
         alembic_location = os.path.join(cwd, "database", "archived_databases", api_type.lower())
         db_helper.run_migrations(alembic_location, legacy_metadata_path)
         database_name = "user_data"

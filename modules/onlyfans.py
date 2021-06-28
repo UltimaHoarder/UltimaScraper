@@ -1280,15 +1280,7 @@ async def manage_subscriptions(
         bl = [x for x in hard_blacklist if x == username]
         if bl:
             continue
-        now = datetime.utcnow().date()
-        subscribedByData = result.subscribedByData
-        result_date = (
-            subscribedByData["expiredAt"]
-            if subscribedByData
-            else datetime.utcnow().isoformat()
-        )
         subscribePrice = result.subscribePrice
-        result_date = datetime.fromisoformat(result_date).replace(tzinfo=None).date()
         if ignore_type in ["paid"]:
             if subscribePrice > 0:
                 continue

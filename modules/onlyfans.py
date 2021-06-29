@@ -900,7 +900,7 @@ def legacy_metadata_fixer(
 
 def test(new_item, old_item):
     new_found = None
-    if old_item.media_id == None:
+    if old_item.media_id is None:
         for link in old_item.links:
             # Handle Links
             a = urlparse(link)
@@ -1015,7 +1015,6 @@ async def media_scraper(
         pass
     download_path = formatted_directories["download_directory"]
     for location in formatted_directories["locations"]:
-        sorted_directories = copy.copy(location["sorted_directories"])
         date_today = datetime.now()
         master_date = datetime.strftime(date_today, "%d-%m-%Y %H:%M:%S")
         media_type = location["media_type"]
@@ -1076,7 +1075,7 @@ async def media_scraper(
         new_post["preview_media_ids"] = previews
         new_post["api_type"] = api_type
         new_post["price"] = 0
-        if price == None:
+        if price is None:
             price = 0
         if price:
             if all(media["canView"] for media in post_result.media):

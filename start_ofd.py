@@ -37,11 +37,9 @@ try:
                         continue
                 else:
                     print(string)
-                    x = input()
-                    if x == "x":
-                        break
-                    x = int(x)
-                    site_name = site_names[x]
+                    site_choice = str(input())
+                    site_choice = int(site_choice)
+                    site_name = site_names[site_choice]
                 site_name_lower = site_name.lower()
                 api = await main_datascraper.start_datascraper(
                     json_config, site_name_lower

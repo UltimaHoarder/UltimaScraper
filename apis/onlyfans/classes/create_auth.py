@@ -124,6 +124,10 @@ class create_auth(create_user):
             else:
                 print(f"Welcome {self.name} | {self.username}")
                 break
+        if not self.active:
+            user = await self.get_user(auth_id)
+            if isinstance(user, create_user):
+                self.update(user.__dict__)
         return self
 
     async def get_authed(self):

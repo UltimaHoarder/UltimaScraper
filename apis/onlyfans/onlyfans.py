@@ -39,9 +39,9 @@ class start:
         self.settings: dict[str, dict[str, Any]] = {}
 
     def add_auth(self, options: dict[str, str] = {}, only_active: bool = False):
-        if only_active and not options.get("active"):
-            return
         auth = create_auth(pool=self.pool, max_threads=self.max_threads)
+        if only_active and not options.get("active"):
+            return auth
         temp_auth_details = auth_details(options).upgrade_legacy(options)
         auth.auth_details = temp_auth_details
         auth.extras["settings"] = self.settings

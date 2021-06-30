@@ -1,11 +1,11 @@
-from database.models.api_table import api_table
+from database.databases.user_data.models.api_table import api_table
 from apis import api_helper
 import asyncio
 import copy
 from aiohttp.client import ClientSession
 
 from aiohttp_socks.connector import ProxyConnector
-from database.models.media_table import template_media_table
+from database.databases.user_data.models.media_table import template_media_table
 import json
 import math
 import os

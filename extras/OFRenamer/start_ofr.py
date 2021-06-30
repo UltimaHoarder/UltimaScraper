@@ -8,8 +8,8 @@ from itertools import chain
 
 from apis.onlyfans import onlyfans
 from apis.onlyfans.classes.create_user import create_user
-from database.models.api_table import api_table
-from database.models.media_table import template_media_table
+from database.databases.user_data.models.api_table import api_table
+from database.databases.user_data.models.media_table import template_media_table
 from sqlalchemy.orm.scoping import scoped_session
 from tqdm.asyncio import tqdm
 

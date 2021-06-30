@@ -5,8 +5,8 @@ import datetime
 from typing import cast
 
 import sqlalchemy
-from database.models.api_table import api_table
-from database.models.media_table import template_media_table
+from database.databases.user_data.models.api_table import api_table
+from database.databases.user_data.models.media_table import template_media_table
 from sqlalchemy.orm import declarative_base  # type: ignore
 from sqlalchemy.sql.schema import Column, ForeignKey, Table
 from sqlalchemy.sql.sqltypes import Integer

@@ -2,8 +2,8 @@
 ### posts.py ###
 
 from sqlalchemy.orm import declarative_base
-from database.models.api_table import api_table
-from database.models.media_table import template_media_table
+from database.databases.user_data.models.api_table import api_table
+from database.databases.user_data.models.media_table import template_media_table
 
 Base = declarative_base()
 

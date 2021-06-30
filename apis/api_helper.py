@@ -26,7 +26,7 @@ from aiohttp.client_exceptions import (
 )
 from aiohttp.client_reqrep import ClientResponse
 from aiohttp_socks import ProxyConnectionError, ProxyConnector, ProxyError
-from database.models.media_table import template_media_table
+from database.databases.user_data.models.media_table import template_media_table
 
 from apis.onlyfans.classes import create_auth, create_user
 from apis.onlyfans.classes.extras import error_details

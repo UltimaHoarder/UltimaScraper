@@ -188,7 +188,7 @@ Usage: Select the resolution of the video.
     240p = "240" | "240p"
 
 ### auto_site_choice:
-Types: list|int|str|bool
+Types: str|int
 
 Usage: You can automatically choose which site you want to scrape.
 

@@ -26,7 +26,7 @@ class create_auth(create_user):
     def __init__(
         self,
         option: dict[str, Any] = {},
-        pool: Optional[Pool] = None,
+        pool: Pool = None,
         max_threads: int = -1,
     ) -> None:
         create_user.__init__(self, option)
@@ -39,7 +39,8 @@ class create_auth(create_user):
         self.archived_stories = {}
         self.mass_messages = []
         self.paid_content = []
-        self.pool = pool
+        temp_pool = pool if pool else api_helper.multiprocessing()
+        self.pool = temp_pool
         self.session_manager = api_helper.session_manager(self, max_threads=max_threads)
         self.auth_details: auth_details = auth_details()
         self.profile_directory = option.get("profile_directory", "")

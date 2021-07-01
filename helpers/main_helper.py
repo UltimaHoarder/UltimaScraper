@@ -46,9 +46,9 @@ from tqdm import tqdm
 
 import helpers.db_helper as db_helper
 
-json_global_settings = None
+json_global_settings = {}
 min_drive_space = 0
-webhooks = None
+webhooks = {}
 max_threads = -1
 os_name = platform.system()
 proxies = None
@@ -374,7 +374,11 @@ async def fix_sqlite(
                     db_collection = db_helper.database_collection()
                     database_session2: Session = Session3()
                     database = db_collection.database_picker("user_data")
+                    if not database:
+                        return
                     table_name = database.table_picker(api_type, True)
+                    if not table_name:
+                        return
                     archived_result = database_session.query(table_name).all()
                     for item in archived_result:
                         result2 = (
@@ -406,6 +410,8 @@ def export_sqlite2(archive_path, datas, parent_type, legacy_fixer=False):
     database_name = database_name.lower()
     db_collection = db_helper.database_collection()
     database = db_collection.database_picker(database_name)
+    if not database:
+        return
     alembic_location = os.path.join(cwd, "database", "databases", database_name)
     database_exists = os.path.exists(database_path)
     if database_exists:
@@ -493,28 +499,29 @@ def legacy_sqlite_updater(
         database_session:Session = session()
         db_collection = db_helper.database_collection()
         database = db_collection.database_picker(database_name)
-        if api_type == "Messages":
-            api_table_table = database.table_picker(api_type, True)
-        else:
-            api_table_table = database.table_picker(api_type)
-        media_table_table = database.media_table.media_legacy_table
-        if api_table_table:
-            result = database_session.query(api_table_table).all()
-            result2 = database_session.query(media_table_table).all()
-            for item in result:
-                item = item.__dict__
-                item["medias"] = []
-                for item2 in result2:
-                    if item["post_id"] != item2.post_id:
-                        continue
-                    item2 = item2.__dict__
-                    item2["links"] = [item2["link"]]
-                    item["medias"].append(item2)
-                    print
-                item["user_id"] = subscription.id
-                item["postedAt"] = item["created_at"]
-                final_result.append(item)
-            delete_metadatas.append(legacy_metadata_path)
+        if database:
+            if api_type == "Messages":
+                api_table_table = database.table_picker(api_type, True)
+            else:
+                api_table_table = database.table_picker(api_type)
+            media_table_table = database.media_table.media_legacy_table
+            if api_table_table:
+                result = database_session.query(api_table_table).all()
+                result2 = database_session.query(media_table_table).all()
+                for item in result:
+                    item = item.__dict__
+                    item["medias"] = []
+                    for item2 in result2:
+                        if item["post_id"] != item2.post_id:
+                            continue
+                        item2 = item2.__dict__
+                        item2["links"] = [item2["link"]]
+                        item["medias"].append(item2)
+                        print
+                    item["user_id"] = subscription.id
+                    item["postedAt"] = item["created_at"]
+                    final_result.append(item)
+                delete_metadatas.append(legacy_metadata_path)
         database_session.close()
     return final_result, delete_metadatas
 
@@ -529,6 +536,8 @@ def export_sqlite(database_path:str, api_type, datas):
     Session, engine = db_helper.create_database_session(database_path)
     db_collection = db_helper.database_collection()
     database = db_collection.database_picker(database_name)
+    if not database:
+        return
     database_session = Session()
     api_table = database.table_picker(api_type)
     if not api_table:

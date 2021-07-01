@@ -13,7 +13,7 @@ class create_message:
         self.price: Optional[float] = option.get("price")
         self.isMediaReady: Optional[bool] = option.get("isMediaReady")
         self.mediaCount: Optional[int] = option.get("mediaCount")
-        self.media: Optional[list] = option.get("media")
+        self.media: list = option.get("media",[])
         self.previews: list = option.get("previews",[])
         self.isTip: Optional[bool] = option.get("isTip")
         self.isReportedByMe: Optional[bool] = option.get("isReportedByMe")

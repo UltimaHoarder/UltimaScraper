@@ -1,3 +1,4 @@
+# type: ignore
 """content
 
 Revision ID: 5493253cc03c

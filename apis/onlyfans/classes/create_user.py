@@ -359,7 +359,9 @@ class create_user:
             final_results.extend(results2)
         print
         if not inside_loop:
-            final_results = [create_message.create_message(x, self) for x in final_results if x]
+            final_results = [
+                create_message.create_message(x, self) for x in final_results if x
+            ]
         else:
             final_results.sort(key=lambda x: x["fromUser"]["id"], reverse=True)
         self.temp_scraped.Messages = final_results

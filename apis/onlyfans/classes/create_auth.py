@@ -313,7 +313,7 @@ class create_auth(create_user):
                     continue
                 link = endpoint_links(identifier=identifier).users
                 result = await self.session_manager.json_request(link)
-                if "error" in result or not result["subscribedBy"]:
+                if isinstance(result,error_details) or not result["subscribedBy"]:
                     continue
                 subscription = create_user(result, self)
                 if subscription.isBlocked:

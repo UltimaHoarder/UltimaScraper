@@ -6,8 +6,9 @@ from typing import cast
 
 import sqlalchemy
 from database.databases.user_data.models.api_table import api_table
-from database.databases.user_data.models.media_table import template_media_table
-from sqlalchemy.orm import declarative_base  # type: ignore
+from database.databases.user_data.models.media_table import \
+    template_media_table
+from sqlalchemy.orm.decl_api import declarative_base
 from sqlalchemy.sql.schema import Column, ForeignKey, Table
 from sqlalchemy.sql.sqltypes import Integer
 

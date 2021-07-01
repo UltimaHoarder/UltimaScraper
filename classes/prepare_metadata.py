@@ -1,25 +1,29 @@
-from apis.onlyfans.classes.extras import media_types
-from apis.onlyfans.classes.create_auth import create_auth
 import copy
-from enum import unique
 import os
-from typing import Dict
+from itertools import chain, groupby
+from typing import MutableMapping, Union
 
-from requests.api import get
-from helpers import main_helper
-from itertools import groupby, chain
-from math import exp
 import jsonpickle
+from apis.onlyfans.classes.create_auth import create_auth
+from apis.onlyfans.classes.extras import media_types
+from helpers import main_helper
 
 global_version = 2
 
 
 class create_metadata(object):
-    def __init__(self, authed: create_auth = None, metadata: dict = {}, standard_format=False, api_type: str = "") -> None:
+    def __init__(
+        self,
+        authed: create_auth = None,
+        metadata: Union[list, dict, MutableMapping] = {},
+        standard_format=False,
+        api_type: str = "",
+    ) -> None:
         self.version = global_version
         fixed_metadata = self.fix_metadata(metadata, standard_format, api_type)
         self.content = format_content(
-            authed, fixed_metadata["version"], fixed_metadata["content"]).content
+            authed, fixed_metadata["version"], fixed_metadata["content"]
+        ).content
 
     def fix_metadata(self, metadata, standard_format=False, api_type: str = "") -> dict:
         new_format = {}
@@ -57,6 +61,8 @@ class create_metadata(object):
             if any(x for x in metadata if x in media_types().__dict__.keys()):
                 metadata.pop("directories", None)
                 for key, status in metadata.items():
+                    if isinstance(status, int):
+                        continue
                     for key2, posts in status.items():
                         if all(x and isinstance(x, list) for x in posts):
                             posts = list(chain(*posts))
@@ -94,8 +100,7 @@ class create_metadata(object):
                             print
                         print
                 print
-            value = jsonpickle.encode(
-                new_format_copied, unpicklable=False)
+            value = jsonpickle.encode(new_format_copied, unpicklable=False)
             value = jsonpickle.decode(value)
             if not isinstance(value, dict):
                 return {}
@@ -107,8 +112,7 @@ class create_metadata(object):
         value = {}
         if convert_type == "json":
             new_format_copied = copy.deepcopy(self)
-            value = jsonpickle.encode(
-                new_format_copied, unpicklable=False)
+            value = jsonpickle.encode(new_format_copied, unpicklable=False)
             value = jsonpickle.decode(value)
             if not isinstance(value, dict):
                 return {}
@@ -128,8 +132,15 @@ class create_metadata(object):
 
 
 class format_content(object):
-    def __init__(self, authed=None, version=None, old_content: dict = {}, export=False, reformat=False, args={}):
-
+    def __init__(
+        self,
+        authed=None,
+        version=None,
+        temp_old_content: dict = {},
+        export=False,
+        reformat=False,
+        args={},
+    ):
         class assign_state(object):
             def __init__(self) -> None:
                 self.valid = []
@@ -138,6 +149,7 @@ class format_content(object):
             def __iter__(self):
                 for attr, value in self.__dict__.items():
                     yield attr, value
+        old_content = temp_old_content.copy()
         old_content.pop("directories", None)
         new_content = media_types(assign_states=assign_state)
         for key, new_item in new_content:
@@ -161,8 +173,10 @@ class format_content(object):
 
                 elif version == 1:
                     old_item2.sort(key=lambda x: x["post_id"])
-                    media_list = [list(g) for k, g in groupby(
-                        old_item2, key=lambda x: x["post_id"])]
+                    media_list = [
+                        list(g)
+                        for k, g in groupby(old_item2, key=lambda x: x["post_id"])
+                    ]
                     for media_list2 in media_list:
                         old_post = media_list2[0]
                         post = self.post_item(old_post)
@@ -179,6 +193,7 @@ class format_content(object):
 
     class post_item(create_metadata, object):
         def __init__(self, option={}):
+            create_metadata.__init__(self,option)
             self.post_id = option.get("post_id", None)
             self.text = option.get("text", "")
             self.price = option.get("price", 0)
@@ -194,8 +209,7 @@ class format_content(object):
                 new_format_copied = copy.deepcopy(self)
                 for media in new_format_copied.medias:
                     media.convert()
-                value = jsonpickle.encode(
-                    new_format_copied, unpicklable=False)
+                value = jsonpickle.encode(new_format_copied, unpicklable=False)
                 value = jsonpickle.decode(value)
                 if not isinstance(value, dict):
                     return {}
@@ -203,6 +217,7 @@ class format_content(object):
 
     class media_item(create_metadata):
         def __init__(self, option={}):
+            create_metadata.__init__(self,option)
             self.media_id = option.get("media_id", None)
             link = option.get("link", [])
             if link:
@@ -222,8 +237,7 @@ class format_content(object):
             if convert_type == "json":
                 value.pop("session", None)
                 new_format_copied = copy.deepcopy(self)
-                value = jsonpickle.encode(
-                    new_format_copied, unpicklable=False)
+                value = jsonpickle.encode(new_format_copied, unpicklable=False)
                 value = jsonpickle.decode(value)
                 if not isinstance(value, dict):
                     return {}
@@ -240,7 +254,8 @@ class format_variables(object):
         self.first_letter = "{first_letter}"
         self.post_id = "{post_id}"
         self.media_id = "{media_id}"
-        self.username = "{username}"
+        self.profile_username = "{profile_username}"
+        self.model_username = "{model_username}"
         self.api_type = "{api_type}"
         self.media_type = "{media_type}"
         self.filename = "{filename}"
@@ -262,12 +277,11 @@ class format_variables(object):
             yield attr, value
 
 
-class format_types():
+class format_types:
     def __init__(self, options) -> None:
         self.file_directory_format = options.get("file_directory_format")
         self.filename_format = options.get("filename_format")
-        self.metadata_directory_format = options.get(
-            "metadata_directory_format")
+        self.metadata_directory_format = options.get("metadata_directory_format")
 
     def check_rules(self):
         bool_status = True
@@ -292,8 +306,13 @@ class format_types():
                     if b in self.filename_format:
                         invalid_list.append(b)
             if key == "metadata_directory_format":
-                wl = ["{site_name}", "{first_letter}",
-                      "{model_id}", "{username}"]
+                wl = [
+                    "{site_name}",
+                    "{first_letter}",
+                    "{model_id}",
+                    "{profile_username}",
+                    "{model_username}",
+                ]
                 bl = format_variables().whitelist(wl)
                 invalid_list = []
                 for b in bl:
@@ -318,7 +337,7 @@ class format_types():
         f = format_variables()
         for key, value in self:
             if key == "file_directory_format":
-                unique = ["{media_id}", "{username}"]
+                unique = ["{media_id}", "{model_username}"]
                 value = os.path.normpath(value)
                 values = value.split(os.sep)
                 option["unique"].file_directory_format = unique
@@ -331,7 +350,7 @@ class format_types():
                         values.append(value2)
                 option["unique"].filename_format = unique
             elif key == "metadata_directory_format":
-                unique = ["{username}"]
+                unique = ["{model_username}"]
                 value = os.path.normpath(value)
                 values = value.split(os.sep)
                 option["unique"].metadata_directory_format = unique
@@ -343,7 +362,8 @@ class format_types():
                 setattr(option["unique"], key, e)
             else:
                 option[
-                    "string"] += f"{key} is a invalid format since it has no unique identifiers. Use any from this list {','.join(unique)}\n"
+                    "string"
+                ] += f"{key} is a invalid format since it has no unique identifiers. Use any from this list {','.join(unique)}\n"
                 option["bool_status"] = False
         return option
 
@@ -355,24 +375,26 @@ class format_types():
 class prepare_reformat(object):
     def __init__(self, option, keep_vars=False):
         format_variables2 = format_variables()
-        self.site_name = option.get('site_name', format_variables2.site_name)
-        self.post_id = option.get('post_id', format_variables2.post_id)
-        self.media_id = option.get('media_id', format_variables2.media_id)
-        self.username = option.get('username', format_variables2.username)
-        self.api_type = option.get('api_type', format_variables2.api_type)
-        self.media_type = option.get(
-            'media_type', format_variables2.media_type)
-        self.filename = option.get('filename', format_variables2.filename)
-        self.ext = option.get('ext', format_variables2.ext)
-        self.text = option.get('text', format_variables2.text)
-        self.date = option.get('postedAt', format_variables2.date)
-        self.price = option.get('price', 0)
-        self.date_format = option.get('date_format')
+        self.site_name = option.get("site_name", format_variables2.site_name)
+        self.post_id = option.get("post_id", format_variables2.post_id)
+        self.media_id = option.get("media_id", format_variables2.media_id)
+        self.profile_username = option.get(
+            "profile_username", format_variables2.profile_username
+        )
+        self.model_username = option.get("model_username", format_variables2.model_username)
+        self.api_type = option.get("api_type", format_variables2.api_type)
+        self.media_type = option.get("media_type", format_variables2.media_type)
+        self.filename = option.get("filename", format_variables2.filename)
+        self.ext = option.get("ext", format_variables2.ext)
+        self.text = option.get("text", format_variables2.text)
+        self.date = option.get("postedAt", format_variables2.date)
+        self.price = option.get("price", 0)
+        self.archived = option.get("archived", False)
+        self.date_format = option.get("date_format")
         self.maximum_length = 255
-        self.text_length = option.get('text_length', self.maximum_length)
-        self.directory = option.get(
-            'directory')
-        self.preview = option.get('preview')
+        self.text_length = option.get("text_length", self.maximum_length)
+        self.directory = option.get("directory")
+        self.preview = option.get("preview")
         if not keep_vars:
             for key, value in self:
                 print
@@ -388,14 +410,14 @@ class prepare_reformat(object):
         for attr, value in self.__dict__.items():
             yield attr, value
 
-    def reformat(self, unformatted_list) -> list[str]:
+    async def reformat(self, unformatted_list) -> list[str]:
         x = []
         format_variables2 = format_variables()
         for key, unformatted_item in unformatted_list.items():
             if "filename_format" == key:
                 unformatted_item = os.path.join(x[1], unformatted_item)
                 print
-            string = main_helper.reformat(self, unformatted_item)
+            string = await main_helper.reformat(self, unformatted_item)
             final_path = []
             paths = string.split(os.sep)
             for path in paths:
@@ -416,8 +438,7 @@ class prepare_reformat(object):
         if convert_type == "json":
             new_format_copied = copy.deepcopy(self)
             delattr(new_format_copied, "session")
-            value = jsonpickle.encode(
-                new_format_copied, unpicklable=False)
+            value = jsonpickle.encode(new_format_copied, unpicklable=False)
             value = jsonpickle.decode(value)
             if not isinstance(value, dict):
                 return {}

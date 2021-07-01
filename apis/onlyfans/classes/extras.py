@@ -1,9 +1,34 @@
 import copy
 from itertools import chain
+from typing import Any
 
 
 class auth_details:
-    def __init__(self, option: dict = {}):
+    def __init__(self, options: dict[str, Any] = {}) -> None:
+        self.username = options.get("username", "")
+        self.cookie = cookie_parser(options.get("cookie", ""))
+        self.user_agent = options.get("user_agent", "")
+        self.email = options.get("email", "")
+        self.password = options.get("password", "")
+        self.hashed = options.get("hashed", False)
+        self.support_2fa = options.get("support_2fa", True)
+        self.active = options.get("active", True)
+
+    def upgrade_legacy(self, options: dict[str, Any]):
+        if "cookie" not in options:
+            self = legacy_auth_details(options).upgrade(self)
+        return self
+
+    def export(self):
+        new_dict = copy.copy(self.__dict__)
+        if isinstance(self.cookie, cookie_parser):
+            cookie = self.cookie.convert()
+            new_dict["cookie"] = cookie
+        return new_dict
+
+
+class legacy_auth_details:
+    def __init__(self, option: dict[str, Any] = {}):
         self.username = option.get("username", "")
         self.auth_id = option.get("auth_id", "")
         self.sess = option.get("sess", "")
@@ -16,6 +41,46 @@ class auth_details:
         self.hashed = option.get("hashed", False)
         self.support_2fa = option.get("support_2fa", True)
         self.active = option.get("active", True)
+
+    def upgrade(self, new_auth_details: auth_details):
+        new_dict = ""
+        for key, value in self.__dict__.items():
+            value = value if value != None else ""
+            skippable = ["username", "user_agent"]
+            if key not in skippable:
+                new_dict += f"{key}={value}; "
+        new_dict = new_dict.strip()
+        new_auth_details.cookie = cookie_parser(new_dict)
+        return new_auth_details
+
+
+class cookie_parser:
+    def __init__(self, options: str) -> None:
+        new_dict = {}
+        for crumble in options.strip().split(";"):
+            if crumble:
+                key, value = crumble.strip().split("=")
+                new_dict[key] = value
+        self.auth_id = new_dict.get("auth_id", "")
+        self.sess = new_dict.get("sess", "")
+        self.auth_hash = new_dict.get("auth_hash", "")
+        self.auth_uniq_ = new_dict.get("auth_uniq_", "")
+        self.auth_uid_ = new_dict.get("auth_uid_", "")
+
+    def format(self):
+        """
+        Typically used for adding cookies to requests
+        """
+        return self.__dict__
+
+    def convert(self):
+        new_dict = ""
+        for key, value in self.__dict__.items():
+            key = key.replace("auth_uniq_", f"auth_uniq_{self.auth_id}")
+            key = key.replace("auth_uid_", f"auth_uid_{self.auth_id}")
+            new_dict += f"{key}={value}; "
+        new_dict = new_dict.strip()
+        return new_dict
 
 
 class content_types:
@@ -68,6 +133,7 @@ class endpoint_links(object):
         self.archived_stories = f"https://onlyfans.com/api2/v2/stories/archive/?limit=100&offset=0&order=publish_date_desc"
         self.paid_api = f"https://onlyfans.com/api2/v2/posts/paid?{global_limit}&offset={global_offset}"
         self.pay = f"https://onlyfans.com/api2/v2/payments/pay"
+        self.subscribe = f"https://onlyfans.com/api2/v2/users/{identifier}/subscribe"
         self.like = f"https://onlyfans.com/api2/v2/{identifier}/{identifier2}/like"
         self.favorite = f"https://onlyfans.com/api2/v2/{identifier}/{identifier2}/favorites/{identifier3}"
         self.transactions = (
@@ -78,24 +144,23 @@ class endpoint_links(object):
 
 # Lol?
 class error_details:
-    def __init__(self) -> None:
-        self.code = None
-        self.message = ""
+    def __init__(self, result) -> None:
+        error = result["error"] if "error" in result else result
+        self.code = error["code"]
+        self.message = error["message"]
 
 
 def create_headers(
-    dynamic_rules,
-    auth_id,
+    dynamic_rules: dict[str, Any],
+    auth_id: str,
     user_agent: str = "",
-    x_bc: str = "",
-    sess: str = "",
     link: str = "https://onlyfans.com/",
 ):
-    headers = {}
+    headers: dict[str, Any] = {}
     headers["user-agent"] = user_agent
     headers["referer"] = link
     headers["user-id"] = auth_id
-    headers["x-bc"] = x_bc
+    headers["x-bc"] = ""
     for remove_header in dynamic_rules["remove_headers"]:
         headers.pop(remove_header)
     return headers

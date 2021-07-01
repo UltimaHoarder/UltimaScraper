@@ -1,8 +1,15 @@
+import asyncio
+import math
 from datetime import datetime
-from apis.onlyfans.classes.create_post import create_post
-from apis.onlyfans.classes.create_message import create_message
 from itertools import chain, product
+from multiprocessing.pool import Pool
+from typing import Any, Dict, List, Optional, Union
+
+import jsonpickle
 from apis import api_helper
+from apis.onlyfans.classes.create_message import create_message
+from apis.onlyfans.classes.create_post import create_post
+from apis.onlyfans.classes.create_user import create_user
 from apis.onlyfans.classes.extras import (
     auth_details,
     content_types,
@@ -11,95 +18,69 @@ from apis.onlyfans.classes.extras import (
     error_details,
     handle_refresh,
 )
-from apis.onlyfans.classes.create_user import create_user
-
-import requests
-from typing import Any, Optional, Union
-from apis.api_helper import session_manager
-import copy
-from user_agent import generate_user_agent
-import math
-import jsonpickle
 from dateutil.relativedelta import relativedelta
+from user_agent import generate_user_agent
 
 
-class create_auth:
+class create_auth(create_user):
     def __init__(
         self,
-        session_manager2: session_manager,
-        option={},
-        init=False,
-        pool=None,
+        option: dict[str, Any] = {},
+        pool: Optional[Pool] = None,
+        max_threads: int = -1,
     ) -> None:
-        self.id = option.get("id")
-        self.username: str = option.get("username")
+        create_user.__init__(self, option)
         if not self.username:
             self.username = f"u{self.id}"
-        self.name = option.get("name")
-        self.email: str = option.get("email")
         self.lists = {}
         self.links = content_types()
-        self.isPerformer: bool = option.get("isPerformer")
-        self.chatMessagesCount = option.get("chatMessagesCount")
-        self.subscribesCount = option.get("subscribesCount")
         self.subscriptions: list[create_user] = []
         self.chats = None
         self.archived_stories = {}
         self.mass_messages = []
         self.paid_content = []
-        session_manager2 = copy.copy(session_manager2)
-        self.session_manager = session_manager2
         self.pool = pool
-        self.auth_details: Optional[auth_details] = None
+        self.session_manager = api_helper.session_manager(self, max_threads=max_threads)
+        self.auth_details: auth_details = auth_details()
         self.profile_directory = option.get("profile_directory", "")
         self.guest = False
-        self.active = False
+        self.active: bool = False
         self.errors: list[error_details] = []
-        self.extras = {}
+        self.extras: dict[str, Any] = {}
 
-    def update(self, data):
+    def update(self, data: Dict[str, Any]):
         for key, value in data.items():
             found_attr = hasattr(self, key)
             if found_attr:
                 setattr(self, key, value)
 
-    def login(self, full=False, max_attempts=10, guest=False):
+    async def login(self, max_attempts: int = 10, guest: bool = False):
         auth_version = "(V1)"
-        if guest:
-            self.auth_details.auth_id = "0"
-            self.auth_details.user_agent = generate_user_agent()
         auth_items = self.auth_details
+        if not auth_items:
+            return self
+        if guest and auth_items:
+            auth_items.cookie.auth_id = "0"
+            auth_items.user_agent = generate_user_agent()  # type: ignore
         link = endpoint_links().customer
-        user_agent = auth_items.user_agent
-        auth_id = str(auth_items.auth_id)
-        x_bc = auth_items.x_bc
+        user_agent = auth_items.user_agent  # type: ignore
+        auth_id = str(auth_items.cookie.auth_id)
         # expected string error is fixed by auth_id
-        auth_cookies = [
-            {"name": "auth_id", "value": auth_id},
-            {"name": "sess", "value": auth_items.sess},
-            {"name": "auth_hash", "value": auth_items.auth_hash},
-            {"name": f"auth_uniq_{auth_id}", "value": auth_items.auth_uniq_},
-            {"name": f"auth_uid_{auth_id}", "value": None},
-        ]
         dynamic_rules = self.session_manager.dynamic_rules
-        a = [dynamic_rules, auth_id, user_agent, x_bc, auth_items.sess, link]
+        a: List[Any] = [dynamic_rules, auth_id, user_agent, link]
         self.session_manager.headers = create_headers(*a)
-        if not self.session_manager.sessions:
-            self.session_manager.add_sessions([requests.Session()])
         if guest:
             print("Guest Authentication")
             return self
-        for session in self.session_manager.sessions:
-            for auth_cookie in auth_cookies:
-                session.cookies.set(**auth_cookie)
+
         count = 1
         while count < max_attempts + 1:
             string = f"Auth {auth_version} Attempt {count}/{max_attempts}"
             print(string)
-            self.get_authed()
+            await self.get_authed()
             count += 1
 
-            def resolve_auth(auth: create_auth):
+            async def resolve_auth(auth: create_auth):
                 if self.errors:
                     error = self.errors[-1]
                     print(error.message)
@@ -114,11 +95,11 @@ class create_auth:
                                 )
                                 code = input("Enter 2FA Code\n")
                                 data = {"code": code, "rememberMe": True}
-                                r = self.session_manager.json_request(
-                                    link, method="POST", data=data
+                                response = await self.session_manager.json_request(
+                                    link, method="POST", payload=data
                                 )
-                                if "error" in r:
-                                    error.message = r["error"]["message"]
+                                if "error" in response:
+                                    error.message = response["error"]["message"]
                                     count += 1
                                 else:
                                     print("Success")
@@ -126,7 +107,7 @@ class create_auth:
                                     auth.errors.remove(error)
                                     break
 
-            resolve_auth(self)
+            await resolve_auth(self)
             if not self.active:
                 if self.errors:
                     error = self.errors[-1]
@@ -143,45 +124,52 @@ class create_auth:
             else:
                 print(f"Welcome {self.name} | {self.username}")
                 break
+        if not self.active:
+            user = await self.get_user(auth_id)
+            if isinstance(user, create_user):
+                self.update(user.__dict__)
         return self
 
-    def get_authed(self):
+    async def get_authed(self):
         if not self.active:
             link = endpoint_links().customer
-            r = self.session_manager.json_request(
-                link, self.session_manager.sessions[0], sleep=False
-            )
-            if r:
-                self.resolve_auth_errors(r)
+            response = await self.session_manager.json_request(link)
+            if response:
+                self.resolve_auth_errors(response)
                 if not self.errors:
+                    # merged = self.__dict__ | response
+                    # self = create_auth(merged,self.pool,self.session_manager.max_threads)
                     self.active = True
-                    self.update(r)
+                    self.update(response)
             else:
                 # 404'ed
                 self.active = False
         return self
 
-    def resolve_auth_errors(self, r):
+    def resolve_auth_errors(self, response: Union[dict[str, Any], error_details]):
         # Adds an error object to self.auth.errors
-        if "error" in r:
-            error = r["error"]
-            error_message = r["error"]["message"]
-            error_code = error["code"]
-            error = error_details()
-            if error_code == 0:
-                pass
-            elif error_code == 101:
-                error_message = "Blocked by 2FA."
-            elif error_code == 401:
-                # Session/Refresh
-                pass
-            error.code = error_code
-            error.message = error_message
-            self.errors.append(error)
+        if isinstance(response, error_details):
+            error = response
+        elif isinstance(response, dict) and "error" in response:
+            error = response["error"]
+            error = error_details(error)
         else:
             self.errors.clear()
+            return
+        error_message = error.message
+        error_code = error.code
+        if error_code == 0:
+            pass
+        elif error_code == 101:
+            error_message = "Blocked by 2FA."
+        elif error_code == 401:
+            # Session/Refresh
+            pass
+        error.code = error_code
+        error.message = error_message
+        self.errors.append(error)
 
-    def get_lists(self, refresh=True, limit=100, offset=0):
+    async def get_lists(self, refresh=True, limit=100, offset=0):
         api_type = "lists"
         if not self.active:
             return
@@ -189,19 +177,21 @@ class create_auth:
             subscriptions = handle_refresh(self, api_type)
             return subscriptions
         link = endpoint_links(global_limit=limit, global_offset=offset).lists
-        session = self.session_manager.sessions[0]
-        results = self.session_manager.json_request(link)
+        results = await self.session_manager.json_request(link)
         self.lists = results
         return results
 
-    def get_user(self, identifier: Union[str, int]):
+    async def get_user(
+        self, identifier: Union[str, int]
+    ) -> Union[create_user, error_details]:
         link = endpoint_links(identifier).users
-        result = self.session_manager.json_request(link)
-        result["session_manager"] = self.session_manager
-        result = create_user(result) if "error" not in result else result
-        return result
+        response = await self.session_manager.json_request(link)
+        if not isinstance(response, error_details):
+            response["session_manager"] = self.session_manager
+            response = create_user(response, self)
+        return response
 
-    def get_lists_users(
+    async def get_lists_users(
         self, identifier, check: bool = False, refresh=True, limit=100, offset=0
     ):
         if not self.active:
@@ -209,18 +199,18 @@ class create_auth:
         link = endpoint_links(
             identifier, global_limit=limit, global_offset=offset
         ).lists_users
-        results = self.session_manager.json_request(link)
+        results = await self.session_manager.json_request(link)
         if len(results) >= limit and not check:
-            results2 = self.get_lists_users(
+            results2 = await self.get_lists_users(
                 identifier, limit=limit, offset=limit + offset
             )
             results.extend(results2)
         return results
 
-    def get_subscription(
+    async def get_subscription(
         self, check: bool = False, identifier="", limit=100, offset=0
     ) -> Union[create_user, None]:
-        subscriptions = self.get_subscriptions(refresh=False)
+        subscriptions = await self.get_subscriptions(refresh=False)
         valid = None
         for subscription in subscriptions:
             if identifier == subscription.username or identifier == subscription.id:
@@ -228,7 +218,7 @@ class create_auth:
                 break
         return valid
 
-    def get_subscriptions(
+    async def get_subscriptions(
         self,
         resume=None,
         refresh=True,
@@ -242,8 +232,6 @@ class create_auth:
         if not refresh:
             subscriptions = self.subscriptions
             return subscriptions
-        link = endpoint_links(global_limit=limit, global_offset=offset).subscriptions
-        session = self.session_manager.sessions[0]
         ceil = math.ceil(self.subscribesCount / limit)
         a = list(range(ceil))
         offset_array = []
@@ -257,15 +245,20 @@ class create_auth:
         if self.isPerformer:
             temp_session_manager = self.session_manager
             temp_pool = self.pool
+            temp_paid_content = self.paid_content
             delattr(self, "session_manager")
             delattr(self, "pool")
+            delattr(self, "paid_content")
             json_authed = jsonpickle.encode(self, unpicklable=False)
             json_authed = jsonpickle.decode(json_authed)
             self.session_manager = temp_session_manager
             self.pool = temp_pool
-            json_authed = json_authed | self.get_user(self.username).__dict__
+            self.paid_content = temp_paid_content
+            temp_auth = await self.get_user(self.username)
+            if isinstance(json_authed, dict):
+                json_authed = json_authed | temp_auth.__dict__
 
-            subscription = create_user(json_authed)
+            subscription = create_user(json_authed, self)
             subscription.subscriber = self
             subscription.subscribedByData = {}
             new_date = datetime.now() + relativedelta(years=1)
@@ -274,48 +267,56 @@ class create_auth:
             results.append(subscription)
         if not identifiers:
 
-            def multi(item):
+            async def multi(item):
                 link = item
-                # link = item["link"]
-                # session = item["session"]
-                subscriptions = self.session_manager.json_request(link)
+                subscriptions = await self.session_manager.json_request(link)
                 valid_subscriptions = []
                 extras = {}
                 extras["auth_check"] = ""
-                if isinstance(subscriptions, str):
-                    input(subscriptions)
+                if isinstance(subscriptions, error_details):
                     return
                 subscriptions = [
                     subscription
                     for subscription in subscriptions
                     if "error" != subscription
                 ]
+                tasks = []
                 for subscription in subscriptions:
                     subscription["session_manager"] = self.session_manager
                     if extra_info:
-                        subscription2 = self.get_user(subscription["username"])
-                        if isinstance(subscription2, dict):
-                            if "error" in subscription2:
-                                continue
+                        task = self.get_user(subscription["username"])
+                        tasks.append(task)
+                tasks = await asyncio.gather(*tasks)
+                for task in tasks:
+                    if isinstance(task, error_details):
+                        continue
+                    subscription2: create_user = task
+                    for subscription in subscriptions:
+                        if subscription["id"] != subscription2.id:
+                            continue
                         subscription = subscription | subscription2.__dict__
-                    subscription = create_user(subscription)
-                    subscription.session_manager = self.session_manager
-                    subscription.subscriber = self
-                    valid_subscriptions.append(subscription)
+                        subscription = create_user(subscription, self)
+                        if subscription.isBlocked:
+                            continue
+                        subscription.session_manager = self.session_manager
+                        subscription.subscriber = self
+                        valid_subscriptions.append(subscription)
                 return valid_subscriptions
 
             pool = self.pool
-            # offset_array= offset_array[:16]
-            results += pool.starmap(multi, product(offset_array))
+            tasks = pool.starmap(multi, product(offset_array))
+            results += await asyncio.gather(*tasks)
         else:
             for identifier in identifiers:
                 if self.id == identifier or self.username == identifier:
                     continue
                 link = endpoint_links(identifier=identifier).users
-                result = self.session_manager.json_request(link)
+                result = await self.session_manager.json_request(link)
                 if "error" in result or not result["subscribedBy"]:
                     continue
-                subscription = create_user(result)
+                subscription = create_user(result, self)
+                if subscription.isBlocked:
+                    continue
                 subscription.session_manager = self.session_manager
                 subscription.subscriber = self
                 results.append([subscription])
@@ -326,7 +327,7 @@ class create_auth:
         self.subscriptions = results
         return results
 
-    def get_chats(
+    async def get_chats(
         self,
         links: Optional[list] = None,
         limit=100,
@@ -355,7 +356,7 @@ class create_auth:
                 link = link.replace(f"limit={limit}", f"limit={limit}")
                 new_link = link.replace("offset=0", f"offset={num}")
                 links.append(new_link)
-        multiplier = self.session_manager.pool._processes
+        multiplier = getattr(self.session_manager.pool, "_processes")
         if links:
             link = links[-1]
         else:
@@ -367,13 +368,13 @@ class create_auth:
             links += links2
         else:
             links = links2
-        results = self.session_manager.parallel_requests(links)
+        results = await self.session_manager.async_requests(links)
         has_more = results[-1]["hasMore"]
         final_results = [x["list"] for x in results]
         final_results = list(chain.from_iterable(final_results))
 
         if has_more:
-            results2 = self.get_chats(
+            results2 = await self.get_chats(
                 links=[links[-1]], limit=limit, offset=limit + offset, inside_loop=True
             )
             final_results.extend(results2)
@@ -382,7 +383,9 @@ class create_auth:
         self.chats = final_results
         return final_results
 
-    def get_mass_messages(self, resume=None, refresh=True, limit=10, offset=0) -> list:
+    async def get_mass_messages(
+        self, resume=None, refresh=True, limit=10, offset=0
+    ) -> list:
         api_type = "mass_messages"
         if not self.active:
             return []
@@ -393,8 +396,7 @@ class create_auth:
         link = endpoint_links(
             global_limit=limit, global_offset=offset
         ).mass_messages_api
-        session = self.session_manager.sessions[0]
-        results = self.session_manager.json_request(link)
+        results = await self.session_manager.json_request(link)
         items = results.get("list", [])
         if not items:
             return items
@@ -419,7 +421,7 @@ class create_auth:
         self.mass_messages = items
         return items
 
-    def get_paid_content(
+    async def get_paid_content(
         self,
         check: bool = False,
         refresh: bool = True,
@@ -435,7 +437,7 @@ class create_auth:
             if result:
                 return result
         link = endpoint_links(global_limit=limit, global_offset=offset).paid_api
-        final_results = self.session_manager.json_request(link)
+        final_results = await self.session_manager.json_request(link)
         if len(final_results) >= limit and not check:
             results2 = self.get_paid_content(
                 limit=limit, offset=limit + offset, inside_loop=True
@@ -443,16 +445,17 @@ class create_auth:
             final_results.extend(results2)
         if not inside_loop:
             temp = []
-            temp += [
-                create_message(x)
-                for x in final_results
-                if x["responseType"] == "message"
-            ]
-            temp += [
-                create_post(x, self.session_manager)
-                for x in final_results
-                if x["responseType"] == "post"
-            ]
+            for final_result in final_results:
+                content = None
+                if final_result["responseType"] == "message":
+                    user = create_user(final_result["fromUser"], self)
+                    content = create_message(final_result, user)
+                    print
+                elif final_result["responseType"] == "post":
+                    user = create_user(final_result["author"], self)
+                    content = create_post(final_result, user)
+                if content:
+                    temp.append(content)
             final_results = temp
         self.paid_content = final_results
         return final_results

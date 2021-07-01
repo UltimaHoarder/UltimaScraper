@@ -1,31 +1,47 @@
+import asyncio
 import copy
-import math
+import hashlib
+import os
 import re
+import threading
 import time
-from typing import Any, Union
+from itertools import chain
+from multiprocessing import cpu_count
+from multiprocessing.dummy import Pool as ThreadPool
+from multiprocessing.pool import Pool
+from os.path import dirname as up
+from random import randint
+from typing import Any, Optional
 from urllib.parse import urlparse
 
+import python_socks
 import requests
-from requests.sessions import Session
-import ujson
-import socket
-import os
-from multiprocessing import cpu_count
-from requests.adapters import HTTPAdapter
-from multiprocessing.dummy import Pool as ThreadPool
-from itertools import product, chain, zip_longest, groupby
-from os.path import dirname as up
-import threading
+from aiohttp import ClientSession
+from aiohttp.client_exceptions import (
+    ClientConnectorError,
+    ClientOSError,
+    ClientPayloadError,
+    ContentTypeError,
+    ServerDisconnectedError,
+)
+from aiohttp.client_reqrep import ClientResponse
+from aiohttp_socks import ProxyConnectionError, ProxyConnector, ProxyError
+from database.databases.user_data.models.media_table import template_media_table
+
+from apis.onlyfans.classes import create_auth, create_user
+from apis.onlyfans.classes.extras import error_details
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
 
 
-global_settings = {}
-global_settings["dynamic_rules_link"] = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json"
+global_settings: dict[str, Any] = {}
+global_settings[
+    "dynamic_rules_link"
+] = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json"
 
 
-class set_settings():
+class set_settings:
     def __init__(self, option={}):
         global global_settings
         self.proxies = option.get("proxies")
@@ -34,62 +50,85 @@ class set_settings():
         global_settings = self.json_global_settings
 
 
+async def remove_errors(results: list):
+    wrapped = False
+    if not isinstance(results, list):
+        wrapped = True
+        results = [results]
+    results = [x for x in results if not isinstance(x, error_details)]
+    if wrapped and results:
+        results = results[0]
+    return results
+
+
 def chunks(l, n):
-    final = [l[i * n:(i + 1) * n] for i in range((len(l) + n - 1) // n)]
+    final = [l[i * n : (i + 1) * n] for i in range((len(l) + n - 1) // n)]
     return final
 
 
-def multiprocessing(max_threads=None):
+def calculate_max_threads(max_threads=None):
     if not max_threads:
         max_threads = -1
     max_threads2 = cpu_count()
     if max_threads < 1 or max_threads >= max_threads2:
-        pool = ThreadPool()
-    else:
-        pool = ThreadPool(max_threads)
+        max_threads = max_threads2
+    return max_threads
+
+
+def multiprocessing(max_threads: Optional[int] = None):
+    max_threads = calculate_max_threads(max_threads)
+    pool = ThreadPool(max_threads)
     return pool
 
 
-class session_manager():
-    def __init__(self, original_sessions=[], headers: dict = {}, session_rules=None, session_retry_rules=None, max_threads=-1) -> None:
-        self.sessions = self.add_sessions(original_sessions)
-        self.pool = multiprocessing(max_threads)
+class session_manager:
+    def __init__(
+        self,
+        auth: create_auth,
+        headers: dict[str, Any] = {},
+        proxies: list[str] = [],
+        max_threads: int = -1,
+    ) -> None:
+        self.pool: Pool = auth.pool if auth.pool else multiprocessing()
         self.max_threads = max_threads
         self.kill = False
         self.headers = headers
-        self.session_rules = session_rules
-        self.session_retry_rules = session_retry_rules
+        self.proxies: list[str] = proxies
         dr_link = global_settings["dynamic_rules_link"]
-        dynamic_rules = requests.get(dr_link).json()
+        dynamic_rules = requests.get(dr_link).json()  # type: ignore
         self.dynamic_rules = dynamic_rules
+        self.auth = auth
 
-    def add_sessions(self, original_sessions: list, overwrite_old_sessions=True):
-        if overwrite_old_sessions:
-            sessions = []
-        else:
-            sessions = self.sessions
-        for original_session in original_sessions:
-            cloned_session = copy.deepcopy(original_session)
-            ip = getattr(original_session, "ip", "")
-            cloned_session.ip = ip
-            cloned_session.links = []
-            sessions.append(cloned_session)
-        self.sessions = sessions
-        return self.sessions
+    def create_client_session(self):
+        proxy = self.get_proxy()
+        connector = ProxyConnector.from_url(proxy) if proxy else None
+
+        final_cookies = self.auth.auth_details.cookie.format()
+        client_session = ClientSession(
+            connector=connector, cookies=final_cookies, read_timeout=None
+        )
+        return client_session
+
+    def get_proxy(self) -> str:
+        proxies = self.proxies
+        proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
+        return proxy
 
     def stimulate_sessions(self):
         # Some proxies switch IP addresses if no request have been made for x amount of secondss
         def do(session_manager):
             while not session_manager.kill:
                 for session in session_manager.sessions:
+
                     def process_links(link, session):
-                        r = session.get(link)
-                        text = r.text.strip("\n")
+                        response = session.get(link)
+                        text = response.text.strip("\n")
                         if text == session.ip:
                             print
                         else:
                             found_dupe = [
-                                x for x in session_manager.sessions if x.ip == text]
+                                x for x in session_manager.sessions if x.ip == text
+                            ]
                             if found_dupe:
                                 return
                             cloned_session = copy.deepcopy(session)
@@ -99,140 +138,196 @@ class session_manager():
                             print(text)
                             print
                         return text
+
                     time.sleep(62)
                     link = "https://checkip.amazonaws.com"
                     ip = process_links(link, session)
                     print
+
         t1 = threading.Thread(target=do, args=[self])
         t1.start()
 
-    def json_request(self, link: str, session: Union[Session] = None, method="GET", stream=False, json_format=True, data={}, sleep=True, timeout=20, ignore_rules=False, force_json=False) -> Any:
+    async def json_request(
+        self,
+        link: str,
+        session: Optional[ClientSession] = None,
+        method: str = "GET",
+        stream: bool = False,
+        json_format: bool = True,
+        payload: dict[str, str] = {},
+    ) -> Any:
         headers = {}
+        custom_session = False
         if not session:
-            session = self.sessions[0]
-        if self.session_rules and not ignore_rules:
-            headers |= self.session_rules(self, link)
-        session = copy.deepcopy(session)
-        count = 0
-        sleep_number = 0.5
-        result = {}
-        while count < 11:
+            custom_session = True
+            session = self.create_client_session()
+        headers = self.session_rules(link)
+        headers["accept"] = "application/json, text/plain, */*"
+        headers["Connection"] = "keep-alive"
+        request_method = None
+        result = None
+        if method == "HEAD":
+            request_method = session.head
+        elif method == "GET":
+            request_method = session.get
+        elif method == "POST":
+            request_method = session.post
+        elif method == "DELETE":
+            request_method = session.delete
+        else:
+            return None
+        while True:
             try:
-                count += 1
-                if json_format:
-                    headers["accept"] = "application/json, text/plain, */*"
-                if data:
-                    r = session.request(method, link, json=data,
-                                        stream=stream, timeout=timeout, headers=headers)
+                response = await request_method(link, headers=headers, data=payload)
+                if method == "HEAD":
+                    result = response
                 else:
-                    r = session.request(
-                        method, link, stream=stream, timeout=timeout, headers=headers)
-                if self.session_retry_rules:
-                    rule = self.session_retry_rules(r, link)
-                    if rule == 1:
-                        continue
-                    elif rule == 2:
-                        break
-                if json_format:
-                    content_type = r.headers['Content-Type']
-                    matches = ["application/json;", "application/vnd.api+json"]
-                    if not force_json and all(match not in content_type for match in matches):
-                        continue
-                    text = r.text
-                    if not text:
-                        message = "ERROR: 100 Posts skipped. Please post the username you're trying to scrape on the issue "'100 Posts Skipped'""
-                        return result
-                    return ujson.loads(text)
-                else:
-                    return r
-            except (ConnectionResetError) as e:
+                    if json_format and not stream:
+                        result = await response.json()
+                        if "error" in result:
+                            result = error_details(result)
+                    elif stream and not json_format:
+                        result = response
+                    else:
+                        result = await response.read()
+                break
+            except (ClientConnectorError, ProxyError):
+                break
+            except (
+                ClientPayloadError,
+                ContentTypeError,
+                ClientOSError,
+                ServerDisconnectedError,
+                ProxyConnectionError,
+            ):
                 continue
-            except (requests.exceptions.ConnectionError, requests.exceptions.ChunkedEncodingError, requests.exceptions.ReadTimeout, socket.timeout) as e:
-                if sleep:
-                    time.sleep(sleep_number)
-                    sleep_number += 0.5
-                continue
-            except Exception as e:
-                print(e)
-                continue
+        if custom_session:
+            await session.close()
         return result
 
-    def parallel_requests(self, items: list[str]):
-        def multi(link):
-            result = self.json_request(link)
-            return result
-        results = self.pool.starmap(multi, product(
-            items))
+    async def async_requests(self, items: list[str]) -> list:
+        tasks = []
+
+        async def run(links) -> list:
+            proxies = self.proxies
+            proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
+            connector = ProxyConnector.from_url(proxy) if proxy else None
+            async with ClientSession(
+                connector=connector,
+                cookies=self.auth.auth_details.cookie.format(),
+                read_timeout=None,
+            ) as session:
+                for link in links:
+                    task = asyncio.ensure_future(self.json_request(link, session))
+                    tasks.append(task)
+                responses = list(await asyncio.gather(*tasks))
+                return responses
+
+        results = await asyncio.ensure_future(run(items))
         return results
 
+    async def download_content(
+        self,
+        download_item: template_media_table,
+        session: ClientSession,
+        progress_bar,
+        subscription: create_user,
+    ):
+        attempt_count = 1
+        new_task = {}
+        while attempt_count <= 3:
+            attempt_count += 1
+            if not download_item.link:
+                continue
+            response: ClientResponse
+            response = await asyncio.ensure_future(
+                self.json_request(
+                    download_item.link,
+                    session,
+                    json_format=False,
+                    stream=True,
+                )
+            )
+            if response and response.status != 200:
+                if response.content_length:
+                    progress_bar.update_total_size(-response.content_length)
+                api_type = download_item.__module__.split(".")[-1]
+                post_id = download_item.post_id
+                new_result = None
+                if api_type == "messages":
+                    new_result = await subscription.get_message_by_id(
+                        message_id=post_id
+                    )
+                elif api_type == "posts":
+                    new_result = await subscription.get_post(post_id)
+                if isinstance(new_result, error_details):
+                    continue
+                if new_result and new_result.media:
+                    media_list = [
+                        x for x in new_result.media if x["id"] == download_item.media_id
+                    ]
+                    if media_list:
+                        media = media_list[0]
+                        quality = subscription.subscriber.extras["settings"][
+                            "supported"
+                        ]["onlyfans"]["settings"]["video_quality"]
+                        link = await new_result.link_picker(media, quality)
+                        download_item.link = link
+                    continue
+            new_task["response"] = response
+            new_task["download_item"] = download_item
+            break
+        return new_task
 
-def create_session(settings={}, custom_proxy="", test_ip=True):
+    def session_rules(self, link: str) -> dict[str, Any]:
+        headers = self.headers
+        if "https://onlyfans.com/api2/v2/" in link:
+            dynamic_rules = self.dynamic_rules
+            headers["app-token"] = dynamic_rules["app_token"]
+            # auth_id = headers["user-id"]
+            a = [link, 0, dynamic_rules]
+            headers2 = self.create_signed_headers(*a)
+            headers |= headers2
+        return headers
 
-    def test_session(proxy=None, cert=None, max_threads=None):
-        session = requests.Session()
-        proxy_type = {'http': proxy,
-                      'https': proxy}
-        if proxy:
-            session.proxies = proxy_type
-            if cert:
-                session.verify = cert
-        session.mount(
-            'https://', HTTPAdapter(pool_connections=max_threads, pool_maxsize=max_threads))
-        if test_ip:
-            link = 'https://checkip.amazonaws.com'
-            r = session_manager().json_request(
-                link, session, json_format=False, sleep=False)
-            if not isinstance(r, requests.Response):
+    def create_signed_headers(self, link: str, auth_id: int, dynamic_rules: dict):
+        # Users: 300000 | Creators: 301000
+        final_time = str(int(round(time.time())))
+        path = urlparse(link).path
+        query = urlparse(link).query
+        path = path if not query else f"{path}?{query}"
+        a = [dynamic_rules["static_param"], final_time, path, str(auth_id)]
+        msg = "\n".join(a)
+        message = msg.encode("utf-8")
+        hash_object = hashlib.sha1(message)
+        sha_1_sign = hash_object.hexdigest()
+        sha_1_b = sha_1_sign.encode("ascii")
+        checksum = (
+            sum([sha_1_b[number] for number in dynamic_rules["checksum_indexes"]])
+            + dynamic_rules["checksum_constant"]
+        )
+        headers = {}
+        headers["sign"] = dynamic_rules["format"].format(sha_1_sign, abs(checksum))
+        headers["time"] = final_time
+        return headers
+
+
+async def test_proxies(proxies: list[str]):
+    final_proxies = []
+    for proxy in proxies:
+        connector = ProxyConnector.from_url(proxy) if proxy else None
+        async with ClientSession(connector=connector) as session:
+            link = "https://checkip.amazonaws.com"
+            try:
+                response = await session.get(link)
+                ip = await response.text()
+                ip = ip.strip()
+                print("Session IP: " + ip + "\n")
+                final_proxies.append(proxy)
+            except python_socks._errors.ProxyConnectionError as e:
                 print(f"Proxy Not Set: {proxy}\n")
-                return
-            ip = r.text.strip()
-            print("Session IP: "+ip+"\n")
-            setattr(session, "ip", ip)
-            setattr(session, "links", [])
-        return session
-    sessions = []
-    settings = set_settings(settings)
-    pool = multiprocessing()
-    max_threads = pool._processes
-    proxies = settings.proxies
-    cert = settings.cert
-    while not sessions:
-        proxies = [custom_proxy] if custom_proxy else proxies
-        if proxies:
-            with pool:
-                sessions = pool.starmap(test_session, product(
-                    proxies, [cert], [max_threads]))
-        else:
-            session = test_session(max_threads=max_threads)
-            sessions.append(session)
-    return sessions
-
-
-def assign_session(medias, item, key_one="link", key_two="count", show_item=False, capped=False):
-    count = 0
-    activate_cap = False
-    number = len(item)
-    medias2 = []
-    for auth in medias:
-        media2 = {}
-        media2[key_one] = auth
-        if not number:
-            count = -1
-        if activate_cap:
-            media2[key_two] = -1
-        else:
-            if show_item:
-                media2[key_two] = item[count]
-            else:
-                media2[key_two] = count
-
-        medias2.append(media2)
-        count += 1
-        if count >= number:
-            count = 0
-            if capped:
-                activate_cap = True
-    return medias2
+                continue
+    return final_proxies
 
 
 def restore_missing_data(master_set2, media_set, split_by):
@@ -241,16 +336,15 @@ def restore_missing_data(master_set2, media_set, split_by):
     for item in media_set:
         if not item:
             link = master_set2[count]
-            offset = int(link.split('?')[-1].split('&')[1].split("=")[1])
+            offset = int(link.split("?")[-1].split("&")[1].split("=")[1])
             limit = int(link.split("?")[-1].split("&")[0].split("=")[1])
-            if limit == split_by+1:
+            if limit == split_by + 1:
                 break
             offset2 = offset
-            limit2 = int(limit/split_by)
-            for item in range(1, split_by+1):
-                link2 = link.replace("limit="+str(limit), "limit="+str(limit2))
-                link2 = link2.replace(
-                    "offset="+str(offset), "offset="+str(offset2))
+            limit2 = int(limit / split_by)
+            for item in range(1, split_by + 1):
+                link2 = link.replace("limit=" + str(limit), "limit=" + str(limit2))
+                link2 = link2.replace("offset=" + str(offset), "offset=" + str(offset2))
                 offset2 += limit2
                 new_set.append(link2)
         count += 1
@@ -258,67 +352,53 @@ def restore_missing_data(master_set2, media_set, split_by):
     return new_set
 
 
-def scrape_endpoint_links(links, session_manager: session_manager, api_type):
-    def multi(item):
-        link = item["link"]
-        item = {}
-        session = session_manager.sessions[0]
-        result = session_manager.json_request(link, session)
-        if "error" in result:
-            result = []
-        if result:
-            item["session"] = session
-            item["result"] = result
-        return item
+async def scrape_endpoint_links(links, session_manager: session_manager, api_type):
     media_set = []
     max_attempts = 100
     api_type = api_type.capitalize()
     for attempt in list(range(max_attempts)):
         if not links:
             continue
-        print("Scrape Attempt: "+str(attempt+1)+"/"+str(max_attempts))
-        results = session_manager.parallel_requests(links)
+        print("Scrape Attempt: " + str(attempt + 1) + "/" + str(max_attempts))
+        results = await session_manager.async_requests(links)
+        results = await remove_errors(results)
         not_faulty = [x for x in results if x]
-        faulty = [{"key": k, "value": v, "link": links[k]}
-                  for k, v in enumerate(results) if not v]
-        last_number = len(results)-1
+        faulty = [
+            {"key": k, "value": v, "link": links[k]}
+            for k, v in enumerate(results)
+            if not v
+        ]
+        last_number = len(results) - 1
         if faulty:
             positives = [x for x in faulty if x["key"] != last_number]
             false_positive = [x for x in faulty if x["key"] == last_number]
             if positives:
                 attempt = attempt if attempt > 1 else attempt + 1
-                num = int(len(faulty)*(100/attempt))
+                num = int(len(faulty) * (100 / attempt))
                 split_by = 2
-                print("Missing "+str(num)+" Posts... Retrying...")
-                links = restore_missing_data(
-                    links, results, split_by)
+                print("Missing " + str(num) + " Posts... Retrying...")
+                links = restore_missing_data(links, results, split_by)
                 media_set.extend(not_faulty)
             if not positives and false_positive:
-                media_set.extend(results)
+                media_set.extend(not_faulty)
                 break
             print
         else:
-            media_set.extend(results)
-            print("Found: "+api_type)
+            media_set.extend(not_faulty)
             break
     media_set = list(chain(*media_set))
     return media_set
 
 
-def grouper(n, iterable, fillvalue=None):
-    args = [iter(iterable)] * n
-    return list(zip_longest(fillvalue=fillvalue, *args))
-
-
 def calculate_the_unpredictable(link, limit, multiplier=1):
     final_links = []
-    a = list(range(1, multiplier+1))
+    a = list(range(1, multiplier + 1))
     for b in a:
         parsed_link = urlparse(link)
         q = parsed_link.query.split("&")
         offset = q[1]
         old_offset_num = int(re.findall("\\d+", offset)[0])
-        new_offset_num = old_offset_num+(limit*b)
+        new_offset_num = old_offset_num + (limit * b)
         new_link = link.replace(offset, f"offset={new_offset_num}")
         final_links.append(new_link)
     return final_links

@@ -2,14 +2,14 @@ requests
 beautifulsoup4
 urllib3
 win32-setctime
-pysocks
+python-socks[asyncio]
 psutil
 python-dateutil
 lxml
 mergedeep
 jsonpickle
 ujson
-sqlalchemy==1.4.15
+sqlalchemy==1.4.18
 alembic
 tqdm
 selenium

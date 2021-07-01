@@ -6,12 +6,13 @@ from sqlalchemy.orm import scoped_session
 from alembic.config import Config
 from alembic import command
 from sqlalchemy.exc import IntegrityError
-from database.databases.stories import stories
-from database.databases.posts import posts
-from database.databases.messages import messages
+from sqlalchemy.sql.functions import func
+from database.databases.user_data import user_database
 
 
-def create_database_session(connection_info, connection_type="sqlite:///", autocommit=False, pool_size=5) -> tuple[scoped_session, Engine]:
+def create_database_session(
+    connection_info, connection_type="sqlite:///", autocommit=False, pool_size=5
+) -> tuple[scoped_session, Engine]:
     kwargs = {}
     if connection_type == "mysql+mysqldb://":
         kwargs["pool_size"] = pool_size
@@ -20,7 +21,8 @@ def create_database_session(connection_info, connection_type="sqlite:///", autoc
         kwargs["isolation_level"] = "READ COMMITTED"
 
     engine = sqlalchemy.create_engine(
-        f'{connection_type}{connection_info}?charset=utf8mb4', **kwargs)
+        f"{connection_type}{connection_info}?charset=utf8mb4", **kwargs
+    )
     session_factory = sessionmaker(bind=engine, autocommit=autocommit)
     Session = scoped_session(session_factory)
     return Session, engine
@@ -29,42 +31,37 @@ def create_database_session(connection_info, connection_type="sqlite:///", autoc
 def run_revisions(alembic_directory: str, database_path: str = ""):
     ini_path = os.path.join(alembic_directory, "alembic.ini")
     script_location = os.path.join(alembic_directory, "alembic")
-    full_database_path = f'sqlite:///{database_path}'
+    full_database_path = f"sqlite:///{database_path}"
     alembic_cfg = Config(ini_path)
-    alembic_cfg.set_main_option('script_location', script_location)
-    alembic_cfg.set_main_option('sqlalchemy.url', full_database_path)
-    x = command.upgrade(alembic_cfg, 'head')
-    x = command.revision(alembic_cfg, autogenerate=True, message="content")
+    alembic_cfg.set_main_option("script_location", script_location)
+    alembic_cfg.set_main_option("sqlalchemy.url", full_database_path)
+    command.upgrade(alembic_cfg, "head")
+    command.revision(alembic_cfg, autogenerate=True, message="content")
 
 
-def run_migrations(alembic_directory: str, database_path: str, api) -> None:
+def run_migrations(alembic_directory: str, database_path: str) -> None:
     ini_path = os.path.join(alembic_directory, "alembic.ini")
     script_location = os.path.join(alembic_directory, "alembic")
-    full_database_path = f'sqlite:///{database_path}'
+    full_database_path = f"sqlite:///{database_path}"
     alembic_cfg = Config(ini_path)
-    alembic_cfg.set_main_option('script_location', script_location)
-    alembic_cfg.set_main_option('sqlalchemy.url', full_database_path)
-    x = command.upgrade(alembic_cfg, 'head')
+    alembic_cfg.set_main_option("script_location", script_location)
+    alembic_cfg.set_main_option("sqlalchemy.url", full_database_path)
+    command.upgrade(alembic_cfg, "head")
 
 
 class database_collection(object):
     def __init__(self) -> None:
-        self.stories_database = stories
-        self.post_database = posts
-        self.message_database = messages
+        self.user_database = user_database
 
-    def chooser(self, database_name):
-        if database_name == "stories":
-            database = self.stories_database
-        elif database_name == "posts":
-            database = self.post_database
-        elif database_name == "messages":
-            database = self.message_database
+    def database_picker(self, database_name):
+        if database_name == "user_data":
+            database = self.user_database
         else:
             database = None
-            print("DB CHOOSER ERROR")
+            print("Can't find database")
             input()
         return database
+
 
 
 def create_auth_array(item):
@@ -73,19 +70,26 @@ def create_auth_array(item):
     return auth_array
 
 
-def get_or_create(session: Session, model, defaults=None, fbkwargs={}):
-    instance = session.query(model).filter_by(**fbkwargs).one_or_none()
+def get_or_create(session: Session, model, defaults=None, fbkwargs:dict={}):
+    fbkwargs2 = fbkwargs.copy()
+    instance = session.query(model).filter_by(**fbkwargs2).one_or_none()
     if instance:
         return instance, True
     else:
-        fbkwargs |= defaults or {}
-        instance = model(**fbkwargs)
+        fbkwargs2 |= defaults or {}
+        instance = model(**fbkwargs2)
         try:
             session.add(instance)
             session.commit()
         except IntegrityError:
             session.rollback()
-            instance = session.query(model).filter_by(**fbkwargs).one()
+            instance = session.query(model).filter_by(**fbkwargs2).one()
             return instance, False
         else:
             return instance, True
+
+
+def get_count(q):
+    count_q = q.statement.with_only_columns([func.count()]).order_by(None)
+    count = q.session.execute(count_q).scalar()
+    return count

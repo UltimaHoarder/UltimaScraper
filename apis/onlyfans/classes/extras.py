@@ -1,6 +1,6 @@
 import copy
 from itertools import chain
-from typing import Any
+from typing import Any, Union
 
 
 class auth_details:
@@ -152,14 +152,14 @@ class error_details:
 
 def create_headers(
     dynamic_rules: dict[str, Any],
-    auth_id: str,
+    auth_id: Union[str, int],
     user_agent: str = "",
     link: str = "https://onlyfans.com/",
 ):
     headers: dict[str, Any] = {}
     headers["user-agent"] = user_agent
     headers["referer"] = link
-    headers["user-id"] = auth_id
+    headers["user-id"] = str(auth_id)
     headers["x-bc"] = ""
     for remove_header in dynamic_rules["remove_headers"]:
         headers.pop(remove_header)

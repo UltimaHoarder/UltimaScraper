@@ -99,13 +99,14 @@ class create_auth(create_user):
                                 response = await self.session_manager.json_request(
                                     link, method="POST", payload=data
                                 )
-                                if "error" in response:
-                                    error.message = response["error"]["message"]
+                                if isinstance(response, error_details):
+                                    error.message = response.message
                                     count += 1
                                 else:
                                     print("Success")
-                                    auth.active = True
+                                    auth.active = False
                                     auth.errors.remove(error)
+                                    await self.get_authed()
                                     break
 
             await resolve_auth(self)
@@ -313,7 +314,7 @@ class create_auth(create_user):
                     continue
                 link = endpoint_links(identifier=identifier).users
                 result = await self.session_manager.json_request(link)
-                if isinstance(result,error_details) or not result["subscribedBy"]:
+                if isinstance(result, error_details) or not result["subscribedBy"]:
                     continue
                 subscription = create_user(result, self)
                 if subscription.isBlocked:

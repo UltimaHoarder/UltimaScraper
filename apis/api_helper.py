@@ -204,6 +204,7 @@ class session_manager:
                 ClientOSError,
                 ServerDisconnectedError,
                 ProxyConnectionError,
+                ConnectionResetError,
             ):
                 continue
         if custom_session:

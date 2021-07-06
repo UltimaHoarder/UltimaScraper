@@ -10,6 +10,8 @@ from types import SimpleNamespace
 from typing import Any, Optional, Union
 from urllib.parse import urlparse
 
+from sqlalchemy.exc import OperationalError
+
 import extras.OFLogin.start_ofl as oflogin
 import extras.OFRenamer.start_ofr as ofrenamer
 import helpers.db_helper as db_helper
@@ -1244,7 +1246,12 @@ async def prepare_downloads(subscription: create_user):
             if media_set_count:
                 print(string)
                 await main_helper.async_downloads(download_list, subscription)
-            database_session.commit()
+            while True:
+                try:
+                    database_session.commit()
+                    break
+                except OperationalError:
+                    database_session.rollback()
             database_session.close()
         print
     print

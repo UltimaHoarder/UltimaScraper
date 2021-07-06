@@ -136,7 +136,9 @@ async def format_image(filepath: str, timestamp: float):
             break
 
 
-async def async_downloads(download_list: list[template_media_table], subscription: create_user):
+async def async_downloads(
+    download_list: list[template_media_table], subscription: create_user
+):
     async def run(download_list: list[template_media_table]):
         session_m = subscription.session_manager
         proxies = session_m.proxies
@@ -166,7 +168,9 @@ async def async_downloads(download_list: list[template_media_table], subscriptio
             responses = await asyncio.gather(*tasks)
             tasks.clear()
 
-            async def check(download_item: template_media_table, response: ClientResponse):
+            async def check(
+                download_item: template_media_table, response: ClientResponse
+            ):
                 filepath = os.path.join(download_item.directory, download_item.filename)
                 response_status = False
                 if response.status == 200:
@@ -487,16 +491,21 @@ def export_sqlite2(archive_path, datas, parent_type, legacy_fixer=False):
 
 
 def legacy_sqlite_updater(
-    legacy_metadata_path:str, api_type:str, subscription:create_user, delete_metadatas:list
+    legacy_metadata_path: str,
+    api_type: str,
+    subscription: create_user,
+    delete_metadatas: list,
 ):
     final_result = []
     if os.path.exists(legacy_metadata_path):
         cwd = os.getcwd()
-        alembic_location = os.path.join(cwd, "database", "archived_databases", api_type.lower())
+        alembic_location = os.path.join(
+            cwd, "database", "archived_databases", api_type.lower()
+        )
         db_helper.run_migrations(alembic_location, legacy_metadata_path)
         database_name = "user_data"
         session, engine = db_helper.create_database_session(legacy_metadata_path)
-        database_session:Session = session()
+        database_session: Session = session()
         db_collection = db_helper.database_collection()
         database = db_collection.database_picker(database_name)
         if database:
@@ -526,10 +535,10 @@ def legacy_sqlite_updater(
     return final_result, delete_metadatas
 
 
-def export_sqlite(database_path:str, api_type, datas):
+def export_sqlite(database_path: str, api_type, datas):
     metadata_directory = os.path.dirname(database_path)
     os.makedirs(metadata_directory, exist_ok=True)
-    database_name = os.path.basename(database_path).replace(".db","")
+    database_name = os.path.basename(database_path).replace(".db", "")
     cwd = os.getcwd()
     alembic_location = os.path.join(cwd, "database", "databases", database_name.lower())
     db_helper.run_migrations(alembic_location, database_path)
@@ -1171,3 +1180,21 @@ def module_chooser(domain, json_sites):
         string = f"{domain} not supported"
         site_names = []
     return string, site_names
+
+
+async def move_to_old(
+    folder_directory: str,
+    base_download_directories: list,
+    first_letter: str,
+    model_username: str,
+    source: str,
+):
+    # MOVE TO OLD
+    local_destinations = [
+        os.path.join(x, folder_directory) for x in base_download_directories
+    ]
+    local_destination = check_space(local_destinations, min_size=100)
+    local_destination = os.path.join(local_destination, first_letter, model_username)
+    print(f"Moving {source} -> {local_destination}")
+    shutil.copytree(source, local_destination, dirs_exist_ok=True)
+    shutil.rmtree(source)

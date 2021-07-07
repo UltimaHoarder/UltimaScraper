@@ -1012,7 +1012,8 @@ def export_data(
     metadata: Union[list, dict], path: str, encoding: Optional[str] = "utf-8"
 ):
     directory = os.path.dirname(path)
-    os.makedirs(directory, exist_ok=True)
+    if directory:
+        os.makedirs(directory, exist_ok=True)
     with open(path, "w", encoding=encoding) as outfile:
         ujson.dump(metadata, outfile, indent=2, escape_forward_slashes=False)
 

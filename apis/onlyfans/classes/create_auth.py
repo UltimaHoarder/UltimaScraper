@@ -440,24 +440,25 @@ class create_auth(create_user):
                 return result
         link = endpoint_links(global_limit=limit, global_offset=offset).paid_api
         final_results = await self.session_manager.json_request(link)
-        if len(final_results) >= limit and not check:
-            results2 = self.get_paid_content(
-                limit=limit, offset=limit + offset, inside_loop=True
-            )
-            final_results.extend(results2)
-        if not inside_loop:
-            temp = []
-            for final_result in final_results:
-                content = None
-                if final_result["responseType"] == "message":
-                    user = create_user(final_result["fromUser"], self)
-                    content = create_message(final_result, user)
-                    print
-                elif final_result["responseType"] == "post":
-                    user = create_user(final_result["author"], self)
-                    content = create_post(final_result, user)
-                if content:
-                    temp.append(content)
-            final_results = temp
-        self.paid_content = final_results
+        if not isinstance(final_results,error_details):
+            if len(final_results) >= limit and not check:
+                results2 = self.get_paid_content(
+                    limit=limit, offset=limit + offset, inside_loop=True
+                )
+                final_results.extend(results2)
+            if not inside_loop:
+                temp = []
+                for final_result in final_results:
+                    content = None
+                    if final_result["responseType"] == "message":
+                        user = create_user(final_result["fromUser"], self)
+                        content = create_message(final_result, user)
+                        print
+                    elif final_result["responseType"] == "post":
+                        user = create_user(final_result["author"], self)
+                        content = create_post(final_result, user)
+                    if content:
+                        temp.append(content)
+                final_results = temp
+            self.paid_content = final_results
         return final_results

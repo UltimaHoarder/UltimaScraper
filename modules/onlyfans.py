@@ -46,13 +46,13 @@ overwrite_files = None
 date_format = None
 ignored_keywords = []
 ignore_type = None
-blacklist_name = None
+blacklists = []
 webhook = None
 text_length = None
 
 
 def assign_vars(json_auth: auth_details, config, site_settings, site_name):
-    global json_config, json_global_settings, json_settings, auto_media_choice, profile_directory, download_directory, metadata_directory, metadata_directory_format, delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, text_length
+    global json_config, json_global_settings, json_settings, auto_media_choice, profile_directory, download_directory, metadata_directory, metadata_directory_format, delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklists, webhook, text_length
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -75,7 +75,7 @@ def assign_vars(json_auth: auth_details, config, site_settings, site_name):
     date_format = json_settings["date_format"]
     ignored_keywords = json_settings["ignored_keywords"]
     ignore_type = json_settings["ignore_type"]
-    blacklist_name = json_settings["blacklist_name"]
+    blacklists = json_settings["blacklists"]
     webhook = json_settings["webhook"]
     text_length = json_settings["text_length"]
 
@@ -1261,26 +1261,26 @@ async def manage_subscriptions(
     authed: create_auth, auth_count=0, identifiers: list = [], refresh: bool = True
 ):
     results = await authed.get_subscriptions(identifiers=identifiers, refresh=refresh)
-    if blacklist_name:
+    if blacklists:
         response = await authed.get_lists()
-        if not response:
-            return [False, []]
-        new_results = [c for c in response if blacklist_name == c["name"]]
-        if new_results:
-            item = new_results[0]
-            list_users = item["users"]
-            if int(item["usersCount"]) > 2:
-                list_id = str(item["id"])
-                list_users = await authed.get_lists_users(list_id)
-            if list_users:
-                users = list_users
-                bl_ids = [x["username"] for x in users]
-                results2 = results.copy()
-                for result in results2:
-                    identifier = result.username
-                    if identifier in bl_ids:
-                        print("Blacklisted: " + identifier)
-                        results.remove(result)
+        if response:
+            for blacklist in blacklists:
+                new_results = [c for c in response if response and blacklist == c["name"]]
+                if new_results:
+                    item = new_results[0]
+                    list_users = item["users"]
+                    if int(item["usersCount"]) > 2:
+                        list_id = str(item["id"])
+                        list_users = await authed.get_lists_users(list_id)
+                    if list_users:
+                        users = list_users
+                        bl_ids = [x["username"] for x in users]
+                        results2 = results.copy()
+                        for result in results2:
+                            identifier = result.username
+                            if identifier in bl_ids:
+                                print("Blacklisted: " + identifier)
+                                results.remove(result)
     results.sort(key=lambda x: x.subscribedByData["expiredAt"])
     results.sort(key=lambda x: x.is_me(), reverse=True)
     results2 = []

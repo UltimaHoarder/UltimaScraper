@@ -103,6 +103,8 @@ class config(object):
                     new_options["filename_format"] = value.replace("{username}","{model_username}")
                 if "metadata_directory_format" == key:
                     new_options["metadata_directory_format"] = value.replace("{username}","{model_username}")
+                if "blacklist_name" == key:
+                    new_options["blacklists"] = [value]
             return new_options
 
         class Supported(object):
@@ -172,8 +174,8 @@ class config(object):
                             'ignored_keywords', [])
                         self.ignore_type = option.get(
                             'ignore_type', "")
-                        self.blacklist_name = option.get(
-                            'blacklist_name', "")
+                        self.blacklists = option.get(
+                            'blacklists', "")
                         self.webhook = option.get(
                             'webhook', True)
 

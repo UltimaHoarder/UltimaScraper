@@ -10,8 +10,6 @@ from types import SimpleNamespace
 from typing import Any, Optional, Union
 from urllib.parse import urlparse
 
-from sqlalchemy.exc import OperationalError
-
 import extras.OFLogin.start_ofl as oflogin
 import extras.OFRenamer.start_ofr as ofrenamer
 import helpers.db_helper as db_helper
@@ -27,6 +25,7 @@ from apis.onlyfans.onlyfans import start
 from classes.prepare_metadata import create_metadata, prepare_reformat
 from helpers import db_helper
 from mergedeep import Strategy, merge
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm.scoping import scoped_session
 from tqdm.asyncio import tqdm
 
@@ -289,7 +288,9 @@ async def profile_scraper(
             directory2 = os.path.join(b, media_type)
             os.makedirs(directory2, exist_ok=True)
             download_path = os.path.join(directory2, media_link.split("/")[-2] + ".jpg")
-            response = await authed.session_manager.json_request(media_link, method="HEAD")
+            response = await authed.session_manager.json_request(
+                media_link, method="HEAD"
+            )
             if not response:
                 continue
             if os.path.isfile(download_path):
@@ -305,7 +306,9 @@ async def profile_scraper(
                 stream=True,
                 json_format=False,
             )
-            downloaded = await main_helper.write_data(response, download_path, progress_bar)
+            downloaded = await main_helper.write_data(
+                response, download_path, progress_bar
+            )
         await session.close()
         if progress_bar:
             progress_bar.close()
@@ -1222,9 +1225,9 @@ async def prepare_downloads(subscription: create_user):
         database = db_collection.database_picker("user_data")
         if database:
             media_table = database.media_table
-            settings = subscription.subscriber.extras["settings"]["supported"]["onlyfans"][
-                "settings"
-            ]
+            settings = subscription.subscriber.extras["settings"]["supported"][
+                "onlyfans"
+            ]["settings"]
             overwrite_files = settings["overwrite_files"]
             if overwrite_files:
                 download_list: Any = (
@@ -1262,25 +1265,24 @@ async def manage_subscriptions(
 ):
     results = await authed.get_subscriptions(identifiers=identifiers, refresh=refresh)
     if blacklists:
-        response = await authed.get_lists()
-        if response:
-            for blacklist in blacklists:
-                new_results = [c for c in response if response and blacklist == c["name"]]
-                if new_results:
-                    item = new_results[0]
-                    list_users = item["users"]
-                    if int(item["usersCount"]) > 2:
-                        list_id = str(item["id"])
-                        list_users = await authed.get_lists_users(list_id)
-                    if list_users:
-                        users = list_users
-                        bl_ids = [x["username"] for x in users]
-                        results2 = results.copy()
-                        for result in results2:
-                            identifier = result.username
-                            if identifier in bl_ids:
-                                print("Blacklisted: " + identifier)
-                                results.remove(result)
+        remote_blacklists = await authed.get_lists()
+        if remote_blacklists:
+            for remote_blacklist in remote_blacklists:
+                for blacklist in blacklists:
+                    if remote_blacklist["name"] == blacklist:
+                        list_users = remote_blacklist["users"]
+                        if remote_blacklist["usersCount"] > 2:
+                            list_id = remote_blacklist["id"]
+                            list_users = await authed.get_lists_users(list_id)
+                        if list_users:
+                            users = list_users
+                            bl_ids = [x["username"] for x in users]
+                            results2 = results.copy()
+                            for result in results2:
+                                identifier = result.username
+                                if identifier in bl_ids:
+                                    print("Blacklisted: " + identifier)
+                                    results.remove(result)
     results.sort(key=lambda x: x.subscribedByData["expiredAt"])
     results.sort(key=lambda x: x.is_me(), reverse=True)
     results2 = []

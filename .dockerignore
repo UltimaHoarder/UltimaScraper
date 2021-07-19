@@ -3,3 +3,12 @@
 .settings
 .sites
 __pycache__
+
+# Docker
+Dockerfile
+
+# PyCharm
+.idea
+
+# Readme
+*.md

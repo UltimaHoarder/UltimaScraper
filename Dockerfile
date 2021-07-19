@@ -44,6 +44,3 @@ ENV PYTHONUNBUFFERED 1
 
 # Changes to the new user for security reasons.
 USER onlyfans
-
-# Specifies the main executable for when the container starts.
-CMD [ "python", "./start_ofd.py" ]

@@ -842,7 +842,7 @@ def choose_auth(array):
 
             count += 1
 
-    print("Auth Usernames: " + string)
+    print(f"Auth Usernames: {string}")
     value = int(input().strip())
     if value:
         names = [names[value]]

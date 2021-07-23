@@ -128,7 +128,7 @@ async def start_datascraper(
         return [False, subscription]
     print("Scrape Processing")
     username = subscription.username
-    print("Name: " + username)
+    print(f"Name: {username}")
     some_list = [
         profile_directory,
         download_directory,
@@ -1281,7 +1281,7 @@ async def manage_subscriptions(
                             for result in results2:
                                 identifier = result.username
                                 if identifier in bl_ids:
-                                    print("Blacklisted: " + identifier)
+                                    print(f"Blacklisted: {identifier}")
                                     results.remove(result)
     results.sort(key=lambda x: x.subscribedByData["expiredAt"])
     results.sort(key=lambda x: x.is_me(), reverse=True)

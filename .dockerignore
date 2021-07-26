@@ -1,24 +1,5 @@
+.git
 .logs
 .settings
 .sites
 __pycache__
-
-# Docker
-Dockerfile
-.dockerignore
-
-# Git
-.git
-.gitignore
-
-# License
-LICENSE
-
-# PyCharm
-.idea
-
-# Readme
-*.md
-
-# Virtual Environment
-/venv/

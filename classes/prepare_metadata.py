@@ -386,7 +386,11 @@ class prepare_reformat(object):
         self.media_type = option.get("media_type", format_variables2.media_type)
         self.filename = option.get("filename", format_variables2.filename)
         self.ext = option.get("ext", format_variables2.ext)
-        self.text = option.get("text", format_variables2.text)
+        tex_str = option.get('text', format_variables2.text)
+        if tex_str is None:
+            self.text = "filename_error"
+        else:
+            self.text = tex_str
         self.date = option.get("postedAt", format_variables2.date)
         self.price = option.get("price", 0)
         self.archived = option.get("archived", False)

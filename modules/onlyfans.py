@@ -398,7 +398,7 @@ async def paid_content_scraper(api: start, identifiers=[]):
                     ),
                 )
                 settings = {"colour": "MAGENTA"}
-                unrefined_set = await tqdm.gather(tasks, **settings)
+                unrefined_set = await tqdm.gather(*tasks, **settings)
                 new_metadata = main_helper.format_media_set(unrefined_set)
                 new_metadata = new_metadata["content"]
                 if new_metadata:
@@ -820,7 +820,7 @@ async def prepare_scraper(authed: create_auth, site_name, item):
             ),
         )
         settings = {"colour": "MAGENTA"}
-        unrefined_set = await tqdm.gather(tasks, **settings)
+        unrefined_set = await tqdm.gather(*tasks, **settings)
     unrefined_set = [x for x in unrefined_set]
     new_metadata = main_helper.format_media_set(unrefined_set)
     metadata_path = os.path.join(formatted_metadata_directory, "user_data.db")

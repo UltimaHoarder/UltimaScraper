@@ -138,7 +138,7 @@ async def fix_directories(
     # tasks = pool.starmap(fix_directories2, product(posts, [media_db]))
     tasks = [asyncio.ensure_future(fix_directories2(post,media_db)) for post in posts]
     settings = {"colour": "MAGENTA", "disable": False}
-    delete_rows = await tqdm.gather(tasks, **settings)
+    delete_rows = await tqdm.gather(*tasks, **settings)
     delete_rows = list(chain(*delete_rows))
     for delete_row in delete_rows:
         database_session.query(folder.media_table).filter(

@@ -1331,7 +1331,7 @@ def format_options(
                 else:
                     name = auth.auth_details.username
                 names.append([auth, name])
-                string += str(count) + " = " + name
+                string += f"{count} = {name}"
                 if count + 1 != name_count:
                     string += seperator
                 count += 1
@@ -1341,7 +1341,7 @@ def format_options(
                 if isinstance(x, create_auth) or isinstance(x, dict):
                     continue
                 name = x.username
-                string += str(count) + " = " + name
+                string += f"{count} = {name}"
                 if isinstance(x, create_user):
                     auth_count = match_list.index(x.subscriber)
                 names.append([auth_count, name])

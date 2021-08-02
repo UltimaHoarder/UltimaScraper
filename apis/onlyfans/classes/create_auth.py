@@ -50,6 +50,8 @@ class create_auth(create_user):
         self.extras: dict[str, Any] = {}
 
     def update(self, data: Dict[str, Any]):
+        if not data["username"]:
+            data["username"] = f"u{data['id']}"
         for key, value in data.items():
             found_attr = hasattr(self, key)
             if found_attr:

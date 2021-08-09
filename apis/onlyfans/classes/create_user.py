@@ -298,7 +298,9 @@ class create_user:
         results = await api_helper.scrape_endpoint_links(
             links, self.session_manager, api_type
         )
-        final_results = [create_post(x, self) for x in results]
+        # Filter out posts that are reported by the user as these will not have content
+        filtered_results = filter(lambda opt: "isReportedByMe" in opt and opt["isReportedByMe"] is False, results)
+        final_results = [create_post(x, self) for x in filtered_results]
         self.temp_scraped.Posts = final_results
         return final_results
 

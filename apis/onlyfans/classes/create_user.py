@@ -299,7 +299,7 @@ class create_user:
             links, self.session_manager, api_type
         )
         # Filter out posts that are reported by the user as these will not have content
-        filtered_results = filter(lambda opt: "isReportedByMe" in opt and opt["isReportedByMe"] is False, results)
+        filtered_results = list(filter(lambda opt: not ("isReportedByMe" in opt and opt["isReportedByMe"]), results))
         final_results = [create_post(x, self) for x in filtered_results]
         self.temp_scraped.Posts = final_results
         return final_results

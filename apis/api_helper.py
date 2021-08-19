@@ -392,7 +392,8 @@ async def scrape_endpoint_links(links, session_manager: session_manager, api_typ
         else:
             media_set.extend(not_faulty)
             break
-    media_set = list(chain(*media_set))
+    #media_set = list(chain(*media_set))
+    media_set = [x for x in list(chain(*media_set)) if not x.get('isReportedByMe')]
     return media_set
 
 

@@ -1,11 +1,12 @@
 from typing import Optional
 
-import apis.onlyfans.classes.create_user as create_user
 from apis.onlyfans.classes.extras import endpoint_links
+
+from . import create_user
 
 
 class create_message:
-    def __init__(self, option: dict, user: create_user.create_user) -> None:
+    def __init__(self, option: dict, user: create_user) -> None:
         self.responseType: Optional[str] = option.get("responseType")
         self.text: Optional[str] = option.get("text")
         self.lockedText: Optional[bool] = option.get("lockedText")
@@ -13,7 +14,7 @@ class create_message:
         self.price: Optional[float] = option.get("price")
         self.isMediaReady: Optional[bool] = option.get("isMediaReady")
         self.mediaCount: Optional[int] = option.get("mediaCount")
-        self.media: Optional[list] = option.get("media")
+        self.media: list = option.get("media",[])
         self.previews: list = option.get("previews",[])
         self.isTip: Optional[bool] = option.get("isTip")
         self.isReportedByMe: Optional[bool] = option.get("isReportedByMe")

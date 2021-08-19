@@ -1,5 +1,5 @@
 # OnlyFans DataScraper (Python 3.9.X)
-
+[![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/DIGITALCRIMINAL/OnlyFans.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DIGITALCRIMINAL/OnlyFans/context:python)
 # ![app-token](examples/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 
 # Mandatory Tutorial
@@ -188,7 +188,7 @@ Usage: Select the resolution of the video.
     240p = "240" | "240p"
 
 ### auto_site_choice:
-Types: list|int|str|bool
+Types: str|int
 
 Usage: You can automatically choose which site you want to scrape.
 

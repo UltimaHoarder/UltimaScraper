@@ -9,9 +9,9 @@ lxml
 mergedeep
 jsonpickle
 ujson
-sqlalchemy==1.4.18
+sqlalchemy==1.4.20
 alembic
-tqdm
+tqdm>=4.62.0
 selenium
 selenium-wire==2.1.2
 user_agent

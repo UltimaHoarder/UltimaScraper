@@ -84,10 +84,10 @@ def login(authed, domain, proxy=None):
         except Exception as e:
             continue
         print
-        email_input = web_browser.find_element_by_id("input-71")
+        email_input = web_browser.find_element_by_css_selector("input[type='email']")
         email_input.click()
         email_input.send_keys(email)
-        password_input = web_browser.find_element_by_id("input-73")
+        password_input = web_browser.find_element_by_css_selector("input[type='password']")
         password_input.click()
         password_input.send_keys(password)
         login_button = web_browser.find_element_by_class_name(

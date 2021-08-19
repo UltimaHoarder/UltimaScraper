@@ -1,6 +1,7 @@
 import asyncio
 import copy
 import hashlib
+import json
 import os
 import re
 import threading
@@ -164,6 +165,8 @@ class session_manager:
         headers = self.session_rules(link)
         headers["accept"] = "application/json, text/plain, */*"
         headers["Connection"] = "keep-alive"
+        temp_payload = payload.copy()
+
         request_method = None
         result = None
         if method == "HEAD":
@@ -172,13 +175,15 @@ class session_manager:
             request_method = session.get
         elif method == "POST":
             request_method = session.post
+            headers["content-type"] = "application/json"
+            temp_payload = json.dumps(payload)
         elif method == "DELETE":
             request_method = session.delete
         else:
             return None
         while True:
             try:
-                response = await request_method(link, headers=headers, data=payload)
+                response = await request_method(link, headers=headers, data=temp_payload)
                 if method == "HEAD":
                     result = response
                 else:
@@ -199,6 +204,7 @@ class session_manager:
                 ClientOSError,
                 ServerDisconnectedError,
                 ProxyConnectionError,
+                ConnectionResetError,
             ):
                 continue
         if custom_session:

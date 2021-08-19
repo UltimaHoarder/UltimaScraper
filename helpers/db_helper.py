@@ -29,24 +29,36 @@ def create_database_session(
 
 
 def run_revisions(alembic_directory: str, database_path: str = ""):
-    ini_path = os.path.join(alembic_directory, "alembic.ini")
-    script_location = os.path.join(alembic_directory, "alembic")
-    full_database_path = f"sqlite:///{database_path}"
-    alembic_cfg = Config(ini_path)
-    alembic_cfg.set_main_option("script_location", script_location)
-    alembic_cfg.set_main_option("sqlalchemy.url", full_database_path)
-    command.upgrade(alembic_cfg, "head")
-    command.revision(alembic_cfg, autogenerate=True, message="content")
+    while True:
+        try:
+            ini_path = os.path.join(alembic_directory, "alembic.ini")
+            script_location = os.path.join(alembic_directory, "alembic")
+            full_database_path = f"sqlite:///{database_path}"
+            alembic_cfg = Config(ini_path)
+            alembic_cfg.set_main_option("script_location", script_location)
+            alembic_cfg.set_main_option("sqlalchemy.url", full_database_path)
+            command.upgrade(alembic_cfg, "head")
+            command.revision(alembic_cfg, autogenerate=True, message="content")
+            break
+        except Exception as e:
+            print(e)
+            print
 
 
 def run_migrations(alembic_directory: str, database_path: str) -> None:
-    ini_path = os.path.join(alembic_directory, "alembic.ini")
-    script_location = os.path.join(alembic_directory, "alembic")
-    full_database_path = f"sqlite:///{database_path}"
-    alembic_cfg = Config(ini_path)
-    alembic_cfg.set_main_option("script_location", script_location)
-    alembic_cfg.set_main_option("sqlalchemy.url", full_database_path)
-    command.upgrade(alembic_cfg, "head")
+    while True:
+        try:
+            ini_path = os.path.join(alembic_directory, "alembic.ini")
+            script_location = os.path.join(alembic_directory, "alembic")
+            full_database_path = f"sqlite:///{database_path}"
+            alembic_cfg = Config(ini_path)
+            alembic_cfg.set_main_option("script_location", script_location)
+            alembic_cfg.set_main_option("sqlalchemy.url", full_database_path)
+            command.upgrade(alembic_cfg, "head")
+            break
+        except Exception as e:
+            print(e)
+            print
 
 
 class database_collection(object):
@@ -63,14 +75,13 @@ class database_collection(object):
         return database
 
 
-
 def create_auth_array(item):
     auth_array = item.__dict__
     auth_array["support_2fa"] = False
     return auth_array
 
 
-def get_or_create(session: Session, model, defaults=None, fbkwargs:dict={}):
+def get_or_create(session: Session, model, defaults=None, fbkwargs: dict = {}):
     fbkwargs2 = fbkwargs.copy()
     instance = session.query(model).filter_by(**fbkwargs2).one_or_none()
     if instance:

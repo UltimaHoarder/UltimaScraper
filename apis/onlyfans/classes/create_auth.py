@@ -26,7 +26,7 @@ class create_auth(create_user):
     def __init__(
         self,
         option: dict[str, Any] = {},
-        pool: Optional[Pool] = None,
+        pool: Pool = None,
         max_threads: int = -1,
     ) -> None:
         create_user.__init__(self, option)
@@ -39,7 +39,8 @@ class create_auth(create_user):
         self.archived_stories = {}
         self.mass_messages = []
         self.paid_content = []
-        self.pool = pool
+        temp_pool = pool if pool else api_helper.multiprocessing()
+        self.pool = temp_pool
         self.session_manager = api_helper.session_manager(self, max_threads=max_threads)
         self.auth_details: auth_details = auth_details()
         self.profile_directory = option.get("profile_directory", "")
@@ -49,6 +50,8 @@ class create_auth(create_user):
         self.extras: dict[str, Any] = {}
 
     def update(self, data: Dict[str, Any]):
+        if not data["username"]:
+            data["username"] = f"u{data['id']}"
         for key, value in data.items():
             found_attr = hasattr(self, key)
             if found_attr:
@@ -98,13 +101,14 @@ class create_auth(create_user):
                                 response = await self.session_manager.json_request(
                                     link, method="POST", payload=data
                                 )
-                                if "error" in response:
-                                    error.message = response["error"]["message"]
+                                if isinstance(response, error_details):
+                                    error.message = response.message
                                     count += 1
                                 else:
                                     print("Success")
-                                    auth.active = True
+                                    auth.active = False
                                     auth.errors.remove(error)
+                                    await self.get_authed()
                                     break
 
             await resolve_auth(self)
@@ -312,7 +316,7 @@ class create_auth(create_user):
                     continue
                 link = endpoint_links(identifier=identifier).users
                 result = await self.session_manager.json_request(link)
-                if "error" in result or not result["subscribedBy"]:
+                if isinstance(result, error_details) or not result["subscribedBy"]:
                     continue
                 subscription = create_user(result, self)
                 if subscription.isBlocked:
@@ -438,24 +442,25 @@ class create_auth(create_user):
                 return result
         link = endpoint_links(global_limit=limit, global_offset=offset).paid_api
         final_results = await self.session_manager.json_request(link)
-        if len(final_results) >= limit and not check:
-            results2 = self.get_paid_content(
-                limit=limit, offset=limit + offset, inside_loop=True
-            )
-            final_results.extend(results2)
-        if not inside_loop:
-            temp = []
-            for final_result in final_results:
-                content = None
-                if final_result["responseType"] == "message":
-                    user = create_user(final_result["fromUser"], self)
-                    content = create_message(final_result, user)
-                    print
-                elif final_result["responseType"] == "post":
-                    user = create_user(final_result["author"], self)
-                    content = create_post(final_result, user)
-                if content:
-                    temp.append(content)
-            final_results = temp
-        self.paid_content = final_results
+        if not isinstance(final_results,error_details):
+            if len(final_results) >= limit and not check:
+                results2 = self.get_paid_content(
+                    limit=limit, offset=limit + offset, inside_loop=True
+                )
+                final_results.extend(results2)
+            if not inside_loop:
+                temp = []
+                for final_result in final_results:
+                    content = None
+                    if final_result["responseType"] == "message":
+                        user = create_user(final_result["fromUser"], self)
+                        content = create_message(final_result, user)
+                        print
+                    elif final_result["responseType"] == "post":
+                        user = create_user(final_result["author"], self)
+                        content = create_post(final_result, user)
+                    if content:
+                        temp.append(content)
+                final_results = temp
+            self.paid_content = final_results
         return final_results

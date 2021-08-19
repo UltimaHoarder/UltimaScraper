@@ -25,13 +25,14 @@ from apis.onlyfans.onlyfans import start
 from classes.prepare_metadata import create_metadata, prepare_reformat
 from helpers import db_helper
 from mergedeep import Strategy, merge
+from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm.scoping import scoped_session
 from tqdm.asyncio import tqdm
 
 site_name = "OnlyFans"
 json_config = None
-json_global_settings = None
-json_settings = None
+json_global_settings = {}
+json_settings = {}
 csv_export_only = False
 auto_media_choice = ""
 profile_directory = ""
@@ -43,15 +44,15 @@ metadata_directory_format = ""
 delete_legacy_metadata = False
 overwrite_files = None
 date_format = None
-ignored_keywords = None
+ignored_keywords = []
 ignore_type = None
-blacklist_name = None
+blacklists = []
 webhook = None
 text_length = None
 
 
 def assign_vars(json_auth: auth_details, config, site_settings, site_name):
-    global csv_export_only, json_config, json_global_settings, json_settings, auto_media_choice, profile_directory, download_directory, metadata_directory, metadata_directory_format, delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklist_name, webhook, text_length
+    global csv_export_only, json_config, json_global_settings, json_settings, auto_media_choice, profile_directory, download_directory, metadata_directory, metadata_directory_format, delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklists, webhook, text_length
 
     json_config = config
     json_global_settings = json_config["settings"]
@@ -75,7 +76,7 @@ def assign_vars(json_auth: auth_details, config, site_settings, site_name):
     date_format = json_settings["date_format"]
     ignored_keywords = json_settings["ignored_keywords"]
     ignore_type = json_settings["ignore_type"]
-    blacklist_name = json_settings["blacklist_name"]
+    blacklists = json_settings["blacklists"]
     webhook = json_settings["webhook"]
     text_length = json_settings["text_length"]
 
@@ -129,7 +130,7 @@ async def start_datascraper(
         return [False, subscription]
     print("Scrape Processing")
     username = subscription.username
-    print("Name: " + username)
+    print(f"Name: {username}")
     some_list = [
         profile_directory,
         download_directory,
@@ -270,44 +271,49 @@ async def profile_scraper(
     option["directory"] = base_directory
     a, b, c = await prepare_reformat(option, keep_vars=True).reformat(reformats)
     print
-    y = await authed.get_subscription(identifier=model_username)
-    override_media_types = []
-    avatar = y.avatar
-    header = y.header
-    if avatar:
-        override_media_types.append(["Avatars", avatar])
-    if header:
-        override_media_types.append(["Headers", header])
-    session = authed.session_manager.create_client_session()
-    progress_bar = None
-    for override_media_type in override_media_types:
-        new_dict = dict()
-        media_type = override_media_type[0]
-        media_link = override_media_type[1]
-        new_dict["links"] = [media_link]
-        directory2 = os.path.join(b, media_type)
-        os.makedirs(directory2, exist_ok=True)
-        download_path = os.path.join(directory2, media_link.split("/")[-2] + ".jpg")
-        response = await authed.session_manager.json_request(media_link, method="HEAD")
-        if not response:
-            continue
-        if os.path.isfile(download_path):
-            if os.path.getsize(download_path) == response.content_length:
+    subscription = await authed.get_subscription(identifier=model_username)
+    if subscription:
+        override_media_types = []
+        avatar = subscription.avatar
+        header = subscription.header
+        if avatar:
+            override_media_types.append(["Avatars", avatar])
+        if header:
+            override_media_types.append(["Headers", header])
+        session = authed.session_manager.create_client_session()
+        progress_bar = None
+        for override_media_type in override_media_types:
+            new_dict = dict()
+            media_type = override_media_type[0]
+            media_link = override_media_type[1]
+            new_dict["links"] = [media_link]
+            directory2 = os.path.join(b, media_type)
+            os.makedirs(directory2, exist_ok=True)
+            download_path = os.path.join(directory2, media_link.split("/")[-2] + ".jpg")
+            response = await authed.session_manager.json_request(
+                media_link, method="HEAD"
+            )
+            if not response:
                 continue
-        if not progress_bar:
-            progress_bar = main_helper.download_session()
-            progress_bar.start(unit="B", unit_scale=True, miniters=1)
-        progress_bar.update_total_size(response.content_length)
-        response = await authed.session_manager.json_request(
-            media_link,
-            session=session,
-            stream=True,
-            json_format=False,
-        )
-        downloaded = await main_helper.write_data(response, download_path, progress_bar)
-    await session.close()
-    if progress_bar:
-        progress_bar.close()
+            if os.path.isfile(download_path):
+                if os.path.getsize(download_path) == response.content_length:
+                    continue
+            if not progress_bar:
+                progress_bar = main_helper.download_session()
+                progress_bar.start(unit="B", unit_scale=True, miniters=1)
+            progress_bar.update_total_size(response.content_length)
+            response = await authed.session_manager.json_request(
+                media_link,
+                session=session,
+                stream=True,
+                json_format=False,
+            )
+            downloaded = await main_helper.write_data(
+                response, download_path, progress_bar
+            )
+        await session.close()
+        if progress_bar:
+            progress_bar.close()
 
 
 async def paid_content_scraper(api: start, identifiers=[]):
@@ -333,9 +339,10 @@ async def paid_content_scraper(api: start, identifiers=[]):
                 subscription = paid_content.user
                 authed.subscriptions.append(subscription)
             subscription.subscriber = authed
-            api_type = paid_content.responseType.capitalize() + "s"
-            api_media = getattr(subscription.temp_scraped, api_type)
-            api_media.append(paid_content)
+            if paid_content.responseType:
+                api_type = paid_content.responseType.capitalize() + "s"
+                api_media = getattr(subscription.temp_scraped, api_type)
+                api_media.append(paid_content)
         count = 0
         max_count = len(authed.subscriptions)
         for subscription in authed.subscriptions:
@@ -393,7 +400,7 @@ async def paid_content_scraper(api: start, identifiers=[]):
                     ),
                 )
                 settings = {"colour": "MAGENTA"}
-                unrefined_set = await tqdm.gather(tasks, **settings)
+                unrefined_set = await tqdm.gather(*tasks, **settings)
                 new_metadata = main_helper.format_media_set(unrefined_set)
                 new_metadata = new_metadata["content"]
                 if new_metadata:
@@ -822,7 +829,7 @@ async def prepare_scraper(authed: create_auth, site_name, item):
             ),
         )
         settings = {"colour": "MAGENTA"}
-        unrefined_set = await tqdm.gather(tasks, **settings)
+        unrefined_set = await tqdm.gather(*tasks, **settings)
     unrefined_set = [x for x in unrefined_set]
     new_metadata = main_helper.format_media_set(unrefined_set)
     metadata_path = os.path.join(formatted_metadata_directory, "user_data.db")
@@ -1101,6 +1108,8 @@ async def media_scraper(
             if not link:
                 continue
             url = urlparse(link)
+            if not url.hostname:
+                continue
             subdomain = url.hostname.split(".")[0]
             preview_link = media["preview"]
             if any(subdomain in nm for nm in matches):
@@ -1235,9 +1244,9 @@ async def prepare_downloads(subscription: create_user):
         database = db_collection.database_picker("user_data")
         if database:
             media_table = database.media_table
-            settings = subscription.subscriber.extras["settings"]["supported"]["onlyfans"][
-                "settings"
-            ]
+            settings = subscription.subscriber.extras["settings"]["supported"][
+                "onlyfans"
+            ]["settings"]
             overwrite_files = settings["overwrite_files"]
             media_set_count = 0
             if csv_export_only:
@@ -1264,7 +1273,12 @@ async def prepare_downloads(subscription: create_user):
             if media_set_count:
                 print(string)
                 await main_helper.async_downloads(download_list, subscription)
-            database_session.commit()
+            while True:
+                try:
+                    database_session.commit()
+                    break
+                except OperationalError:
+                    database_session.rollback()
             database_session.close()
         print
     print
@@ -1273,25 +1287,25 @@ async def manage_subscriptions(
     authed: create_auth, auth_count=0, identifiers: list = [], refresh: bool = True
 ):
     results = await authed.get_subscriptions(identifiers=identifiers, refresh=refresh)
-    if blacklist_name:
-        response = await authed.get_lists()
-        if not response:
-            return [False, []]
-        new_results = [c for c in response if blacklist_name == c["name"]]
-        if new_results:
-            item = new_results[0]
-            list_users = item["users"]
-            if int(item["usersCount"]) > 2:
-                list_id = str(item["id"])
-                list_users = await authed.get_lists_users(list_id)
-            users = list_users
-            bl_ids = [x["username"] for x in users]
-            results2 = results.copy()
-            for result in results2:
-                identifier = result.username
-                if identifier in bl_ids:
-                    print("Blacklisted: " + identifier)
-                    results.remove(result)
+    if blacklists:
+        remote_blacklists = await authed.get_lists()
+        if remote_blacklists:
+            for remote_blacklist in remote_blacklists:
+                for blacklist in blacklists:
+                    if remote_blacklist["name"] == blacklist:
+                        list_users = remote_blacklist["users"]
+                        if remote_blacklist["usersCount"] > 2:
+                            list_id = remote_blacklist["id"]
+                            list_users = await authed.get_lists_users(list_id)
+                        if list_users:
+                            users = list_users
+                            bl_ids = [x["username"] for x in users]
+                            results2 = results.copy()
+                            for result in results2:
+                                identifier = result.username
+                                if identifier in bl_ids:
+                                    print(f"Blacklisted: {identifier}")
+                                    results.remove(result)
     results.sort(key=lambda x: x.subscribedByData["expiredAt"])
     results.sort(key=lambda x: x.is_me(), reverse=True)
     results2 = []
@@ -1317,7 +1331,7 @@ async def manage_subscriptions(
 def format_options(
     f_list: Union[list[create_auth], list[create_user], list[dict], list[str]],
     choice_type: str,
-    match_list: Optional[list] = None,
+    match_list: list = [],
 ) -> list:
     new_item = {}
     new_item["auth_count"] = -1
@@ -1340,7 +1354,7 @@ def format_options(
                 else:
                     name = auth.auth_details.username
                 names.append([auth, name])
-                string += str(count) + " = " + name
+                string += f"{count} = {name}"
                 if count + 1 != name_count:
                     string += seperator
                 count += 1
@@ -1350,7 +1364,7 @@ def format_options(
                 if isinstance(x, create_auth) or isinstance(x, dict):
                     continue
                 name = x.username
-                string += str(count) + " = " + name
+                string += f"{count} = {name}"
                 if isinstance(x, create_user):
                     auth_count = match_list.index(x.subscriber)
                 names.append([auth_count, name])

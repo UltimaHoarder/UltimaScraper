@@ -263,6 +263,7 @@ class create_user:
                 identifier=identifier, global_limit=limit, global_offset=offset
             ).list_highlights
             results = await self.session_manager.json_request(link)
+            results = await api_helper.remove_errors(results)
             results = [create_highlight(x) for x in results]
         else:
             link = endpoint_links(
@@ -359,7 +360,9 @@ class create_user:
             final_results.extend(results2)
         print
         if not inside_loop:
-            final_results = [create_message.create_message(x, self) for x in final_results if x]
+            final_results = [
+                create_message.create_message(x, self) for x in final_results if x
+            ]
         else:
             final_results.sort(key=lambda x: x["fromUser"]["id"], reverse=True)
         self.temp_scraped.Messages = final_results
@@ -472,9 +475,9 @@ class create_user:
         results = await self.session_manager.json_request(link, method="DELETE")
         return results
 
-    async def buy_subscription(self):
+    async def subscription_price(self):
         """
-        This function will subscribe to a model. If the model has a promotion available, it will use it.
+        Returns subscription price. This includes the promotional price.
         """
         subscription_price = self.subscribePrice
         if self.promotions:
@@ -482,6 +485,13 @@ class create_user:
                 promotion_price = promotion["price"]
                 if promotion_price < subscription_price:
                     subscription_price = promotion_price
+        return subscription_price
+
+    async def buy_subscription(self):
+        """
+        This function will subscribe to a model. If the model has a promotion available, it will use it.
+        """
+        subscription_price = await self.subscription_price()
         x = {
             "paymentType": "subscribe",
             "userId": self.id,

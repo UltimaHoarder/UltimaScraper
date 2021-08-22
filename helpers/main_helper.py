@@ -828,7 +828,7 @@ def choose_auth(array):
     names = []
     array = [{"auth_count": -1, "username": "All"}] + array
     string = ""
-    seperator = " | "
+    separator = " | "
     name_count = len(array)
     if name_count > 1:
 
@@ -838,7 +838,7 @@ def choose_auth(array):
             string += str(count) + " = " + name
             names.append(x)
             if count + 1 != name_count:
-                string += seperator
+                string += separator
 
             count += 1
 
@@ -856,9 +856,9 @@ def choose_option(
 ):
     names = subscription_list[0]
     default_message = ""
-    seperator = " | "
+    separator = " | "
     if use_default_message:
-        default_message = f"Names: Username = username {seperator}"
+        default_message = f"Names: Username = username {separator}"
     new_names = []
     if names:
         if isinstance(auto_scrape, bool):
@@ -1159,7 +1159,7 @@ def multiprocessing():
 
 def module_chooser(domain, json_sites):
     string = "Site: "
-    seperator = " | "
+    separator = " | "
     site_names = []
     wl = ["onlyfans"]
     bl = ["patreon"]
@@ -1174,7 +1174,7 @@ def module_chooser(domain, json_sites):
         string += str(count) + " = " + x
         site_names.append(x)
         if count + 1 != site_count:
-            string += seperator
+            string += separator
 
         count += 1
     if domain and domain not in site_names:

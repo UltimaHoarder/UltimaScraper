@@ -21,6 +21,7 @@ This is for Ubuntu Focal Fossa and Hirsute.
 	`unzip master.zip && mv OnlyFans-Master onlyfans && rm master.zip`
 
 5. Enter our new directory
+
 	`cd onlyfans`
 
 6. Go to the [Installation of Python](#Installation-of-Python) section and complete it.

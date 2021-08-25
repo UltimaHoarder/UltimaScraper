@@ -45,7 +45,7 @@ Once you have completed the installation of python section, follow the follwing 
 
 ## Install and update scraper using Git
 
-** This is not suggested for users who just want to use the scraper. Git is meant for devlopment purposes. **
+**WARNING: This method is not suggested for users who just want to use the scraper. Git is meant for devlopment purposes.**
 
 ### Installing git
 Make sure you have git installed

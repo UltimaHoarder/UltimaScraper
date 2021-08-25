@@ -65,7 +65,7 @@ Make sure you have git installed
 
 1. Install Python3.9
 
-	`sudo apt update && sudo apt install python3.9`
+	`sudo apt update && sudo apt -y install python3.9`
 
 2. Install the Python3.9 Virtual Enviroment
 

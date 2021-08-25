@@ -28,7 +28,7 @@ This is for Ubuntu Focal Fossa and Hirsute.
 
 	`rm master.zip`
 
-7. Go to the 'Installation of Python' section and do that
+7. Go to the [Instalation of Python](#python)
 
 ### Updating Scraper
 Once you have completed the installation of python section, follow the follwing steps in order
@@ -65,7 +65,7 @@ Make sure you have git installed
 2. Update code
 	`git pull`
 
-## Installation of Python
+## Installation of Python {#python}
 
 1. Install Python3.9
 

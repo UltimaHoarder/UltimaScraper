@@ -3,7 +3,7 @@
 This programs run in CLI (Terminal). There is no Desktop Application currently available.
 This is for Ubuntu Focal Fossa and Hirsute.
 
-## Install and update scraper code using regular code
+## Install and update scraper code the simple way
 
 ### First Time Installation
 

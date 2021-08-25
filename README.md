@@ -14,7 +14,7 @@ Build and run the image, mounting the appropriate directories:
 
 ## Running on Linux
 
-https://github.com/DIGITALCRIMINAL/OnlyFans/discussions/889
+[Running in Linux](/Linux.md)
 
 ## Running the app locally
 

@@ -1360,6 +1360,6 @@ def format_options(
                     name = api.get("api_type")
                 string += f"{count} = {name}"
                 if count + 1 != name_count:
-                    string += seperator
+                    string += separator
                 count += 1
     return [names, string]

@@ -1,6 +1,6 @@
 # Running the DataScraper on Linux
 
-This programs run in CLI (Terminal). There is no Desktop Application currently available.
+This programs run in CLI (Terminal). There is no GUI currently available.
 This is for Ubuntu Focal Fossa and Hirsute.
 
 ## Install and update scraper code the simple way

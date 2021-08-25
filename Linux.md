@@ -28,7 +28,7 @@ This is for Ubuntu Focal Fossa and Hirsute.
 
 	`rm master.zip`
 
-7. Go to the [Instalation of Python](#installiation-of-python)
+7. Go to the [Installation of Python](#Installation-of-Python) section and complete it.
 
 ### Updating Scraper
 Once you have completed the installation of python section, follow the follwing steps in order

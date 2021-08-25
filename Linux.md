@@ -14,19 +14,19 @@ This is for Ubuntu Focal Fossa and Hirsute.
 
 3. Download the code
 
-  `wget https://github.com/DIGITALCRIMINALS/OnlyFans/archive/refs/heads/master.zip`
+	`wget https://github.com/DIGITALCRIMINALS/OnlyFans/archive/refs/heads/master.zip`
 
 4. Unzip the code
 
-  `unzip master.zip`
+	`unzip master.zip`
 
 5. Rename the folder to make life easier
 
-  `mv OnlyFans-Master onlyfans`
+	`mv OnlyFans-Master onlyfans`
 
 6. Remove .zip file
 
-  `rm master.zip`
+	`rm master.zip`
 
 7. Go to the 'Installation of Python' section and do that
 
@@ -37,11 +37,11 @@ Once you have completed the installation of python section, follow the follwing 
 
 2. Activate Virtual Enviroment
 
-  `source scraper/bin/activate`
+	`source scraper/bin/activate`
 
 3. Run the updater program
 
-  `python3 updater.py`
+	`python3 updater.py`
 
 ##Install and update scraper using Git
 
@@ -50,48 +50,48 @@ This is not suggested for users who just want to use the scraper. Git is meant f
 ### Installing git
 Make sure you have git installed
 
-  `sudo apt update && sudo apt -y install git`
+	`sudo apt update && sudo apt -y install git`
 
 ### First Time Installation
 1. Go to the directory where you would like the code.
 
 2. Clone the repository.
 
-  `git clone https://github.com/DIGITALCRIMINALS/OnlyFans`
+	`git clone https://github.com/DIGITALCRIMINALS/OnlyFans`
 
 ### Updating the Repository
 ** This does not work if you have changed any of the core files yourself. **
 1. Be in the directory of the code you are in
 2. Update code
-  `git pull`
+	`git pull`
 
 ## Installation of Python
 
 1. Install Python3.9
 
-  `sudo apt update && sudo apt install python3.9`
+	`sudo apt update && sudo apt install python3.9`
 
 2. Install the Python3.9 Virtual Enviroment
 
-  `sudo apt -y install python3.9-dev python3.9-venv`
+	`sudo apt -y install python3.9-dev python3.9-venv`
 
 3. Make our Python Virtual Enviroment
 
-  `python3.9 -m venv scraper`
+	`python3.9 -m venv scraper`
 
 4. Enter our virtual enviroment
 
-  `source scraper/bin/activate`
+	`source scraper/bin/activate`
 
 We now are inside of our python3.9 virtual enviroment. This makes it so that other programs won't screw with our scraper and our scraper won't screw with your other programs or virtual enviroments
 
 5. Install Requiremtents
 
-  `pip3 install requirements.txt`
+	`pip3 install requirements.txt`
 
 6. Exit Virtual Enviroment
 
-  `deactivate`
+	`deactivate`
 
 You have just installed the scraper! Congratulations!
 
@@ -105,17 +105,17 @@ Follow the steps in order every time we use the scraper
 
 2. Activate our virtual Enviroment
 
-  `source scraper/bin/activate`
+	`source scraper/bin/activate`
 
 3. Run The Scraper
 
-  `python3 start_ofd.py`
+	`python3 start_ofd.py`
 
 4. Do what the program says. Remember to type the apropriate numbers. If you need to do some configuration, it is ok to pres CTRL + C. After configuring, go back to step 3.
 
 5. After the Scraper is finished or you need to exit the virtual enviroment, run the following command to make things 'normal'
 
-  `deactivate`
+	`deactivate`
 
 ### Running in Docker
 

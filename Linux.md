@@ -43,7 +43,7 @@ Once you have completed the installation of python section, follow the follwing 
 
 	`python3 updater.py`
 
-##Install and update scraper using Git
+## Install and update scraper using Git
 
 This is not suggested for users who just want to use the scraper. Git is meant for devlopment purposes.
 

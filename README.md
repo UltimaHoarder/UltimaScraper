@@ -14,7 +14,7 @@ Build and run the image, mounting the appropriate directories:
 
 ## Running on Linux
 
-https://github.com/DIGITALCRIMINAL/OnlyFans/discussions/889
+[Running in Linux](/Linux.md)
 
 ## Running the app locally
 
@@ -371,11 +371,6 @@ I'm getting authed into the wrong account
 I'm using Linux OS and something isn't working.
 
 > Script was built on Windows 10. If you're using Linux you can still submit an issue and I'll try my best to fix it.
-
-Am I able to bypass paywalls with this script?
-
-> Hell yeah! My open source script can bypass paywalls for free.
-> [Tutorial](https://encrypted-tbn0.gstatic.com/images?q=tbn%3AANd9GcS5hTXe02DNlsktpFfkrr--OQ0ScILMibxmpQ&usqp=CAU)
 
 Do OnlyFans or OnlyFans models know I'm using this script?
 

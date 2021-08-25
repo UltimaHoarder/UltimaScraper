@@ -60,10 +60,16 @@ Make sure you have git installed
 	`git clone https://github.com/DIGITALCRIMINALS/OnlyFans`
 
 ### Updating the Repository
-** This does not work if you have changed any of the core files yourself. **
+** This does not work if you have changed any of the files that are being updated yourself.**
 1. Be in the directory of the code you are in
+
 2. Update code
+
 	`git pull`
+
+If you have changed files and want the new update to "overwrite" them run the following command
+
+'git stash'
 
 ## Installation of Python
 

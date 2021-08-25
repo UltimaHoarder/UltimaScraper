@@ -7,9 +7,7 @@ os.chdir(path)
 
 def version_check():
     version_info = sys.version_info
-    python_version = f"{version_info.major}.{version_info.minor}"
-    python_version = float(python_version)
-    if python_version < 3.9:
+    if version_info < (3, 9):
         string = "Execute the script with Python 3.9 \n"
         string += "Press enter to continue"
         input(string)

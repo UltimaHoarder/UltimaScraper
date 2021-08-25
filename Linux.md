@@ -122,7 +122,3 @@ Follow the steps in order every time we use the scraper
 5. After the Scraper is finished or you need to exit the virtual enviroment, run the following command to make things 'normal'
 
 	`deactivate`
-
-### Running in Docker
-
-See Docker.md

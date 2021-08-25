@@ -83,7 +83,7 @@ We now are inside of our python3.9 virtual enviroment. This makes it so that oth
 
 5. Install Requiremtents
 
-	`pip3 install requirements.txt`
+	`pip3 -r install requirements.txt`
 
 6. Exit Virtual Enviroment
 

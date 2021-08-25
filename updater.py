@@ -11,7 +11,7 @@ import time
 # response = requests.get("https://api.github.com/repos/digitalcriminal/onlyfans/branches/master")
 # response_json = response.json()
 # commit_id = response_json["commit"]["sha"]
-# downloaded = requests.get(f"https://github.com/DIGITALCRIMINAL/OnlyFans/archive/{commit_id}.zip")
+# downloaded = requests.get(f"https://github.com/DIGITALCRIMINALS/OnlyFans/archive/{commit_id}.zip")
 downloaded = requests.get(
     f"https://github.com/DIGITALCRIMINAL/OnlyFans/archive/refs/heads/master.zip"
 )

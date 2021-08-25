@@ -38,7 +38,11 @@ Once you have completed the installation of python section, follow the follwing 
 3. Run the updater program
 
 	`python3 updater.py`
-
+	
+4. Deactivate Virtual Enviroment
+	
+	`deactivate`
+	
 ## Install and update scraper using Git
 
 **WARNING: This method is not suggested for users who just want to use the scraper. Git is meant for devlopment purposes.**

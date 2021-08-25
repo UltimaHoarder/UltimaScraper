@@ -16,19 +16,14 @@ This is for Ubuntu Focal Fossa and Hirsute.
 
 	`wget https://github.com/DIGITALCRIMINALS/OnlyFans/archive/refs/heads/master.zip`
 
-4. Unzip the code
+4. Unzip the code, rename it and remove the original zip file
 
-	`unzip master.zip`
+	`unzip master.zip && mv OnlyFans-Master onlyfans && rm master.zip`
 
-5. Rename the folder to make life easier
+5. Enter our new directory
+	`cd onlyfans`
 
-	`mv OnlyFans-Master onlyfans`
-
-6. Remove .zip file
-
-	`rm master.zip`
-
-7. Go to the [Installation of Python](#Installation-of-Python) section and complete it.
+6. Go to the [Installation of Python](#Installation-of-Python) section and complete it.
 
 ### Updating Scraper
 Once you have completed the installation of python section, follow the follwing steps in order

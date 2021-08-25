@@ -18,7 +18,7 @@ This is for Ubuntu Focal Fossa and Hirsute.
 
 4. Unzip the code, rename it and remove the original zip file
 
-	`unzip master.zip && mv OnlyFans-Master onlyfans && rm master.zip`
+	`unzip master.zip && mv OnlyFans-master onlyfans && rm master.zip`
 
 5. Enter our new directory
 

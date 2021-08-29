@@ -797,9 +797,12 @@ async def prepare_scraper(authed: create_auth, site_name, item):
         master_set.extend(valid_highlights)
         print
     if api_type == "Posts":
-        master_set = await subscription.get_posts()
+        try:
+            master_set = await subscription.get_posts()
+            master_set += await subscription.get_archived_posts()
+        except:
+            input("Failed to get user's posts. Press any key to continue.")
         print(f"Type: Archived Posts")
-        master_set += await subscription.get_archived_posts()
     # if api_type == "Archived":
     #     master_set = await subscription.get_archived(authed)
     if api_type == "Messages":

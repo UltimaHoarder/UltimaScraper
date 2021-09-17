@@ -59,7 +59,7 @@ async def remove_errors(results: list):
     if not isinstance(results, list):
         wrapped = True
         results = [results]
-    results = [x for x in results if not isinstance(x, error_details)]
+    results = [x for x in results if not isinstance(x, onlyfans_extras.error_details)]
     if wrapped and results:
         results = results[0]
     return results
@@ -283,7 +283,7 @@ class session_manager:
                     )
                 elif api_type == "posts":
                     new_result = await subscription.get_post(post_id)
-                if isinstance(new_result, error_details):
+                if isinstance(new_result, onlyfans_extras.error_details):
                     continue
                 if new_result and new_result.media:
                     media_list = [

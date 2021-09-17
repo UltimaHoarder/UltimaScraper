@@ -140,10 +140,12 @@ class endpoint_links(object):
 
 # Lol?
 class error_details:
-    def __init__(self, result) -> None:
-        error = result["error"] if "error" in result else result
+    def __init__(self, result:dict[Any,Any]) -> None:
+        error:dict[Any,Any] = result["error"] if "error" in result else result
         self.code = error["code"]
-        self.message = error["details"]
+        self.message = error.get("details","")
+        if not self.message:
+            self.message = error.get("message","")
 
 
 def create_headers(
@@ -202,3 +204,13 @@ class media_types:
     def __iter__(self):
         for attr, value in self.__dict__.items():
             yield attr, value
+
+async def remove_errors(results: list):
+    wrapped = False
+    if not isinstance(results, list):
+        wrapped = True
+        results = [results]
+    results = [x for x in results if not isinstance(x, error_details)]
+    if wrapped and results:
+        results = results[0]
+    return results

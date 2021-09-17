@@ -14,6 +14,7 @@ from apis.onlyfans.classes.extras import (
     endpoint_links,
     error_details,
     handle_refresh,
+    remove_errors,
 )
 
 
@@ -263,7 +264,7 @@ class create_user:
                 identifier=identifier, global_limit=limit, global_offset=offset
             ).list_highlights
             results = await self.session_manager.json_request(link)
-            results = await api_helper.remove_errors(results)
+            results = await remove_errors(results)
             results = [create_highlight(x) for x in results]
         else:
             link = endpoint_links(
@@ -349,7 +350,7 @@ class create_user:
         else:
             links = links2
         results = await self.session_manager.async_requests(links)
-        results = await api_helper.remove_errors(results)
+        results = await remove_errors(results)
         results = [x for x in results if x]
         has_more = results[-1]["hasMore"] if results else False
         final_results = [x["list"] for x in results if "list" in x]
@@ -397,7 +398,7 @@ class create_user:
                 return result
         link = endpoint_links(global_limit=limit, global_offset=offset).archived_stories
         results = await self.session_manager.json_request(link)
-        results = await api_helper.remove_errors(results)
+        results = await remove_errors(results)
         results = [create_story(x) for x in results]
         return results
 

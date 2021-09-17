@@ -54,15 +54,6 @@ class set_settings:
         global_settings = self.json_global_settings
 
 
-async def remove_errors(results: list):
-    wrapped = False
-    if not isinstance(results, list):
-        wrapped = True
-        results = [results]
-    results = [x for x in results if not isinstance(x, onlyfans_extras.error_details)]
-    if wrapped and results:
-        results = results[0]
-    return results
 
 
 def chunks(l, n):
@@ -388,7 +379,7 @@ async def scrape_endpoint_links(links, session_manager: session_manager, api_typ
             continue
         print("Scrape Attempt: " + str(attempt + 1) + "/" + str(max_attempts))
         results = await session_manager.async_requests(links)
-        results = await remove_errors(results)
+        results = await onlyfans_extras.remove_errors(results)
         not_faulty = [x for x in results if x]
         faulty = [
             {"key": k, "value": v, "link": links[k]}

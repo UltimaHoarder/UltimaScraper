@@ -30,12 +30,13 @@ def check_profiles():
     file_name = "config.json"
     path = os.path.join('.settings', file_name)
     import helpers.main_helper as main_helper
-    from apis.onlyfans.onlyfans import auth_details
+    from apis.onlyfans.onlyfans import auth_details as onlyfans_auth_details
+    from apis.fansly.fansly import auth_details as fansly_auth_details
     json_config, json_config2 = main_helper.get_config(path)
     json_settings = json_config["settings"]
     profile_directories = json_settings["profile_directories"]
     profile_directory = profile_directories[0]
-    matches = ["OnlyFans"]
+    matches = ["OnlyFans", "Fansly"]
     for match in matches:
         q = os.path.abspath(profile_directory)
         profile_site_directory = os.path.join(q, match)
@@ -52,7 +53,12 @@ def check_profiles():
         auth_filepath = os.path.join(default_profile_directory, "auth.json")
         if not os.path.exists(auth_filepath):
             new_item = {}
-            new_item["auth"] = auth_details().export()
+            if match == "OnlyFans":
+                new_item["auth"] = onlyfans_auth_details().export()
+            elif match == "Fansly":
+                new_item["auth"] = fansly_auth_details().export()
+            else:
+                continue
             main_helper.export_data(new_item, auth_filepath)
             string = f"{auth_filepath} has been created. Fill in the relevant details and then press enter to continue."
             input(string)

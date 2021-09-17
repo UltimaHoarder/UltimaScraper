@@ -4,7 +4,9 @@ from typing import Optional
 
 import helpers.main_helper as main_helper
 import modules.onlyfans as m_onlyfans
+import modules.fansly as m_fansly
 from apis.onlyfans import onlyfans as OnlyFans
+from apis.fansly import fansly as Fansly
 from apis.onlyfans.classes.create_user import create_user
 from apis.onlyfans.classes.extras import error_details
 from helpers.main_helper import choose_option
@@ -44,6 +46,69 @@ async def start_datascraper(
         module = m_onlyfans
         if not api:
             api = OnlyFans.start(max_threads=json_settings["max_threads"])
+            api.settings = json_config
+            api = main_helper.process_profiles(json_settings, proxies, site_name, api)
+            print
+
+        subscription_array = []
+        auth_count = 0
+        jobs = json_site_settings["jobs"]
+        subscription_list = module.format_options(api.auths, "users")
+        if not auto_profile_choice:
+            print("Choose Profile")
+        auths = choose_option(subscription_list, auto_profile_choice, True)
+        api.auths = [x.pop(0) for x in auths]
+        for auth in api.auths:
+            if not auth.auth_details:
+                continue
+            module.assign_vars(
+                auth.auth_details, json_config, json_site_settings, site_name
+            )
+            setup = False
+            setup, subscriptions = await module.account_setup(
+                auth, identifiers, jobs, auth_count
+            )
+            if not setup:
+                if webhooks:
+                    await main_helper.process_webhooks(api, "auth_webhook", "failed")
+                auth_details = {}
+                auth_details["auth"] = auth.auth_details.export()
+                profile_directory = auth.profile_directory
+                if profile_directory:
+                    user_auth_filepath = os.path.join(
+                        auth.profile_directory, "auth.json"
+                    )
+                    main_helper.export_data(auth_details, user_auth_filepath)
+                continue
+            auth_count += 1
+            subscription_array += subscriptions
+            await main_helper.process_webhooks(api, "auth_webhook", "succeeded")
+            # Do stuff with authed user
+        subscription_list = module.format_options(
+            subscription_array, "usernames", api.auths
+        )
+        if jobs["scrape_paid_content"] and api.has_active_auths():
+            print("Scraping Paid Content")
+            await module.paid_content_scraper(api, identifiers)
+        if jobs["scrape_names"] and api.has_active_auths():
+            print("Scraping Subscriptions")
+            await main_helper.process_names(
+                module,
+                subscription_list,
+                auto_model_choice,
+                api,
+                json_config,
+                site_name_lower,
+                site_name,
+            )
+        await main_helper.process_downloads(api, module)
+        if webhooks:
+            await main_helper.process_webhooks(api, "download_webhook", "succeeded")
+    elif site_name_lower == "fansly":
+        site_name = "Fansly"
+        module = m_fansly
+        if not api:
+            api = Fansly.start(max_threads=json_settings["max_threads"])
             api.settings = json_config
             api = main_helper.process_profiles(json_settings, proxies, site_name, api)
             print

@@ -82,7 +82,7 @@ def rename_duplicates(seen, filename):
 
 
 def parse_links(site_name, input_link):
-    if site_name in {"onlyfans", "starsavn"}:
+    if site_name in {"onlyfans", "fansly","starsavn"}:
         username = input_link.rsplit("/", 1)[-1]
         return username
 
@@ -146,9 +146,10 @@ async def async_downloads(
             session_m.proxies[random.randint(0, len(proxies) - 1)] if proxies else ""
         )
         connector = ProxyConnector.from_url(proxy) if proxy else None
+        final_cookies:dict[Any,Any] = session_m.auth.auth_details.cookie.format() if session_m.use_cookies else {}
         async with ClientSession(
             connector=connector,
-            cookies=session_m.auth.auth_details.cookie.format(),
+            cookies=final_cookies,
             read_timeout=None,
         ) as session:
             tasks = []
@@ -1161,8 +1162,8 @@ def module_chooser(domain, json_sites):
     string = "Site: "
     separator = " | "
     site_names = []
-    wl = ["onlyfans"]
-    bl = ["patreon"]
+    wl = ["onlyfans","fansly"]
+    bl = []
     site_count = len(json_sites)
     count = 0
     for x in json_sites:

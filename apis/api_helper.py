@@ -1,3 +1,4 @@
+from apis import fansly
 import asyncio
 import copy
 import hashlib
@@ -12,7 +13,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing.pool import Pool
 from os.path import dirname as up
 from random import randint
-from typing import Any, Optional
+from typing import Any, Optional, Union
 from urllib.parse import urlparse
 
 import python_socks
@@ -29,8 +30,10 @@ from aiohttp.client_reqrep import ClientResponse
 from aiohttp_socks import ProxyConnectionError, ProxyConnector, ProxyError
 from database.databases.user_data.models.media_table import template_media_table
 
-from apis.onlyfans.classes import create_auth, create_user
-from apis.onlyfans.classes.extras import error_details
+import apis.onlyfans.classes as onlyfans_classes
+onlyfans_extras = onlyfans_classes.extras
+import apis.fansly.classes as fansly_classes
+fansly_extras = fansly_classes.extras
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
@@ -85,10 +88,11 @@ def multiprocessing(max_threads: Optional[int] = None):
 class session_manager:
     def __init__(
         self,
-        auth: create_auth,
+        auth: Union[onlyfans_classes.create_auth, fansly_classes.create_auth],
         headers: dict[str, Any] = {},
         proxies: list[str] = [],
         max_threads: int = -1,
+        use_cookies: bool = True,
     ) -> None:
         self.pool: Pool = auth.pool if auth.pool else multiprocessing()
         self.max_threads = max_threads
@@ -99,12 +103,15 @@ class session_manager:
         dynamic_rules = requests.get(dr_link).json()  # type: ignore
         self.dynamic_rules = dynamic_rules
         self.auth = auth
+        self.use_cookies: bool = use_cookies
 
     def create_client_session(self):
         proxy = self.get_proxy()
         connector = ProxyConnector.from_url(proxy) if proxy else None
 
-        final_cookies = self.auth.auth_details.cookie.format()
+        final_cookies = (
+            self.auth.auth_details.cookie.format() if self.use_cookies else {}
+        )
         client_session = ClientSession(
             connector=connector, cookies=final_cookies, read_timeout=None
         )
@@ -183,14 +190,19 @@ class session_manager:
             return None
         while True:
             try:
-                response = await request_method(link, headers=headers, data=temp_payload)
+                response = await request_method(
+                    link, headers=headers, data=temp_payload
+                )
                 if method == "HEAD":
                     result = response
                 else:
                     if json_format and not stream:
                         result = await response.json()
                         if "error" in result:
-                            result = error_details(result)
+                            if isinstance(self.auth, onlyfans_classes.create_auth):
+                                result = onlyfans_extras.error_details(result)
+                            elif isinstance(self.auth, fansly_classes.create_auth):
+                                result = fansly_extras.error_details(result)
                     elif stream and not json_format:
                         result = response
                     else:
@@ -214,13 +226,18 @@ class session_manager:
     async def async_requests(self, items: list[str]) -> list:
         tasks = []
 
-        async def run(links) -> list:
+        async def run(links: list[str]) -> list:
             proxies = self.proxies
             proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
             connector = ProxyConnector.from_url(proxy) if proxy else None
+            temp_cookies: dict[Any, Any] = (
+                self.auth.auth_details.cookie.format()
+                if hasattr(self.auth.auth_details, "cookie")
+                else {}
+            )
             async with ClientSession(
                 connector=connector,
-                cookies=self.auth.auth_details.cookie.format(),
+                cookies=temp_cookies,
                 read_timeout=None,
             ) as session:
                 for link in links:
@@ -237,7 +254,7 @@ class session_manager:
         download_item: template_media_table,
         session: ClientSession,
         progress_bar,
-        subscription: create_user,
+        subscription: onlyfans_classes.create_user,
     ):
         attempt_count = 1
         new_task = {}
@@ -294,6 +311,10 @@ class session_manager:
             a = [link, 0, dynamic_rules]
             headers2 = self.create_signed_headers(*a)
             headers |= headers2
+        elif "https://apiv2.fansly.com" in link and isinstance(
+            self.auth.auth_details, fansly_extras.auth_details
+        ):
+            headers["authorization"] = self.auth.auth_details.authorization
         return headers
 
     def create_signed_headers(self, link: str, auth_id: int, dynamic_rules: dict):

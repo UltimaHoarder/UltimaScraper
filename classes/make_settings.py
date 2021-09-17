@@ -108,11 +108,79 @@ class config(object):
             return new_options
 
         class Supported(object):
-            def __init__(self, onlyfans={}, patreon={}, starsavn={}):
+            def __init__(self, onlyfans={}, fansly={}, patreon={}, starsavn={}):
                 self.onlyfans = self.OnlyFans(onlyfans)
+                self.fansly = self.Fansly(fansly)
                 self.starsavn = self.StarsAvn(starsavn)
 
             class OnlyFans:
+                def __init__(self, module):
+                    self.settings = self.Settings(module.get('settings', {}))
+
+                class Settings():
+                    def __init__(self, option={}):
+                        option = update_site_settings(option)
+
+                        class jobs:
+                            def __init__(self, option={}) -> None:
+                                self.scrape_names = option.get(
+                                    'scrape_names', True)
+                                self.scrape_paid_content = option.get(
+                                    'scrape_paid_content', True)
+
+                        class browser:
+                            def __init__(self, option={}) -> None:
+                                self.auth = option.get(
+                                    'auth', True)
+
+                        class database:
+                            def __init__(self, option={}) -> None:
+                                self.posts = option.get(
+                                    'posts', True)
+                                self.comments = option.get(
+                                    'comments', True)
+                        self.auto_profile_choice: Union[List] = option.get(
+                            'auto_profile_choice', [])
+                        self.auto_model_choice = option.get(
+                            'auto_model_choice', False)
+                        self.auto_media_choice = option.get(
+                            'auto_media_choice', "")
+                        self.auto_api_choice = option.get(
+                            'auto_api_choice', True)
+                        self.browser = browser(option.get(
+                            'browser', {}))
+                        self.jobs = jobs(option.get(
+                            'jobs', {}))
+                        self.download_directories = option.get(
+                            'download_directories', [".sites"])
+                        normpath = os.path.normpath
+                        self.file_directory_format = normpath(option.get(
+                            'file_directory_format', "{site_name}/{model_username}/{api_type}/{value}/{media_type}"))
+                        self.filename_format = normpath(option.get(
+                            'filename_format', "{filename}.{ext}"))
+                        self.metadata_directories = option.get(
+                            'metadata_directories', [".sites"])
+                        self.metadata_directory_format = normpath(option.get(
+                            'metadata_directory_format', "{site_name}/{model_username}/Metadata"))
+                        self.delete_legacy_metadata = option.get(
+                            'delete_legacy_metadata', False)
+                        self.text_length = option.get('text_length', 255)
+                        self.video_quality = option.get(
+                            'video_quality', "source")
+                        self.overwrite_files = option.get(
+                            'overwrite_files', False)
+                        self.date_format = option.get(
+                            'date_format', "%d-%m-%Y")
+                        self.ignored_keywords = option.get(
+                            'ignored_keywords', [])
+                        self.ignore_type = option.get(
+                            'ignore_type', "")
+                        self.blacklists = option.get(
+                            'blacklists', "")
+                        self.webhook = option.get(
+                            'webhook', True)
+
+            class Fansly:
                 def __init__(self, module):
                     self.settings = self.Settings(module.get('settings', {}))
 

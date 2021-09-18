@@ -1319,7 +1319,7 @@ def format_options(
     count = 0
     names = []
     string = ""
-    seperator = " | "
+    separator = " | "
     if name_count > 1:
         if "users" == choice_type:
             for auth in f_list:
@@ -1330,7 +1330,7 @@ def format_options(
                 names.append([auth, name])
                 string += f"{count} = {name}"
                 if count + 1 != name_count:
-                    string += seperator
+                    string += separator
                 count += 1
         if "usernames" == choice_type:
             auth_count = 0
@@ -1343,7 +1343,7 @@ def format_options(
                     auth_count = match_list.index(x.subscriber)
                 names.append([auth_count, name])
                 if count + 1 != name_count:
-                    string += seperator
+                    string += separator
                 count += 1
                 auth_count += 1
         if "apis" == choice_type:
@@ -1357,6 +1357,6 @@ def format_options(
                     name = api.get("api_type")
                 string += f"{count} = {name}"
                 if count + 1 != name_count:
-                    string += seperator
+                    string += separator
                 count += 1
     return [names, string]

@@ -808,7 +808,7 @@ async def prepare_scraper(authed: create_auth, site_name, item):
     unrefined_set = []
     if master_set2:
         print(f"Processing Scraped {api_type}")
-        tasks = pool.starmap(
+        tasks:list[Any] = pool.starmap(
             media_scraper,
             product(
                 master_set2,

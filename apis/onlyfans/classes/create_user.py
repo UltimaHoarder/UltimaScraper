@@ -229,7 +229,7 @@ class create_user:
             status = True
         return status
 
-    async def get_stories(self, refresh=True, limit=100, offset=0) -> list:
+    async def get_stories(self, refresh=True, limit=100, offset=0) -> list[create_story]:
         api_type = "stories"
         if not refresh:
             result = handle_refresh(self, api_type)
@@ -251,7 +251,7 @@ class create_user:
 
     async def get_highlights(
         self, identifier="", refresh=True, limit=100, offset=0, hightlight_id=""
-    ) -> list:
+    ) -> Union[list[create_highlight] , list[create_story]]:
         api_type = "highlights"
         if not refresh:
             result = handle_refresh(self, api_type)
@@ -326,7 +326,7 @@ class create_user:
         offset=0,
         refresh=True,
         inside_loop=False,
-    ) -> list:
+    ) -> Optional[list]:
         api_type = "messages"
         if not self.subscriber or self.is_me():
             return []

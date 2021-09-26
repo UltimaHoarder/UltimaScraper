@@ -3,6 +3,7 @@
 # ![app-token](examples/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 
 # Mandatory Tutorial
+If you're looking to set up Fansly, here [X34's Tutorial](https://forum.sexy-egirls.com/threads/fansly-downloading-a-work-in-progress.132433/)
 
 Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a issue.
 

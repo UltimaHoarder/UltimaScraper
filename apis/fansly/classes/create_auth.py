@@ -189,8 +189,11 @@ class create_auth(create_user):
         link = endpoint_links(identifier).customer
         response = await self.session_manager.json_request(link)
         if not isinstance(response, error_details):
-            response["session_manager"] = self.session_manager
-            response = create_user(response["response"][0], self)
+            if response["response"]:
+                response["session_manager"] = self.session_manager
+                response = create_user(response["response"][0], self)
+            else:
+                response = error_details({"code":69,"message":"User Doesn't Exist"})
         return response
 
     async def get_lists_users(

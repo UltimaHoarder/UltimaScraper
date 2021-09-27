@@ -1159,7 +1159,7 @@ def multiprocessing():
 
 
 def module_chooser(domain, json_sites):
-    string = "Site: "
+    string = "Select Site: "
     separator = " | "
     site_names = []
     wl = ["onlyfans","fansly"]

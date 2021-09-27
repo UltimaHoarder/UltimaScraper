@@ -371,7 +371,7 @@ I'm getting authed into the wrong account
 
 I'm using Linux OS and something isn't working.
 
-> Script was built on Windows 10. If you're using Linux you can still submit an issue and I'll try my best to fix it.
+> Script is being built on a Arch Linux machine. It used to be Windows 10, but I switched my dev enviroment.
 
 Do OnlyFans or OnlyFans models know I'm using this script?
 

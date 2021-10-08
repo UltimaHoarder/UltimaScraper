@@ -1,4 +1,4 @@
-# OnlyFans DataScraper (Python 3.9.X)
+# OnlyFans DataScraper (Python 3.10.X)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/DIGITALCRIMINAL/OnlyFans.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DIGITALCRIMINAL/OnlyFans/context:python)
 # ![app-token](examples/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 
@@ -344,7 +344,7 @@ Types: list|int|str|bool
 
 # FAQ
 
-Before troubleshooting, make sure you're using Python 3.9 and the latest commit of the script.
+Before troubleshooting, make sure you're using Python 3.10 and the latest commit of the script.
 
 Error: Access Denied / Auth Loop
 

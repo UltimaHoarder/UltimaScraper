@@ -56,7 +56,7 @@ try:
                     print("Pausing scraper for " + loop_timeout + " seconds.")
                     time.sleep(int(loop_timeout))
 
-        loop = asyncio.get_event_loop()
+        loop = asyncio.new_event_loop()
         loop.run_until_complete(main())
         loop.close()
 except Exception as e:

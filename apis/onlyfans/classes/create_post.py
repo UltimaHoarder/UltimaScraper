@@ -10,7 +10,7 @@ class create_post:
         self.postedAt: str = option.get("postedAt")
         self.postedAtPrecise: str = option.get("postedAtPrecise")
         self.expiredAt: Any = option.get("expiredAt")
-        self.author = create_user.create_user(option["author"])
+        self.author = create_user.create_user(option.get("author", {}))
         self.text: str = option.get("text")
         self.rawText: str = option.get("rawText")
         self.lockedText: bool = option.get("lockedText")

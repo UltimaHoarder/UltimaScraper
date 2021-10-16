@@ -229,7 +229,9 @@ class create_user:
             status = True
         return status
 
-    async def get_stories(self, refresh=True, limit=100, offset=0) -> list[create_story]:
+    async def get_stories(
+        self, refresh=True, limit=100, offset=0
+    ) -> list[create_story]:
         api_type = "stories"
         if not refresh:
             result = handle_refresh(self, api_type)
@@ -251,7 +253,7 @@ class create_user:
 
     async def get_highlights(
         self, identifier="", refresh=True, limit=100, offset=0, hightlight_id=""
-    ) -> Union[list[create_highlight] , list[create_story]]:
+    ) -> Union[list[create_highlight], list[create_story]]:
         api_type = "highlights"
         if not refresh:
             result = handle_refresh(self, api_type)
@@ -275,7 +277,7 @@ class create_user:
         return results
 
     async def get_posts(
-        self, links: Optional[list] = None, limit=10, offset=0, refresh=True
+        self, links: Optional[list[str]] = None, limit=10, offset=0, refresh=True
     ) -> Optional[list[create_post]]:
         api_type = "posts"
         if not refresh:
@@ -299,9 +301,7 @@ class create_user:
         results = await api_helper.scrape_endpoint_links(
             links, self.session_manager, api_type
         )
-        # Filter out posts that are reported by the user as these will not have content
-        filtered_results = list(filter(lambda opt: not ("isReportedByMe" in opt and opt["isReportedByMe"]), results))
-        final_results = [create_post(x, self) for x in filtered_results]
+        final_results = self.finalize_content_set(results)
         self.temp_scraped.Posts = final_results
         return final_results
 
@@ -427,7 +427,8 @@ class create_user:
         results = await api_helper.scrape_endpoint_links(
             links, self.session_manager, api_type
         )
-        final_results = [create_post(x, self) for x in results if x]
+        final_results = self.finalize_content_set(results)
+
         self.temp_scraped.Archived.Posts = final_results
         return final_results
 
@@ -516,3 +517,14 @@ class create_user:
 
     def set_scraped(self, name, scraped):
         setattr(self.scraped, name, scraped)
+    def finalize_content_set(self,results:list[dict[str,str]]):
+        final_results:list[create_post] = []
+        for result in results:
+            content_type = result["responseType"]
+            match content_type:
+                case "post":
+                    created = create_post(result,self)
+                    final_results.append(created)
+                case _:
+                    print
+        return final_results

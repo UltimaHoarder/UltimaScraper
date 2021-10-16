@@ -370,8 +370,8 @@ def restore_missing_data(master_set2, media_set, split_by):
     return new_set
 
 
-async def scrape_endpoint_links(links, session_manager: session_manager, api_type):
-    media_set = []
+async def scrape_endpoint_links(links:list[str], session_manager: Union[session_manager,None], api_type:str):
+    media_set:list[dict[str,str]] = []
     max_attempts = 100
     api_type = api_type.capitalize()
     for attempt in list(range(max_attempts)):
@@ -404,8 +404,8 @@ async def scrape_endpoint_links(links, session_manager: session_manager, api_typ
         else:
             media_set.extend(not_faulty)
             break
-    media_set = list(chain(*media_set))
-    return media_set
+    final_media_set = list(chain(*media_set))
+    return final_media_set
 
 
 def calculate_the_unpredictable(link, limit, multiplier=1):

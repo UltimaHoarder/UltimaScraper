@@ -48,7 +48,7 @@ try:
                     api.close_pools()
                 if exit_on_completion:
                     print("Now exiting.")
-                    exit(0)
+                    break
                 elif not infinite_loop:
                     print("Input anything to continue")
                     input()

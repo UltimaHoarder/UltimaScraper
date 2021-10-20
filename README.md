@@ -25,7 +25,7 @@ From the project folder open CMD/Terminal and run the command below:
 
 Start:
 
-`python start_ofd.py` | `python3 start_ofd.py` | double click `start_ofd.py`
+`python start_ofd.py` | `python3 start_ofd.py` | `python3.10 start_ofd.py` | double click `start_ofd.py`
 
 ---
 

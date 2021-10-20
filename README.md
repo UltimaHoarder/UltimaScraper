@@ -2,6 +2,10 @@
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/DIGITALCRIMINAL/OnlyFans.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DIGITALCRIMINAL/OnlyFans/context:python)
 # ![app-token](examples/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 
+I don't have access to my main account (DIGITALCRIMINAL) at the moment...
+
+[Proof that I am DIGITALCRIMINAL](https://github.com/DIGITALCRIMINAL/OnlyFans/issues/1596#issuecomment-903489056)
+
 # Mandatory Tutorial
 If you're looking to set up Fansly, here [X34's Tutorial](https://forum.sexy-egirls.com/threads/fansly-downloading-a-work-in-progress.132433/)
 

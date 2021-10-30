@@ -34,6 +34,7 @@ from aiohttp.client_exceptions import (
 )
 from aiohttp.client_reqrep import ClientResponse
 from apis.onlyfans import onlyfans as OnlyFans
+from apis.fansly import fansly as Fansly
 from apis.onlyfans.classes import create_user
 from apis.onlyfans.classes.create_auth import create_auth
 from apis.onlyfans.classes.extras import content_types
@@ -55,7 +56,7 @@ proxies = None
 cert = None
 
 
-def assign_vars(config):
+def assign_vars(config:dict[Any,Any]):
     global json_global_settings, min_drive_space, webhooks, max_threads, proxies, cert
 
     json_config = config
@@ -891,8 +892,8 @@ def choose_option(
     return new_names
 
 
-def process_profiles(json_settings, proxies, site_name, api: Union[OnlyFans.start]):
-    profile_directories = json_settings["profile_directories"]
+def process_profiles(json_settings:dict[str,Any], proxies:list[str], site_name:str, api: Union[OnlyFans.start, Fansly.start]):
+    profile_directories:list[str] = json_settings["profile_directories"]
     for profile_directory in profile_directories:
         x = os.path.join(profile_directory, site_name)
         x = os.path.abspath(x)

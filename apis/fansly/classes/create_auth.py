@@ -41,7 +41,9 @@ class create_auth(create_user):
         self.paid_content = []
         temp_pool = pool if pool else api_helper.multiprocessing()
         self.pool = temp_pool
-        self.session_manager = api_helper.session_manager(self, max_threads=max_threads,use_cookies=False)
+        self.session_manager = api_helper.session_manager(
+            self, max_threads=max_threads, use_cookies=False
+        )
         self.auth_details: auth_details = auth_details()
         self.profile_directory = option.get("profile_directory", "")
         self.guest = False
@@ -134,7 +136,7 @@ class create_auth(create_user):
         if not self.active:
             link = endpoint_links().settings
             response = await self.session_manager.json_request(link)
-            if isinstance(response,dict):
+            if isinstance(response, dict):
                 link = endpoint_links(response["response"]["accountId"]).customer
                 response = await self.session_manager.json_request(link)
                 self.resolve_auth_errors(response)
@@ -193,7 +195,7 @@ class create_auth(create_user):
                 response["session_manager"] = self.session_manager
                 response = create_user(response["response"][0], self)
             else:
-                response = error_details({"code":69,"message":"User Doesn't Exist"})
+                response = error_details({"code": 69, "message": "User Doesn't Exist"})
         return response
 
     async def get_lists_users(
@@ -211,6 +213,25 @@ class create_auth(create_user):
             )
             results.extend(results2)
         return results
+
+    async def get_followings(self, identifiers: list[str]) -> list[create_user]:
+        followings_link = endpoint_links(self.id).followings
+        temp_followings: dict[str, Any] = await self.session_manager.json_request(
+            followings_link
+        )
+        followings = temp_followings["response"]
+        if followings:
+            followings_id: str = ",".join([x["accountId"] for x in followings])
+            customer_link = endpoint_links(followings_id).customer
+            followings = await self.session_manager.json_request(customer_link)
+            followings = [create_user(x, self) for x in followings["response"]]
+            for following in followings:
+                if not following.subscribedByData:
+                    new_date = datetime.now() + relativedelta(years=1)
+                    following.subscribedByData = {}
+                    following.subscribedByData["endsAt"] = new_date
+                    print
+        return followings
 
     async def get_subscription(
         self, check: bool = False, identifier="", limit=100, offset=0
@@ -270,6 +291,14 @@ class create_auth(create_user):
 
             async def multi(item):
                 valid_subscriptions = await self.get_user(item["accountId"])
+
+                if (
+                    valid_subscriptions.following
+                    and not valid_subscriptions.subscribedByData
+                ):
+                    new_date = datetime.now() + relativedelta(years=1)
+                    valid_subscriptions.subscribedByData = {}
+                    valid_subscriptions.subscribedByData["endsAt"] = new_date
                 return [valid_subscriptions]
 
             pool = self.pool
@@ -408,7 +437,7 @@ class create_auth(create_user):
                 return result
         link = endpoint_links(global_limit=limit, global_offset=offset).paid_api
         final_results = await self.session_manager.json_request(link)
-        if not isinstance(final_results,error_details):
+        if not isinstance(final_results, error_details):
             if len(final_results) >= limit and not check:
                 results2 = self.get_paid_content(
                     limit=limit, offset=limit + offset, inside_loop=True

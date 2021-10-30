@@ -1,6 +1,6 @@
 import os
 import timeit
-from typing import Optional
+from typing import Any, Optional
 
 import helpers.main_helper as main_helper
 import modules.onlyfans as m_onlyfans
@@ -15,10 +15,10 @@ api_helper = OnlyFans.api_helper
 
 
 async def start_datascraper(
-    json_config: dict,
+    json_config: dict[Any,Any],
     site_name_lower: str,
-    api: Optional[OnlyFans.start] = None,
-    webhooks=True,
+    api: Optional[OnlyFans.start| Fansly.start] = None,
+    webhooks:bool=True,
 ) -> Optional[OnlyFans.start]:
     json_settings = json_config["settings"]
     json_webhooks = json_settings["webhooks"]
@@ -36,7 +36,7 @@ async def start_datascraper(
         identifiers = []
     auto_profile_choice = json_site_settings["auto_profile_choice"]
     subscription_array = []
-    proxies = await api_helper.test_proxies(json_settings["proxies"])
+    proxies:list[str] = await api_helper.test_proxies(json_settings["proxies"])
     if json_settings["proxies"] and not proxies:
         print("Unable to create session")
         return None
@@ -112,7 +112,6 @@ async def start_datascraper(
                 api = Fansly.start(max_threads=json_settings["max_threads"])
                 api.settings = json_config
                 api = main_helper.process_profiles(json_settings, proxies, site_name, api)
-                print
 
             subscription_array = []
             auth_count = 0

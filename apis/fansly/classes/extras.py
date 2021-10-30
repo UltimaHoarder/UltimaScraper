@@ -1,6 +1,6 @@
 import copy
 from itertools import chain
-from typing import Any, Union
+from typing import Any, Optional, Union
 
 
 class auth_details:
@@ -100,19 +100,20 @@ class content_types:
 class endpoint_links(object):
     def __init__(
         self,
-        identifier=None,
-        identifier2=None,
-        identifier3=None,
-        text="",
-        only_links=True,
-        global_limit=10,
-        global_offset=0,
+        identifier: Optional[str | int] = None,
+        identifier2: Optional[str | int] = None,
+        identifier3: Optional[str | int] = None,
+        text: str = "",
+        only_links: bool = True,
+        global_limit: int = 10,
+        global_offset: int = 0,
     ):
         self.customer = f"https://apiv2.fansly.com/api/v1/account?ids={identifier}"
         self.settings = f"https://apiv2.fansly.com/api/v1/account/settings"
         self.users = f"https://onlyfans.com/api2/v2/users/{identifier}"
+        self.followings = f"https://apiv2.fansly.com/api/v1/account/{identifier}/following?before={global_offset}&after=0&limit=100&offset=0"
         self.subscriptions = f"https://apiv2.fansly.com/api/v1/subscriptions"
-        self.lists = f"https://onlyfans.com/api2/v2/lists?limit=100&offset=0"
+        self.lists = f"https://onlyfans.com/api2/v2/lists?limit={global_limit}&offset={global_offset}"
         self.lists_users = f"https://onlyfans.com/api2/v2/lists/{identifier}/users?limit={global_limit}&offset={global_offset}&query="
         self.list_chats = f"https://onlyfans.com/api2/v2/chats?limit={global_limit}&offset={global_offset}&order=desc"
         self.post_by_id = f"https://onlyfans.com/api2/v2/posts/{identifier}"
@@ -140,12 +141,12 @@ class endpoint_links(object):
 
 # Lol?
 class error_details:
-    def __init__(self, result:dict[Any,Any]) -> None:
-        error:dict[Any,Any] = result["error"] if "error" in result else result
+    def __init__(self, result: dict[Any, Any]) -> None:
+        error: dict[Any, Any] = result["error"] if "error" in result else result
         self.code = error["code"]
-        self.message = error.get("details","")
+        self.message = error.get("details", "")
         if not self.message:
-            self.message = error.get("message","")
+            self.message = error.get("message", "")
 
 
 def create_headers(
@@ -204,6 +205,7 @@ class media_types:
     def __iter__(self):
         for attr, value in self.__dict__.items():
             yield attr, value
+
 
 async def remove_errors(results: list):
     wrapped = False

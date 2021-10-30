@@ -21,7 +21,7 @@ from apis.fansly.classes.extras import (
 
 
 class create_user:
-    def __init__(self, option={}, subscriber: create_auth = None) -> None:
+    def __init__(self, option:dict[str,Any]={}, subscriber: create_auth = None) -> None:
         self.view: str = option.get("view")
         self.avatar: Any = option.get("avatar")
         self.avatarThumbs: Any = option.get("avatarThumbs")
@@ -85,6 +85,7 @@ class create_user:
         self.canChat: bool = option.get("canChat")
         self.callPrice: int = option.get("callPrice")
         self.isPrivateRestriction: bool = option.get("isPrivateRestriction")
+        self.following:bool = option.get("following")
         self.showSubscribersCount: bool = option.get("showSubscribersCount")
         self.showMediaCount: bool = option.get("showMediaCount")
         self.subscribedByData: Any = option.get("subscription")

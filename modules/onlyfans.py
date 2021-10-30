@@ -9,6 +9,7 @@ from itertools import product
 from types import SimpleNamespace
 from typing import Any, Optional, Union
 from urllib.parse import urlparse
+from apis import api_helper
 
 import extras.OFLogin.start_ofl as oflogin
 import extras.OFRenamer.start_ofr as ofrenamer
@@ -74,7 +75,7 @@ def assign_vars(json_auth: auth_details, config, site_settings, site_name):
     date_format = json_settings["date_format"]
     ignored_keywords = json_settings["ignored_keywords"]
     ignore_type = json_settings["ignore_type"]
-    blacklists = json_settings["blacklists"]
+    blacklists = api_helper.parse_config_inputs(json_settings["blacklists"])
     webhook = json_settings["webhook"]
     text_length = json_settings["text_length"]
 
@@ -1306,9 +1307,9 @@ async def manage_subscriptions(
 
 
 def format_options(
-    f_list: Union[list[create_auth], list[create_user], list[dict], list[str]],
+    f_list: list[create_auth | create_user | SimpleNamespace | dict[str, Any] | str],
     choice_type: str,
-    match_list: list = [],
+    match_list: list[str] = [],
 ) -> list:
     new_item = {}
     new_item["auth_count"] = -1
@@ -1320,46 +1321,49 @@ def format_options(
     name_count = len(f_list)
 
     count = 0
-    names = []
+    names: list[
+        list[create_auth | create_user | SimpleNamespace | dict[str, Any] | str]
+    ] = []
     string = ""
     separator = " | "
     if name_count > 1:
-        if "users" == choice_type:
-            for auth in f_list:
-                if not isinstance(auth, create_auth):
-                    name = getattr(auth, "username", "")
-                else:
-                    name = auth.auth_details.username
-                names.append([auth, name])
-                string += f"{count} = {name}"
-                if count + 1 != name_count:
-                    string += separator
-                count += 1
-        if "usernames" == choice_type:
-            auth_count = 0
-            for x in f_list:
-                if isinstance(x, create_auth) or isinstance(x, dict):
-                    continue
-                name = x.username
-                string += f"{count} = {name}"
-                if isinstance(x, create_user):
-                    auth_count = match_list.index(x.subscriber)
-                names.append([auth_count, name])
-                if count + 1 != name_count:
-                    string += separator
-                count += 1
-                auth_count += 1
-        if "apis" == choice_type:
-            names = f_list
-            for api in f_list:
-                if isinstance(api, SimpleNamespace):
-                    name = getattr(api, "username", None)
-                else:
-                    if isinstance(api, create_auth) or isinstance(api, create_user):
+        match choice_type:
+            case "users":
+                for auth in f_list:
+                    if not isinstance(auth, create_auth):
+                        name = getattr(auth, "username", "")
+                    else:
+                        name = auth.auth_details.username
+                    names.append([auth, name])
+                    string += f"{count} = {name}"
+                    if count + 1 != name_count:
+                        string += separator
+                    count += 1
+            case "usernames":
+                auth_count = 0
+                for x in f_list:
+                    if isinstance(x, create_auth) or isinstance(x, dict):
                         continue
-                    name = api.get("api_type")
-                string += f"{count} = {name}"
-                if count + 1 != name_count:
-                    string += separator
-                count += 1
+                    name = x.username
+                    string += f"{count} = {name}"
+                    if isinstance(x, create_user):
+                        auth_count = match_list.index(x.subscriber)
+                    names.append([auth_count, name])
+                    if count + 1 != name_count:
+                        string += separator
+                    count += 1
+                    auth_count += 1
+            case "apis":
+                names = f_list
+                for api in f_list:
+                    if isinstance(api, SimpleNamespace):
+                        name = getattr(api, "username", None)
+                    else:
+                        if isinstance(api, create_auth) or isinstance(api, create_user):
+                            continue
+                        name = api.get("api_type")
+                    string += f"{count} = {name}"
+                    if count + 1 != name_count:
+                        string += separator
+                    count += 1
     return [names, string]

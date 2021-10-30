@@ -243,7 +243,7 @@ class config(object):
                         self.ignore_type = option.get(
                             'ignore_type', "")
                         self.blacklists = option.get(
-                            'blacklists', "")
+                            'blacklists', [])
                         self.webhook = option.get(
                             'webhook', True)
 

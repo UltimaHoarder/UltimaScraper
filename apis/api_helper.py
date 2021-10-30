@@ -420,3 +420,8 @@ def calculate_the_unpredictable(link, limit, multiplier=1):
         new_link = link.replace(offset, f"offset={new_offset_num}")
         final_links.append(new_link)
     return final_links
+
+def parse_config_inputs(custom_input:Any) -> list[str]:
+    if isinstance(custom_input,str):
+        custom_input = custom_input.split(",")
+    return custom_input

@@ -228,6 +228,7 @@ class create_auth(create_user):
             for following in followings:
                 if not following.subscribedByData:
                     new_date = datetime.now() + relativedelta(years=1)
+                    new_date = new_date.timestamp()
                     following.subscribedByData = {}
                     following.subscribedByData["endsAt"] = new_date
                     print

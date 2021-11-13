@@ -4,6 +4,14 @@ import os
 import time
 import traceback
 
+from rich import panel
+from rich.layout import Layout
+from rich.live import Live
+from rich.panel import Panel
+from rich.prompt import Prompt
+from rich.table import Table
+from rich.text import Text
+
 import tests.main_test as main_test
 
 try:
@@ -29,6 +37,36 @@ try:
         # logging.basicConfig(level=logging.DEBUG, format="%(message)s")
         async def main():
             while True:
+
+                class live_display:
+                    def __init__(self) -> None:
+                        self.layout = Layout()
+                        self.layout.split_column(
+                            Layout(Text(" "), name="blank", size=1),
+                            Layout(
+                                Panel("", padding=1, title="N/A"), name="header", size=3
+                            ),
+                            Layout(name="upper"),
+                            Layout(Panel(Text(), title="TEXT"), name="lower", size=3),
+                        )
+                        self.layout["upper"].split_row(
+                            Layout(Panel("", title="N/A"), name="left"),
+                            Layout(Panel("", title="N/A"), name="right", ratio=2),
+                        )
+                        self.live = Live(self.layout, refresh_per_second=4)
+                        self.panels = self._panels(self.layout)
+
+                    class _panels:
+                        def __init__(self, layout: Layout) -> None:
+                            self.header = layout["header"]
+                            self.options = layout["upper"]["left"].renderable
+                            self.body = True
+                            self.text = True
+
+                        def update_option_text(self, text: str):
+                            self.options.renderable = text
+
+                # l_d = live_display()
                 if domain:
                     if site_names:
                         site_name = domain
@@ -36,6 +74,7 @@ try:
                         print(string)
                         continue
                 else:
+                    # l_d.panels.update_option_text(string)
                     print(string)
                     site_choice = str(input())
                     site_choice = int(site_choice)

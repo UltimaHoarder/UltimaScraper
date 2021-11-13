@@ -11,7 +11,7 @@ class create_post:
         self.postedAtPrecise: str = option.get("postedAtPrecise")
         self.expiredAt: Any = option.get("expiredAt")
         self.author = create_user.create_user(extra["accounts"][0])
-        self.text: str = option.get("text")
+        self.text: str = option.get("content")
         self.rawText: str = option.get("rawText")
         self.lockedText: bool = option.get("lockedText")
         self.isFavorite: bool = option.get("isFavorite")

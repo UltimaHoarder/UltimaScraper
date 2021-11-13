@@ -21,7 +21,9 @@ from apis.fansly.classes.extras import (
 
 
 class create_user:
-    def __init__(self, option:dict[str,Any]={}, subscriber: create_auth = None) -> None:
+    def __init__(
+        self, option: dict[str, Any] = {}, subscriber: create_auth = None
+    ) -> None:
         self.view: str = option.get("view")
         self.avatar: Any = option.get("avatar")
         self.avatarThumbs: Any = option.get("avatarThumbs")
@@ -48,7 +50,9 @@ class create_user:
         self.subscribePrice: int = option.get("subscribePrice")
         self.hasStripe: bool = option.get("hasStripe")
         self.isStripeExist: bool = option.get("isStripeExist")
-        self.subscriptionBundles: list = option.get("subscriptionBundles")
+        self.subscriptionBundles: list[dict[Any, Any]] = option.get(
+            "subscriptionTiers", []
+        )
         self.canSendChatToAll: bool = option.get("canSendChatToAll")
         self.creditsMin: int = option.get("creditsMin")
         self.creditsMax: int = option.get("creditsMax")
@@ -64,7 +68,7 @@ class create_user:
         self.website: str = option.get("website")
         self.wishlist: str = option.get("wishlist")
         self.location: str = option.get("location")
-        timeline_status = option.get("timelineStats",{})
+        timeline_status = option.get("timelineStats", {})
         self.postsCount: int = option.get("postsCount")
         self.archivedPostsCount: int = option.get("archivedPostsCount")
         self.photosCount: int = timeline_status.get("imageCount")
@@ -85,7 +89,7 @@ class create_user:
         self.canChat: bool = option.get("canChat")
         self.callPrice: int = option.get("callPrice")
         self.isPrivateRestriction: bool = option.get("isPrivateRestriction")
-        self.following:bool = option.get("following")
+        self.following: bool = option.get("following")
         self.showSubscribersCount: bool = option.get("showSubscribersCount")
         self.showMediaCount: bool = option.get("showMediaCount")
         self.subscribedByData: Any = option.get("subscription")
@@ -222,6 +226,10 @@ class create_user:
             self.session_manager = subscriber.session_manager
         self.download_info = {}
         self.__raw__ = option
+        if self.subscriptionBundles:
+            self.subscribePrice = self.subscriptionBundles[0]["plans"][0]["price"]
+        else:
+            print
 
     def get_link(self):
         link = f"https://onlyfans.com/{self.username}"
@@ -279,7 +287,11 @@ class create_user:
         return results
 
     async def get_posts(
-        self, links: Optional[list] = None, limit:int=10, offset:int=0, refresh=True
+        self,
+        links: Optional[list] = None,
+        limit: int = 10,
+        offset: int = 0,
+        refresh=True,
     ) -> Optional[list[create_post]]:
         api_type = "posts"
         if not refresh:
@@ -288,11 +300,9 @@ class create_user:
                 return result
         if links is None:
             links = []
-        temp_results:list[Any] = []
+        temp_results: list[Any] = []
         while True:
-            link = endpoint_links(
-                identifier=self.id, global_offset=offset
-            ).post_api
+            link = endpoint_links(identifier=self.id, global_offset=offset).post_api
             response = await self.session_manager.json_request(link)
             data = response["response"]
             temp_posts = data["posts"]
@@ -300,8 +310,8 @@ class create_user:
                 break
             offset = temp_posts[-1]["id"]
             temp_results.append(data)
-        results:dict[Any,Any] = merge({}, *temp_results, strategy=Strategy.ADDITIVE)
-        final_results = [create_post(x, self,results) for x in results["posts"]]
+        results: dict[Any, Any] = merge({}, *temp_results, strategy=Strategy.ADDITIVE)
+        final_results = [create_post(x, self, results) for x in results["posts"]]
         self.temp_scraped.Posts = final_results
         return final_results
 

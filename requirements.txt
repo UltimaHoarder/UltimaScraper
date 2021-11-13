@@ -17,3 +17,4 @@ selenium-wire==2.1.2
 user_agent
 aiohttp 
 aiohttp_socks
+rich

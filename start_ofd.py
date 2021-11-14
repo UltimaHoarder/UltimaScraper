@@ -76,9 +76,12 @@ try:
                 else:
                     # l_d.panels.update_option_text(string)
                     print(string)
-                    site_choice = str(input())
-                    site_choice = int(site_choice)
-                    site_name = site_names[site_choice]
+                    try:
+                        site_choice = str(input())
+                        site_choice = int(site_choice)
+                        site_name = site_names[site_choice]
+                    except (ValueError, IndexError):
+                        continue
                 site_name_lower = site_name.lower()
                 api = await main_datascraper.start_datascraper(
                     json_config, site_name_lower

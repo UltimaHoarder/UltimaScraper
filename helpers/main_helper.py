@@ -11,6 +11,7 @@ import math
 import os
 import platform
 import random
+import subprocess
 import re
 import secrets
 import shutil
@@ -802,6 +803,15 @@ class download_session(tqdm):
         self.update(b)
 
 
+def prompt_modified(message, path):
+    editor = shutil.which(os.environ.get("EDITOR", "notepad" if os_name == "Windows" else "nano"))
+    if editor:
+        print(message)
+        subprocess.run([editor, path], check=True)
+    else:
+        input(message)
+
+
 def get_config(config_path):
     if os.path.exists(config_path):
         json_config = ujson.load(open(config_path))
@@ -819,9 +829,9 @@ def get_config(config_path):
         filepath = os.path.join(".settings", "config.json")
         export_data(json_config, filepath)
     if not json_config:
-        input(
-            f"The .settings\\{file_name} file has been created. Fill in whatever you need to fill in and then press enter when done.\n"
-        )
+        prompt_modified(
+            f"The .settings\\{file_name} file has been created. Fill in whatever you need to fill in and then press enter when done.\n",
+            config_path)
         json_config = ujson.load(open(config_path))
     return json_config, updated
 

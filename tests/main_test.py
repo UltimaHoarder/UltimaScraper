@@ -21,8 +21,9 @@ def check_config():
     import helpers.main_helper as main_helper
     json_config, updated = main_helper.get_config(path)
     if updated:
-        input(
-            f"The .settings\\{file_name} file has been updated. Fill in whatever you need to fill in and then press enter when done.\n")
+        main_helper.prompt_modified(
+            f"The .settings\\{file_name} file has been updated. Fill in whatever you need to fill in and then press enter when done.\n",
+            path)
     return json_config
 
 
@@ -66,7 +67,8 @@ def check_profiles():
                 case _:
                     continue
             main_helper.export_data(new_item, auth_filepath)
-            string = f"{auth_filepath} has been created. Fill in the relevant details and then press enter to continue."
-            input(string)
+            main_helper.prompt_modified(
+                f"{auth_filepath} has been created. Fill in the relevant details and then press enter to continue.",
+                auth_filepath)
         print
     print

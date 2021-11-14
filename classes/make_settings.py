@@ -251,12 +251,6 @@ class config(object):
                 def __init__(self, module):
                     self.settings = self.Settings(module.get('settings', {}))
 
-                class Auth:
-                    def __init__(self, option={}):
-                        self.username = option.get('username', "")
-                        self.sess = option.get('sess', "")
-                        self.user_agent = option.get('user_agent', "")
-
                 class Settings():
                     def __init__(self, option={}):
                         option = update_site_settings(option)
@@ -272,8 +266,15 @@ class config(object):
                             def __init__(self, option={}) -> None:
                                 self.auth = option.get(
                                     'auth', True)
-                        self.auto_profile_choice = option.get(
-                            'auto_profile_choice', "")
+
+                        class database:
+                            def __init__(self, option={}) -> None:
+                                self.posts = option.get(
+                                    'posts', True)
+                                self.comments = option.get(
+                                    'comments', True)
+                        self.auto_profile_choice: Union[List] = option.get(
+                            'auto_profile_choice', [])
                         self.auto_model_choice = option.get(
                             'auto_model_choice', False)
                         self.auto_media_choice = option.get(
@@ -308,8 +309,8 @@ class config(object):
                             'ignored_keywords', [])
                         self.ignore_type = option.get(
                             'ignore_type', "")
-                        self.blacklist_name = option.get(
-                            'blacklist_name', "")
+                        self.blacklists = option.get(
+                            'blacklists', [])
                         self.webhook = option.get(
                             'webhook', True)
         self.info = Info()

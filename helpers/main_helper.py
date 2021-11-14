@@ -12,6 +12,7 @@ import os
 import platform
 import random
 import re
+import secrets
 import shutil
 import string
 import traceback
@@ -19,7 +20,7 @@ from datetime import datetime
 from itertools import zip_longest
 from multiprocessing.dummy import Pool as ThreadPool
 from types import SimpleNamespace
-from typing import Any, Optional, Tuple, Union
+from typing import Any, Optional, Tuple, Union, BinaryIO
 
 import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
@@ -760,19 +761,18 @@ def find_model_directory(username, directories) -> Tuple[str, bool]:
 
 
 def are_long_paths_enabled():
-    if os_name == "Windows":
-        from ctypes import WinDLL, c_ubyte
+    if os_name != "Windows":
+        return True
 
-        ntdll = WinDLL("ntdll")
+    from ctypes import WinDLL, c_ubyte
+    ntdll = WinDLL("ntdll")
 
-        if hasattr(ntdll, "RtlAreLongPathsEnabled"):
+    if not hasattr(ntdll, "RtlAreLongPathsEnabled"):
+        return False
 
-            ntdll.RtlAreLongPathsEnabled.restype = c_ubyte
-            ntdll.RtlAreLongPathsEnabled.argtypes = ()
-            return bool(ntdll.RtlAreLongPathsEnabled())
-
-        else:
-            return False
+    ntdll.RtlAreLongPathsEnabled.restype = c_ubyte
+    ntdll.RtlAreLongPathsEnabled.argtypes = ()
+    return bool(ntdll.RtlAreLongPathsEnabled())
 
 
 def check_for_dupe_file(download_path, content_length):
@@ -991,26 +991,46 @@ def is_me(user_api):
     else:
         return False
 
+def open_partial(path: str) -> BinaryIO:
+    prefix, extension = os.path.splitext(path)
+    while True:
+        partial_path = '{}-{}{}.part'.format(prefix, secrets.token_hex(6), extension)
+        try:
+            return open(partial_path, 'xb')
+        except FileExistsError:
+            pass
 
 async def write_data(response: ClientResponse, download_path: str, progress_bar):
     status_code = 0
     if response.status == 200:
         total_length = 0
         os.makedirs(os.path.dirname(download_path), exist_ok=True)
-        with open(download_path, "wb") as f:
-            try:
-                async for data in response.content.iter_chunked(4096):
-                    length = len(data)
-                    total_length += length
-                    progress_bar.update(length)
-                    f.write(data)
-            except (
-                ClientPayloadError,
-                ContentTypeError,
-                ClientOSError,
-                ServerDisconnectedError,
-            ) as e:
-                status_code = 1
+        partial_path: Optional[str] = None
+        try:
+            with open_partial(download_path) as f:
+                partial_path = f.name
+                try:
+                    async for data in response.content.iter_chunked(4096):
+                        length = len(data)
+                        total_length += length
+                        progress_bar.update(length)
+                        f.write(data)
+                except (
+                    ClientPayloadError,
+                    ContentTypeError,
+                    ClientOSError,
+                    ServerDisconnectedError,
+                ) as e:
+                    status_code = 1
+        except Exception:
+            if partial_path:
+                os.unlink(partial_path)
+            raise
+        else:
+            if status_code:
+                os.unlink(partial_path)
+            else:
+                os.replace(partial_path, download_path)
     else:
         if response.content_length:
             progress_bar.update_total_size(-response.content_length)

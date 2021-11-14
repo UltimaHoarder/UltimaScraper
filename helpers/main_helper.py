@@ -35,6 +35,7 @@ from aiohttp.client_exceptions import (
 from aiohttp.client_reqrep import ClientResponse
 from apis.onlyfans import onlyfans as OnlyFans
 from apis.fansly import fansly as Fansly
+from apis.starsavn import starsavn as StarsAVN
 from apis.onlyfans.classes import create_user
 from apis.onlyfans.classes.create_auth import create_auth
 from apis.onlyfans.classes.extras import content_types
@@ -56,7 +57,7 @@ proxies = None
 cert = None
 
 
-def assign_vars(config:dict[Any,Any]):
+def assign_vars(config: dict[Any, Any]):
     global json_global_settings, min_drive_space, webhooks, max_threads, proxies, cert
 
     json_config = config
@@ -83,7 +84,7 @@ def rename_duplicates(seen, filename):
 
 
 def parse_links(site_name, input_link):
-    if site_name in {"onlyfans", "fansly","starsavn"}:
+    if site_name in {"onlyfans", "fansly", "starsavn"}:
         username = input_link.rsplit("/", 1)[-1]
         return username
 
@@ -147,7 +148,9 @@ async def async_downloads(
             session_m.proxies[random.randint(0, len(proxies) - 1)] if proxies else ""
         )
         connector = ProxyConnector.from_url(proxy) if proxy else None
-        final_cookies:dict[Any,Any] = session_m.auth.auth_details.cookie.format() if session_m.use_cookies else {}
+        final_cookies: dict[Any, Any] = (
+            session_m.auth.auth_details.cookie.format() if session_m.use_cookies else {}
+        )
         async with ClientSession(
             connector=connector,
             cookies=final_cookies,
@@ -892,8 +895,13 @@ def choose_option(
     return new_names
 
 
-def process_profiles(json_settings:dict[str,Any], proxies:list[str], site_name:str, api: Union[OnlyFans.start, Fansly.start]):
-    profile_directories:list[str] = json_settings["profile_directories"]
+def process_profiles(
+    json_settings: dict[str, Any],
+    proxies: list[str],
+    site_name: str,
+    api: OnlyFans.start | Fansly.start | StarsAVN.start,
+):
+    profile_directories: list[str] = json_settings["profile_directories"]
     for profile_directory in profile_directories:
         x = os.path.join(profile_directory, site_name)
         x = os.path.abspath(x)
@@ -1163,7 +1171,7 @@ def module_chooser(domain, json_sites):
     string = "Select Site: "
     separator = " | "
     site_names = []
-    wl = ["onlyfans","fansly"]
+    wl = ["onlyfans", "fansly"]
     bl = []
     site_count = len(json_sites)
     count = 0

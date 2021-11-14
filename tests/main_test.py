@@ -32,14 +32,15 @@ def check_profiles():
     import helpers.main_helper as main_helper
     from apis.onlyfans.onlyfans import auth_details as onlyfans_auth_details
     from apis.fansly.fansly import auth_details as fansly_auth_details
+    from apis.starsavn.starsavn import auth_details as starsavn_auth_details
     json_config, json_config2 = main_helper.get_config(path)
     json_settings = json_config["settings"]
     profile_directories = json_settings["profile_directories"]
     profile_directory = profile_directories[0]
-    matches = ["OnlyFans", "Fansly"]
-    for match in matches:
+    matches = ["OnlyFans", "Fansly", "StarsAVN"]
+    for string_match in matches:
         q = os.path.abspath(profile_directory)
-        profile_site_directory = os.path.join(q, match)
+        profile_site_directory = os.path.join(q, string_match)
         if os.path.exists(profile_site_directory):
             e = os.listdir(profile_site_directory)
             e = [os.path.join(profile_site_directory, x, "auth.json")
@@ -53,12 +54,17 @@ def check_profiles():
         auth_filepath = os.path.join(default_profile_directory, "auth.json")
         if not os.path.exists(auth_filepath):
             new_item = {}
-            if match == "OnlyFans":
-                new_item["auth"] = onlyfans_auth_details().export()
-            elif match == "Fansly":
-                new_item["auth"] = fansly_auth_details().export()
-            else:
-                continue
+            match string_match:
+                case "OnlyFans":
+                    new_item["auth"] = onlyfans_auth_details().export()
+                
+                case "Fansly":
+                    new_item["auth"] = fansly_auth_details().export()
+
+                case "StarsAVN":
+                    new_item["auth"] = starsavn_auth_details().export()
+                case _:
+                    continue
             main_helper.export_data(new_item, auth_filepath)
             string = f"{auth_filepath} has been created. Fill in the relevant details and then press enter to continue."
             input(string)

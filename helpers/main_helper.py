@@ -766,6 +766,7 @@ def are_long_paths_enabled():
         return True
 
     from ctypes import WinDLL, c_ubyte
+
     ntdll = WinDLL("ntdll")
 
     if not hasattr(ntdll, "RtlAreLongPathsEnabled"):
@@ -807,7 +808,9 @@ class download_session(tqdm):
 
 
 def prompt_modified(message, path):
-    editor = shutil.which(os.environ.get("EDITOR", "notepad" if os_name == "Windows" else "nano"))
+    editor = shutil.which(
+        os.environ.get("EDITOR", "notepad" if os_name == "Windows" else "nano")
+    )
     if editor:
         print(message)
         subprocess.run([editor, path], check=True)
@@ -834,7 +837,8 @@ def get_config(config_path):
     if not json_config:
         prompt_modified(
             f"The .settings\\{file_name} file has been created. Fill in whatever you need to fill in and then press enter when done.\n",
-            config_path)
+            config_path,
+        )
         json_config = ujson.load(open(config_path))
     return json_config, updated
 
@@ -1001,14 +1005,16 @@ def is_me(user_api):
     else:
         return False
 
+
 def open_partial(path: str) -> BinaryIO:
     prefix, extension = os.path.splitext(path)
     while True:
-        partial_path = '{}-{}{}.part'.format(prefix, secrets.token_hex(6), extension)
+        partial_path = "{}-{}{}.part".format(prefix, secrets.token_hex(6), extension)
         try:
-            return open(partial_path, 'xb')
+            return open(partial_path, "xb")
         except FileExistsError:
             pass
+
 
 async def write_data(response: ClientResponse, download_path: str, progress_bar):
     status_code = 0
@@ -1201,7 +1207,7 @@ def module_chooser(domain, json_sites):
     string = "Select Site: "
     separator = " | "
     site_names = []
-    wl = ["onlyfans", "fansly"]
+    wl = ["onlyfans", "fansly", "starsavn"]
     bl = []
     site_count = len(json_sites)
     count = 0

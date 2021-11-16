@@ -1310,7 +1310,7 @@ def format_options(
     f_list: list[create_auth | create_user | SimpleNamespace | dict[str, Any] | str],
     choice_type: str,
     match_list: list[str] = [],
-) -> list:
+) -> list[list[Any]|str]:
     new_item = {}
     new_item["auth_count"] = -1
     new_item["username"] = "All"
@@ -1342,7 +1342,7 @@ def format_options(
             case "usernames":
                 auth_count = 0
                 for x in f_list:
-                    if isinstance(x, create_auth) or isinstance(x, dict):
+                    if isinstance(x, create_auth) or isinstance(x, dict) or isinstance(x, str):
                         continue
                     name = x.username
                     string += f"{count} = {name}"

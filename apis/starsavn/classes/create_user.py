@@ -1,15 +1,19 @@
+from datetime import datetime
 import math
 from itertools import chain
 from typing import Any, Optional, Union
 from urllib import parse
 
-import apis.onlyfans.classes.create_message as create_message
+from dateutil.relativedelta import relativedelta
+
+import apis.starsavn.classes.create_message as create_message
 from apis import api_helper
-from apis.onlyfans.classes import create_auth
-from apis.onlyfans.classes.create_highlight import create_highlight
-from apis.onlyfans.classes.create_post import create_post
-from apis.onlyfans.classes.create_story import create_story
-from apis.onlyfans.classes.extras import (
+from apis.starsavn.classes import create_auth
+from apis.starsavn.classes.create_highlight import create_highlight
+from apis.starsavn.classes.create_post import create_post
+from apis.starsavn.classes.create_product import create_product
+from apis.starsavn.classes.create_story import create_story
+from apis.starsavn.classes.extras import (
     content_types,
     endpoint_links,
     error_details,
@@ -67,7 +71,7 @@ class create_user:
         self.photosCount: int = option.get("photosCount")
         self.videosCount: int = option.get("videosCount")
         self.audiosCount: int = option.get("audiosCount")
-        self.mediasCount: int = option.get("mediasCount")
+        self.mediasCount: dict[str,int] = option.get("mediaCount",{})
         self.promotions: list = option.get("promotions")
         self.lastSeen: Any = option.get("lastSeen")
         self.favoritesCount: int = option.get("favoritesCount")
@@ -319,6 +323,34 @@ class create_user:
             return final_result
         return response
 
+    async def get_medias(
+        self, links: Optional[list[str]] = None, limit:int=10, offset:int=0, refresh:bool=True
+    ) -> Optional[list[create_post]]:
+        api_type = "medias"
+        if not refresh:
+            result = handle_refresh(self, api_type)
+            if result:
+                return result
+        if links is None:
+            links = []
+        api_count = self.mediasCount["total"]
+        if api_count and not links:
+            link = endpoint_links(
+                identifier=self.id, global_limit=limit, global_offset=offset
+            ).media_api
+            ceil = math.ceil(api_count / limit)
+            numbers = list(range(ceil))
+            for num in numbers:
+                num = num * limit
+                link = link.replace(f"limit={limit}", f"limit={limit}")
+                new_link = link.replace("offset=0", f"offset={num}")
+                links.append(new_link)
+        results = await api_helper.scrape_endpoint_links(
+            links, self.session_manager, api_type
+        )
+        final_results = self.finalize_content_set(results)
+        self.temp_scraped.Products = final_results
+        return final_results
     async def get_messages(
         self,
         links: Optional[list] = None,
@@ -351,9 +383,8 @@ class create_user:
             links = links2
         results = await self.session_manager.async_requests(links)
         results = await remove_errors(results)
-        results = [x for x in results if x]
-        has_more = results[-1]["hasMore"] if results else False
-        final_results = [x["list"] for x in results if "list" in x]
+        final_results = [x for x in results if x]
+        has_more = False
         final_results = list(chain.from_iterable(final_results))
 
         if has_more:
@@ -517,14 +548,15 @@ class create_user:
 
     def set_scraped(self, name, scraped):
         setattr(self.scraped, name, scraped)
-    def finalize_content_set(self,results:list[dict[str,str]]):
-        final_results:list[create_post] = []
+    def finalize_content_set(self,results:list[dict[str,Any]]):
+        final_results:list[create_post|create_product] = []
         for result in results:
-            content_type = result["responseType"]
-            match content_type:
-                case "post":
-                    created = create_post(result,self)
-                    final_results.append(created)
-                case _:
-                    print
+            result["media"] = [result["media"]] if isinstance(result["media"], dict) else result["media"]
+            if "mediaSet" in result:
+                result["media"] = result["mediaSet"]
+            if "id" in result:
+                created = create_post(result,self)
+            else:
+                created = create_product(result,self)
+            final_results.append(created)
         return final_results

@@ -3,10 +3,10 @@ from apis.starsavn.classes.extras import endpoint_links
 from typing import Any
 
 
-class create_post:
+class create_product:
     def __init__(self, option, user) -> None:
         self.responseType: str = option.get("responseType")
-        self.id: int = option.get("id")
+        self.id: int = option.get("productId")
         self.postedAt: str = option.get("postedAt")
         self.postedAtPrecise: str = option.get("postedAtPrecise")
         self.expiredAt: Any = option.get("expiredAt")

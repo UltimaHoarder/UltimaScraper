@@ -19,6 +19,7 @@ from apis.starsavn import starsavn as StarsAVN
 from apis.starsavn.classes.create_auth import create_auth
 from apis.starsavn.classes.create_message import create_message
 from apis.starsavn.classes.create_post import create_post
+from apis.starsavn.classes.create_product import create_product
 from apis.starsavn.classes.create_story import create_story
 from apis.starsavn.classes.create_user import create_user
 from apis.starsavn.classes.extras import auth_details, media_types
@@ -164,9 +165,10 @@ async def start_datascraper(
 
 
 # Allows the user to choose which api they want to scrape
-def scrape_choice(authed: create_auth, subscription):
+def scrape_choice(authed: create_auth, subscription:create_user):
     user_id = subscription.id
     post_count = subscription.postsCount
+    media_count = subscription.mediasCount["total"]
     archived_count = subscription.archivedPostsCount
     message = "Scrape: 0 = All | 1 = Images | 2 = Videos | 3 = Audios | 4 = Texts"
     media_types = [
@@ -180,42 +182,48 @@ def scrape_choice(authed: create_auth, subscription):
     stories_api = StarsAVN.endpoint_links(user_id).stories_api
     list_highlights = StarsAVN.endpoint_links(user_id).list_highlights
     post_api = StarsAVN.endpoint_links(user_id).post_api
+    media_api = StarsAVN.endpoint_links(user_id).media_api
     archived_api = StarsAVN.endpoint_links(user_id).archived_posts
     # ARGUMENTS
     only_links = False
     mandatory = [download_directory, only_links]
     y = ["photo", "video", "stream", "gif", "audio", "text"]
-    u_array = [
+    u_array:list[str|list[Any]] = [
         "You have chosen to scrape {}",
         [user_api, media_types, *mandatory, post_count],
         "Profile",
     ]
-    s_array = [
+    s_array:list[str|list[Any]] = [
         "You have chosen to scrape {}",
         [stories_api, media_types, *mandatory, post_count],
         "Stories",
     ]
-    h_array = [
+    h_array :list[str|list[Any]]= [
         "You have chosen to scrape {}",
         [list_highlights, media_types, *mandatory, post_count],
         "Highlights",
     ]
-    p_array = [
+    p_array:list[str|list[Any]] = [
         "You have chosen to scrape {}",
         [post_api, media_types, *mandatory, post_count],
         "Posts",
     ]
-    m_array = [
+    pd_array :list[str|list[Any]]= [
+        "You have chosen to scrape {}",
+        [media_api, media_types, *mandatory, media_count],
+        "Products",
+    ]
+    m_array :list[str|list[Any]]= [
         "You have chosen to scrape {}",
         [message_api, media_types, *mandatory, post_count],
         "Messages",
     ]
-    a_array = [
+    a_array:list[str|list[Any]] = [
         "You have chosen to scrape {}",
         [archived_api, media_types, *mandatory, archived_count],
         "Archived",
     ]
-    array = [u_array, s_array, p_array, a_array, m_array]
+    array = [u_array, s_array, p_array,pd_array, a_array, m_array]
     # array = [u_array, s_array, p_array, a_array, m_array]
     # array = [s_array, h_array, p_array, a_array, m_array]
     # array = [s_array]
@@ -779,9 +787,10 @@ async def prepare_scraper(authed: create_auth, site_name, item):
         )
         return True
     if api_type == "Stories":
-        master_set = await subscription.get_stories()
-        master_set += await subscription.get_archived_stories()
-        highlights = await subscription.get_highlights()
+        # master_set = await subscription.get_stories()
+        # master_set += await subscription.get_archived_stories()
+        # highlights = await subscription.get_highlights()
+        highlights = []
         valid_highlights = []
         for highlight in highlights:
             highlight = await subscription.get_highlights(hightlight_id=highlight.id)
@@ -792,6 +801,9 @@ async def prepare_scraper(authed: create_auth, site_name, item):
         master_set = await subscription.get_posts()
         print(f"Type: Archived Posts")
         master_set += await subscription.get_archived_posts()
+    if api_type == "Products":
+        master_set = await subscription.get_medias()
+        print
     # if api_type == "Archived":
     #     master_set = await subscription.get_archived(authed)
     if api_type == "Messages":
@@ -1019,6 +1031,8 @@ async def media_scraper(
         pass
     if api_type == "Posts":
         pass
+    if api_type == "Products":
+        pass
     if api_type == "Messages":
         pass
     download_path = formatted_directories["download_directory"]
@@ -1049,6 +1063,15 @@ async def media_scraper(
             date = post_result.postedAt
             price = post_result.price
             new_post["archived"] = post_result.isArchived
+        if isinstance(post_result, create_product):
+            if post_result.isReportedByMe:
+                continue
+            rawText = post_result.rawText
+            text = post_result.text
+            previews = post_result.preview
+            date = post_result.postedAt
+            price = post_result.price
+            new_post["archived"] = post_result.isArchived
         if isinstance(post_result, create_message):
             if post_result.isReportedByMe:
                 continue
@@ -1069,7 +1092,11 @@ async def media_scraper(
         else:
             if not date:
                 date = master_date
-            date_object = datetime.fromisoformat(date)
+            if "T" in date:
+                date_object = datetime.fromisoformat(date)
+            else:
+                date_object = datetime.strptime(date, "%d-%m-%Y %H:%M:%S")
+
             date_string = date_object.replace(tzinfo=None).strftime("%d-%m-%Y %H:%M:%S")
             master_date = date_string
         new_post["post_id"] = post_id
@@ -1287,13 +1314,9 @@ async def manage_subscriptions(
     results.sort(key=lambda x: x.subscribedByData["expiredAt"])
     results.sort(key=lambda x: x.is_me(), reverse=True)
     results2 = []
-    hard_blacklist = ["onlyfanscreators"]
     for result in results:
         # result.auth_count = auth_count
         username = result.username
-        bl = [x for x in hard_blacklist if x == username]
-        if bl:
-            continue
         subscribePrice = result.subscribePrice
         if ignore_type in ["paid"]:
             if subscribePrice > 0:

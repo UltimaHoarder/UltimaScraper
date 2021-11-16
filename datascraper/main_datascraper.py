@@ -9,8 +9,6 @@ import modules.starsavn as m_starsavn
 from apis.onlyfans import onlyfans as OnlyFans
 from apis.fansly import fansly as Fansly
 from apis.starsavn import starsavn as StarsAVN
-from apis.onlyfans.classes.create_user import create_user
-from apis.onlyfans.classes.extras import error_details
 from helpers.main_helper import choose_option
 
 api_helper = OnlyFans.api_helper
@@ -23,9 +21,7 @@ async def start_datascraper(
     webhooks:bool=True,
 ) -> Optional[OnlyFans.start]:
     json_settings = json_config["settings"]
-    json_webhooks = json_settings["webhooks"]
     json_sites = json_config["supported"]
-    domain = json_settings["auto_site_choice"]
     main_helper.assign_vars(json_config)
 
     json_site_settings = json_sites[site_name_lower]["settings"]

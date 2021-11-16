@@ -1,6 +1,6 @@
 import asyncio
 import math
-from datetime import datetime
+from datetime import datetime, timezone
 from itertools import chain, product
 from multiprocessing.pool import Pool
 from typing import Any, Dict, List, Optional, Union
@@ -296,6 +296,14 @@ class create_auth(create_user):
                     for subscription in subscriptions:
                         if subscription["id"] != subscription2.id:
                             continue
+                        subscribedByData = {}
+                        new_date = datetime.utcnow().replace(tzinfo=timezone.utc) + relativedelta(years=1)
+                        temp = subscription.get("subscribedByExpireDate", new_date)
+                        if isinstance(temp, str):
+                            new_date = datetime.fromisoformat(temp)
+                        subscribedByData["expiredAt"] = new_date
+                        subscription2.subscribedByData = subscribedByData
+                        subscription["mediaCount"] = subscription2.mediasCount
                         subscription = subscription | subscription2.__dict__
                         subscription = create_user(subscription, self)
                         if subscription.isBlocked:
@@ -321,6 +329,13 @@ class create_auth(create_user):
                     continue
                 subscription.session_manager = self.session_manager
                 subscription.subscriber = self
+                subscribedByData = {}
+                new_date = datetime.utcnow().replace(tzinfo=timezone.utc) + relativedelta(years=1)
+                temp = result.get("subscribedByExpireDate", new_date)
+                if isinstance(temp, str):
+                    new_date = datetime.fromisoformat(temp)
+                subscribedByData["expiredAt"] = new_date
+                subscription.subscribedByData = subscribedByData
                 results.append([subscription])
                 print
             print
@@ -449,6 +464,7 @@ class create_auth(create_user):
             if not inside_loop:
                 temp = []
                 for final_result in final_results:
+                    continue
                     content = None
                     if final_result["responseType"] == "message":
                         user = create_user(final_result["fromUser"], self)

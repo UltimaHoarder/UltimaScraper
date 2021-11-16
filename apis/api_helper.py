@@ -34,6 +34,8 @@ import apis.onlyfans.classes as onlyfans_classes
 onlyfans_extras = onlyfans_classes.extras
 import apis.fansly.classes as fansly_classes
 fansly_extras = fansly_classes.extras
+import apis.starsavn.classes as starsavn_classes
+starsavn_extras = starsavn_classes.extras
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
@@ -379,7 +381,11 @@ async def scrape_endpoint_links(links:list[str], session_manager: Union[session_
             continue
         print("Scrape Attempt: " + str(attempt + 1) + "/" + str(max_attempts))
         results = await session_manager.async_requests(links)
-        results = await onlyfans_extras.remove_errors(results)
+        match type(session_manager.auth):
+            case starsavn_classes.create_auth:
+                results = await starsavn_extras.remove_errors(results)
+            case _:
+                results = await onlyfans_extras.remove_errors(results)
         not_faulty = [x for x in results if x]
         faulty = [
             {"key": k, "value": v, "link": links[k]}

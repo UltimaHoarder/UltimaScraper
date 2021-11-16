@@ -84,7 +84,9 @@ async def fix_directories(
                 ]
                 print
             if not media.linked:
-                old_filepaths = [x for x in old_filepaths if "linked_" not in x]
+                old_filepaths: list[str] = [
+                    x for x in old_filepaths if "linked_" not in x
+                ]
             if old_filepaths:
                 old_filepath = old_filepaths[0]
             # a = randint(0,1)
@@ -97,6 +99,9 @@ async def fix_directories(
                 while not moved:
                     try:
                         if os.path.exists(old_filepath):
+                            old_filename, old_ext = os.path.splitext(old_filepath)
+                            if ".part" == old_ext:
+                                os.remove(old_filepath)
                             if media.size:
                                 media.downloaded = True
                             found_dupes = [
@@ -136,7 +141,7 @@ async def fix_directories(
     media_db = result.all()
     pool = api.pool
     # tasks = pool.starmap(fix_directories2, product(posts, [media_db]))
-    tasks = [asyncio.ensure_future(fix_directories2(post,media_db)) for post in posts]
+    tasks = [asyncio.ensure_future(fix_directories2(post, media_db)) for post in posts]
     settings = {"colour": "MAGENTA", "disable": False}
     delete_rows = await tqdm.gather(*tasks, **settings)
     delete_rows = list(chain(*delete_rows))
@@ -187,7 +192,9 @@ async def start(
         reformats[key] = value.split(key2, 1)[0] + key2
         print
     print
-    a, base_directory, c = await prepare_reformat(option, keep_vars=True).reformat(reformats)
+    a, base_directory, c = await prepare_reformat(option, keep_vars=True).reformat(
+        reformats
+    )
     download_info["base_directory"] = base_directory
     print
     all_files = []

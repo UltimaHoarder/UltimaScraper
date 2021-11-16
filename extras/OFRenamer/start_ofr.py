@@ -102,6 +102,7 @@ async def fix_directories(
                             old_filename, old_ext = os.path.splitext(old_filepath)
                             if ".part" == old_ext:
                                 os.remove(old_filepath)
+                                continue
                             if media.size:
                                 media.downloaded = True
                             found_dupes = [

@@ -1136,7 +1136,7 @@ async def media_scraper(
                 continue
             matches = [s for s in ignored_keywords if s in final_text]
             if matches:
-                print("Matches: ", matches)
+                print("Ignoring: ", f"PostID: {post_id}")
                 continue
             filename = link.rsplit("/", 1)[-1]
             filename, ext = os.path.splitext(filename)

@@ -18,7 +18,7 @@ class create_message:
         self.previews: list = option.get("previews",[])
         self.isTip: Optional[bool] = option.get("isTip")
         self.isReportedByMe: Optional[bool] = option.get("isReportedByMe")
-        self.fromUser  = create_user.create_user(option["fromUser"])
+        self.fromUser  = user
         self.isFromQueue: Optional[bool] = option.get("isFromQueue")
         self.queueId: Optional[int] = option.get("queueId")
         self.canUnsendQueue: Optional[bool] = option.get("canUnsendQueue")

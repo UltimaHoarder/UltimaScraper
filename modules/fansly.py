@@ -1097,7 +1097,7 @@ async def media_scraper(
                 print
         new_post["price"] = price
         for temp_media in post_result.media:
-            media = temp_media["media"]
+            media:dict[str,Any] = temp_media["media"] if "preview" not in temp_media else temp_media["preview"]
             media_id = media["id"]
             preview_link = ""
             link: str = await post_result.link_picker(
@@ -1353,6 +1353,7 @@ def format_options(
                     name = x.username
                     string += f"{count} = {name}"
                     if isinstance(x, create_user):
+                        string+= f"(S)" if x.subscribed else "(F)"
                         auth_count = match_list.index(x.subscriber)
                     names.append([auth_count, name])
                     if count + 1 != name_count:

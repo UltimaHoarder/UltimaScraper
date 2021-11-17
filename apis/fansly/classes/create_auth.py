@@ -224,11 +224,14 @@ class create_auth(create_user):
             followings_id: str = ",".join([x["accountId"] for x in followings])
             customer_link = endpoint_links(followings_id).customer
             followings = await self.session_manager.json_request(customer_link)
-            followings = [create_user(x, self) for x in followings["response"]]
+            if identifiers:
+                followings = [create_user(x, self) for x in followings["response"] for identifier in identifiers if x["username"] == identifier or x["id"] == identifier]
+            else:
+                followings = [create_user(x, self) for x in followings["response"]]
             for following in followings:
                 if not following.subscribedByData:
                     new_date = datetime.now() + relativedelta(years=1)
-                    new_date = new_date.timestamp()
+                    new_date = int(new_date.timestamp()*1000)
                     following.subscribedByData = {}
                     following.subscribedByData["endsAt"] = new_date
                     print

@@ -92,6 +92,7 @@ class create_user:
         self.following: bool = option.get("following")
         self.showSubscribersCount: bool = option.get("showSubscribersCount")
         self.showMediaCount: bool = option.get("showMediaCount")
+        self.subscribed: bool = option.get("subscribed", False)
         self.subscribedByData: Any = option.get("subscription")
         self.subscribedOnData: Any = option.get("subscribedOnData")
         self.canPromotion: bool = option.get("canPromotion")
@@ -288,10 +289,10 @@ class create_user:
 
     async def get_posts(
         self,
-        links: Optional[list] = None,
+        links: Optional[list[str]] = None,
         limit: int = 10,
         offset: int = 0,
-        refresh=True,
+        refresh: bool = True,
     ) -> Optional[list[create_post]]:
         api_type = "posts"
         if not refresh:
@@ -305,14 +306,16 @@ class create_user:
             link = endpoint_links(identifier=self.id, global_offset=offset).post_api
             response = await self.session_manager.json_request(link)
             data = response["response"]
-            temp_posts = data["posts"]
+            temp_posts = data.get("posts")
             if not temp_posts:
                 break
             offset = temp_posts[-1]["id"]
             temp_results.append(data)
         results: dict[Any, Any] = merge({}, *temp_results, strategy=Strategy.ADDITIVE)
-        final_results = [create_post(x, self, results) for x in results["posts"]]
-        self.temp_scraped.Posts = final_results
+        final_results = []
+        if results:
+            final_results = [create_post(x, self, results) for x in results["posts"]]
+            self.temp_scraped.Posts = final_results
         return final_results
 
     async def get_post(
@@ -329,14 +332,20 @@ class create_user:
             return final_result
         return response
 
+    async def get_groups(self) -> dict[str, Any]:
+        link = endpoint_links().groups_api
+        response = await self.session_manager.json_request(link)
+        response = response["response"]
+        return response
+
     async def get_messages(
         self,
-        links: Optional[list] = None,
-        limit=10,
-        offset=0,
-        refresh=True,
-        inside_loop=False,
-    ) -> list:
+        links: Optional[list[str]] = None,
+        limit: int = 10,
+        offset: int = 0,
+        refresh: bool = True,
+        inside_loop: bool = False,
+    ) -> list[Any]:
         api_type = "messages"
         if not self.subscriber or self.is_me():
             return []
@@ -344,6 +353,15 @@ class create_user:
             result = handle_refresh(self, api_type)
             if result:
                 return result
+        groups = await self.get_groups()
+        found_id: Optional[int] = None
+        for group in groups["groups"]:
+            for user in group["users"]:
+                if self.id == user["userId"]:
+                    found_id = user["groupId"]
+                    break
+                print
+            print
         if links is None:
             links = []
         multiplier = getattr(self.session_manager.pool, "_processes")
@@ -351,7 +369,7 @@ class create_user:
             link = links[-1]
         else:
             link = endpoint_links(
-                identifier=self.id, global_limit=limit, global_offset=offset
+                identifier=found_id, global_limit=limit, global_offset=offset
             ).message_api
             links.append(link)
         links2 = api_helper.calculate_the_unpredictable(link, limit, multiplier)
@@ -361,12 +379,10 @@ class create_user:
             links = links2
         results = await self.session_manager.async_requests(links)
         results = await remove_errors(results)
-        results = [x for x in results if x]
-        has_more = results[-1]["hasMore"] if results else False
-        final_results = [x["list"] for x in results if "list" in x]
-        final_results = list(chain.from_iterable(final_results))
+        results = [x["response"]["messages"] for x in results if x]
+        final_results = list(chain.from_iterable(results))
 
-        if has_more:
+        if final_results:
             results2 = await self.get_messages(
                 links=[links[-1]], limit=limit, offset=limit + offset, inside_loop=True
             )
@@ -376,8 +392,6 @@ class create_user:
             final_results = [
                 create_message.create_message(x, self) for x in final_results if x
             ]
-        else:
-            final_results.sort(key=lambda x: x["fromUser"]["id"], reverse=True)
         self.temp_scraped.Messages = final_results
         return final_results
 

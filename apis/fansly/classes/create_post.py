@@ -6,7 +6,7 @@ from typing import Any
 class create_post:
     def __init__(self, option, user, extra: dict[Any, Any] = {}) -> None:
         self.responseType: str = option.get("responseType")
-        self.id: int = option.get("id")
+        self.id: int = int(option["id"])
         self.postedAt: str = option.get("createdAt")
         self.postedAtPrecise: str = option.get("postedAtPrecise")
         self.expiredAt: Any = option.get("expiredAt")
@@ -41,19 +41,20 @@ class create_post:
         self.attachments: list = option.get("attachments")
         final_media: list[Any] = []
         final_media_ids: list[Any] = []
-        if self.attachments:
-            attachment = self.attachments[0]
+        for attachment in self.attachments:
             attachment_content_id = attachment["contentId"]
-            if attachment["contentType"] == 1:
-                final_media_ids.append(attachment_content_id)
-            elif attachment["contentType"] == 2:
-                for bundle in extra["accountMediaBundles"]:
-                    if bundle["id"] == attachment_content_id:
-                        final_media_ids.extend(bundle["accountMediaIds"])
+            match attachment["contentType"]:
+                case 1:
+                    final_media_ids.append(attachment_content_id)
+                case 2:
+                    for bundle in extra["accountMediaBundles"]:
+                        if bundle["id"] == attachment_content_id:
+                            final_media_ids.extend(bundle["accountMediaIds"])
+                            print
                         print
+                case _:
                     print
-                print
-            print
+        print
         if final_media_ids:
             for final_media_id in final_media_ids:
                 for account_media in extra["accountMedia"]:

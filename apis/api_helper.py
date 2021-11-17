@@ -344,7 +344,7 @@ async def test_proxies(proxies: list[str]):
                 ip = ip.strip()
                 print("Session IP: " + ip + "\n")
                 final_proxies.append(proxy)
-            except python_socks._errors.ProxyConnectionError as e:
+            except python_socks._errors.ProxyConnectionError|python_socks._errors.ProxyError as e:
                 print(f"Proxy Not Set: {proxy}\n")
                 continue
     return final_proxies

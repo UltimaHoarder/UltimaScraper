@@ -216,7 +216,7 @@ class session_manager:
             await session.close()
         return result
 
-    async def async_requests(self, items: list[str]) -> list:
+    async def async_requests(self, items: list[str]) -> list[dict[str,Any]]:
         tasks = []
 
         async def run(links: list[str]) -> list:

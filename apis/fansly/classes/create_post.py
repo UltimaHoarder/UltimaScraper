@@ -4,7 +4,7 @@ from typing import Any
 
 
 class create_post:
-    def __init__(self, option, user, extra: dict[Any, Any] = {}) -> None:
+    def __init__(self, option: dict[str,Any], user: create_user, extra: dict[Any, Any] = {}) -> None:
         self.responseType: str = option.get("responseType")
         self.id: int = int(option["id"])
         self.postedAt: str = option.get("createdAt")
@@ -39,6 +39,7 @@ class create_post:
         self.linkedUsers: list = option.get("linkedUsers")
         self.linkedPosts: list = option.get("linkedPosts")
         self.attachments: list = option.get("attachments")
+        # Custom
         final_media: list[Any] = []
         final_media_ids: list[Any] = []
         for attachment in self.attachments:
@@ -50,18 +51,13 @@ class create_post:
                     for bundle in extra["accountMediaBundles"]:
                         if bundle["id"] == attachment_content_id:
                             final_media_ids.extend(bundle["accountMediaIds"])
-                            print
-                        print
                 case _:
                     print
-        print
         if final_media_ids:
             for final_media_id in final_media_ids:
                 for account_media in extra["accountMedia"]:
                     if account_media["id"] == final_media_id:
                         final_media.append(account_media)
-                    print
-        print
         self.media: list[Any] = final_media
         self.canViewMedia: bool = option.get("canViewMedia")
         self.preview: list = option.get("preview")
@@ -83,6 +79,7 @@ class create_post:
         # The top-level `media` element itself represents the original source quality.
         # It may also contain a `variants` list entry with alternate encoding qualities.
         # Each variant has a similar structure to the main media element.
+        media_url = ""
         source_media = media
         variants = media.get("variants", [])
 
@@ -95,7 +92,7 @@ class create_post:
         # Track the target type as videos may also include thumbnail image variants.
         target_type = source_media.get("mimetype")
 
-        qualities: list[Tuple[int, str]] = []
+        qualities: list[tuple[int, str]] = []
         for variant in variants + [source_media]:
             if variant.get("mimetype") != target_type:
                 continue

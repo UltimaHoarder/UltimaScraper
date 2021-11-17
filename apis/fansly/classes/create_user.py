@@ -377,10 +377,13 @@ class create_user:
             links += links2
         else:
             links = links2
-        results = await self.session_manager.async_requests(links)
-        results = await remove_errors(results)
-        results = [x["response"]["messages"] for x in results if x]
-        final_results = list(chain.from_iterable(results))
+        temp_results = await self.session_manager.async_requests(links)
+        temp_results = await remove_errors(temp_results)
+        results: dict[Any, Any] = merge({}, *temp_results, strategy=Strategy.ADDITIVE)
+        if not results:
+            return []
+        extras = results["response"]
+        final_results = extras["messages"]
 
         if final_results:
             results2 = await self.get_messages(
@@ -390,7 +393,7 @@ class create_user:
         print
         if not inside_loop:
             final_results = [
-                create_message.create_message(x, self) for x in final_results if x
+                create_message.create_message(x, self,extras) for x in final_results if x
             ]
         self.temp_scraped.Messages = final_results
         return final_results

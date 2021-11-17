@@ -429,7 +429,7 @@ class create_auth(create_user):
         self,
         check: bool = False,
         refresh: bool = True,
-        limit: int = 99,
+        limit: int = 10,
         offset: int = 0,
         inside_loop: bool = False,
     ) -> list[Union[create_message, create_post]]:
@@ -444,7 +444,7 @@ class create_auth(create_user):
         final_results = await self.session_manager.json_request(link)
         if not isinstance(final_results,error_details):
             if len(final_results) >= limit and not check:
-                results2 = self.get_paid_content(
+                results2 = await self.get_paid_content(
                     limit=limit, offset=limit + offset, inside_loop=True
                 )
                 final_results.extend(results2)

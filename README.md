@@ -340,16 +340,16 @@ Types: list|int|str|bool
 ### blacklist_name:
 
     Default = ""
+    Example = ["Blacklisted"]
+    Example = "Blacklisted,alsoforbidden"
 
-    This setting will not include any blacklisted usernames when you choose the "scrape all" option.
+    This setting allows you to remove usernames when you choose the "scrap all" option by using lists or targetting specific usernames.
 
-    Go to https://onlyfans.com/my/lists and create a new list; you can name it whatever you want but I called mine "Blacklisted".
-
+    1. Go to https://onlyfans.com/my/lists and create a new list; you can name it whatever you want but I called mine "Blacklisted".
     Add the list's name to the config.
-
     Example: "blacklist_name": "Blacklisted"
 
-    You can create as many lists as you want.
+    2. Or simply put the username of the content creator in the list.
 
 # FAQ
 

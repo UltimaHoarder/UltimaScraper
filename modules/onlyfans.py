@@ -1284,6 +1284,12 @@ async def manage_subscriptions(
                                 if identifier in bl_ids:
                                     print(f"Blacklisted: {identifier}")
                                     results.remove(result)
+        results2 = results.copy()
+        for result in results2:
+            identifier = result.username
+            if identifier in blacklists:
+                print(f"Blacklisted: {identifier}")
+                results.remove(result)
     results.sort(key=lambda x: x.subscribedByData["expiredAt"])
     results.sort(key=lambda x: x.is_me(), reverse=True)
     results2 = []

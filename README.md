@@ -2,10 +2,6 @@
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/DIGITALCRIMINAL/OnlyFans.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DIGITALCRIMINAL/OnlyFans/context:python)
 # ![app-token](examples/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 
-I don't have access to my main account (DIGITALCRIMINAL) at the moment...
-
-[Proof that I am DIGITALCRIMINAL](https://github.com/DIGITALCRIMINAL/OnlyFans/issues/1596#issuecomment-903489056)
-
 # Mandatory Tutorial
 If you're looking to set up Fansly, here [X34's Tutorial](https://forum.sexy-egirls.com/threads/fansly-downloading-a-work-in-progress.132433/)
 
@@ -344,16 +340,16 @@ Types: list|int|str|bool
 ### blacklist_name:
 
     Default = ""
+    Example = ["Blacklisted"]
+    Example = "Blacklisted,alsoforbidden"
 
-    This setting will not include any blacklisted usernames when you choose the "scrape all" option.
+    This setting allows you to remove usernames when you choose the "scrap all" option by using lists or targetting specific usernames.
 
-    Go to https://onlyfans.com/my/lists and create a new list; you can name it whatever you want but I called mine "Blacklisted".
-
+    1. Go to https://onlyfans.com/my/lists and create a new list; you can name it whatever you want but I called mine "Blacklisted".
     Add the list's name to the config.
-
     Example: "blacklist_name": "Blacklisted"
 
-    You can create as many lists as you want.
+    2. Or simply put the username of the content creator in the list.
 
 # FAQ
 

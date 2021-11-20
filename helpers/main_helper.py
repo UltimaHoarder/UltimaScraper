@@ -102,7 +102,7 @@ def parse_links(site_name, input_link):
             return input_link
 
 
-def clean_text(string, remove_spaces=False):
+def clean_text(string:str, remove_spaces:bool=False):
     matches = ["\n", "<br>"]
     for m in matches:
         string = string.replace(m, " ").strip()

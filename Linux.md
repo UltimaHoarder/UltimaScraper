@@ -33,7 +33,7 @@ Once you have completed the installation of python section, follow the follwing 
 
 2. Activate Virtual Enviroment
 
-	`source scraper/bin/activate`
+	`source venv/bin/activate`
 
 3. Run the updater program
 
@@ -73,27 +73,27 @@ If you have changed files and want the new update to "overwrite" them run the fo
 
 ## Installation of Python
 
-1. Install Python3.9
+1. Install Python3.10
 
-	`sudo apt update && sudo apt -y install python3.9`
+	`sudo apt update && sudo apt -y install python3.10`
 
-2. Install the Python3.9 Virtual Enviroment
+2. Install the Python3.10 Virtual Enviroment
 
-	`sudo apt -y install python3.9-dev python3.9-venv`
+	`sudo apt -y install python3.10-dev python3.10-venv`
 
 3. Make our Python Virtual Enviroment
 
-	`python3.9 -m venv scraper`
+	`python3.10 -m venv venv`
 
 4. Enter our virtual enviroment
 
-	`source scraper/bin/activate`
+	`source venv/bin/activate`
 
-We now are inside of our python3.9 virtual enviroment. This makes it so that other programs won't screw with our scraper and our scraper won't screw with your other programs or virtual enviroments
+We now are inside of our python3.10 virtual enviroment. This makes it so that other programs won't screw with our scraper and our scraper won't screw with your other programs or virtual enviroments
 
 5. Install Requiremtents
 
-	`pip3 install -r requirements.txt`
+	`pip3 install --update -r requirements.txt`
 
 6. Exit Virtual Enviroment
 
@@ -111,7 +111,7 @@ Follow the steps in order every time we use the scraper
 
 2. Activate our virtual Enviroment
 
-	`source scraper/bin/activate`
+	`source venv/bin/activate`
 
 3. Run The Scraper
 

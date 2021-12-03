@@ -37,8 +37,9 @@ Open and edit:
 
 You have to fill in the following:
 
-- `{"cookie":"your_cookie"}`
-- `{"user-agent":"your_user-agent"}`
+- `{"cookie":"cookie_value"}`
+- `{"x-bc":"x-bc_value"}`
+- `{"user-agent":"user-agent_value"}`
 
 Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get said above cookies
 

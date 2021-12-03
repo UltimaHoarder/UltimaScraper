@@ -70,7 +70,7 @@ class create_auth(create_user):
         auth_id = str(auth_items.cookie.auth_id)
         # expected string error is fixed by auth_id
         dynamic_rules = self.session_manager.dynamic_rules
-        a: List[Any] = [dynamic_rules, auth_id, user_agent, link]
+        a: list[Any] = [dynamic_rules, auth_id, auth_items.x_bc, user_agent, link]
         self.session_manager.headers = create_headers(*a)
         if guest:
             print("Guest Authentication")

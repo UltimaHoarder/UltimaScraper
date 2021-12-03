@@ -102,7 +102,7 @@ def parse_links(site_name, input_link):
             return input_link
 
 
-def clean_text(string:str, remove_spaces:bool=False):
+def clean_text(string: str, remove_spaces: bool = False):
     matches = ["\n", "<br>"]
     for m in matches:
         string = string.replace(m, " ").strip()
@@ -788,7 +788,13 @@ def check_for_dupe_file(download_path, content_length):
 
 
 class download_session(tqdm):
-    def start(self, unit="B", unit_scale=True, miniters=1, tsize=0):
+    def start(
+        self,
+        unit: str = "B",
+        unit_scale: bool = True,
+        miniters: int = 1,
+        tsize: int = 0,
+    ):
         self.unit = unit
         self.unit_scale = unit_scale
         self.miniters = miniters
@@ -798,13 +804,10 @@ class download_session(tqdm):
             tsize = int(tsize)
             self.total += tsize
 
-    def update_total_size(self, tsize):
+    def update_total_size(self, tsize: Optional[int]):
         if tsize:
             tsize = int(tsize)
             self.total += tsize
-
-    def update_to(self, b=1, bsize=1, tsize=None):
-        self.update(b)
 
 
 def prompt_modified(message, path):
@@ -1013,6 +1016,7 @@ def open_partial(path: str) -> BinaryIO:
         try:
             return open(partial_path, "xb")
         except FileExistsError:
+            os.unlink(partial_path)
             pass
 
 

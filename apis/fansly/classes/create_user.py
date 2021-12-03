@@ -393,7 +393,9 @@ class create_user:
         print
         if not inside_loop:
             final_results = [
-                create_message.create_message(x, self,extras) for x in final_results if x
+                create_message.create_message(x, self, extras)
+                for x in final_results
+                if x
             ]
         self.temp_scraped.Messages = final_results
         return final_results
@@ -430,7 +432,7 @@ class create_user:
         return results
 
     async def get_archived_posts(
-        self, links: Optional[list] = None, limit=10, offset=0, refresh=True
+        self, links: Optional[list[str]] = None, limit:int=10, offset:int=0, refresh:bool=True
     ) -> list:
         api_type = "archived_posts"
         if not refresh:

@@ -1,4 +1,3 @@
-from apis import fansly
 import asyncio
 import copy
 import hashlib

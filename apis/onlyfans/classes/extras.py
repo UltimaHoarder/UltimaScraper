@@ -7,6 +7,7 @@ class auth_details:
     def __init__(self, options: dict[str, Any] = {}) -> None:
         self.username = options.get("username", "")
         self.cookie = cookie_parser(options.get("cookie", ""))
+        self.x_bc = options.get("x_bc", "")
         self.user_agent = options.get("user_agent", "")
         self.email = options.get("email", "")
         self.password = options.get("password", "")
@@ -153,14 +154,15 @@ class error_details:
 def create_headers(
     dynamic_rules: dict[str, Any],
     auth_id: Union[str, int],
+    x_bc:str,
     user_agent: str = "",
     link: str = "https://onlyfans.com/",
 ):
     headers: dict[str, Any] = {}
     headers["user-agent"] = user_agent
     headers["referer"] = link
+    headers["x-bc"] = x_bc
     headers["user-id"] = str(auth_id)
-    headers["x-bc"] = ""
     for remove_header in dynamic_rules["remove_headers"]:
         headers.pop(remove_header)
     return headers
@@ -206,6 +208,7 @@ class media_types:
     def __iter__(self):
         for attr, value in self.__dict__.items():
             yield attr, value
+
 
 async def remove_errors(results: list):
     wrapped = False

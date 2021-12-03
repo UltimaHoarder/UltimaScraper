@@ -8,8 +8,7 @@ os.chdir(path)
 def version_check():
     version_info = sys.version_info
     if version_info < (3, 10):
-        string = "Execute the script with Python 3.10 \n"
-        string += "Press enter to continue"
+        string = "Execute the script with Python 3.10\nPress enter to continue"
         input(string)
         exit(0)
 # Updating any outdated config values

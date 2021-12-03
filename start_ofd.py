@@ -12,8 +12,11 @@ from rich.prompt import Prompt
 from rich.table import Table
 from rich.text import Text
 
-import tests.main_test as main_test
-
+try:
+    import tests.main_test as main_test
+except SyntaxError:
+    print("Execute the script with Python 3.10\nPress enter to continue")
+    exit()
 try:
 
     main_test.version_check()

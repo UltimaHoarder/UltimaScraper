@@ -542,7 +542,7 @@ def legacy_sqlite_updater(
     return final_result, delete_metadatas
 
 
-def export_sqlite(database_path: str, api_type, datas):
+def export_sqlite(database_path: str, api_type, datas: list[dict[str, Any]]):
     metadata_directory = os.path.dirname(database_path)
     os.makedirs(metadata_directory, exist_ok=True)
     database_name = os.path.basename(database_path).replace(".db", "")
@@ -572,7 +572,7 @@ def export_sqlite(database_path: str, api_type, datas):
         if not post_db:
             post_db = api_table()
         if api_type == "Messages":
-            post_db.user_id = post["user_id"]
+            post_db.user_id = post.get("user_id", None)
         post_db.post_id = post_id
         post_db.text = post["text"]
         if post["price"] is None:
@@ -586,7 +586,7 @@ def export_sqlite(database_path: str, api_type, datas):
         for media in post["medias"]:
             if media["media_type"] == "Texts":
                 continue
-            created_at = media["created_at"]
+            created_at = media.get("created_at", postedAt)
             if not isinstance(created_at, datetime):
                 date_object = datetime.strptime(created_at, "%d-%m-%Y %H:%M:%S")
             else:

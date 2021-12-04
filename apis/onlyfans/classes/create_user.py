@@ -19,7 +19,7 @@ from apis.onlyfans.classes.extras import (
 
 
 class create_user:
-    def __init__(self, option={}, subscriber: create_auth = None) -> None:
+    def __init__(self, option:dict[str,Any]={}, subscriber: create_auth = None) -> None:
         self.view: str = option.get("view")
         self.avatar: Any = option.get("avatar")
         self.avatarThumbs: Any = option.get("avatarThumbs")
@@ -110,7 +110,7 @@ class create_user:
         self.isPaymentCardConnected: bool = option.get("isPaymentCardConnected")
         self.referalUrl: str = option.get("referalUrl")
         self.isVisibleOnline: bool = option.get("isVisibleOnline")
-        self.subscribesCount: int = option.get("subscribesCount")
+        self.subscribesCount: int = option.get("subscribesCount",0)
         self.canPinPost: bool = option.get("canPinPost")
         self.hasNewAlerts: bool = option.get("hasNewAlerts")
         self.hasNewHints: bool = option.get("hasNewHints")

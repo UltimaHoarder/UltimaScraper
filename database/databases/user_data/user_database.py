@@ -2,7 +2,7 @@
 
 import copy
 import datetime
-from typing import cast
+from typing import Optional, cast
 
 import sqlalchemy
 from database.databases.user_data.models.api_table import api_table
@@ -29,7 +29,7 @@ class posts_table(api_table, Base):
 
 class messages_table(api_table, Base):
     api_table.__tablename__ = "messages"
-    user_id = cast(int, sqlalchemy.Column(sqlalchemy.Integer))
+    user_id = cast(Optional[int], sqlalchemy.Column(sqlalchemy.Integer))
 
     class api_legacy_table(api_table, LegacyBase):
         pass
@@ -52,7 +52,7 @@ class media_table(template_media_table, Base):
         pass
 
 
-def table_picker(table_name:str, legacy:bool=False):
+def table_picker(table_name: str, legacy: bool = False):
     if table_name == "Stories":
         table = stories_table
     elif table_name == "Posts":

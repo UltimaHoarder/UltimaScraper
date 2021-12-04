@@ -106,10 +106,12 @@ class create_metadata(object):
                 return {}
         return value
 
-    def convert(self, convert_type="json", keep_empty_items=False) -> dict:
+    def convert(
+        self, convert_type: str = "json", keep_empty_items: bool = False
+    ) -> dict[str, Any]:
         if not keep_empty_items:
             self.remove_empty()
-        value = {}
+        value: dict[str, Any] = {}
         if convert_type == "json":
             new_format_copied = copy.deepcopy(self)
             value = jsonpickle.encode(new_format_copied, unpicklable=False)
@@ -202,10 +204,12 @@ class format_content(object):
             self.medias = option.get("medias", [])
             self.postedAt = option.get("postedAt", "")
 
-        def convert(self, convert_type="json", keep_empty_items=False) -> dict:
+        def convert(
+            self, convert_type: str = "json", keep_empty_items: bool = False
+        ) -> dict[str, Any]:
             if not keep_empty_items:
                 self.remove_empty()
-            value = {}
+            value:dict[str,Any] = {}
             if convert_type == "json":
                 new_format_copied = copy.deepcopy(self)
                 for media in new_format_copied.medias:

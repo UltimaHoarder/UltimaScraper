@@ -150,7 +150,7 @@ async def start_datascraper(
             )
             if jobs["scrape_paid_content"] and api.has_active_auths():
                 print("Scraping Paid Content")
-                await module.paid_content_scraper(api, identifiers)
+                # await module.paid_content_scraper(api, identifiers)
             if jobs["scrape_names"] and api.has_active_auths():
                 print("Scraping Subscriptions")
                 await main_helper.process_names(
@@ -213,7 +213,7 @@ async def start_datascraper(
             )
             if jobs["scrape_paid_content"] and api.has_active_auths():
                 print("Scraping Paid Content")
-                await module.paid_content_scraper(api, identifiers)
+                # await module.paid_content_scraper(api, identifiers)
             if jobs["scrape_names"] and api.has_active_auths():
                 print("Scraping Subscriptions")
                 await main_helper.process_names(

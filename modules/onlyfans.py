@@ -23,7 +23,7 @@ from apis.onlyfans.classes.create_story import create_story
 from apis.onlyfans.classes.create_user import create_user
 from apis.onlyfans.classes.extras import auth_details, media_types
 from apis.onlyfans.onlyfans import start
-from classes.prepare_metadata import create_metadata, prepare_reformat
+from classes.prepare_metadata import create_metadata, format_content, prepare_reformat
 from helpers import db_helper
 from mergedeep import Strategy, merge
 from sqlalchemy.exc import OperationalError

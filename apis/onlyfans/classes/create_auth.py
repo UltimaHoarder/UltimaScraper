@@ -1,9 +1,10 @@
 import asyncio
+from asyncio.tasks import Task
 import math
 from datetime import datetime
 from itertools import chain, product
 from multiprocessing.pool import Pool
-from typing import Any, Dict, List, Optional, Union
+from typing import Any, Coroutine, Dict, List, Optional, Union
 
 import jsonpickle
 from apis import api_helper
@@ -191,6 +192,8 @@ class create_auth(create_user):
         link = endpoint_links(identifier).users
         response = await self.session_manager.json_request(link)
         if not isinstance(response, error_details):
+            if not response:
+                print
             response["session_manager"] = self.session_manager
             response = create_user(response, self)
         return response
@@ -224,21 +227,21 @@ class create_auth(create_user):
 
     async def get_subscriptions(
         self,
-        resume=None,
-        refresh=True,
-        identifiers: list = [],
-        extra_info=True,
-        limit=20,
-        offset=0,
+        refresh: bool = True,
+        identifiers: list[int | str] = [],
+        extra_info: bool = True,
+        limit: int = 20,
     ) -> list[create_user]:
         if not self.active:
             return []
         if not refresh:
             subscriptions = self.subscriptions
             return subscriptions
+        # if self.subscribesCount > 900:
+        #     limit = 100
         ceil = math.ceil(self.subscribesCount / limit)
         a = list(range(ceil))
-        offset_array = []
+        offset_array: list[str] = []
         for b in a:
             b = b * limit
             link = endpoint_links(global_limit=limit, global_offset=b).subscriptions
@@ -271,10 +274,10 @@ class create_auth(create_user):
             results.append(subscription)
         if not identifiers:
 
-            async def multi(item):
+            async def multi(item: str):
                 link = item
                 subscriptions = await self.session_manager.json_request(link)
-                valid_subscriptions = []
+                valid_subscriptions: list[create_user] = []
                 extras = {}
                 extras["auth_check"] = ""
                 if isinstance(subscriptions, error_details):
@@ -284,17 +287,19 @@ class create_auth(create_user):
                     for subscription in subscriptions
                     if "error" != subscription
                 ]
-                tasks = []
+                tasks: list[Task[create_user | error_details]] = []
                 for subscription in subscriptions:
                     subscription["session_manager"] = self.session_manager
                     if extra_info:
-                        task = self.get_user(subscription["username"])
+                        task = asyncio.create_task(
+                            self.get_user(subscription["username"])
+                        )
                         tasks.append(task)
-                tasks = await asyncio.gather(*tasks)
-                for task in tasks:
-                    if isinstance(task, error_details):
+                results2 = await asyncio.gather(*tasks)
+                for result in results2:
+                    if isinstance(result, error_details):
                         continue
-                    subscription2: create_user = task
+                    subscription2: create_user = result
                     for subscription in subscriptions:
                         if subscription["id"] != subscription2.id:
                             continue
@@ -442,7 +447,7 @@ class create_auth(create_user):
                 return result
         link = endpoint_links(global_limit=limit, global_offset=offset).paid_api
         final_results = await self.session_manager.json_request(link)
-        if not isinstance(final_results,error_details):
+        if not isinstance(final_results, error_details):
             if len(final_results) >= limit and not check:
                 results2 = await self.get_paid_content(
                     limit=limit, offset=limit + offset, inside_loop=True

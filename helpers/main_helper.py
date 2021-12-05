@@ -1049,7 +1049,10 @@ async def write_data(response: ClientResponse, download_path: str, progress_bar)
             if status_code:
                 os.unlink(partial_path)
             else:
-                os.replace(partial_path, download_path)
+                try:
+                    os.replace(partial_path, download_path)
+                except OSError:
+                    pass
     else:
         if response.content_length:
             progress_bar.update_total_size(-response.content_length)

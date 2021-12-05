@@ -823,7 +823,8 @@ def prompt_modified(message, path):
 
 def get_config(config_path):
     if os.path.exists(config_path):
-        json_config = ujson.load(open(config_path))
+        with open(config_path, encoding="utf-8") as fp:
+            json_config = ujson.load(fp)
     else:
         json_config = {}
     json_config2 = copy.deepcopy(json_config)
@@ -842,7 +843,8 @@ def get_config(config_path):
             f"The .settings\\{file_name} file has been created. Fill in whatever you need to fill in and then press enter when done.\n",
             config_path,
         )
-        json_config = ujson.load(open(config_path))
+        with open(config_path, encoding="utf-8") as fp:
+            json_config = ujson.load(fp)
     return json_config, updated
 
 
@@ -934,7 +936,8 @@ def process_profiles(
             user_auth_filepath = os.path.join(user_profile, "auth.json")
             datas = {}
             if os.path.exists(user_auth_filepath):
-                temp_json_auth = ujson.load(open(user_auth_filepath))
+                with open(user_auth_filepath, encoding="utf-8") as fp:
+                    temp_json_auth = ujson.load(fp)
                 json_auth = temp_json_auth["auth"]
                 if not json_auth.get("active", None):
                     continue
@@ -1097,7 +1100,8 @@ def legacy_metadata(directory):
         if items:
             for item in items:
                 path = os.path.join(directory, item)
-                metadata = ujson.load(open(path))
+                with open(path, encoding="utf-8") as fp:
+                    metadata = ujson.load(fp)
                 metadatas.append(metadata)
                 print
         print

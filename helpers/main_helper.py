@@ -25,7 +25,6 @@ from typing import Any, Optional, Tuple, Union, BinaryIO
 
 import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
-import psutil
 import requests
 import ujson
 from aiohttp.client_exceptions import (
@@ -57,6 +56,48 @@ max_threads = -1
 os_name = platform.system()
 proxies = None
 cert = None
+
+if os_name == "Windows":
+    import ctypes
+
+try:
+    from psutil import disk_usage
+except ImportError:
+    from collections import namedtuple
+    import errno
+
+    # https://github.com/giampaolo/psutil/blob/master/psutil/_common.py#L176
+    sdiskusage = namedtuple("sdiskusage", ["total", "used", "free", "percent"])
+
+    # psutil likes to round the disk usage percentage to 1 decimal
+    # https://github.com/giampaolo/psutil/blob/master/psutil/_common.py#L365
+    def disk_usage(path, round_=1):
+
+        # check if the path is a file (or folder)
+        if not os.path.isfile(path):
+            raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
+
+        # on POSIX systems you can pass either a file or a folder path
+        # Windows only allows folder paths
+        if not os.path.isdir(path):
+            path = os.path.dirname(path)
+
+        if os_name == "Windows":
+            total_bytes = ctypes.c_ulonglong(0)
+            free_bytes = ctypes.c_ulonglong(0)
+            ctypes.windll.kernel32.GetDiskFreeSpaceExW(
+                ctypes.c_wchar_p(path), None, ctypes.pointer(total_bytes), ctypes.pointer(free_bytes))
+            return sdiskusage(
+                total_bytes.value,
+                total_bytes.value - free_bytes.value,
+                free_bytes.value,
+                round((total_bytes.value - free_bytes.value) * 100 / total_bytes.value, round_))
+        else:  # Linux, Darwin, ...
+            st = os.statvfs(path)
+            total = st.f_blocks * st.f_frsize
+            free = st.f_bavail * st.f_frsize
+            used = total - free
+            return sdiskusage(total, used, free, round(100 * used / total, round_))
 
 
 def assign_vars(config: dict[Any, Any]):
@@ -730,7 +771,7 @@ def check_space(
         for download_path in download_paths:
             if create_directory:
                 os.makedirs(download_path, exist_ok=True)
-            obj_Disk = psutil.disk_usage(download_path)
+            obj_Disk = disk_usage(download_path)
             free = obj_Disk.free / (1024.0 ** 3)
             x = {}
             x["path"] = download_path
@@ -765,14 +806,12 @@ def are_long_paths_enabled():
     if os_name != "Windows":
         return True
 
-    from ctypes import WinDLL, c_ubyte
-
-    ntdll = WinDLL("ntdll")
+    ntdll = ctypes.WinDLL("ntdll")
 
     if not hasattr(ntdll, "RtlAreLongPathsEnabled"):
         return False
 
-    ntdll.RtlAreLongPathsEnabled.restype = c_ubyte
+    ntdll.RtlAreLongPathsEnabled.restype = ctypes.c_ubyte
     ntdll.RtlAreLongPathsEnabled.argtypes = ()
     return bool(ntdll.RtlAreLongPathsEnabled())
 

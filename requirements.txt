@@ -3,7 +3,6 @@ beautifulsoup4
 urllib3
 win32-setctime
 python-socks[asyncio]
-psutil
 python-dateutil
 lxml
 mergedeep

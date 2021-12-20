@@ -332,10 +332,14 @@ class create_user:
             return final_result
         return response
 
-    async def get_groups(self) -> dict[str, Any]:
+    async def get_groups(self) -> error_details | dict[str, Any]:
         link = endpoint_links().groups_api
-        response = await self.session_manager.json_request(link)
-        response = response["response"]
+        response: error_details | dict[
+            str, Any
+        ] = await self.session_manager.json_request(link)
+        if isinstance(response, dict):
+            final_response: dict[str, Any] = response["response"]
+            return final_response
         return response
 
     async def get_messages(
@@ -354,6 +358,8 @@ class create_user:
             if result:
                 return result
         groups = await self.get_groups()
+        if isinstance(groups, error_details):
+            return []
         found_id: Optional[int] = None
         for group in groups["groups"]:
             for user in group["users"]:

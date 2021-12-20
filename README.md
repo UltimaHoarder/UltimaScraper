@@ -19,7 +19,7 @@ Build and run the image, mounting the appropriate directories:
 
 ## Running the app locally
 
-From the project folder open CMD/Terminal and run the command below:
+From the project folder open Windows Powershell/Terminal and run the command below:
 
 `pip install --upgrade --user -r requirements.txt`
 

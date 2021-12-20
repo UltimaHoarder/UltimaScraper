@@ -15,7 +15,11 @@ from rich.text import Text
 try:
     import tests.main_test as main_test
 except SyntaxError:
-    print("Execute the script with Python 3.10\nPress enter to continue")
+    version_info = (
+        f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
+    )
+    string = f"You're executing the script with Python {version_info}. Execute the script with Python 3.10"
+    print(string)
     exit()
 try:
 

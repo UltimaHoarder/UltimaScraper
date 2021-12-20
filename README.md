@@ -38,10 +38,10 @@ Open and edit:
 You have to fill in the following:
 
 - `{"cookie":"cookie_value"}`
-- `{"x-bc":"x-bc_value"}`
-- `{"user-agent":"user-agent_value"}`
+- `{"x_bc":"x-bc_value"}`
+- `{"user_agent":"user-agent_value"}`
 
-Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get said above cookies
+Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get said above auth values
 
 ![app-token](examples/3.png)
 ![app-token](examples/4.png)

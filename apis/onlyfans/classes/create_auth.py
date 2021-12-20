@@ -180,7 +180,7 @@ class create_auth(create_user):
         error.code = error_code
         error.message = error_message
         if args.verbose:
-            print(error)
+            print(error.__dict__)
         self.errors.append(error)
 
     async def get_lists(self, refresh=True, limit=100, offset=0):

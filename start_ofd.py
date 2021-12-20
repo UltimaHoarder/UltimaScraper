@@ -101,9 +101,6 @@ try:
                     print("Pausing scraper for " + loop_timeout + " seconds.")
                     await asyncio.sleep(float(loop_timeout))
 
-        if sys.platform == "win32":
-            asyncio.set_event_loop_policy(asyncio.WindowsSelectorEventLoopPolicy())
-
         asyncio.run(main())
 except Exception as e:
     print(traceback.format_exc())

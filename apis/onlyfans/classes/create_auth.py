@@ -4,7 +4,7 @@ import math
 from datetime import datetime
 from itertools import chain, product
 from multiprocessing.pool import Pool
-from typing import Any, Coroutine, Dict, List, Optional, Union
+from typing import Any, Coroutine, Dict, Optional, Union
 
 import jsonpickle
 from apis import api_helper
@@ -34,7 +34,7 @@ class create_auth(create_user):
     def __init__(
         self,
         option: dict[str, Any] = {},
-        pool: Pool = None,
+        pool: Optional[Pool] = None,
         max_threads: int = -1,
     ) -> None:
         create_user.__init__(self, option)

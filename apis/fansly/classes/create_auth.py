@@ -26,7 +26,7 @@ class create_auth(create_user):
     def __init__(
         self,
         option: dict[str, Any] = {},
-        pool: Pool = None,
+        pool: Optional[Pool] = None,
         max_threads: int = -1,
     ) -> None:
         create_user.__init__(self, option)
@@ -225,13 +225,18 @@ class create_auth(create_user):
             customer_link = endpoint_links(followings_id).customer
             followings = await self.session_manager.json_request(customer_link)
             if identifiers:
-                followings = [create_user(x, self) for x in followings["response"] for identifier in identifiers if x["username"] == identifier or x["id"] == identifier]
+                followings = [
+                    create_user(x, self)
+                    for x in followings["response"]
+                    for identifier in identifiers
+                    if x["username"] == identifier or x["id"] == identifier
+                ]
             else:
                 followings = [create_user(x, self) for x in followings["response"]]
             for following in followings:
                 if not following.subscribedByData:
                     new_date = datetime.now() + relativedelta(years=1)
-                    new_date = int(new_date.timestamp()*1000)
+                    new_date = int(new_date.timestamp() * 1000)
                     following.subscribedByData = {}
                     following.subscribedByData["endsAt"] = new_date
                     print

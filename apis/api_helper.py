@@ -62,7 +62,7 @@ def chunks(l, n):
     return final
 
 
-def calculate_max_threads(max_threads=None):
+def calculate_max_threads(max_threads:Optional[int]=None):
     if not max_threads:
         max_threads = -1
     max_threads2 = cpu_count()
@@ -73,7 +73,7 @@ def calculate_max_threads(max_threads=None):
 
 def multiprocessing(max_threads: Optional[int] = None):
     max_threads = calculate_max_threads(max_threads)
-    pool = ThreadPool(max_threads)
+    pool:Pool = ThreadPool(max_threads)
     return pool
 
 
@@ -87,6 +87,8 @@ class session_manager:
         use_cookies: bool = True,
     ) -> None:
         self.pool: Pool = auth.pool if auth.pool else multiprocessing()
+        max_threads= calculate_max_threads(max_threads)
+        self.semaphore = asyncio.BoundedSemaphore(max_threads)
         self.max_threads = max_threads
         self.kill = False
         self.headers = headers
@@ -156,64 +158,65 @@ class session_manager:
         json_format: bool = True,
         payload: dict[str, str] = {},
     ) -> Any:
-        headers = {}
-        custom_session = False
-        if not session:
-            custom_session = True
-            session = self.create_client_session()
-        headers = self.session_rules(link)
-        headers["accept"] = "application/json, text/plain, */*"
-        headers["Connection"] = "keep-alive"
-        temp_payload = payload.copy()
+        async with self.semaphore:
+            headers = {}
+            custom_session = False
+            if not session:
+                custom_session = True
+                session = self.create_client_session()
+            headers = self.session_rules(link)
+            headers["accept"] = "application/json, text/plain, */*"
+            headers["Connection"] = "keep-alive"
+            temp_payload = payload.copy()
 
-        request_method = None
-        result = None
-        if method == "HEAD":
-            request_method = session.head
-        elif method == "GET":
-            request_method = session.get
-        elif method == "POST":
-            request_method = session.post
-            headers["content-type"] = "application/json"
-            temp_payload = json.dumps(payload)
-        elif method == "DELETE":
-            request_method = session.delete
-        else:
-            return None
-        while True:
-            try:
-                response = await request_method(
-                    link, headers=headers, data=temp_payload
-                )
-                if method == "HEAD":
-                    result = response
-                else:
-                    if json_format and not stream:
-                        result = await response.json()
-                        if "error" in result:
-                            if isinstance(self.auth, onlyfans_classes.create_auth):
-                                result = onlyfans_extras.error_details(result)
-                            elif isinstance(self.auth, fansly_classes.create_auth):
-                                result = fansly_extras.error_details(result)
-                    elif stream and not json_format:
+            request_method = None
+            result = None
+            if method == "HEAD":
+                request_method = session.head
+            elif method == "GET":
+                request_method = session.get
+            elif method == "POST":
+                request_method = session.post
+                headers["content-type"] = "application/json"
+                temp_payload = json.dumps(payload)
+            elif method == "DELETE":
+                request_method = session.delete
+            else:
+                return None
+            while True:
+                try:
+                    response = await request_method(
+                        link, headers=headers, data=temp_payload
+                    )
+                    if method == "HEAD":
                         result = response
                     else:
-                        result = await response.read()
-                break
-            except (ClientConnectorError, ProxyError):
-                break
-            except (
-                ClientPayloadError,
-                ContentTypeError,
-                ClientOSError,
-                ServerDisconnectedError,
-                ProxyConnectionError,
-                ConnectionResetError,
-            ):
-                continue
-        if custom_session:
-            await session.close()
-        return result
+                        if json_format and not stream:
+                            result = await response.json()
+                            if "error" in result:
+                                if isinstance(self.auth, onlyfans_classes.create_auth):
+                                    result = onlyfans_extras.error_details(result)
+                                elif isinstance(self.auth, fansly_classes.create_auth):
+                                    result = fansly_extras.error_details(result)
+                        elif stream and not json_format:
+                            result = response
+                        else:
+                            result = await response.read()
+                    break
+                except (ClientConnectorError, ProxyError):
+                    break
+                except (
+                    ClientPayloadError,
+                    ContentTypeError,
+                    ClientOSError,
+                    ServerDisconnectedError,
+                    ProxyConnectionError,
+                    ConnectionResetError,
+                ):
+                    continue
+            if custom_session:
+                await session.close()
+            return result
 
     async def async_requests(self, items: list[str]) -> list[dict[str,Any]]:
         tasks = []

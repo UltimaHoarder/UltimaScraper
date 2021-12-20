@@ -1066,7 +1066,6 @@ def open_partial(path: str) -> BinaryIO:
         try:
             return open(partial_path, "xb")
         except FileExistsError:
-            os.unlink(partial_path)
             pass
 
 
@@ -1092,7 +1091,7 @@ async def write_data(response: ClientResponse, download_path: str, progress_bar)
                     ServerDisconnectedError,
                 ) as e:
                     status_code = 1
-        except Exception:
+        except:
             if partial_path:
                 os.unlink(partial_path)
             raise
@@ -1100,7 +1099,10 @@ async def write_data(response: ClientResponse, download_path: str, progress_bar)
             if status_code:
                 os.unlink(partial_path)
             else:
-                os.replace(partial_path, download_path)
+                try:
+                    os.replace(partial_path, download_path)
+                except OSError:
+                    pass
     else:
         if response.content_length:
             progress_bar.update_total_size(-response.content_length)

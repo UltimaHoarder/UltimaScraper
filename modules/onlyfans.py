@@ -81,13 +81,13 @@ def assign_vars(json_auth: auth_details, config, site_settings, site_name):
 
 
 async def account_setup(
-    auth: create_auth, identifiers: list = [], jobs: dict = {}, auth_count=0
-):
+    auth: create_auth, identifiers: list[int|str] = [], jobs: dict[str,Any] = {}, auth_count:int=0
+)-> tuple[bool,list[create_user]]:
     status = False
-    subscriptions = []
+    subscriptions:list[create_user] = []
     authed = await auth.login()
     if authed.active:
-        profile_directory = json_global_settings["profile_directories"][0]
+        profile_directory:str = json_global_settings["profile_directories"][0]
         profile_directory = os.path.abspath(profile_directory)
         profile_directory = os.path.join(profile_directory, authed.username)
         profile_metadata_directory = os.path.join(profile_directory, "Metadata")
@@ -114,7 +114,7 @@ async def account_setup(
         and json_settings["browser"]["auth"]
     ):
         domain = "https://onlyfans.com"
-        oflogin.login(auth, domain, auth.session_manager.get_proxy())
+        # oflogin.login(auth, domain, auth.session_manager.get_proxy())
     return status, subscriptions
 
 
@@ -1292,7 +1292,7 @@ async def manage_subscriptions(
                 results.remove(result)
     results.sort(key=lambda x: x.subscribedByData["expiredAt"])
     results.sort(key=lambda x: x.is_me(), reverse=True)
-    results2 = []
+    results2:list[create_user] = []
     hard_blacklist = ["onlyfanscreators"]
     for result in results:
         # result.auth_count = auth_count

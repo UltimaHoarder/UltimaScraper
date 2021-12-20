@@ -264,8 +264,8 @@ def filter_metadata(datas):
     return datas
 
 
-def import_archive(archive_path) -> Any:
-    metadata = {}
+def import_archive(archive_path:str) -> Any:
+    metadata:dict[str,Any] = {}
     if os.path.exists(archive_path) and os.path.getsize(archive_path):
         with open(archive_path, "r", encoding="utf-8") as outfile:
             while not metadata:
@@ -821,11 +821,11 @@ def prompt_modified(message, path):
         input(message)
 
 
-def get_config(config_path):
+def get_config(config_path:str):
     if os.path.exists(config_path):
         json_config = ujson.load(open(config_path))
     else:
-        json_config = {}
+        json_config:dict[str,Any] = {}
     json_config2 = copy.deepcopy(json_config)
     json_config = make_settings.fix(json_config)
     file_name = os.path.basename(config_path)

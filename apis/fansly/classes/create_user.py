@@ -432,7 +432,11 @@ class create_user:
         return results
 
     async def get_archived_posts(
-        self, links: Optional[list[str]] = None, limit:int=10, offset:int=0, refresh:bool=True
+        self,
+        links: Optional[list[str]] = None,
+        limit: int = 10,
+        offset: int = 0,
+        refresh: bool = True,
     ) -> list:
         api_type = "archived_posts"
         if not refresh:

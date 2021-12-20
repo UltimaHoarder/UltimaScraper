@@ -299,6 +299,8 @@ class create_auth(create_user):
                 for result in results2:
                     if isinstance(result, error_details):
                         continue
+                    if not result:
+                        print
                     subscription2: create_user = result
                     for subscription in subscriptions:
                         if subscription["id"] != subscription2.id:
@@ -331,10 +333,10 @@ class create_auth(create_user):
                 results.append([subscription])
                 print
             print
-        results = [x for x in results if x is not None]
-        results = list(chain(*results))
-        self.subscriptions = results
-        return results
+        final_results = [x for x in results if x is not None]
+        final_results = list(chain(*final_results))
+        self.subscriptions = final_results
+        return final_results
 
     async def get_chats(
         self,
@@ -393,8 +395,12 @@ class create_auth(create_user):
         return final_results
 
     async def get_mass_messages(
-        self, resume=None, refresh=True, limit=10, offset=0
-    ) -> list:
+        self,
+        resume: Optional[bool] = None,
+        refresh: bool = True,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
         api_type = "mass_messages"
         if not self.active:
             return []

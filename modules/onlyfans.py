@@ -1293,13 +1293,9 @@ async def manage_subscriptions(
     results.sort(key=lambda x: x.subscribedByData["expiredAt"])
     results.sort(key=lambda x: x.is_me(), reverse=True)
     results2:list[create_user] = []
-    hard_blacklist = ["onlyfanscreators"]
     for result in results:
         # result.auth_count = auth_count
         username = result.username
-        bl = [x for x in hard_blacklist if x == username]
-        if bl:
-            continue
         subscribePrice = result.subscribePrice
         if ignore_type in ["paid"]:
             if subscribePrice > 0:

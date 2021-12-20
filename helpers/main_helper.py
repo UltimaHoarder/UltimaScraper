@@ -71,10 +71,10 @@ except ImportError:
 
     # psutil likes to round the disk usage percentage to 1 decimal
     # https://github.com/giampaolo/psutil/blob/master/psutil/_common.py#L365
-    def disk_usage(path:str, round_:int=1):
-        
-        # check if the path is a file (or folder)
-        if not os.path.isfile(path):
+    def disk_usage(path: str, round_: int = 1):
+
+        # check if path exists
+        if not os.path.exists(path):
             raise FileNotFoundError(errno.ENOENT, os.strerror(errno.ENOENT), path)
 
         # on POSIX systems you can pass either a file or a folder path
@@ -86,12 +86,20 @@ except ImportError:
             total_bytes = ctypes.c_ulonglong(0)
             free_bytes = ctypes.c_ulonglong(0)
             ctypes.windll.kernel32.GetDiskFreeSpaceExW(
-                ctypes.c_wchar_p(path), None, ctypes.pointer(total_bytes), ctypes.pointer(free_bytes))
+                ctypes.c_wchar_p(path),
+                None,
+                ctypes.pointer(total_bytes),
+                ctypes.pointer(free_bytes),
+            )
             return sdiskusage(
                 total_bytes.value,
                 total_bytes.value - free_bytes.value,
                 free_bytes.value,
-                round((total_bytes.value - free_bytes.value) * 100 / total_bytes.value, round_))
+                round(
+                    (total_bytes.value - free_bytes.value) * 100 / total_bytes.value,
+                    round_,
+                ),
+            )
         else:  # Linux, Darwin, ...
             st = os.statvfs(path)
             total = st.f_blocks * st.f_frsize
@@ -305,8 +313,8 @@ def filter_metadata(datas):
     return datas
 
 
-def import_archive(archive_path:str) -> Any:
-    metadata:dict[str,Any] = {}
+def import_archive(archive_path: str) -> Any:
+    metadata: dict[str, Any] = {}
     if os.path.exists(archive_path) and os.path.getsize(archive_path):
         with open(archive_path, "r", encoding="utf-8") as outfile:
             while not metadata:
@@ -860,12 +868,12 @@ def prompt_modified(message, path):
         input(message)
 
 
-def get_config(config_path:str):
+def get_config(config_path: str):
     if os.path.exists(config_path):
         with open(config_path, encoding="utf-8") as fp:
             json_config = ujson.load(fp)
     else:
-        json_config:dict[str,Any] = {}
+        json_config: dict[str, Any] = {}
     json_config2 = copy.deepcopy(json_config)
     json_config = make_settings.fix(json_config)
     file_name = os.path.basename(config_path)

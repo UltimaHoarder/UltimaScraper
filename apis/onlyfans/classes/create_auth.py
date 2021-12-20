@@ -21,6 +21,13 @@ from apis.onlyfans.classes.extras import (
 )
 from dateutil.relativedelta import relativedelta
 from user_agent import generate_user_agent
+import argparse
+
+parser = argparse.ArgumentParser()
+parser.add_argument(
+    "-v", "--verbose", help="increase output verbosity", action="store_true"
+)
+args = parser.parse_args()
 
 
 class create_auth(create_user):
@@ -172,6 +179,8 @@ class create_auth(create_user):
             pass
         error.code = error_code
         error.message = error_message
+        if args.verbose:
+            print(error)
         self.errors.append(error)
 
     async def get_lists(self, refresh=True, limit=100, offset=0):

@@ -1260,10 +1260,10 @@ def multiprocessing():
     return pool
 
 
-def module_chooser(domain, json_sites):
+def module_chooser(domain:str, json_sites:dict[str,Any]):
     string = "Select Site: "
     separator = " | "
-    site_names = []
+    site_names:list[str] = []
     wl = ["onlyfans", "fansly", "starsavn"]
     bl = []
     site_count = len(json_sites)

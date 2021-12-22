@@ -306,6 +306,7 @@ class create_auth(create_user):
                     and not valid_subscriptions.subscribedByData
                 ):
                     new_date = datetime.now() + relativedelta(years=1)
+                    new_date = int(new_date.timestamp() * 1000)
                     valid_subscriptions.subscribedByData = {}
                     valid_subscriptions.subscribedByData["endsAt"] = new_date
                 return [valid_subscriptions]

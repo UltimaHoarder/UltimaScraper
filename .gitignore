@@ -153,3 +153,4 @@ $RECYCLE.BIN/
 extras/OFLogin/geckodriver.exe
 extras/OFLogin/chromedriver.exe
 extras/OFMetadataFixer/*
+.typings

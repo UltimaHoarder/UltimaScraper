@@ -8,7 +8,7 @@ class auth_details:
         self.username = options.get("username", "")
         self.cookie = cookie_parser(options.get("cookie", ""))
         self.x_bc = options.get("x_bc", "")
-        self.user_agent = options.get("user_agent", "")
+        self.user_agent: str = options.get("user_agent", "")
         self.email = options.get("email", "")
         self.password = options.get("password", "")
         self.hashed = options.get("hashed", False)
@@ -57,7 +57,7 @@ class legacy_auth_details:
 
 class cookie_parser:
     def __init__(self, options: str) -> None:
-        new_dict = {}
+        new_dict: dict[str, Any] = {}
         for crumble in options.strip().split(";"):
             if crumble:
                 key, value = crumble.strip().split("=")
@@ -145,7 +145,7 @@ class endpoint_links(object):
 
 # Lol?
 class error_details:
-    def __init__(self, result) -> None:
+    def __init__(self, result: dict[str, Any]) -> None:
         error = result["error"] if "error" in result else result
         self.code = error["code"]
         self.message = error["message"]
@@ -154,7 +154,7 @@ class error_details:
 def create_headers(
     dynamic_rules: dict[str, Any],
     auth_id: Union[str, int],
-    x_bc:str,
+    x_bc: str,
     user_agent: str = "",
     link: str = "https://onlyfans.com/",
 ):
@@ -168,9 +168,9 @@ def create_headers(
     return headers
 
 
-def handle_refresh(argument, argument2):
-    argument = argument.get(argument2)
-    return argument
+def handle_refresh(object_: object, name: str):
+    final_argument = getattr(object_, name)
+    return final_argument
 
 
 class media_types:

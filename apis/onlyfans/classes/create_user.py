@@ -230,7 +230,7 @@ class create_user:
         return status
 
     async def get_stories(
-        self, refresh=True, limit=100, offset=0
+        self, refresh:bool=True, limit:int=100, offset:int=0
     ) -> list[create_story]:
         api_type = "stories"
         if not refresh:
@@ -252,7 +252,7 @@ class create_user:
         return results
 
     async def get_highlights(
-        self, identifier="", refresh=True, limit=100, offset=0, hightlight_id=""
+        self, identifier:int|str="", refresh:bool=True, limit:int=100, offset:int=0, hightlight_id:int|str=""
     ) -> Union[list[create_highlight], list[create_story]]:
         api_type = "highlights"
         if not refresh:
@@ -277,7 +277,7 @@ class create_user:
         return results
 
     async def get_posts(
-        self, links: Optional[list[str]] = None, limit=10, offset=0, refresh=True
+        self, links: Optional[list[str]] = None, limit:int=10, offset:int=0, refresh:bool=True
     ) -> Optional[list[create_post]]:
         api_type = "posts"
         if not refresh:
@@ -517,7 +517,7 @@ class create_user:
 
     def set_scraped(self, name, scraped):
         setattr(self.scraped, name, scraped)
-    def finalize_content_set(self,results:list[dict[str,str]]):
+    def finalize_content_set(self,results:list[dict[str,str]]|list[str]):
         final_results:list[create_post] = []
         for result in results:
             content_type = result["responseType"]

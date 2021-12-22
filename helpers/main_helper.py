@@ -1,3 +1,4 @@
+from argparse import Namespace
 from database.databases.user_data.models.api_table import api_table
 from apis import api_helper
 import asyncio
@@ -39,7 +40,7 @@ from apis.fansly import fansly as Fansly
 from apis.starsavn import starsavn as StarsAVN
 from apis.onlyfans.classes import create_user
 from apis.onlyfans.classes.create_auth import create_auth
-from apis.onlyfans.classes.extras import content_types
+from apis.onlyfans.classes.extras import content_types, error_details
 from bs4 import BeautifulSoup
 from classes.prepare_metadata import format_variables, prepare_reformat
 from mergedeep import Strategy, merge
@@ -1260,10 +1261,10 @@ def multiprocessing():
     return pool
 
 
-def module_chooser(domain:str, json_sites:dict[str,Any]):
+def module_chooser(domain: str, json_sites: dict[str, Any]):
     string = "Select Site: "
     separator = " | "
-    site_names:list[str] = []
+    site_names: list[str] = []
     wl = ["onlyfans", "fansly", "starsavn"]
     bl = []
     site_count = len(json_sites)
@@ -1302,3 +1303,5 @@ async def move_to_old(
     print(f"Moving {source} -> {local_destination}")
     shutil.copytree(source, local_destination, dirs_exist_ok=True)
     shutil.rmtree(source)
+
+

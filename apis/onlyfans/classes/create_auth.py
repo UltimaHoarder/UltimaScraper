@@ -4,7 +4,7 @@ import math
 from datetime import datetime
 from itertools import chain, product
 from multiprocessing.pool import Pool
-from typing import Any, Coroutine, Dict, Optional, Union
+from typing import Any, Dict, Optional, Union
 
 import jsonpickle
 from apis import api_helper
@@ -21,13 +21,6 @@ from apis.onlyfans.classes.extras import (
 )
 from dateutil.relativedelta import relativedelta
 from user_agent import generate_user_agent
-import argparse
-
-parser = argparse.ArgumentParser()
-parser.add_argument(
-    "-v", "--verbose", help="increase output verbosity", action="store_true"
-)
-args = parser.parse_args()
 
 
 class create_auth(create_user):
@@ -40,13 +33,13 @@ class create_auth(create_user):
         create_user.__init__(self, option)
         if not self.username:
             self.username = f"u{self.id}"
-        self.lists = {}
+        self.lists = []
         self.links = content_types()
         self.subscriptions: list[create_user] = []
         self.chats = None
         self.archived_stories = {}
         self.mass_messages = []
-        self.paid_content = []
+        self.paid_content: list[create_message | create_post] = []
         temp_pool = pool if pool else api_helper.multiprocessing()
         self.pool = temp_pool
         self.session_manager = api_helper.session_manager(self, max_threads=max_threads)
@@ -72,9 +65,9 @@ class create_auth(create_user):
             return self
         if guest and auth_items:
             auth_items.cookie.auth_id = "0"
-            auth_items.user_agent = generate_user_agent()  # type: ignore
+            auth_items.user_agent = str(generate_user_agent())
         link = endpoint_links().customer
-        user_agent = auth_items.user_agent  # type: ignore
+        user_agent = auth_items.user_agent
         auth_id = str(auth_items.cookie.auth_id)
         # expected string error is fixed by auth_id
         dynamic_rules = self.session_manager.dynamic_rules
@@ -158,11 +151,11 @@ class create_auth(create_user):
                 self.active = False
         return self
 
-    def resolve_auth_errors(self, response: Union[dict[str, Any], error_details]):
+    def resolve_auth_errors(self, response: error_details | dict[str, Any]):
         # Adds an error object to self.auth.errors
         if isinstance(response, error_details):
             error = response
-        elif isinstance(response, dict) and "error" in response:
+        elif "error" in response:
             error = response["error"]
             error = error_details(error)
         else:
@@ -179,17 +172,16 @@ class create_auth(create_user):
             pass
         error.code = error_code
         error.message = error_message
-        if args.verbose:
-            print(error.__dict__)
+        api_helper.handle_error_details(error)
         self.errors.append(error)
 
-    async def get_lists(self, refresh=True, limit=100, offset=0):
+    async def get_lists(self, refresh: bool = True, limit: int = 100, offset: int = 0):
         api_type = "lists"
         if not self.active:
             return
         if not refresh:
-            subscriptions = handle_refresh(self, api_type)
-            return subscriptions
+            results = handle_refresh(self, api_type)
+            return results
         link = endpoint_links(global_limit=limit, global_offset=offset).lists
         results = await self.session_manager.json_request(link)
         self.lists = results
@@ -208,7 +200,11 @@ class create_auth(create_user):
         return response
 
     async def get_lists_users(
-        self, identifier, check: bool = False, refresh=True, limit=100, offset=0
+        self,
+        identifier: int | str,
+        check: bool = False,
+        limit: int = 100,
+        offset: int = 0,
     ):
         if not self.active:
             return
@@ -224,7 +220,11 @@ class create_auth(create_user):
         return results
 
     async def get_subscription(
-        self, check: bool = False, identifier="", limit=100, offset=0
+        self,
+        check: bool = False,
+        identifier: int | str = "",
+        limit: int = 100,
+        offset: int = 0,
     ) -> Union[create_user, None]:
         subscriptions = await self.get_subscriptions(refresh=False)
         valid = None
@@ -257,7 +257,7 @@ class create_auth(create_user):
             offset_array.append(link)
 
         # Following logic is unique to creators only
-        results = []
+        results: list[list[create_user]] = []
         if self.isPerformer:
             temp_session_manager = self.session_manager
             temp_pool = self.pool
@@ -325,7 +325,9 @@ class create_auth(create_user):
 
             pool = self.pool
             tasks = pool.starmap(multi, product(offset_array))
-            results += await asyncio.gather(*tasks)
+            results2 = await asyncio.gather(*tasks)
+            results2 = list(filter(None, results2))
+            results.extend(results2)
         else:
             for identifier in identifiers:
                 if self.id == identifier or self.username == identifier:
@@ -349,12 +351,12 @@ class create_auth(create_user):
 
     async def get_chats(
         self,
-        links: Optional[list] = None,
-        limit=100,
-        offset=0,
-        refresh=True,
-        inside_loop=False,
-    ) -> list:
+        links: Optional[list[str]] = None,
+        limit: int = 100,
+        offset: int = 0,
+        refresh: bool = True,
+        inside_loop: bool = False,
+    ) -> list[dict[str, Any]]:
         api_type = "chats"
         if not self.active:
             return []
@@ -405,13 +407,13 @@ class create_auth(create_user):
 
     async def get_mass_messages(
         self,
-        resume: Optional[bool] = None,
+        resume: Optional[list[dict[str, Any]]] = None,
         refresh: bool = True,
         limit: int = 10,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
         api_type = "mass_messages"
-        if not self.active:
+        if not self.active or not self.isPerformer:
             return []
         if not refresh:
             result = handle_refresh(self, api_type)
@@ -452,7 +454,7 @@ class create_auth(create_user):
         limit: int = 10,
         offset: int = 0,
         inside_loop: bool = False,
-    ) -> list[Union[create_message, create_post]]:
+    ) -> list[create_message | create_post] | Any | error_details:
         api_type = "paid_content"
         if not self.active:
             return []
@@ -469,7 +471,7 @@ class create_auth(create_user):
                 )
                 final_results.extend(results2)
             if not inside_loop:
-                temp = []
+                temp: list[create_message | create_post] = []
                 for final_result in final_results:
                     content = None
                     if final_result["responseType"] == "message":

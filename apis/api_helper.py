@@ -1,3 +1,4 @@
+from argparse import Namespace
 import asyncio
 import copy
 import hashlib
@@ -35,6 +36,7 @@ import apis.fansly.classes as fansly_classes
 fansly_extras = fansly_classes.extras
 import apis.starsavn.classes as starsavn_classes
 starsavn_extras = starsavn_classes.extras
+parsed_args = Namespace()
 
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
@@ -156,7 +158,8 @@ class session_manager:
         method: str = "GET",
         stream: bool = False,
         json_format: bool = True,
-        payload: dict[str, str] = {},
+        payload: dict[str, str|bool] = {},
+        _handle_error_details:bool=True
     ) -> Any:
         async with self.semaphore:
             headers = {}
@@ -198,6 +201,8 @@ class session_manager:
                                     result = onlyfans_extras.error_details(result)
                                 elif isinstance(self.auth, fansly_classes.create_auth):
                                     result = fansly_extras.error_details(result)
+                                if _handle_error_details:
+                                    handle_error_details(result)
                         elif stream and not json_format:
                             result = response
                         else:
@@ -408,7 +413,6 @@ async def scrape_endpoint_links(links:list[str], session_manager: Union[session_
             if not positives and false_positive:
                 media_set.extend(not_faulty)
                 break
-            print
         else:
             media_set.extend(not_faulty)
             break
@@ -416,8 +420,8 @@ async def scrape_endpoint_links(links:list[str], session_manager: Union[session_
     return final_media_set
 
 
-def calculate_the_unpredictable(link, limit, multiplier=1):
-    final_links = []
+def calculate_the_unpredictable(link:str, limit:int, multiplier:int=1):
+    final_links:list[str] = []
     a = list(range(1, multiplier + 1))
     for b in a:
         parsed_link = urlparse(link)
@@ -433,3 +437,11 @@ def parse_config_inputs(custom_input:Any) -> list[str]:
     if isinstance(custom_input,str):
         custom_input = custom_input.split(",")
     return custom_input
+
+
+def handle_error_details(item:Any, remove_errors:bool=False):
+    if isinstance(item,list):
+        pass
+    if parsed_args.verbose:
+        # Will move to logging instead of printing later.
+        print(f"Error: {item.__dict__}")

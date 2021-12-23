@@ -15,11 +15,11 @@ import extras.OFRenamer.start_ofr as ofrenamer
 import helpers.db_helper as db_helper
 import helpers.main_helper as main_helper
 from apis.fansly import fansly as Fansly
-from apis.fansly.classes.create_auth import create_auth
+from apis.fansly.classes.auth_model import create_auth
 from apis.fansly.classes.create_message import create_message
-from apis.fansly.classes.create_post import create_post
+from apis.fansly.classes.post_model import create_post
 from apis.fansly.classes.create_story import create_story
-from apis.fansly.classes.create_user import create_user
+from apis.fansly.classes.user_model import create_user
 from apis.fansly.classes.extras import auth_details, media_types
 from apis.fansly.fansly import start
 from classes.prepare_metadata import create_metadata, prepare_reformat

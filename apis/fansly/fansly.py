@@ -1,8 +1,8 @@
 from multiprocessing.pool import Pool
 from typing import Any, Dict, Optional, Union
 
-from apis.fansly.classes import create_user
-from apis.fansly.classes.create_auth import create_auth
+from apis.fansly.classes import user_model
+from apis.fansly.classes.auth_model import create_auth
 from apis.fansly.classes.extras import auth_details, endpoint_links, legacy_auth_details
 
 from .. import api_helper
@@ -31,7 +31,7 @@ class start:
         max_threads: int = -1,
     ) -> None:
         self.auths: list[create_auth] = []
-        self.subscriptions: list[create_user] = []
+        self.subscriptions: list[user_model] = []
         self.max_threads = max_threads
         self.lists = None
         self.endpoint_links = endpoint_links

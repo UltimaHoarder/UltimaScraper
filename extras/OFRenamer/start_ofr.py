@@ -7,7 +7,7 @@ import urllib.parse as urlparse
 from itertools import chain
 
 from apis.onlyfans import onlyfans
-from apis.onlyfans.classes.create_user import create_user
+from apis.onlyfans.classes.user_model import create_user
 from database.databases.user_data.models.api_table import api_table
 from database.databases.user_data.models.media_table import template_media_table
 from sqlalchemy.orm.scoping import scoped_session

@@ -4,7 +4,7 @@ from itertools import chain, groupby
 from typing import Any, MutableMapping, Union
 
 import jsonpickle
-from apis.onlyfans.classes.create_auth import create_auth
+from apis.onlyfans.classes.auth_model import create_auth
 from apis.onlyfans.classes.extras import media_types
 from helpers import main_helper
 

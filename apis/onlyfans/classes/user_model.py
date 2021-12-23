@@ -1,25 +1,25 @@
+from __future__ import annotations
+
 import math
 from itertools import chain
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib import parse
 
 import apis.onlyfans.classes.create_message as create_message
 from apis import api_helper
-from apis.onlyfans.classes import create_auth
+from apis.onlyfans.classes import post_model
 from apis.onlyfans.classes.create_highlight import create_highlight
-from apis.onlyfans.classes.create_post import create_post
 from apis.onlyfans.classes.create_story import create_story
-from apis.onlyfans.classes.extras import (
-    content_types,
-    endpoint_links,
-    error_details,
-    handle_refresh,
-    remove_errors,
-)
+from apis.onlyfans.classes.extras import (content_types, endpoint_links,
+                                          error_details, handle_refresh,
+                                          remove_errors)
 
+if TYPE_CHECKING:
+    from apis.onlyfans.classes.auth_model import create_auth
+    from apis.onlyfans.classes.post_model import create_post
 
 class create_user:
-    def __init__(self, option:dict[str,Any]={}, subscriber: create_auth = None) -> None:
+    def __init__(self, option:dict[str,Any]={}, subscriber: Optional[create_auth] = None) -> None:
         self.view: str = option.get("view")
         self.avatar: Any = option.get("avatar")
         self.avatarThumbs: Any = option.get("avatarThumbs")
@@ -211,11 +211,9 @@ class create_user:
         self.maxPinnedPostsCount: int = option.get("maxPinnedPostsCount")
         # Custom
         self.subscriber = subscriber
+        self.session_manager = subscriber.session_manager if subscriber else None
         self.scraped = content_types()
         self.temp_scraped = content_types()
-        self.session_manager = None
-        if subscriber:
-            self.session_manager = subscriber.session_manager
         self.download_info = {}
         self.__raw__ = option
 
@@ -286,18 +284,10 @@ class create_user:
                 return result
         if links is None:
             links = []
-        api_count = self.postsCount
-        if api_count and not links:
-            link = endpoint_links(
-                identifier=self.id, global_limit=limit, global_offset=offset
-            ).post_api
-            ceil = math.ceil(api_count / limit)
-            numbers = list(range(ceil))
-            for num in numbers:
-                num = num * limit
-                link = link.replace(f"limit={limit}", f"limit={limit}")
-                new_link = link.replace("offset=0", f"offset={num}")
-                links.append(new_link)
+        if not links:
+            epl = endpoint_links()
+            link = epl.list_posts(self.id)
+            links = epl.create_links(link,self.postsCount)
         results = await api_helper.scrape_endpoint_links(
             links, self.session_manager, api_type
         )
@@ -315,7 +305,7 @@ class create_user:
         ).post_by_id
         response = await self.session_manager.json_request(link)
         if isinstance(response, dict):
-            final_result = create_post(response, self)
+            final_result = post_model.create_post(response, self)
             return final_result
         return response
 
@@ -523,7 +513,7 @@ class create_user:
             content_type = result["responseType"]
             match content_type:
                 case "post":
-                    created = create_post(result,self)
+                    created = post_model.create_post(result,self)
                     final_results.append(created)
                 case _:
                     print

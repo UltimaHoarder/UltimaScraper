@@ -1,9 +1,9 @@
 from multiprocessing.pool import Pool
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
-from apis.onlyfans.classes import create_user
-from apis.onlyfans.classes.create_auth import create_auth
-from apis.onlyfans.classes.extras import auth_details, endpoint_links, legacy_auth_details
+from apis.onlyfans.classes.auth_model import create_auth
+from apis.onlyfans.classes.extras import auth_details, endpoint_links
+from apis.onlyfans.classes.user_model import create_user
 
 from .. import api_helper
 
@@ -39,7 +39,7 @@ class start:
         self.settings: dict[str, dict[str, Any]] = {}
 
     def add_auth(self, options: dict[str, str] = {}, only_active: bool = False):
-        auth = create_auth(pool=self.pool, max_threads=self.max_threads)
+        auth = create_auth(pool=self.pool, max_threads=self.max_threads, api=self)
         if only_active and not options.get("active"):
             return auth
         temp_auth_details = auth_details(options).upgrade_legacy(options)

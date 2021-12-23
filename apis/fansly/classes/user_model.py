@@ -1,28 +1,27 @@
+from __future__ import annotations
+
 import math
 from itertools import chain
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib import parse
-
-from mergedeep.mergedeep import Strategy, merge
 
 import apis.fansly.classes.create_message as create_message
 from apis import api_helper
-from apis.fansly.classes import create_auth
 from apis.fansly.classes.create_highlight import create_highlight
-from apis.fansly.classes.create_post import create_post
 from apis.fansly.classes.create_story import create_story
-from apis.fansly.classes.extras import (
-    content_types,
-    endpoint_links,
-    error_details,
-    handle_refresh,
-    remove_errors,
-)
+from apis.fansly.classes.extras import (content_types, endpoint_links,
+                                        error_details, handle_refresh,
+                                        remove_errors)
+from apis.fansly.classes.post_model import create_post
+from mergedeep.mergedeep import Strategy, merge
 
+if TYPE_CHECKING:
+    from apis.fansly.classes.auth_model import create_auth
+    from apis.fansly.classes.post_model import create_post
 
 class create_user:
     def __init__(
-        self, option: dict[str, Any] = {}, subscriber: create_auth = None
+        self, option: dict[str, Any] = {}, subscriber: Optional[create_auth] = None
     ) -> None:
         self.view: str = option.get("view")
         self.avatar: Any = option.get("avatar")

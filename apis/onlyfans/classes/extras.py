@@ -1,6 +1,7 @@
 import copy
 from itertools import chain
-from typing import Any, Union
+import math
+from typing import Any, Literal, Optional, Union
 
 
 class auth_details:
@@ -106,14 +107,18 @@ class content_types:
 class endpoint_links(object):
     def __init__(
         self,
-        identifier=None,
-        identifier2=None,
-        identifier3=None,
-        text="",
-        only_links=True,
-        global_limit=10,
-        global_offset=0,
+        identifier: Optional[int | str] = None,
+        identifier2: Optional[int | str] = None,
+        identifier3: Optional[int | str] = None,
+        text: str = "",
+        global_limit: int = 10,
+        global_offset: int = 0,
+        sort_order: Literal["asc", "desc"] = "desc",
     ):
+        domain = "https://onlyfans.com"
+        api = "/api2/v2"
+        full_url_path = f"{domain}{api}"
+        self.full_url_path = full_url_path
         self.customer = f"https://onlyfans.com/api2/v2/users/me"
         self.users = f"https://onlyfans.com/api2/v2/users/{identifier}"
         self.subscriptions = f"https://onlyfans.com/api2/v2/subscriptions/subscribes?limit={global_limit}&offset={global_offset}&type=active"
@@ -129,7 +134,7 @@ class endpoint_links(object):
         self.stories_api = f"https://onlyfans.com/api2/v2/users/{identifier}/stories?limit=100&offset=0&order=desc"
         self.list_highlights = f"https://onlyfans.com/api2/v2/users/{identifier}/stories/highlights?limit=100&offset=0&order=desc"
         self.highlight = f"https://onlyfans.com/api2/v2/stories/highlights/{identifier}"
-        self.post_api = f"https://onlyfans.com/api2/v2/users/{identifier}/posts?limit={global_limit}&offset={global_offset}&order=publish_date_desc&skip_users_dups=0"
+        self.list_posts_api = self.list_posts(identifier)
         self.archived_posts = f"https://onlyfans.com/api2/v2/users/{identifier}/posts/archived?limit={global_limit}&offset={global_offset}&order=publish_date_desc"
         self.archived_stories = f"https://onlyfans.com/api2/v2/stories/archive/?limit=100&offset=0&order=publish_date_desc"
         self.paid_api = f"https://onlyfans.com/api2/v2/posts/paid?{global_limit}&offset={global_offset}"
@@ -140,7 +145,45 @@ class endpoint_links(object):
         self.transactions = (
             f"https://onlyfans.com/api2/v2/payments/all/transactions?limit=10&offset=0"
         )
+        self.list_comments_api = f"{full_url_path}/{identifier}/{identifier2}/comments?limit={global_limit}&offset={global_offset}&sort={sort_order}"
         self.two_factor = f"https://onlyfans.com/api2/v2/users/otp/check"
+
+    def list_posts(
+        self,
+        content_id: Optional[int | str],
+        global_limit: int = 10,
+        global_offset: int = 0,
+    ):
+        return f"{self.full_url_path}/users/{content_id}/posts?limit={global_limit}&offset={global_offset}&order=publish_date_desc&skip_users_dups=0"
+
+    def list_comments(
+        self,
+        content_type: str,
+        content_id: Optional[int | str],
+        global_limit: int = 10,
+        global_offset: int = 0,
+        sort_order: Literal["asc", "desc"] = "desc",
+    ):
+        content_type = f"{content_type}s" if content_type[0] != "s" else content_type
+        return f"{self.full_url_path}/{content_type}/{content_id}/comments?limit={global_limit}&offset={global_offset}&sort={sort_order}"
+
+    def create_links(self, link: str, api_count: int, limit: int = 10, offset: int = 0):
+        """
+        This function will create a list of links depending on their content count.
+
+        Example:\n
+        create_links(link="base_link", api_count=50) will return a list with 5 links.
+        """
+        final_links: list[str] = []
+        if api_count:
+            ceil = math.ceil(api_count / limit)
+            numbers = list(range(ceil))
+            for num in numbers:
+                num = num * limit
+                link = link.replace(f"limit={limit}", f"limit={limit}")
+                new_link = link.replace(f"offset={offset}", f"offset={num}")
+                final_links.append(new_link)
+        return final_links
 
 
 # Lol?

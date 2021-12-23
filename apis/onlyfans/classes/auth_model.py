@@ -1,16 +1,16 @@
+from __future__ import annotations
+
 import asyncio
-from asyncio.tasks import Task
 import math
+from asyncio.tasks import Task
 from datetime import datetime
 from itertools import chain, product
 from multiprocessing.pool import Pool
-from typing import Any, Dict, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import jsonpickle
 from apis import api_helper
 from apis.onlyfans.classes.create_message import create_message
-from apis.onlyfans.classes.create_post import create_post
-from apis.onlyfans.classes.create_user import create_user
 from apis.onlyfans.classes.extras import (
     auth_details,
     content_types,
@@ -19,8 +19,13 @@ from apis.onlyfans.classes.extras import (
     error_details,
     handle_refresh,
 )
+from apis.onlyfans.classes.post_model import create_post
+from apis.onlyfans.classes.user_model import create_user
 from dateutil.relativedelta import relativedelta
 from user_agent import generate_user_agent
+
+if TYPE_CHECKING:
+    from apis.onlyfans.onlyfans import start
 
 
 class create_auth(create_user):
@@ -29,6 +34,7 @@ class create_auth(create_user):
         option: dict[str, Any] = {},
         pool: Optional[Pool] = None,
         max_threads: int = -1,
+        api: Optional[start] = None,
     ) -> None:
         create_user.__init__(self, option)
         if not self.username:
@@ -40,10 +46,11 @@ class create_auth(create_user):
         self.archived_stories = {}
         self.mass_messages = []
         self.paid_content: list[create_message | create_post] = []
+        self.api = api
         temp_pool = pool if pool else api_helper.multiprocessing()
         self.pool = temp_pool
         self.session_manager = api_helper.session_manager(self, max_threads=max_threads)
-        self.auth_details: auth_details = auth_details()
+        self.auth_details = auth_details()
         self.profile_directory = option.get("profile_directory", "")
         self.guest = False
         self.active: bool = False
@@ -142,8 +149,6 @@ class create_auth(create_user):
             if response:
                 self.resolve_auth_errors(response)
                 if not self.errors:
-                    # merged = self.__dict__ | response
-                    # self = create_auth(merged,self.pool,self.session_manager.max_threads)
                     self.active = True
                     self.update(response)
             else:
@@ -221,11 +226,8 @@ class create_auth(create_user):
 
     async def get_subscription(
         self,
-        check: bool = False,
         identifier: int | str = "",
-        limit: int = 100,
-        offset: int = 0,
-    ) -> Union[create_user, None]:
+    ) -> create_user | None:
         subscriptions = await self.get_subscriptions(refresh=False)
         valid = None
         for subscription in subscriptions:

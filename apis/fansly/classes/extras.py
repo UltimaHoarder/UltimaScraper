@@ -1,6 +1,6 @@
 import copy
 from itertools import chain
-from typing import Any, Optional, Union
+from typing import Any, Literal, Optional, Union
 
 
 class auth_details:
@@ -104,9 +104,9 @@ class endpoint_links(object):
         identifier2: Optional[str | int] = None,
         identifier3: Optional[str | int] = None,
         text: str = "",
-        only_links: bool = True,
         global_limit: int = 10,
         global_offset: int = 0,
+        sort_order: Literal["asc", "desc"] = "desc",
     ):
         domain = "https://apiv2.fansly.com"
         api = "/api/v1"
@@ -169,9 +169,9 @@ def create_headers(
     return headers
 
 
-def handle_refresh(argument, argument2):
-    argument = argument.get(argument2)
-    return argument
+def handle_refresh(object_: object, name: str):
+    final_argument = getattr(object_, name)
+    return final_argument
 
 
 class media_types:

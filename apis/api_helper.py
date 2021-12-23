@@ -1,4 +1,5 @@
-from argparse import Namespace
+from __future__ import annotations
+
 import asyncio
 import copy
 import hashlib
@@ -7,34 +8,32 @@ import os
 import re
 import threading
 import time
+from argparse import Namespace
 from itertools import chain
 from multiprocessing import cpu_count
 from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing.pool import Pool
 from os.path import dirname as up
 from random import randint
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib.parse import urlparse
 
 import python_socks
 import requests
 from aiohttp import ClientSession
-from aiohttp.client_exceptions import (
-    ClientConnectorError,
-    ClientOSError,
-    ClientPayloadError,
-    ContentTypeError,
-    ServerDisconnectedError,
-)
+from aiohttp.client_exceptions import (ClientConnectorError, ClientOSError,
+                                       ClientPayloadError, ContentTypeError,
+                                       ServerDisconnectedError)
 from aiohttp.client_reqrep import ClientResponse
 from aiohttp_socks import ProxyConnectionError, ProxyConnector, ProxyError
-from database.databases.user_data.models.media_table import template_media_table
+from database.databases.user_data.models.media_table import \
+    template_media_table
 
 import apis.onlyfans.classes as onlyfans_classes
-onlyfans_extras = onlyfans_classes.extras
 import apis.fansly.classes as fansly_classes
-fansly_extras = fansly_classes.extras
 import apis.starsavn.classes as starsavn_classes
+onlyfans_extras = onlyfans_classes.extras
+fansly_extras = fansly_classes.extras
 starsavn_extras = starsavn_classes.extras
 parsed_args = Namespace()
 
@@ -82,7 +81,7 @@ def multiprocessing(max_threads: Optional[int] = None):
 class session_manager:
     def __init__(
         self,
-        auth: Union[onlyfans_classes.create_auth, fansly_classes.create_auth],
+        auth: onlyfans_classes.auth_model.create_auth| fansly_classes.auth_model.create_auth,
         headers: dict[str, Any] = {},
         proxies: list[str] = [],
         max_threads: int = -1,
@@ -197,10 +196,11 @@ class session_manager:
                         if json_format and not stream:
                             result = await response.json()
                             if "error" in result:
-                                if isinstance(self.auth, onlyfans_classes.create_auth):
-                                    result = onlyfans_extras.error_details(result)
-                                elif isinstance(self.auth, fansly_classes.create_auth):
-                                    result = fansly_extras.error_details(result)
+                                match type(self.auth):
+                                    case onlyfans_classes.auth_model.create_auth:
+                                        result = onlyfans_extras.error_details(result)
+                                    case fansly_classes.auth_model.create_auth:
+                                        result = fansly_extras.error_details(result)
                                 if _handle_error_details:
                                     handle_error_details(result)
                         elif stream and not json_format:

@@ -1,4 +1,5 @@
 from argparse import Namespace
+from apis.onlyfans.classes.user_model import create_user
 from database.databases.user_data.models.api_table import api_table
 from apis import api_helper
 import asyncio
@@ -38,8 +39,7 @@ from aiohttp.client_reqrep import ClientResponse
 from apis.onlyfans import onlyfans as OnlyFans
 from apis.fansly import fansly as Fansly
 from apis.starsavn import starsavn as StarsAVN
-from apis.onlyfans.classes import create_user
-from apis.onlyfans.classes.create_auth import create_auth
+from apis.onlyfans.classes.auth_model import create_auth
 from apis.onlyfans.classes.extras import content_types, error_details
 from bs4 import BeautifulSoup
 from classes.prepare_metadata import format_variables, prepare_reformat

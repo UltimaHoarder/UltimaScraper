@@ -8,8 +8,6 @@ from typing import Any, Dict, List, Optional, Union
 import jsonpickle
 from apis import api_helper
 from apis.fansly.classes.create_message import create_message
-from apis.fansly.classes.create_post import create_post
-from apis.fansly.classes.create_user import create_user
 from apis.fansly.classes.extras import (
     auth_details,
     content_types,
@@ -18,6 +16,8 @@ from apis.fansly.classes.extras import (
     error_details,
     handle_refresh,
 )
+from apis.fansly.classes.post_model import create_post
+from apis.fansly.classes.user_model import create_user
 from dateutil.relativedelta import relativedelta
 from user_agent import generate_user_agent
 
@@ -38,13 +38,13 @@ class create_auth(create_user):
         self.chats = None
         self.archived_stories = {}
         self.mass_messages = []
-        self.paid_content = []
+        self.paid_content: list[create_message | create_post] = []
         temp_pool = pool if pool else api_helper.multiprocessing()
         self.pool = temp_pool
         self.session_manager = api_helper.session_manager(
             self, max_threads=max_threads, use_cookies=False
         )
-        self.auth_details: auth_details = auth_details()
+        self.auth_details = auth_details()
         self.profile_directory = option.get("profile_directory", "")
         self.guest = False
         self.active: bool = False
@@ -66,10 +66,9 @@ class create_auth(create_user):
         if not auth_items:
             return self
         if guest and auth_items:
-            auth_items.cookie.auth_id = "0"
-            auth_items.user_agent = generate_user_agent()  # type: ignore
+            auth_items.user_agent = generate_user_agent()
         link = endpoint_links().customer
-        user_agent = auth_items.user_agent  # type: ignore
+        user_agent = auth_items.user_agent
         # expected string error is fixed by auth_id
         dynamic_rules = self.session_manager.dynamic_rules
         a: List[Any] = [dynamic_rules, user_agent, link]
@@ -137,24 +136,25 @@ class create_auth(create_user):
             link = endpoint_links().settings
             response = await self.session_manager.json_request(link)
             if isinstance(response, dict):
-                link = endpoint_links(response["response"]["accountId"]).customer
-                response = await self.session_manager.json_request(link)
-                self.resolve_auth_errors(response)
+                final_response: dict[str, Any] = response
+                link = endpoint_links(final_response["response"]["accountId"]).customer
+                final_response = await self.session_manager.json_request(link)
+                self.resolve_auth_errors(final_response)
                 if not self.errors:
-                    # merged = self.__dict__ | response
+                    # merged = self.__dict__ | final_response
                     # self = create_auth(merged,self.pool,self.session_manager.max_threads)
                     self.active = True
-                    self.update(response)
+                    self.update(final_response)
             else:
                 # 404'ed
                 self.active = False
         return self
 
-    def resolve_auth_errors(self, response: Union[dict[str, Any], error_details]):
+    def resolve_auth_errors(self, response: error_details | dict[str, Any]):
         # Adds an error object to self.auth.errors
         if isinstance(response, error_details):
             error = response
-        elif isinstance(response, dict) and "error" in response:
+        elif "error" in response:
             error = response["error"]
             error = error_details(error)
         else:
@@ -173,13 +173,13 @@ class create_auth(create_user):
         error.message = error_message
         self.errors.append(error)
 
-    async def get_lists(self, refresh=True, limit=100, offset=0):
+    async def get_lists(self, refresh: bool = True, limit: int = 100, offset: int = 0):
         api_type = "lists"
         if not self.active:
             return
         if not refresh:
-            subscriptions = handle_refresh(self, api_type)
-            return subscriptions
+            results = handle_refresh(self, api_type)
+            return results
         link = endpoint_links(global_limit=limit, global_offset=offset).lists
         results = await self.session_manager.json_request(link)
         self.lists = results
@@ -199,7 +199,11 @@ class create_auth(create_user):
         return response
 
     async def get_lists_users(
-        self, identifier, check: bool = False, refresh=True, limit=100, offset=0
+        self,
+        identifier: int | str,
+        check: bool = False,
+        limit: int = 100,
+        offset: int = 0,
     ):
         if not self.active:
             return
@@ -243,8 +247,9 @@ class create_auth(create_user):
         return followings
 
     async def get_subscription(
-        self, check: bool = False, identifier="", limit=100, offset=0
-    ) -> Union[create_user, None]:
+        self,
+        identifier: int | str = "",
+    ) -> create_user | None:
         subscriptions = await self.get_subscriptions(refresh=False)
         valid = None
         for subscription in subscriptions:
@@ -254,13 +259,7 @@ class create_auth(create_user):
         return valid
 
     async def get_subscriptions(
-        self,
-        resume=None,
-        refresh=True,
-        identifiers: list = [],
-        extra_info=True,
-        limit=20,
-        offset=0,
+        self, refresh: bool = True, identifiers: list[int | str] = []
     ) -> list[create_user]:
         if not self.active:
             return []
@@ -272,7 +271,7 @@ class create_auth(create_user):
         subscriptions = temp_subscriptions["response"]["subscriptions"]
 
         # Following logic is unique to creators only
-        results = []
+        results: list[list[create_user]] = []
         if self.isPerformer:
             temp_session_manager = self.session_manager
             temp_pool = self.pool
@@ -298,7 +297,7 @@ class create_auth(create_user):
             results.append(subscription)
         if not identifiers:
 
-            async def multi(item):
+            async def multi(item: dict[str, Any]):
                 valid_subscriptions = await self.get_user(item["accountId"])
 
                 if (

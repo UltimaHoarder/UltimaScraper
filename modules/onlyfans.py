@@ -16,11 +16,11 @@ import extras.OFRenamer.start_ofr as ofrenamer
 import helpers.db_helper as db_helper
 import helpers.main_helper as main_helper
 from apis.onlyfans import onlyfans as OnlyFans
-from apis.onlyfans.classes.create_auth import create_auth
+from apis.onlyfans.classes.auth_model import create_auth
 from apis.onlyfans.classes.create_message import create_message
-from apis.onlyfans.classes.create_post import create_post
+from apis.onlyfans.classes.post_model import create_post
 from apis.onlyfans.classes.create_story import create_story
-from apis.onlyfans.classes.create_user import create_user
+from apis.onlyfans.classes.user_model import create_user
 from apis.onlyfans.classes.extras import auth_details, media_types
 from apis.onlyfans.onlyfans import start
 from classes.prepare_metadata import create_metadata, format_content, prepare_reformat
@@ -179,7 +179,7 @@ def scrape_choice(authed: create_auth, subscription):
     # mass_messages_api = OnlyFans.endpoint_links().mass_messages_api
     stories_api = OnlyFans.endpoint_links(user_id).stories_api
     list_highlights = OnlyFans.endpoint_links(user_id).list_highlights
-    post_api = OnlyFans.endpoint_links(user_id).post_api
+    post_api = OnlyFans.endpoint_links(user_id).list_posts_api
     archived_api = OnlyFans.endpoint_links(user_id).archived_posts
     # ARGUMENTS
     only_links = False

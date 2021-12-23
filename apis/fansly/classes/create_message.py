@@ -2,11 +2,11 @@ from typing import Any, Optional
 
 from apis.onlyfans.classes.extras import endpoint_links
 
-from . import create_user
+from . import user_model
 
 
 class create_message:
-    def __init__(self, option: dict[str,Any], user: create_user, extra: dict[Any, Any] = {}) -> None:
+    def __init__(self, option: dict[str,Any], user: user_model, extra: dict[Any, Any] = {}) -> None:
         self.responseType: Optional[str] = option.get("responseType")
         self.text: Optional[str] = option.get("text")
         self.lockedText: Optional[bool] = option.get("lockedText")

@@ -1,16 +1,22 @@
-import apis.onlyfans.classes.create_user as create_user
-from apis.onlyfans.classes.extras import endpoint_links
-from typing import Any
+from __future__ import annotations
 
+from typing import TYPE_CHECKING, Any
+
+from apis import api_helper
+from apis.onlyfans.classes import user_model
+from apis.onlyfans.classes.extras import endpoint_links
+
+if TYPE_CHECKING:
+    from apis.onlyfans.classes.user_model import create_user
 
 class create_post:
-    def __init__(self, option: dict[str, Any], user) -> None:
+    def __init__(self, option: dict[str, Any], author: create_user) -> None:
         self.responseType: str = option.get("responseType")
         self.id: int = option.get("id")
         self.postedAt: str = option.get("postedAt")
         self.postedAtPrecise: str = option.get("postedAtPrecise")
         self.expiredAt: Any = option.get("expiredAt")
-        self.author = create_user.create_user(option.get("author", {}))
+        self.author = author
         text: str = option.get("text", "")
         self.text = str(text or "")
         raw_text: str = option.get("rawText", "")
@@ -21,10 +27,11 @@ class create_post:
         self.canReport: bool = option.get("canReport")
         self.canDelete: bool = option.get("canDelete")
         self.canComment: bool = option.get("canComment")
+        self.comments: list[Any] = []
         self.canEdit: bool = option.get("canEdit")
         self.isPinned: bool = option.get("isPinned")
         self.favoritesCount: int = option.get("favoritesCount")
-        self.mediaCount: int = option.get("mediaCount")
+        self.mediaCount: int = option.get("mediaCount", 0)
         self.isMediaReady: bool = option.get("isMediaReady")
         self.voting: list = option.get("voting")
         self.isOpened: bool = option.get("isOpened")
@@ -44,7 +51,19 @@ class create_post:
         self.canViewMedia: bool = option.get("canViewMedia")
         self.preview: list = option.get("preview")
         self.canPurchase: bool = option.get("canPurchase")
-        self.user: create_user.create_user = user
+
+    async def get_comments(self):
+        api_type = "comments"
+        final_results: list[Any] = []
+        epl = endpoint_links()
+        link = epl.list_comments(self.responseType, self.id)
+        links = epl.create_links(link, self.commentsCount)
+        if links:
+            results = await api_helper.scrape_endpoint_links(
+                links, self.author.session_manager, api_type
+            )
+            self.comments = results
+        return final_results
 
     async def favorite(self):
         link = endpoint_links(
@@ -52,11 +71,11 @@ class create_post:
             identifier2=self.id,
             identifier3=self.author.id,
         ).favorite
-        results = await self.user.session_manager.json_request(link, method="POST")
+        results = await self.author.session_manager.json_request(link, method="POST")
         self.isFavorite = True
         return results
 
-    async def link_picker(self, media, video_quality):
+    async def link_picker(self, media: dict[str, Any], video_quality: str):
         link = ""
         if "source" in media:
             quality_key = "source"
@@ -73,9 +92,6 @@ class create_post:
                             if quality_link:
                                 link = quality_link
                                 break
-                            print
-                        print
-                    print
         if "src" in media:
             link = media["src"]
         return link

@@ -1,8 +1,12 @@
-from typing import Optional
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any, Optional, Union
 
 from apis.onlyfans.classes.extras import endpoint_links
+from apis.onlyfans.classes import user_model
 
-from . import create_user
+if TYPE_CHECKING:
+    from apis.onlyfans.classes.user_model import create_user
 
 
 class create_message:
@@ -18,7 +22,7 @@ class create_message:
         self.previews: list = option.get("previews",[])
         self.isTip: Optional[bool] = option.get("isTip")
         self.isReportedByMe: Optional[bool] = option.get("isReportedByMe")
-        self.fromUser  = create_user.create_user(option["fromUser"])
+        self.fromUser  = user_model.create_user(option["fromUser"])
         self.isFromQueue: Optional[bool] = option.get("isFromQueue")
         self.queueId: Optional[int] = option.get("queueId")
         self.canUnsendQueue: Optional[bool] = option.get("canUnsendQueue")

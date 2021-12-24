@@ -5,9 +5,9 @@ from itertools import chain
 from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib import parse
 
-import apis.fansly.classes.create_message as create_message
+import apis.fansly.classes.message_model as message_model
 from apis import api_helper
-from apis.fansly.classes.create_highlight import create_highlight
+from apis.fansly.classes.hightlight_model import create_highlight
 from apis.fansly.classes.create_story import create_story
 from apis.fansly.classes.extras import (content_types, endpoint_links,
                                         error_details, handle_refresh,
@@ -398,7 +398,7 @@ class create_user:
         print
         if not inside_loop:
             final_results = [
-                create_message.create_message(x, self, extras)
+                message_model.create_message(x, self, extras)
                 for x in final_results
                 if x
             ]
@@ -420,7 +420,7 @@ class create_user:
         if isinstance(response, dict):
             results = [x for x in response["list"] if x["id"] == message_id]
             result = results[0] if results else {}
-            final_result = create_message.create_message(result, self)
+            final_result = message_model.create_message(result, self)
             return final_result
         return response
 

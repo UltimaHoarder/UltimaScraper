@@ -16,12 +16,12 @@ import extras.OFRenamer.start_ofr as ofrenamer
 import helpers.db_helper as db_helper
 import helpers.main_helper as main_helper
 from apis.starsavn import starsavn as StarsAVN
-from apis.starsavn.classes.create_auth import create_auth
-from apis.starsavn.classes.create_message import create_message
-from apis.starsavn.classes.create_post import create_post
-from apis.starsavn.classes.create_product import create_product
-from apis.starsavn.classes.create_story import create_story
-from apis.starsavn.classes.create_user import create_user
+from apis.starsavn.classes.auth_model import create_auth
+from apis.starsavn.classes.message_model import create_message
+from apis.starsavn.classes.post_model import create_post
+from apis.starsavn.classes.product_model import create_product
+from apis.starsavn.classes.story_model import create_story
+from apis.starsavn.classes.user_model import create_user
 from apis.starsavn.classes.extras import auth_details, media_types
 from apis.starsavn.starsavn import start
 from classes.prepare_metadata import create_metadata, prepare_reformat

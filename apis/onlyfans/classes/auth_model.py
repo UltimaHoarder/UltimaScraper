@@ -10,7 +10,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import jsonpickle
 from apis import api_helper
-from apis.onlyfans.classes.create_message import create_message
+from apis.onlyfans.classes.message_model import create_message
 from apis.onlyfans.classes.extras import (
     auth_details,
     content_types,

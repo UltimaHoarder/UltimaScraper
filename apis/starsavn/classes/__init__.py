@@ -1,3 +1,2 @@
-from apis.starsavn.classes.create_auth import create_auth
-from apis.starsavn.classes.create_user import create_user
+from apis.starsavn.classes import auth_model
 from apis.starsavn.classes import extras

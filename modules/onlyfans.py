@@ -17,9 +17,9 @@ import helpers.db_helper as db_helper
 import helpers.main_helper as main_helper
 from apis.onlyfans import onlyfans as OnlyFans
 from apis.onlyfans.classes.auth_model import create_auth
-from apis.onlyfans.classes.create_message import create_message
+from apis.onlyfans.classes.message_model import create_message
 from apis.onlyfans.classes.post_model import create_post
-from apis.onlyfans.classes.create_story import create_story
+from apis.onlyfans.classes.story_model import create_story
 from apis.onlyfans.classes.user_model import create_user
 from apis.onlyfans.classes.extras import auth_details, media_types
 from apis.onlyfans.onlyfans import start

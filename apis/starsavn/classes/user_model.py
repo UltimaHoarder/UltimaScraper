@@ -1,26 +1,25 @@
-from datetime import datetime
+from __future__ import annotations
+
 import math
+from datetime import datetime
 from itertools import chain
-from typing import Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib import parse
 
+import apis.starsavn.classes.message_model as message_model
+from apis import api_helper
+from apis.starsavn.classes.extras import (content_types, endpoint_links,
+                                          error_details, handle_refresh,
+                                          remove_errors)
+from apis.starsavn.classes.highlight_model import create_highlight
+from apis.onlyfans.classes import post_model
+from apis.starsavn.classes.product_model import create_product
+from apis.starsavn.classes.story_model import create_story
 from dateutil.relativedelta import relativedelta
 
-import apis.starsavn.classes.create_message as create_message
-from apis import api_helper
-from apis.starsavn.classes import create_auth
-from apis.starsavn.classes.create_highlight import create_highlight
-from apis.starsavn.classes.create_post import create_post
-from apis.starsavn.classes.create_product import create_product
-from apis.starsavn.classes.create_story import create_story
-from apis.starsavn.classes.extras import (
-    content_types,
-    endpoint_links,
-    error_details,
-    handle_refresh,
-    remove_errors,
-)
-
+if TYPE_CHECKING:
+    from apis.starsavn.classes.auth_model import create_auth
+    from apis.starsavn.classes.post_model import create_post
 
 class create_user:
     def __init__(self, option={}, subscriber: create_auth = None) -> None:
@@ -319,7 +318,7 @@ class create_user:
         ).post_by_id
         response = await self.session_manager.json_request(link)
         if isinstance(response, dict):
-            final_result = create_post(response, self)
+            final_result = post_model.create_post(response, self)
             return final_result
         return response
 
@@ -395,7 +394,7 @@ class create_user:
         print
         if not inside_loop:
             final_results = [
-                create_message.create_message(x, self) for x in final_results if x
+                message_model.create_message(x, self) for x in final_results if x
             ]
         else:
             final_results.sort(key=lambda x: x["fromUser"]["id"], reverse=True)
@@ -417,7 +416,7 @@ class create_user:
         if isinstance(response, dict):
             results = [x for x in response["list"] if x["id"] == message_id]
             result = results[0] if results else {}
-            final_result = create_message.create_message(result, self)
+            final_result = message_model.create_message(result, self)
             return final_result
         return response
 
@@ -555,7 +554,7 @@ class create_user:
             if "mediaSet" in result:
                 result["media"] = result["mediaSet"]
             if "id" in result:
-                created = create_post(result,self)
+                created = post_model.create_post(result,self)
             else:
                 created = create_product(result,self)
             final_results.append(created)

@@ -16,7 +16,7 @@ import helpers.db_helper as db_helper
 import helpers.main_helper as main_helper
 from apis.fansly import fansly as Fansly
 from apis.fansly.classes.auth_model import create_auth
-from apis.fansly.classes.create_message import create_message
+from apis.fansly.classes.message_model import create_message
 from apis.fansly.classes.post_model import create_post
 from apis.fansly.classes.create_story import create_story
 from apis.fansly.classes.user_model import create_user

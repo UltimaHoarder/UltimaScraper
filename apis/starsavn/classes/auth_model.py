@@ -7,9 +7,9 @@ from typing import Any, Dict, List, Optional, Union
 
 import jsonpickle
 from apis import api_helper
-from apis.starsavn.classes.create_message import create_message
-from apis.starsavn.classes.create_post import create_post
-from apis.starsavn.classes.create_user import create_user
+from apis.starsavn.classes.message_model import create_message
+from apis.starsavn.classes.post_model import create_post
+from apis.starsavn.classes.user_model import create_user
 from apis.starsavn.classes.extras import (
     auth_details,
     content_types,

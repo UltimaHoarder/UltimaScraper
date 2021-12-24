@@ -5,11 +5,11 @@ from itertools import chain
 from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib import parse
 
-import apis.onlyfans.classes.create_message as create_message
+import apis.onlyfans.classes.message_model as message_model
 from apis import api_helper
 from apis.onlyfans.classes import post_model
 from apis.onlyfans.classes.hightlight_model import create_highlight
-from apis.onlyfans.classes.create_story import create_story
+from apis.onlyfans.classes.story_model import create_story
 from apis.onlyfans.classes.extras import (content_types, endpoint_links,
                                           error_details, handle_refresh,
                                           remove_errors)
@@ -354,7 +354,7 @@ class create_user:
         print
         if not inside_loop:
             final_results = [
-                create_message.create_message(x, self) for x in final_results if x
+                message_model.create_message(x, self) for x in final_results if x
             ]
         else:
             final_results.sort(key=lambda x: x["fromUser"]["id"], reverse=True)
@@ -376,7 +376,7 @@ class create_user:
         if isinstance(response, dict):
             results = [x for x in response["list"] if x["id"] == message_id]
             result = results[0] if results else {}
-            final_result = create_message.create_message(result, self)
+            final_result = message_model.create_message(result, self)
             return final_result
         return response
 

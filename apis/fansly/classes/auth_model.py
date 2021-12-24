@@ -7,7 +7,7 @@ from typing import Any, Dict, List, Optional, Union
 
 import jsonpickle
 from apis import api_helper
-from apis.fansly.classes.create_message import create_message
+from apis.fansly.classes.message_model import create_message
 from apis.fansly.classes.extras import (
     auth_details,
     content_types,

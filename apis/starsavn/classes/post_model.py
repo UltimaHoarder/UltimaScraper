@@ -1,16 +1,16 @@
-import apis.starsavn.classes.create_user as create_user
+import apis.starsavn.classes.user_model as user_model
 from apis.starsavn.classes.extras import endpoint_links
 from typing import Any
 
 
-class create_product:
+class create_post:
     def __init__(self, option, user) -> None:
         self.responseType: str = option.get("responseType")
-        self.id: int = option.get("productId")
+        self.id: int = option.get("id")
         self.postedAt: str = option.get("postedAt")
         self.postedAtPrecise: str = option.get("postedAtPrecise")
         self.expiredAt: Any = option.get("expiredAt")
-        self.author = create_user.create_user(option.get("author", {}))
+        self.author = user_model.create_user(option.get("author", {}))
         self.text: str = option.get("text")
         self.rawText: str = option.get("rawText")
         self.lockedText: bool = option.get("lockedText")
@@ -42,7 +42,7 @@ class create_product:
         self.canViewMedia: bool = option.get("canViewMedia")
         self.preview: list = option.get("preview", [])
         self.canPurchase: bool = option.get("canPurchase")
-        self.user: create_user.create_user = user
+        self.user: user_model.create_user = user
 
     async def favorite(self):
         link = endpoint_links(

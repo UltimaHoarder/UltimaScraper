@@ -1,9 +1,12 @@
-from typing import Optional
+from __future__ import annotations
 
-from apis.onlyfans.classes.extras import endpoint_links
+from typing import TYPE_CHECKING, Any, Optional, Union
 
-from . import create_user
+from apis.fansly.classes import user_model
+from apis.fansly.classes.extras import endpoint_links
 
+if TYPE_CHECKING:
+    from apis.fansly.classes.user_model import create_user
 
 class create_message:
     def __init__(self, option: dict, user: create_user) -> None:

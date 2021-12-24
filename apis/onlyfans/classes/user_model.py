@@ -8,7 +8,7 @@ from urllib import parse
 import apis.onlyfans.classes.create_message as create_message
 from apis import api_helper
 from apis.onlyfans.classes import post_model
-from apis.onlyfans.classes.create_highlight import create_highlight
+from apis.onlyfans.classes.hightlight_model import create_highlight
 from apis.onlyfans.classes.create_story import create_story
 from apis.onlyfans.classes.extras import (content_types, endpoint_links,
                                           error_details, handle_refresh,

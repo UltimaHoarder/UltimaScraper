@@ -4,7 +4,7 @@ import sys
 import asyncio
 import os
 import traceback
-
+from pathlib import Path
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -33,7 +33,7 @@ try:
 
         api_helper.parsed_args = parsed_args
 
-        config_path = os.path.join(".settings", "config.json")
+        config_path = Path(".settings", "config.json")
         json_config, json_config2 = main_helper.get_config(config_path)
         json_settings = json_config["settings"]
         exit_on_completion = json_settings["exit_on_completion"]

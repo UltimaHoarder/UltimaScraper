@@ -1,4 +1,5 @@
 from argparse import Namespace
+from pathlib import Path
 from apis.onlyfans.classes.user_model import create_user
 from database.databases.user_data.models.api_table import api_table
 from apis import api_helper
@@ -869,7 +870,7 @@ def prompt_modified(message, path):
         input(message)
 
 
-def get_config(config_path: str):
+def get_config(config_path: Path):
     if os.path.exists(config_path):
         with open(config_path, encoding="utf-8") as fp:
             json_config = ujson.load(fp)

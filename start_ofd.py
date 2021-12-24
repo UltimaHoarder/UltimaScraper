@@ -2,7 +2,6 @@
 import argparse
 import sys
 import asyncio
-import os
 import traceback
 from pathlib import Path
 

@@ -331,8 +331,7 @@ async def paid_content_scraper(api: start, identifiers=[]):
                 author = paid_content.author
             if not author:
                 continue
-            subscription = await authed.get_subscription(
-                check=True, identifier=author.id
+            subscription = await authed.get_subscription(identifier=author.id
             )
             if not subscription:
                 subscription = paid_content.user

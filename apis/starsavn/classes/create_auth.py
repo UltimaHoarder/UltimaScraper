@@ -210,7 +210,8 @@ class create_auth(create_user):
         return results
 
     async def get_subscription(
-        self, check: bool = False, identifier="", limit=100, offset=0
+        self,
+        identifier: int | str = "",
     ) -> Union[create_user, None]:
         subscriptions = await self.get_subscriptions(refresh=False)
         valid = None

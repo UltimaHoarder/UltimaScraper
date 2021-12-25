@@ -287,7 +287,7 @@ async def profile_scraper(
             override_media_types.append(["Avatars", avatar])
         if header:
             override_media_types.append(["Headers", header])
-        session = authed.session_manager.create_client_session()
+        session = await authed.session_manager.create_client_session()
         progress_bar = None
         for override_media_type in override_media_types:
             new_dict = dict()

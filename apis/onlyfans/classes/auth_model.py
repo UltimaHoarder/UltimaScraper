@@ -10,9 +10,14 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import jsonpickle
 from apis import api_helper
-from apis.onlyfans.classes.extras import (ErrorDetails, auth_details,
-                                          content_types, create_headers,
-                                          endpoint_links, handle_refresh)
+from apis.api_helper import session_manager
+from apis.onlyfans.classes.extras import (
+    ErrorDetails,
+    auth_details,
+    content_types,
+    create_headers,
+    endpoint_links,
+)
 from apis.onlyfans.classes.message_model import create_message
 from apis.onlyfans.classes.post_model import create_post
 from apis.onlyfans.classes.user_model import create_user
@@ -21,6 +26,7 @@ from user_agent import generate_user_agent
 
 if TYPE_CHECKING:
     from apis.onlyfans.onlyfans import start
+
 
 class create_auth(create_user):
     def __init__(
@@ -51,7 +57,7 @@ class create_auth(create_user):
         self.errors: list[ErrorDetails] = []
         self.extras: dict[str, Any] = {}
 
-    class _session_manager(api_helper.session_manager):
+    class _session_manager(session_manager):
         def __init__(
             self,
             auth: create_auth,
@@ -188,12 +194,9 @@ class create_auth(create_user):
         self.errors.append(error)
 
     async def get_lists(self, refresh: bool = True, limit: int = 100, offset: int = 0):
-        api_type = "lists"
-        if not self.active:
-            return
-        if not refresh:
-            results = handle_refresh(self, api_type)
-            return results
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         link = endpoint_links(global_limit=limit, global_offset=offset).lists
         results = await self.session_manager.json_request(link)
         self.lists = results
@@ -218,8 +221,9 @@ class create_auth(create_user):
         limit: int = 100,
         offset: int = 0,
     ):
-        if not self.active:
-            return
+        result, status = await api_helper.default_data(self)
+        if status:
+            return result
         link = endpoint_links(
             identifier, global_limit=limit, global_offset=offset
         ).lists_users
@@ -250,11 +254,9 @@ class create_auth(create_user):
         extra_info: bool = True,
         limit: int = 20,
     ) -> list[create_user]:
-        if not self.active:
-            return []
-        if not refresh:
-            subscriptions = self.subscriptions
-            return subscriptions
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         # if self.subscribesCount > 900:
         #     limit = 100
         ceil = math.ceil(self.subscribesCount / limit)
@@ -366,13 +368,9 @@ class create_auth(create_user):
         refresh: bool = True,
         inside_loop: bool = False,
     ) -> list[dict[str, Any]]:
-        api_type = "chats"
-        if not self.active:
-            return []
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         if links is None:
             links = []
         api_count = self.chatMessagesCount
@@ -387,7 +385,7 @@ class create_auth(create_user):
                 link = link.replace(f"limit={limit}", f"limit={limit}")
                 new_link = link.replace("offset=0", f"offset={num}")
                 links.append(new_link)
-        multiplier = getattr(self.session_manager.pool, "_processes")
+        multiplier = self.session_manager.max_threads
         if links:
             link = links[-1]
         else:
@@ -421,13 +419,9 @@ class create_auth(create_user):
         limit: int = 10,
         offset: int = 0,
     ) -> list[dict[str, Any]]:
-        api_type = "mass_messages"
-        if not self.active or not self.isPerformer:
-            return []
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         link = endpoint_links(
             global_limit=limit, global_offset=offset
         ).mass_messages_api
@@ -464,13 +458,9 @@ class create_auth(create_user):
         offset: int = 0,
         inside_loop: bool = False,
     ) -> list[create_message | create_post] | ErrorDetails:
-        api_type = "paid_content"
-        if not self.active:
-            return []
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         link = endpoint_links(global_limit=limit, global_offset=offset).paid_api
         final_results = await self.session_manager.json_request(link)
         if not isinstance(final_results, ErrorDetails):

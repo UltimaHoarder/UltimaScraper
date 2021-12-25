@@ -9,15 +9,20 @@ import apis.fansly.classes.message_model as message_model
 from apis import api_helper
 from apis.fansly.classes.hightlight_model import create_highlight
 from apis.fansly.classes.create_story import create_story
-from apis.fansly.classes.extras import (content_types, endpoint_links,
-                                        ErrorDetails, handle_refresh,
-                                        remove_errors)
+from apis.fansly.classes.extras import (
+    content_types,
+    endpoint_links,
+    ErrorDetails,
+    handle_refresh,
+    remove_errors,
+)
 from apis.fansly.classes.post_model import create_post
 from mergedeep.mergedeep import Strategy, merge
 
 if TYPE_CHECKING:
     from apis.fansly.classes.auth_model import create_auth
     from apis.fansly.classes.post_model import create_post
+
 
 class create_user:
     def __init__(
@@ -241,22 +246,18 @@ class create_user:
             status = True
         return status
 
-    async def get_stories(self, refresh=True, limit=100, offset=0) -> list:
-        api_type = "stories"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
-        if not self.hasStories:
-            return []
+    async def get_stories(
+        self, refresh: bool = True, limit: int = 100, offset: int = 0
+    ) -> list[create_story]:
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         link = [
             endpoint_links(
                 identifier=self.id, global_limit=limit, global_offset=offset
             ).stories_api
         ]
-        results = await api_helper.scrape_endpoint_links(
-            link, self.session_manager, api_type
-        )
+        results = await api_helper.scrape_endpoint_links(link, self.session_manager)
         results = [create_story(x) for x in results]
         self.temp_scraped.Stories = results
         return results
@@ -439,15 +440,13 @@ class create_user:
     async def get_archived_posts(
         self,
         links: Optional[list[str]] = None,
+        refresh: bool = True,
         limit: int = 10,
         offset: int = 0,
-        refresh: bool = True,
-    ) -> list:
-        api_type = "archived_posts"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+    ):
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         if links is None:
             links = []
         api_count = self.archivedPostsCount
@@ -462,9 +461,7 @@ class create_user:
                 link = link.replace(f"limit={limit}", f"limit={limit}")
                 new_link = link.replace("offset=0", f"offset={num}")
                 links.append(new_link)
-        results = await api_helper.scrape_endpoint_links(
-            links, self.session_manager, api_type
-        )
+        results = await api_helper.scrape_endpoint_links(links, self.session_manager)
         final_results = [create_post(x, self) for x in results if x]
         self.temp_scraped.Archived.Posts = final_results
         return final_results

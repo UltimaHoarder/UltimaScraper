@@ -279,7 +279,7 @@ async def profile_scraper(
             override_media_types.append(["Avatars", avatar])
         if header:
             override_media_types.append(["Headers", header])
-        session = authed.session_manager.create_client_session()
+        session = await authed.session_manager.create_client_session()
         progress_bar = None
         for override_media_type in override_media_types:
             new_dict = dict()
@@ -744,7 +744,7 @@ async def format_directories(
 # Prepares the API links to be scraped
 
 
-async def prepare_scraper(authed: create_auth, site_name, item):
+async def prepare_scraper(authed: create_auth, site_name:str, item:dict[str,Any]):
     api_type = item["api_type"]
     api_array = item["api_array"]
     subscription: create_user = api_array["subscription"]

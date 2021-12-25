@@ -8,11 +8,15 @@ from urllib import parse
 
 import apis.starsavn.classes.message_model as message_model
 from apis import api_helper
-from apis.starsavn.classes.extras import (content_types, endpoint_links,
-                                          ErrorDetails, handle_refresh,
-                                          remove_errors)
+from apis.starsavn.classes.extras import (
+    content_types,
+    endpoint_links,
+    ErrorDetails,
+    handle_refresh,
+    remove_errors,
+)
 from apis.starsavn.classes.highlight_model import create_highlight
-from apis.onlyfans.classes import post_model
+from apis.starsavn.classes import post_model
 from apis.starsavn.classes.product_model import create_product
 from apis.starsavn.classes.story_model import create_story
 from dateutil.relativedelta import relativedelta
@@ -20,6 +24,7 @@ from dateutil.relativedelta import relativedelta
 if TYPE_CHECKING:
     from apis.starsavn.classes.auth_model import create_auth
     from apis.starsavn.classes.post_model import create_post
+
 
 class create_user:
     def __init__(self, option={}, subscriber: create_auth = None) -> None:
@@ -70,7 +75,7 @@ class create_user:
         self.photosCount: int = option.get("photosCount")
         self.videosCount: int = option.get("videosCount")
         self.audiosCount: int = option.get("audiosCount")
-        self.mediasCount: dict[str,int] = option.get("mediaCount",{})
+        self.mediasCount: dict[str, int] = option.get("mediaCount", {})
         self.promotions: list = option.get("promotions")
         self.lastSeen: Any = option.get("lastSeen")
         self.favoritesCount: int = option.get("favoritesCount")
@@ -233,35 +238,32 @@ class create_user:
         return status
 
     async def get_stories(
-        self, refresh=True, limit=100, offset=0
+        self, refresh: bool = True, limit: int = 100, offset: int = 0
     ) -> list[create_story]:
-        api_type = "stories"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
-        if not self.hasStories:
-            return []
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         link = [
             endpoint_links(
                 identifier=self.id, global_limit=limit, global_offset=offset
             ).stories_api
         ]
-        results = await api_helper.scrape_endpoint_links(
-            link, self.session_manager, api_type
-        )
+        results = await api_helper.scrape_endpoint_links(link, self.session_manager)
         results = [create_story(x) for x in results]
         self.temp_scraped.Stories = results
         return results
 
     async def get_highlights(
-        self, identifier="", refresh=True, limit=100, offset=0, hightlight_id=""
+        self,
+        identifier: int | str = "",
+        refresh: bool = True,
+        limit: int = 100,
+        offset: int = 0,
+        hightlight_id: int | str = "",
     ) -> Union[list[create_highlight], list[create_story]]:
-        api_type = "highlights"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         if not identifier:
             identifier = self.id
         if not hightlight_id:
@@ -280,36 +282,28 @@ class create_user:
         return results
 
     async def get_posts(
-        self, links: Optional[list[str]] = None, limit=10, offset=0, refresh=True
-    ) -> Optional[list[create_post]]:
-        api_type = "posts"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        self,
+        links: Optional[list[str]] = None,
+        limit: int = 10,
+        offset: int = 0,
+        refresh: bool = True,
+    ) -> Optional[list[create_post | create_product]]:
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         if links is None:
             links = []
-        api_count = self.postsCount
-        if api_count and not links:
-            link = endpoint_links(
-                identifier=self.id, global_limit=limit, global_offset=offset
-            ).post_api
-            ceil = math.ceil(api_count / limit)
-            numbers = list(range(ceil))
-            for num in numbers:
-                num = num * limit
-                link = link.replace(f"limit={limit}", f"limit={limit}")
-                new_link = link.replace("offset=0", f"offset={num}")
-                links.append(new_link)
-        results = await api_helper.scrape_endpoint_links(
-            links, self.session_manager, api_type
-        )
+        if not links:
+            epl = endpoint_links()
+            link = epl.list_posts(self.id)
+            links = epl.create_links(link, self.postsCount)
+        results = await api_helper.scrape_endpoint_links(links, self.session_manager)
         final_results = self.finalize_content_set(results)
         self.temp_scraped.Posts = final_results
         return final_results
 
     async def get_post(
-        self, identifier=None, limit=10, offset=0
+        self, identifier: Optional[int | str] = None, limit: int = 10, offset: int = 0
     ) -> Union[create_post, ErrorDetails]:
         if not identifier:
             identifier = self.id
@@ -323,13 +317,15 @@ class create_user:
         return response
 
     async def get_medias(
-        self, links: Optional[list[str]] = None, limit:int=10, offset:int=0, refresh:bool=True
-    ) -> Optional[list[create_post]]:
-        api_type = "medias"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        self,
+        links: Optional[list[str]] = None,
+        limit: int = 10,
+        offset: int = 0,
+        refresh: bool = True,
+    ) -> Optional[list[create_post | create_product]]:
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         if links is None:
             links = []
         api_count = self.mediasCount["total"]
@@ -344,30 +340,25 @@ class create_user:
                 link = link.replace(f"limit={limit}", f"limit={limit}")
                 new_link = link.replace("offset=0", f"offset={num}")
                 links.append(new_link)
-        results = await api_helper.scrape_endpoint_links(
-            links, self.session_manager, api_type
-        )
+        results = await api_helper.scrape_endpoint_links(links, self.session_manager)
         final_results = self.finalize_content_set(results)
         self.temp_scraped.Products = final_results
         return final_results
+
     async def get_messages(
         self,
-        links: Optional[list] = None,
-        limit=10,
-        offset=0,
-        refresh=True,
-        inside_loop=False,
-    ) -> Optional[list]:
-        api_type = "messages"
-        if not self.subscriber or self.is_me():
-            return []
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        links: Optional[list[str]] = None,
+        limit: int = 10,
+        offset: int = 0,
+        refresh: bool = True,
+        inside_loop: bool = False,
+    ):
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         if links is None:
             links = []
-        multiplier = getattr(self.session_manager.pool, "_processes")
+        multiplier = self.session_manager.max_threads
         if links:
             link = links[-1]
         else:
@@ -382,23 +373,28 @@ class create_user:
             links = links2
         results = await self.session_manager.async_requests(links)
         results = await remove_errors(results)
-        final_results = [x for x in results if x]
-        has_more = False
-        final_results = list(chain.from_iterable(final_results))
+        final_results = []
+        if isinstance(results, list):
+            has_more = results[-1]["list"] if results else False
+            final_results = [x["list"] for x in results if "list" in x]
+            final_results = list(chain.from_iterable(final_results))
 
-        if has_more:
-            results2 = await self.get_messages(
-                links=[links[-1]], limit=limit, offset=limit + offset, inside_loop=True
-            )
-            final_results.extend(results2)
-        print
-        if not inside_loop:
-            final_results = [
-                message_model.create_message(x, self) for x in final_results if x
-            ]
-        else:
-            final_results.sort(key=lambda x: x["fromUser"]["id"], reverse=True)
-        self.temp_scraped.Messages = final_results
+            if has_more:
+                results2 = await self.get_messages(
+                    links=[links[-1]],
+                    limit=limit,
+                    offset=limit + offset,
+                    inside_loop=True,
+                )
+                final_results.extend(results2)
+            print
+            if not inside_loop:
+                final_results = [
+                    message_model.create_message(x, self) for x in final_results if x
+                ]
+            else:
+                final_results.sort(key=lambda x: x["fromUser"]["id"], reverse=True)
+            self.temp_scraped.Messages = final_results
         return final_results
 
     async def get_message_by_id(
@@ -433,13 +429,15 @@ class create_user:
         return results
 
     async def get_archived_posts(
-        self, links: Optional[list] = None, limit=10, offset=0, refresh=True
-    ) -> list:
-        api_type = "archived_posts"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        self,
+        links: Optional[list[str]] = None,
+        refresh: bool = True,
+        limit: int = 10,
+        offset: int = 0,
+    ):
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         if links is None:
             links = []
         api_count = self.archivedPostsCount
@@ -454,9 +452,7 @@ class create_user:
                 link = link.replace(f"limit={limit}", f"limit={limit}")
                 new_link = link.replace("offset=0", f"offset={num}")
                 links.append(new_link)
-        results = await api_helper.scrape_endpoint_links(
-            links, self.session_manager, api_type
-        )
+        results = await api_helper.scrape_endpoint_links(links, self.session_manager)
         final_results = self.finalize_content_set(results)
 
         self.temp_scraped.Archived.Posts = final_results
@@ -526,7 +522,7 @@ class create_user:
         This function will subscribe to a model. If the model has a promotion available, it will use it.
         """
         subscription_price = await self.subscription_price()
-        x = {
+        x:dict[str,Any] = {
             "paymentType": "subscribe",
             "userId": self.id,
             "subscribeSource": "profile",
@@ -545,17 +541,24 @@ class create_user:
             )
         return result
 
-    def set_scraped(self, name, scraped):
+    def set_scraped(self, name: str, scraped: list[Any]):
         setattr(self.scraped, name, scraped)
-    def finalize_content_set(self,results:list[dict[str,Any]]):
-        final_results:list[create_post|create_product] = []
+
+    def finalize_content_set(self, results: list[dict[str, Any]] | list[str]):
+        final_results: list[create_post | create_product] = []
         for result in results:
-            result["media"] = [result["media"]] if isinstance(result["media"], dict) else result["media"]
+            if isinstance(result, str):
+                continue
+            result["media"] = (
+                [result["media"]]
+                if isinstance(result["media"], dict)
+                else result["media"]
+            )
             if "mediaSet" in result:
                 result["media"] = result["mediaSet"]
             if "id" in result:
-                created = post_model.create_post(result,self)
+                created = post_model.create_post(result, self)
             else:
-                created = create_product(result,self)
+                created = create_product(result, self)
             final_results.append(created)
         return final_results

@@ -3,11 +3,11 @@ import timeit
 from typing import Any, Optional
 
 import helpers.main_helper as main_helper
-import modules.onlyfans as m_onlyfans
 import modules.fansly as m_fansly
+import modules.onlyfans as m_onlyfans
 import modules.starsavn as m_starsavn
-from apis.onlyfans import onlyfans as OnlyFans
 from apis.fansly import fansly as Fansly
+from apis.onlyfans import onlyfans as OnlyFans
 from apis.starsavn import starsavn as StarsAVN
 from helpers.main_helper import choose_option
 

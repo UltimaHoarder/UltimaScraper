@@ -11,7 +11,7 @@ from apis.onlyfans.classes import post_model
 from apis.onlyfans.classes.hightlight_model import create_highlight
 from apis.onlyfans.classes.story_model import create_story
 from apis.onlyfans.classes.extras import (content_types, endpoint_links,
-                                          ErrorDetails, handle_refresh,
+                                          ErrorDetails,
                                           remove_errors)
 
 if TYPE_CHECKING:
@@ -67,7 +67,7 @@ class create_user:
         self.videosCount: int = option.get("videosCount")
         self.audiosCount: int = option.get("audiosCount")
         self.mediasCount: int = option.get("mediasCount")
-        self.promotions: list = option.get("promotions")
+        self.promotions: list[dict[str,Any]] = option.get("promotions",{})
         self.lastSeen: Any = option.get("lastSeen")
         self.favoritesCount: int = option.get("favoritesCount")
         self.favoritedCount: int = option.get("favoritedCount")
@@ -213,7 +213,7 @@ class create_user:
         self.session_manager = subscriber.session_manager if subscriber else None
         self.scraped = content_types()
         self.temp_scraped = content_types()
-        self.download_info = {}
+        self.download_info:dict[str,Any] = {}
         self.__raw__ = option
 
     def get_link(self):
@@ -229,21 +229,15 @@ class create_user:
     async def get_stories(
         self, refresh:bool=True, limit:int=100, offset:int=0
     ) -> list[create_story]:
-        api_type = "stories"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
-        if not self.hasStories:
-            return []
+        result, status = await api_helper.default_data(self,refresh)
+        if status:
+            return result
         link = [
             endpoint_links(
                 identifier=self.id, global_limit=limit, global_offset=offset
             ).stories_api
         ]
-        results = await api_helper.scrape_endpoint_links(
-            link, self.session_manager, api_type
-        )
+        results = await api_helper.scrape_endpoint_links(link, self.session_manager)
         results = [create_story(x) for x in results]
         self.temp_scraped.Stories = results
         return results
@@ -251,11 +245,9 @@ class create_user:
     async def get_highlights(
         self, identifier:int|str="", refresh:bool=True, limit:int=100, offset:int=0, hightlight_id:int|str=""
     ) -> Union[list[create_highlight], list[create_story]]:
-        api_type = "highlights"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        result, status = await api_helper.default_data(self,refresh)
+        if status:
+            return result
         if not identifier:
             identifier = self.id
         if not hightlight_id:
@@ -276,11 +268,9 @@ class create_user:
     async def get_posts(
         self, links: Optional[list[str]] = None, limit:int=10, offset:int=0, refresh:bool=True
     ) -> Optional[list[create_post]]:
-        api_type = "posts"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        result, status = await api_helper.default_data(self,refresh)
+        if status:
+            return result
         if links is None:
             links = []
         if not links:
@@ -288,14 +278,14 @@ class create_user:
             link = epl.list_posts(self.id)
             links = epl.create_links(link,self.postsCount)
         results = await api_helper.scrape_endpoint_links(
-            links, self.session_manager, api_type
+            links, self.session_manager
         )
         final_results = self.finalize_content_set(results)
         self.temp_scraped.Posts = final_results
         return final_results
 
     async def get_post(
-        self, identifier=None, limit=10, offset=0
+        self, identifier:Optional[int|str]=None, limit:int=10, offset:int=0
     ) -> Union[create_post, ErrorDetails]:
         if not identifier:
             identifier = self.id
@@ -310,22 +300,18 @@ class create_user:
 
     async def get_messages(
         self,
-        links: Optional[list] = None,
-        limit=10,
-        offset=0,
-        refresh=True,
-        inside_loop=False,
-    ) -> Optional[list]:
-        api_type = "messages"
-        if not self.subscriber or self.is_me():
-            return []
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        links: Optional[list[str]] = None,
+        limit:int=10,
+        offset:int=0,
+        refresh:bool=True,
+        inside_loop:bool=False,
+    ):
+        result, status = await api_helper.default_data(self,refresh)
+        if status:
+            return result
         if links is None:
             links = []
-        multiplier = getattr(self.session_manager.pool, "_processes")
+        multiplier = self.session_manager.max_threads
         if links:
             link = links[-1]
         else:
@@ -340,24 +326,26 @@ class create_user:
             links = links2
         results = await self.session_manager.async_requests(links)
         results = await remove_errors(results)
-        results = [x for x in results if x]
-        has_more = results[-1]["hasMore"] if results else False
-        final_results = [x["list"] for x in results if "list" in x]
-        final_results = list(chain.from_iterable(final_results))
+        final_results = []
+        if isinstance(results,list):
+            results = [x for x in results if x]
+            has_more = results[-1]["hasMore"] if results else False
+            final_results = [x["list"] for x in results if "list" in x]
+            final_results = list(chain.from_iterable(final_results))
 
-        if has_more:
-            results2 = await self.get_messages(
-                links=[links[-1]], limit=limit, offset=limit + offset, inside_loop=True
-            )
-            final_results.extend(results2)
-        print
-        if not inside_loop:
-            final_results = [
-                message_model.create_message(x, self) for x in final_results if x
-            ]
-        else:
-            final_results.sort(key=lambda x: x["fromUser"]["id"], reverse=True)
-        self.temp_scraped.Messages = final_results
+            if has_more:
+                results2 = await self.get_messages(
+                    links=[links[-1]], limit=limit, offset=limit + offset, inside_loop=True
+                )
+                final_results.extend(results2)
+            print
+            if not inside_loop:
+                final_results = [
+                    message_model.create_message(x, self) for x in final_results if x
+                ]
+            else:
+                final_results.sort(key=lambda x: x["fromUser"]["id"], reverse=True)
+            self.temp_scraped.Messages = final_results
         return final_results
 
     async def get_message_by_id(
@@ -379,12 +367,10 @@ class create_user:
             return final_result
         return response
 
-    async def get_archived_stories(self, refresh=True, limit=100, offset=0):
-        api_type = "archived_stories"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+    async def get_archived_stories(self, refresh:bool=True, limit:int=100, offset:int=0):
+        result, status = await api_helper.default_data(self,refresh)
+        if status:
+            return result
         link = endpoint_links(global_limit=limit, global_offset=offset).archived_stories
         results = await self.session_manager.json_request(link)
         results = await remove_errors(results)
@@ -392,13 +378,11 @@ class create_user:
         return results
 
     async def get_archived_posts(
-        self, links: Optional[list] = None, limit=10, offset=0, refresh=True
-    ) -> list:
-        api_type = "archived_posts"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        self, links: Optional[list[str]] = None, refresh:bool=True, limit:int=10, offset:int=0
+    ):
+        result, status = await api_helper.default_data(self,refresh)
+        if status:
+            return result
         if links is None:
             links = []
         api_count = self.archivedPostsCount
@@ -414,7 +398,7 @@ class create_user:
                 new_link = link.replace("offset=0", f"offset={num}")
                 links.append(new_link)
         results = await api_helper.scrape_endpoint_links(
-            links, self.session_manager, api_type
+            links, self.session_manager
         )
         final_results = self.finalize_content_set(results)
 
@@ -475,7 +459,7 @@ class create_user:
         subscription_price = self.subscribePrice
         if self.promotions:
             for promotion in self.promotions:
-                promotion_price = promotion["price"]
+                promotion_price:int = promotion["price"]
                 if promotion_price < subscription_price:
                     subscription_price = promotion_price
         return subscription_price
@@ -485,7 +469,7 @@ class create_user:
         This function will subscribe to a model. If the model has a promotion available, it will use it.
         """
         subscription_price = await self.subscription_price()
-        x = {
+        x:dict[str,Any] = {
             "paymentType": "subscribe",
             "userId": self.id,
             "subscribeSource": "profile",
@@ -504,11 +488,13 @@ class create_user:
             )
         return result
 
-    def set_scraped(self, name, scraped):
+    def set_scraped(self, name:str, scraped:list[Any]):
         setattr(self.scraped, name, scraped)
-    def finalize_content_set(self,results:list[dict[str,str]]|list[str]):
+    def finalize_content_set(self,results:list[dict[str,Any]]|list[str]):
         final_results:list[create_post] = []
         for result in results:
+            if isinstance(result,str):
+                continue
             content_type = result["responseType"]
             match content_type:
                 case "post":

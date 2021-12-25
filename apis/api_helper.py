@@ -1,15 +1,14 @@
 from __future__ import annotations
 
 import asyncio
-import copy
 import hashlib
+import inspect
 import json
 import os
 import random
 import re
-import threading
-import time
 import string
+import time
 from argparse import Namespace
 from itertools import chain
 from multiprocessing import cpu_count
@@ -17,31 +16,47 @@ from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing.pool import Pool
 from os.path import dirname as up
 from random import randint
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import urlparse
 
 import python_socks
 import requests
 from aiohttp import ClientSession
-from aiohttp.client_exceptions import (
-    ClientConnectorError,
-    ClientOSError,
-    ClientPayloadError,
-    ContentTypeError,
-    ServerDisconnectedError,
-)
+from aiohttp.client_exceptions import (ClientConnectorError, ClientOSError,
+                                       ClientPayloadError, ContentTypeError,
+                                       ServerDisconnectedError)
 from aiohttp.client_reqrep import ClientResponse
 from aiohttp_socks import ProxyConnectionError, ProxyConnector, ProxyError
-from apis.onlyfans.classes.extras import ErrorDetails
-from database.databases.user_data.models.media_table import template_media_table
+from database.databases.user_data.models.media_table import \
+    template_media_table
 
-import apis.fansly.classes as fansly_classes
-import apis.onlyfans.classes as onlyfans_classes
-import apis.starsavn.classes as starsavn_classes
 
-onlyfans_extras = onlyfans_classes.extras
-fansly_extras = fansly_classes.extras
-starsavn_extras = starsavn_classes.extras
+def load_classes():
+    import apis.fansly.classes as fansly_classes
+    import apis.onlyfans.classes as onlyfans_classes
+    import apis.starsavn.classes as starsavn_classes
+    return onlyfans_classes, fansly_classes, starsavn_classes
+def load_classes2():
+    onlyfans_classes, fansly_classes, starsavn_classes = load_classes()
+    auth_types = (onlyfans_classes.auth_model.create_auth
+            | fansly_classes.auth_model.create_auth
+            | starsavn_classes.auth_model.create_auth)
+    user_types = (onlyfans_classes.user_model.create_user
+            | fansly_classes.user_model.create_user
+            | starsavn_classes.user_model.create_user)
+    return auth_types,user_types
+def load_extras():
+    onlyfans_classes, fansly_classes, starsavn_classes = load_classes()
+    return onlyfans_classes.extras, fansly_classes.extras, starsavn_classes.extras
+if TYPE_CHECKING:
+    onlyfans_classes,fansly_classes,starsavn_classes = load_classes()
+    auth_types,user_types = load_classes2()
+    onlyfans_extras, fansly_extras, starsavn_extras = load_extras()
+    error_details_types = (
+        onlyfans_extras
+        | fansly_extras
+        | starsavn_extras
+    )
 parsed_args = Namespace()
 
 path = up(up(os.path.realpath(__file__)))
@@ -68,6 +83,12 @@ def chunks(l, n):
     return final
 
 
+def multiprocessing(max_threads: Optional[int] = None):
+    max_threads = calculate_max_threads(max_threads)
+    pool: Pool = ThreadPool(max_threads)
+    return pool
+
+
 def calculate_max_threads(max_threads: Optional[int] = None):
     if not max_threads:
         max_threads = -1
@@ -75,12 +96,6 @@ def calculate_max_threads(max_threads: Optional[int] = None):
     if max_threads < 1 or max_threads >= max_threads2:
         max_threads = max_threads2
     return max_threads
-
-
-def multiprocessing(max_threads: Optional[int] = None):
-    max_threads = calculate_max_threads(max_threads)
-    pool: Pool = ThreadPool(max_threads)
-    return pool
 
 
 class session_manager:
@@ -107,13 +122,18 @@ class session_manager:
         self.auth = auth
         self.use_cookies: bool = use_cookies
 
-    def create_client_session(self):
+    async def get_cookies(self):
+        _onlyfans_classes,fansly_classes,_starsavn_classes = load_classes()
+        if isinstance(self.auth, fansly_classes.auth_model.create_auth):
+            final_cookies: dict[str, Any] = {}
+        else:
+            final_cookies = self.auth.auth_details.cookie.format()
+        return final_cookies
+
+    async def create_client_session(self):
         proxy = self.get_proxy()
         connector = ProxyConnector.from_url(proxy) if proxy else None
-
-        final_cookies = (
-            self.auth.auth_details.cookie.format() if self.use_cookies else {}
-        )
+        final_cookies = await self.get_cookies()
         client_session = ClientSession(
             connector=connector, cookies=final_cookies, read_timeout=None
         )
@@ -123,39 +143,6 @@ class session_manager:
         proxies = self.proxies
         proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
         return proxy
-
-    def stimulate_sessions(self):
-        # Some proxies switch IP addresses if no request have been made for x amount of secondss
-        def do(session_manager):
-            while not session_manager.kill:
-                for session in session_manager.sessions:
-
-                    def process_links(link, session):
-                        response = session.get(link)
-                        text = response.text.strip("\n")
-                        if text == session.ip:
-                            print
-                        else:
-                            found_dupe = [
-                                x for x in session_manager.sessions if x.ip == text
-                            ]
-                            if found_dupe:
-                                return
-                            cloned_session = copy.deepcopy(session)
-                            cloned_session.ip = text
-                            cloned_session.links = []
-                            session_manager.sessions.append(cloned_session)
-                            print(text)
-                            print
-                        return text
-
-                    time.sleep(62)
-                    link = "https://checkip.amazonaws.com"
-                    ip = process_links(link, session)
-                    print
-
-        t1 = threading.Thread(target=do, args=[self])
-        t1.start()
 
     async def json_request(
         self,
@@ -172,7 +159,7 @@ class session_manager:
             custom_session = False
             if not session:
                 custom_session = True
-                session = self.create_client_session()
+                session = await self.create_client_session()
             headers = self.session_rules(link)
             headers["accept"] = "application/json, text/plain, */*"
             headers["Connection"] = "keep-alive"
@@ -203,6 +190,10 @@ class session_manager:
                         if json_format and not stream:
                             result = await response.json()
                             if "error" in result:
+                                
+                                onlyfans_classes,fansly_classes,_starsavn_classes = load_classes()
+                                onlyfans_extras, fansly_extras, _starsavn_extras = load_extras()
+
                                 if isinstance(
                                     self.auth, onlyfans_classes.auth_model.create_auth
                                 ):
@@ -235,17 +226,13 @@ class session_manager:
             return result
 
     async def async_requests(self, items: list[str]) -> list[dict[str, Any]]:
-        tasks = []
+        tasks: list[Any] = []
 
-        async def run(links: list[str]) -> list:
+        async def run(links: list[str]):
             proxies = self.proxies
             proxy = self.proxies[randint(0, len(proxies) - 1)] if proxies else ""
             connector = ProxyConnector.from_url(proxy) if proxy else None
-            temp_cookies: dict[Any, Any] = (
-                self.auth.auth_details.cookie.format()
-                if hasattr(self.auth.auth_details, "cookie")
-                else {}
-            )
+            temp_cookies = await self.get_cookies()
             async with ClientSession(
                 connector=connector,
                 cookies=temp_cookies,
@@ -267,6 +254,7 @@ class session_manager:
         progress_bar,
         subscription: onlyfans_classes.create_user,
     ):
+        onlyfans_extras, _fansly_extras, _starsavn_extras = load_extras()
         attempt_count = 1
         new_task = {}
         while attempt_count <= 3:
@@ -314,6 +302,7 @@ class session_manager:
         return new_task
 
     def session_rules(self, link: str) -> dict[str, Any]:
+        _onlyfans_extras, fansly_extras, _starsavn_extras = load_extras()
         headers = self.headers
         if "https://onlyfans.com/api2/v2/" in link:
             dynamic_rules = self.dynamic_rules
@@ -396,11 +385,9 @@ def restore_missing_data(master_set2: list[str], media_set, split_by):
 
 
 async def scrape_endpoint_links(
-    links: list[str], session_manager: session_manager | None, api_type: str
-):
+    links: list[str], session_manager: session_manager | None):
     media_set: list[dict[str, str]] = []
     max_attempts = 100
-    api_type = api_type.capitalize()
     for attempt in list(range(max_attempts)):
         if not links or not session_manager:
             continue
@@ -430,7 +417,10 @@ async def scrape_endpoint_links(
         else:
             media_set.extend(not_faulty)
             break
-    final_media_set = list(chain(*media_set))
+    if media_set and "list" in media_set[0]:
+        final_media_set = list(chain(*[x["list"] for x in media_set] ))
+    else:
+        final_media_set = list(chain(*media_set))
     return final_media_set
 
 
@@ -454,11 +444,6 @@ def parse_config_inputs(custom_input: Any) -> list[str]:
     return custom_input
 
 
-error_details_types = (
-    onlyfans_extras.ErrorDetails
-    | fansly_extras.ErrorDetails
-    | starsavn_extras.ErrorDetails
-)
 
 
 async def handle_error_details(
@@ -468,22 +453,85 @@ async def handle_error_details(
     | list[error_details_types],
     remove_errors: bool = False,
     api_type: Optional[
-        onlyfans_classes.auth_model.create_auth
-        | fansly_classes.auth_model.create_auth
-        | starsavn_classes.auth_model.create_auth
+        auth_types
     ] = None,
 ):
     results = []
     if isinstance(item, list):
         if remove_errors and api_type:
+            onlyfans_classes, fansly_classes, starsavn_classes = load_classes()
+            onlyfans_extras, fansly_extras, starsavn_extras = load_extras()
             if isinstance(api_type, onlyfans_classes.auth_model.create_auth):
                 results = await onlyfans_extras.remove_errors(item)
             elif isinstance(api_type, fansly_classes.auth_model.create_auth):
                 results = await fansly_extras.remove_errors(item)
-            elif isinstance(api_type, fansly_classes.auth_model.ErrorDetails):
+            else:
                 results = await starsavn_extras.remove_errors(item)
     else:
         if parsed_args.verbose:
             # Will move to logging instead of printing later.
             print(f"Error: {item.__dict__}")
     return results
+
+async def get_function_name(function_that_called:str="",convert_to_api_type:bool=False):
+    if not function_that_called:
+        function_that_called = inspect.stack()[1].function
+    if convert_to_api_type:
+        return function_that_called.split("_")[-1].capitalize()
+    return function_that_called
+async def handle_refresh(api:auth_types|user_types,api_type:str, refresh:bool,function_that_called:str):
+    result:list[Any] = []
+    # If refresh is False, get already set data
+    if not api_type and not refresh:
+        api_type = await get_function_name(function_that_called,True) if not api_type else api_type
+        try:
+            # We assume the class type is create_user
+            result = getattr(api.temp_scraped, api_type)
+        except AttributeError:
+            # we assume the class type is create_auth
+            api_type = api_type.lower()
+            result = getattr(api, api_type)
+
+    return result
+async def default_data(api: auth_types|user_types, refresh:bool=False,api_type: str = ""):
+    status:bool = False
+    result: list[Any] = []
+    function_that_called = inspect.stack()[1].function
+    auth_types,_user_types = load_classes2()
+    if isinstance(api,auth_types ):
+        # create_auth class
+        auth = api
+        match function_that_called:
+            case function_that_called if function_that_called in ["get_paid_content","get_chats","get_lists_users","get_subscriptions"]:
+                if not auth.active or not refresh:
+                    result = await handle_refresh(auth,api_type,refresh,function_that_called)
+                    status = True
+            case "get_mass_messages":
+                if not auth.active or not auth.isPerformer:
+                    result = await handle_refresh(auth,api_type,refresh,function_that_called)
+                    status = True
+            case _:
+                result = await handle_refresh(auth,api_type,refresh,function_that_called)
+                if result:
+                    status = True
+    else:
+        # create_user class
+        user = api
+        match function_that_called:
+            case "get_stories":
+                if not user.hasStories:
+                    result = await handle_refresh(user,api_type,refresh,function_that_called)
+                    status = True
+            case "get_messages":
+                if not user.subscriber or user.is_me():
+                    result = await handle_refresh(user,api_type,refresh,function_that_called)
+                    status = True
+            case function_that_called if function_that_called in["get_archived_stories"]:
+                if not (user.is_me() and user.isPerformer):
+                    result = await handle_refresh(user,api_type,refresh,function_that_called)
+                    status = True
+            case _:
+                result = await handle_refresh(user,api_type,refresh,function_that_called)
+                if result:
+                    status = True
+    return result, status

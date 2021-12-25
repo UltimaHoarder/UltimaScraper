@@ -1,6 +1,7 @@
 import copy
 from itertools import chain
-from typing import Any, Union
+import math
+from typing import Any, Literal, Optional, Union
 
 
 class auth_details:
@@ -21,9 +22,8 @@ class auth_details:
 
     def export(self):
         new_dict = copy.copy(self.__dict__)
-        if isinstance(self.cookie, cookie_parser):
-            cookie = self.cookie.convert()
-            new_dict["cookie"] = cookie
+        cookie = self.cookie.convert()
+        new_dict["cookie"] = cookie
         return new_dict
 
 
@@ -56,7 +56,7 @@ class legacy_auth_details:
 
 class cookie_parser:
     def __init__(self, options: str) -> None:
-        new_dict = {}
+        new_dict: dict[str, Any] = {}
         for crumble in options.strip().split(";"):
             if crumble:
                 key, value = crumble.strip().split("=")
@@ -106,17 +106,18 @@ class content_types:
 class endpoint_links(object):
     def __init__(
         self,
-        identifier=None,
-        identifier2=None,
-        identifier3=None,
-        text="",
-        only_links=True,
-        global_limit=10,
-        global_offset=0,
+        identifier: Optional[int | str] = None,
+        identifier2: Optional[int | str] = None,
+        identifier3: Optional[int | str] = None,
+        text: str = "",
+        global_limit: int = 10,
+        global_offset: int = 0,
+        sort_order: Literal["asc", "desc"] = "desc",
     ):
         domain = "https://stars.avn.com"
         api = "/api2/v2"
         full_url_path = f"{domain}{api}"
+        self.full_url_path = full_url_path
         self.customer = f"{full_url_path}/users/me"
         self.users = f"{full_url_path}/users/{identifier}"
         self.subscriptions = f"{full_url_path}/subscriptions/following?limit={global_limit}&offset={global_offset}&type=active"
@@ -146,6 +147,31 @@ class endpoint_links(object):
         self.two_factor = f"https://onlyfans.com/api2/v2/users/otp/check"
 
 
+    def list_posts(
+        self,
+        content_id: Optional[int | str],
+        global_limit: int = 10,
+        global_offset: int = 0,
+    ):
+        return f"{self.full_url_path}/users/{content_id}/posts?limit={global_limit}&offset={global_offset}&order=publish_date_desc&skip_users_dups=0"
+
+    def create_links(self, link: str, api_count: int, limit: int = 10, offset: int = 0):
+        """
+        This function will create a list of links depending on their content count.
+
+        Example:\n
+        create_links(link="base_link", api_count=50) will return a list with 5 links.
+        """
+        final_links: list[str] = []
+        if api_count:
+            ceil = math.ceil(api_count / limit)
+            numbers = list(range(ceil))
+            for num in numbers:
+                num = num * limit
+                link = link.replace(f"limit={limit}", f"limit={limit}")
+                new_link = link.replace(f"offset={offset}", f"offset={num}")
+                final_links.append(new_link)
+        return final_links
 # Lol?
 class ErrorDetails:
     def __init__(self, result) -> None:
@@ -213,16 +239,10 @@ class media_types:
 
 async def remove_errors(results: list[dict[str, Any]]|list[ErrorDetails]):
     wrapped = False
-    if not isinstance(results, list):
+    if isinstance(results, ErrorDetails):
         wrapped = True
         results = [results]
-    if results:
-        has_list = True if "list" in results[0] else False
-        if has_list:
-            results = [x["list"] for x in results if not isinstance(x, ErrorDetails)]
-        else:
-            results = [x for x in results if not isinstance(x, ErrorDetails)]
-
-    if wrapped and results:
-        results = results[0]
-    return results
+    final_results = [x for x in results if not isinstance(x, ErrorDetails)]
+    if wrapped and final_results:
+        final_results = final_results[0]
+    return final_results

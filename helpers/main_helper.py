@@ -1,8 +1,9 @@
+from __future__ import annotations
 from argparse import Namespace
 from pathlib import Path
+from apis import api_helper
 from apis.onlyfans.classes.user_model import create_user
 from database.databases.user_data.models.api_table import api_table
-from apis import api_helper
 import asyncio
 import copy
 from aiohttp.client import ClientSession
@@ -24,7 +25,7 @@ from datetime import datetime
 from itertools import zip_longest
 from multiprocessing.dummy import Pool as ThreadPool
 from types import SimpleNamespace
-from typing import Any, Optional, Tuple, Union, BinaryIO
+from typing import TYPE_CHECKING, Any, Optional, Tuple, Union, BinaryIO
 
 import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
@@ -48,8 +49,13 @@ from mergedeep import Strategy, merge
 from sqlalchemy import inspect
 from sqlalchemy.orm.session import Session
 from tqdm import tqdm
-
 import helpers.db_helper as db_helper
+
+if TYPE_CHECKING:
+
+    import modules.fansly as m_fansly
+    import modules.onlyfans as m_onlyfans
+    import modules.starsavn as m_starsavn
 
 json_global_settings = {}
 min_drive_space = 0
@@ -1019,7 +1025,10 @@ async def process_names(
     return names
 
 
-async def process_downloads(api, module):
+async def process_downloads(
+    api: OnlyFans.start | Fansly.start | StarsAVN.start,
+    module: m_onlyfans | m_fansly | m_starsavn,
+):
     if json_global_settings["helpers"]["downloader"]:
         for auth in api.auths:
             subscriptions = await auth.get_subscriptions(refresh=False)
@@ -1304,5 +1313,3 @@ async def move_to_old(
     print(f"Moving {source} -> {local_destination}")
     shutil.copytree(source, local_destination, dirs_exist_ok=True)
     shutil.rmtree(source)
-
-

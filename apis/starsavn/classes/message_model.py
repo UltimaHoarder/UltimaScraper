@@ -2,14 +2,14 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional, Union
 
-from apis.fansly.classes import user_model
-from apis.fansly.classes.extras import endpoint_links
+from apis.starsavn.classes import user_model
+from apis.starsavn.classes.extras import endpoint_links
 
 if TYPE_CHECKING:
-    from apis.fansly.classes.user_model import create_user
+    from apis.starsavn.classes.user_model import create_user
 
 class create_message:
-    def __init__(self, option: dict, user: create_user) -> None:
+    def __init__(self, option: dict[str, Any], user: create_user) -> None:
         self.responseType: Optional[str] = option.get("responseType")
         self.text: Optional[str] = option.get("text")
         self.lockedText: Optional[bool] = option.get("lockedText")
@@ -17,11 +17,15 @@ class create_message:
         self.price: Optional[float] = float(option.get("price","0").replace("$",""))
         self.isMediaReady: Optional[bool] = option.get("isMediaReady")
         self.mediaCount: Optional[int] = option.get("mediaCount")
-        self.media: list = option.get("media",[])
-        self.previews: list = option.get("previews",[])
+        self.media: list[dict[str, Any]] = option.get("media", [])
+        self.previews: list[dict[str, Any]] = option.get("previews", [])
         self.isTip: Optional[bool] = option.get("isTip")
         self.isReportedByMe: Optional[bool] = option.get("isReportedByMe")
-        self.fromUser  = create_user.create_user(option["fromUser"])
+        self.fromUser = (
+            user
+            if 1 == option["fromUser"]["id"]
+            else user_model.create_user(option["fromUser"], user.subscriber)
+        )
         self.isFromQueue: Optional[bool] = option.get("isFromQueue")
         self.queueId: Optional[int] = option.get("queueId")
         self.canUnsendQueue: Optional[bool] = option.get("canUnsendQueue")

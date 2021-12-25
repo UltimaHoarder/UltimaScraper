@@ -210,9 +210,6 @@ def create_headers(
     return headers
 
 
-def handle_refresh(object_: object, name: str):
-    final_argument = getattr(object_, name)
-    return final_argument
 
 
 class media_types:

@@ -2,8 +2,8 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional
 
-from apis.onlyfans.classes.extras import endpoint_links
 from apis.onlyfans.classes import user_model
+from apis.onlyfans.classes.extras import endpoint_links
 
 if TYPE_CHECKING:
     from apis.onlyfans.classes.user_model import create_user

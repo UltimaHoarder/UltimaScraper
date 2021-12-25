@@ -10,7 +10,7 @@ from apis import api_helper
 from apis.fansly.classes.hightlight_model import create_highlight
 from apis.fansly.classes.create_story import create_story
 from apis.fansly.classes.extras import (content_types, endpoint_links,
-                                        error_details, handle_refresh,
+                                        ErrorDetails, handle_refresh,
                                         remove_errors)
 from apis.fansly.classes.post_model import create_post
 from mergedeep.mergedeep import Strategy, merge
@@ -319,7 +319,7 @@ class create_user:
 
     async def get_post(
         self, identifier=None, limit=10, offset=0
-    ) -> Union[create_post, error_details]:
+    ) -> Union[create_post, ErrorDetails]:
         if not identifier:
             identifier = self.id
         link = endpoint_links(
@@ -331,9 +331,9 @@ class create_user:
             return final_result
         return response
 
-    async def get_groups(self) -> error_details | dict[str, Any]:
+    async def get_groups(self) -> ErrorDetails | dict[str, Any]:
         link = endpoint_links().groups_api
-        response: error_details | dict[
+        response: ErrorDetails | dict[
             str, Any
         ] = await self.session_manager.json_request(link)
         if isinstance(response, dict):
@@ -357,7 +357,7 @@ class create_user:
             if result:
                 return result
         groups = await self.get_groups()
-        if isinstance(groups, error_details):
+        if isinstance(groups, ErrorDetails):
             return []
         found_id: Optional[int] = None
         for group in groups["groups"]:
@@ -547,7 +547,7 @@ class create_user:
                 link, method="POST", payload=x
             )
         else:
-            result = error_details(
+            result = ErrorDetails(
                 {"code": 2011, "message": "Insufficient Credit Balance"}
             )
         return result

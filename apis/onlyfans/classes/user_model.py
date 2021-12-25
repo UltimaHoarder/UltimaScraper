@@ -11,7 +11,7 @@ from apis.onlyfans.classes import post_model
 from apis.onlyfans.classes.hightlight_model import create_highlight
 from apis.onlyfans.classes.story_model import create_story
 from apis.onlyfans.classes.extras import (content_types, endpoint_links,
-                                          error_details, handle_refresh,
+                                          ErrorDetails, handle_refresh,
                                           remove_errors)
 
 if TYPE_CHECKING:
@@ -297,7 +297,7 @@ class create_user:
 
     async def get_post(
         self, identifier=None, limit=10, offset=0
-    ) -> Union[create_post, error_details]:
+    ) -> Union[create_post, ErrorDetails]:
         if not identifier:
             identifier = self.id
         link = endpoint_links(
@@ -500,7 +500,7 @@ class create_user:
                 link, method="POST", payload=x
             )
         else:
-            result = error_details(
+            result = ErrorDetails(
                 {"code": 2011, "message": "Insufficient Credit Balance"}
             )
         return result

@@ -9,7 +9,7 @@ from urllib import parse
 import apis.starsavn.classes.message_model as message_model
 from apis import api_helper
 from apis.starsavn.classes.extras import (content_types, endpoint_links,
-                                          error_details, handle_refresh,
+                                          ErrorDetails, handle_refresh,
                                           remove_errors)
 from apis.starsavn.classes.highlight_model import create_highlight
 from apis.onlyfans.classes import post_model
@@ -310,7 +310,7 @@ class create_user:
 
     async def get_post(
         self, identifier=None, limit=10, offset=0
-    ) -> Union[create_post, error_details]:
+    ) -> Union[create_post, ErrorDetails]:
         if not identifier:
             identifier = self.id
         link = endpoint_links(
@@ -540,7 +540,7 @@ class create_user:
                 link, method="POST", payload=x
             )
         else:
-            result = error_details(
+            result = ErrorDetails(
                 {"code": 2011, "message": "Insufficient Credit Balance"}
             )
         return result

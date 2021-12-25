@@ -13,7 +13,7 @@ from apis.fansly.classes.extras import (
     content_types,
     create_headers,
     endpoint_links,
-    error_details,
+    ErrorDetails,
     handle_refresh,
 )
 from apis.fansly.classes.post_model import create_post
@@ -48,7 +48,7 @@ class create_auth(create_user):
         self.profile_directory = option.get("profile_directory", "")
         self.guest = False
         self.active: bool = False
-        self.errors: list[error_details] = []
+        self.errors: list[ErrorDetails] = []
         self.extras: dict[str, Any] = {}
 
     def update(self, data: Dict[str, Any]):
@@ -102,7 +102,7 @@ class create_auth(create_user):
                                 response = await self.session_manager.json_request(
                                     link, method="POST", payload=data
                                 )
-                                if isinstance(response, error_details):
+                                if isinstance(response, ErrorDetails):
                                     error.message = response.message
                                     count += 1
                                 else:
@@ -139,7 +139,7 @@ class create_auth(create_user):
                 final_response: dict[str, Any] = response
                 link = endpoint_links(final_response["response"]["accountId"]).customer
                 final_response = await self.session_manager.json_request(link)
-                self.resolve_auth_errors(final_response)
+                await self.resolve_auth_errors(final_response)
                 if not self.errors:
                     # merged = self.__dict__ | final_response
                     # self = create_auth(merged,self.pool,self.session_manager.max_threads)
@@ -150,13 +150,13 @@ class create_auth(create_user):
                 self.active = False
         return self
 
-    def resolve_auth_errors(self, response: error_details | dict[str, Any]):
+    async def resolve_auth_errors(self, response: ErrorDetails | dict[str, Any]):
         # Adds an error object to self.auth.errors
-        if isinstance(response, error_details):
+        if isinstance(response, ErrorDetails):
             error = response
         elif "error" in response:
             error = response["error"]
-            error = error_details(error)
+            error = ErrorDetails(error)
         else:
             self.errors.clear()
             return
@@ -187,15 +187,15 @@ class create_auth(create_user):
 
     async def get_user(
         self, identifier: Union[str, int]
-    ) -> Union[create_user, error_details]:
+    ) -> Union[create_user, ErrorDetails]:
         link = endpoint_links(identifier).customer
         response = await self.session_manager.json_request(link)
-        if not isinstance(response, error_details):
+        if not isinstance(response, ErrorDetails):
             if response["response"]:
                 response["session_manager"] = self.session_manager
                 response = create_user(response["response"][0], self)
             else:
-                response = error_details({"code": 69, "message": "User Doesn't Exist"})
+                response = ErrorDetails({"code": 69, "message": "User Doesn't Exist"})
         return response
 
     async def get_lists_users(
@@ -319,7 +319,7 @@ class create_auth(create_user):
                     continue
                 link = endpoint_links(identifier=identifier).users
                 result = await self.session_manager.json_request(link)
-                if isinstance(result, error_details) or not result["subscribedBy"]:
+                if isinstance(result, ErrorDetails) or not result["subscribedBy"]:
                     continue
                 subscription = create_user(result, self)
                 if subscription.isBlocked:

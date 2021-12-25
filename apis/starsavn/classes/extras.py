@@ -147,7 +147,7 @@ class endpoint_links(object):
 
 
 # Lol?
-class error_details:
+class ErrorDetails:
     def __init__(self, result) -> None:
         error = result["error"] if "error" in result else result
         self.code = error["code"]
@@ -211,7 +211,7 @@ class media_types:
         for attr, value in self.__dict__.items():
             yield attr, value
 
-async def remove_errors(results: list[dict[str,Any]]):
+async def remove_errors(results: list[dict[str, Any]]|list[ErrorDetails]):
     wrapped = False
     if not isinstance(results, list):
         wrapped = True
@@ -219,9 +219,9 @@ async def remove_errors(results: list[dict[str,Any]]):
     if results:
         has_list = True if "list" in results[0] else False
         if has_list:
-            results = [x["list"] for x in results if not isinstance(x, error_details)]
+            results = [x["list"] for x in results if not isinstance(x, ErrorDetails)]
         else:
-            results = [x for x in results if not isinstance(x, error_details)]
+            results = [x for x in results if not isinstance(x, ErrorDetails)]
 
     if wrapped and results:
         results = results[0]

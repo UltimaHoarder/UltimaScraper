@@ -3,20 +3,20 @@ from __future__ import annotations
 from typing import TYPE_CHECKING, Any
 
 from apis import api_helper
-from apis.onlyfans.classes import user_model
 from apis.onlyfans.classes.extras import endpoint_links
 
 if TYPE_CHECKING:
     from apis.onlyfans.classes.user_model import create_user
 
+
 class create_post:
-    def __init__(self, option: dict[str, Any], author: create_user) -> None:
+    def __init__(self, option: dict[str, Any], user: create_user) -> None:
         self.responseType: str = option.get("responseType")
         self.id: int = option.get("id")
         self.postedAt: str = option.get("postedAt")
         self.postedAtPrecise: str = option.get("postedAtPrecise")
         self.expiredAt: Any = option.get("expiredAt")
-        self.author = author
+        self.author = user
         text: str = option.get("text", "")
         self.text = str(text or "")
         raw_text: str = option.get("rawText", "")
@@ -51,6 +51,9 @@ class create_post:
         self.canViewMedia: bool = option.get("canViewMedia")
         self.preview: list = option.get("preview")
         self.canPurchase: bool = option.get("canPurchase")
+
+    async def get_author(self):
+        return self.author
 
     async def get_comments(self):
         api_type = "comments"

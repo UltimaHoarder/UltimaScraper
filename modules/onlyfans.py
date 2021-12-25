@@ -21,7 +21,7 @@ from apis.onlyfans.classes.message_model import create_message
 from apis.onlyfans.classes.post_model import create_post
 from apis.onlyfans.classes.story_model import create_story
 from apis.onlyfans.classes.user_model import create_user
-from apis.onlyfans.classes.extras import auth_details, media_types
+from apis.onlyfans.classes.extras import auth_details, ErrorDetails, media_types
 from apis.onlyfans.onlyfans import start
 from classes.prepare_metadata import create_metadata, format_content, prepare_reformat
 from helpers import db_helper
@@ -315,26 +315,22 @@ async def profile_scraper(
             progress_bar.close()
 
 
-async def paid_content_scraper(api: start, identifiers=[]):
+async def paid_content_scraper(api: start, identifiers:list[int|str]=[]):
 
     for authed in api.auths:
-        paid_contents = []
         paid_contents = await authed.get_paid_content()
-        if not authed.active:
+        if not authed.active or isinstance(paid_contents, ErrorDetails):
             return
         authed.subscriptions = authed.subscriptions
         for paid_content in paid_contents:
             author = None
-            if isinstance(paid_content, create_message):
-                author = paid_content.fromUser
-            elif isinstance(paid_content, create_post):
-                author = paid_content.author
+            author = await paid_content.get_author()
             if not author:
                 continue
             subscription = await authed.get_subscription(identifier=author.id
             )
             if not subscription:
-                subscription = paid_content.user
+                subscription = author
                 authed.subscriptions.append(subscription)
             subscription.subscriber = authed
             if paid_content.responseType:

@@ -15,7 +15,7 @@ from apis.starsavn.classes.extras import (
     content_types,
     create_headers,
     endpoint_links,
-    error_details,
+    ErrorDetails,
     handle_refresh,
 )
 from dateutil.relativedelta import relativedelta
@@ -46,7 +46,7 @@ class create_auth(create_user):
         self.profile_directory = option.get("profile_directory", "")
         self.guest = False
         self.active: bool = False
-        self.errors: list[error_details] = []
+        self.errors: list[ErrorDetails] = []
         self.extras: dict[str, Any] = {}
 
     def update(self, data: Dict[str, Any]):
@@ -102,7 +102,7 @@ class create_auth(create_user):
                                 response = await self.session_manager.json_request(
                                     link, method="POST", payload=data
                                 )
-                                if isinstance(response, error_details):
+                                if isinstance(response, ErrorDetails):
                                     error.message = response.message
                                     count += 1
                                 else:
@@ -118,7 +118,7 @@ class create_auth(create_user):
                     error = self.errors[-1]
                     error_message = error.message
                     if "token" in error_message:
-                        breakonlyfans
+                        pass
                     if "Code wrong" in error_message:
                         break
                     if "Please refresh" in error_message:
@@ -140,7 +140,7 @@ class create_auth(create_user):
             link = endpoint_links().customer
             response = await self.session_manager.json_request(link)
             if response:
-                self.resolve_auth_errors(response)
+                await self.resolve_auth_errors(response)
                 if not self.errors:
                     # merged = self.__dict__ | response
                     # self = create_auth(merged,self.pool,self.session_manager.max_threads)
@@ -151,13 +151,13 @@ class create_auth(create_user):
                 self.active = False
         return self
 
-    def resolve_auth_errors(self, response: Union[dict[str, Any], error_details]):
+    async def resolve_auth_errors(self, response: Union[dict[str, Any], ErrorDetails]):
         # Adds an error object to self.auth.errors
-        if isinstance(response, error_details):
+        if isinstance(response, ErrorDetails):
             error = response
         elif isinstance(response, dict) and "error" in response:
             error = response["error"]
-            error = error_details(error)
+            error = ErrorDetails(error)
         else:
             self.errors.clear()
             return
@@ -185,10 +185,10 @@ class create_auth(create_user):
 
     async def get_user(
         self, identifier: Union[str, int]
-    ) -> Union[create_user, error_details]:
+    ) -> Union[create_user, ErrorDetails]:
         link = endpoint_links(identifier).users
         response = await self.session_manager.json_request(link)
-        if not isinstance(response, error_details):
+        if not isinstance(response, ErrorDetails):
             response["session_manager"] = self.session_manager
             response = create_user(response, self)
         return response
@@ -276,7 +276,7 @@ class create_auth(create_user):
                 valid_subscriptions = []
                 extras = {}
                 extras["auth_check"] = ""
-                if isinstance(subscriptions, error_details):
+                if isinstance(subscriptions, ErrorDetails):
                     return
                 subscriptions = [
                     subscription
@@ -291,14 +291,16 @@ class create_auth(create_user):
                         tasks.append(task)
                 tasks = await asyncio.gather(*tasks)
                 for task in tasks:
-                    if isinstance(task, error_details):
+                    if isinstance(task, ErrorDetails):
                         continue
                     subscription2: create_user = task
                     for subscription in subscriptions:
                         if subscription["id"] != subscription2.id:
                             continue
                         subscribedByData = {}
-                        new_date = datetime.utcnow().replace(tzinfo=timezone.utc) + relativedelta(years=1)
+                        new_date = datetime.utcnow().replace(
+                            tzinfo=timezone.utc
+                        ) + relativedelta(years=1)
                         temp = subscription.get("subscribedByExpireDate", new_date)
                         if isinstance(temp, str):
                             new_date = datetime.fromisoformat(temp)
@@ -323,7 +325,7 @@ class create_auth(create_user):
                     continue
                 link = endpoint_links(identifier=identifier).users
                 result = await self.session_manager.json_request(link)
-                if isinstance(result, error_details) or not result["subscribedBy"]:
+                if isinstance(result, ErrorDetails) or not result["subscribedBy"]:
                     continue
                 subscription = create_user(result, self)
                 if subscription.isBlocked:
@@ -331,7 +333,9 @@ class create_auth(create_user):
                 subscription.session_manager = self.session_manager
                 subscription.subscriber = self
                 subscribedByData = {}
-                new_date = datetime.utcnow().replace(tzinfo=timezone.utc) + relativedelta(years=1)
+                new_date = datetime.utcnow().replace(
+                    tzinfo=timezone.utc
+                ) + relativedelta(years=1)
                 temp = result.get("subscribedByExpireDate", new_date)
                 if isinstance(temp, str):
                     new_date = datetime.fromisoformat(temp)
@@ -456,7 +460,7 @@ class create_auth(create_user):
                 return result
         link = endpoint_links(global_limit=limit, global_offset=offset).paid_api
         final_results = await self.session_manager.json_request(link)
-        if not isinstance(final_results,error_details):
+        if not isinstance(final_results, ErrorDetails):
             if len(final_results) >= limit and not check:
                 results2 = self.get_paid_content(
                     limit=limit, offset=limit + offset, inside_loop=True

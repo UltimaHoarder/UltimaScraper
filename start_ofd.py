@@ -78,4 +78,3 @@ try:
         asyncio.run(main())
 except Exception as e:
     print(traceback.format_exc())
-    input()

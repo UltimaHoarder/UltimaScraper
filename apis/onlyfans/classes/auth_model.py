@@ -10,15 +10,15 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import jsonpickle
 from apis import api_helper
-from apis.onlyfans.classes.message_model import create_message
 from apis.onlyfans.classes.extras import (
     auth_details,
     content_types,
     create_headers,
     endpoint_links,
-    error_details,
+    ErrorDetails,
     handle_refresh,
 )
+from apis.onlyfans.classes.message_model import create_message
 from apis.onlyfans.classes.post_model import create_post
 from apis.onlyfans.classes.user_model import create_user
 from dateutil.relativedelta import relativedelta
@@ -49,13 +49,26 @@ class create_auth(create_user):
         self.api = api
         temp_pool = pool if pool else api_helper.multiprocessing()
         self.pool = temp_pool
-        self.session_manager = api_helper.session_manager(self, max_threads=max_threads)
+        self.session_manager = self._session_manager(self, max_threads=max_threads)
         self.auth_details = auth_details()
         self.profile_directory = option.get("profile_directory", "")
         self.guest = False
         self.active: bool = False
-        self.errors: list[error_details] = []
+        self.errors: list[ErrorDetails] = []
         self.extras: dict[str, Any] = {}
+
+    class _session_manager(api_helper.session_manager):
+        def __init__(
+            self,
+            auth: create_auth,
+            headers: dict[str, Any] = ...,
+            proxies: list[str] = ...,
+            max_threads: int = -1,
+            use_cookies: bool = True,
+        ) -> None:
+            api_helper.session_manager.__init__(
+                self, auth, headers, proxies, max_threads, use_cookies
+            )
 
     def update(self, data: Dict[str, Any]):
         if not data["username"]:
@@ -109,7 +122,7 @@ class create_auth(create_user):
                                 response = await self.session_manager.json_request(
                                     link, method="POST", payload=data
                                 )
-                                if isinstance(response, error_details):
+                                if isinstance(response, ErrorDetails):
                                     error.message = response.message
                                     count += 1
                                 else:
@@ -147,7 +160,7 @@ class create_auth(create_user):
             link = endpoint_links().customer
             response = await self.session_manager.json_request(link)
             if response:
-                self.resolve_auth_errors(response)
+                await self.resolve_auth_errors(response)
                 if not self.errors:
                     self.active = True
                     self.update(response)
@@ -156,13 +169,13 @@ class create_auth(create_user):
                 self.active = False
         return self
 
-    def resolve_auth_errors(self, response: error_details | dict[str, Any]):
+    async def resolve_auth_errors(self, response: ErrorDetails | dict[str, Any]):
         # Adds an error object to self.auth.errors
-        if isinstance(response, error_details):
+        if isinstance(response, ErrorDetails):
             error = response
         elif "error" in response:
             error = response["error"]
-            error = error_details(error)
+            error = ErrorDetails(error)
         else:
             self.errors.clear()
             return
@@ -177,7 +190,7 @@ class create_auth(create_user):
             pass
         error.code = error_code
         error.message = error_message
-        api_helper.handle_error_details(error)
+        await api_helper.handle_error_details(error)
         self.errors.append(error)
 
     async def get_lists(self, refresh: bool = True, limit: int = 100, offset: int = 0):
@@ -194,10 +207,10 @@ class create_auth(create_user):
 
     async def get_user(
         self, identifier: Union[str, int]
-    ) -> Union[create_user, error_details]:
+    ) -> Union[create_user, ErrorDetails]:
         link = endpoint_links(identifier).users
         response = await self.session_manager.json_request(link)
-        if not isinstance(response, error_details):
+        if not isinstance(response, ErrorDetails):
             if not response:
                 print
             response["session_manager"] = self.session_manager
@@ -291,14 +304,14 @@ class create_auth(create_user):
                 valid_subscriptions: list[create_user] = []
                 extras = {}
                 extras["auth_check"] = ""
-                if isinstance(subscriptions, error_details):
+                if isinstance(subscriptions, ErrorDetails):
                     return
                 subscriptions = [
                     subscription
                     for subscription in subscriptions
                     if "error" != subscription
                 ]
-                tasks: list[Task[create_user | error_details]] = []
+                tasks: list[Task[create_user | ErrorDetails]] = []
                 for subscription in subscriptions:
                     subscription["session_manager"] = self.session_manager
                     if extra_info:
@@ -308,7 +321,7 @@ class create_auth(create_user):
                         tasks.append(task)
                 results2 = await asyncio.gather(*tasks)
                 for result in results2:
-                    if isinstance(result, error_details):
+                    if isinstance(result, ErrorDetails):
                         continue
                     if not result:
                         print
@@ -336,7 +349,7 @@ class create_auth(create_user):
                     continue
                 link = endpoint_links(identifier=identifier).users
                 result = await self.session_manager.json_request(link)
-                if isinstance(result, error_details) or not result["subscribedBy"]:
+                if isinstance(result, ErrorDetails) or not result["subscribedBy"]:
                     continue
                 subscription = create_user(result, self)
                 if subscription.isBlocked:
@@ -456,7 +469,7 @@ class create_auth(create_user):
         limit: int = 10,
         offset: int = 0,
         inside_loop: bool = False,
-    ) -> list[create_message | create_post] | Any | error_details:
+    ) -> list[create_message | create_post] | ErrorDetails:
         api_type = "paid_content"
         if not self.active:
             return []
@@ -466,7 +479,7 @@ class create_auth(create_user):
                 return result
         link = endpoint_links(global_limit=limit, global_offset=offset).paid_api
         final_results = await self.session_manager.json_request(link)
-        if not isinstance(final_results, error_details):
+        if not isinstance(final_results, ErrorDetails):
             if len(final_results) >= limit and not check:
                 results2 = await self.get_paid_content(
                     limit=limit, offset=limit + offset, inside_loop=True

@@ -21,17 +21,22 @@ from urllib.parse import urlparse
 import python_socks
 import requests
 from aiohttp import ClientSession
-from aiohttp.client_exceptions import (ClientConnectorError, ClientOSError,
-                                       ClientPayloadError, ContentTypeError,
-                                       ServerDisconnectedError)
+from aiohttp.client_exceptions import (
+    ClientConnectorError,
+    ClientOSError,
+    ClientPayloadError,
+    ContentTypeError,
+    ServerDisconnectedError,
+)
 from aiohttp.client_reqrep import ClientResponse
 from aiohttp_socks import ProxyConnectionError, ProxyConnector, ProxyError
-from database.databases.user_data.models.media_table import \
-    template_media_table
+from apis.onlyfans.classes.extras import ErrorDetails
+from database.databases.user_data.models.media_table import template_media_table
 
-import apis.onlyfans.classes as onlyfans_classes
 import apis.fansly.classes as fansly_classes
+import apis.onlyfans.classes as onlyfans_classes
 import apis.starsavn.classes as starsavn_classes
+
 onlyfans_extras = onlyfans_classes.extras
 fansly_extras = fansly_classes.extras
 starsavn_extras = starsavn_classes.extras
@@ -56,14 +61,12 @@ class set_settings:
         global_settings = self.json_global_settings
 
 
-
-
 def chunks(l, n):
     final = [l[i * n : (i + 1) * n] for i in range((len(l) + n - 1) // n)]
     return final
 
 
-def calculate_max_threads(max_threads:Optional[int]=None):
+def calculate_max_threads(max_threads: Optional[int] = None):
     if not max_threads:
         max_threads = -1
     max_threads2 = cpu_count()
@@ -74,21 +77,23 @@ def calculate_max_threads(max_threads:Optional[int]=None):
 
 def multiprocessing(max_threads: Optional[int] = None):
     max_threads = calculate_max_threads(max_threads)
-    pool:Pool = ThreadPool(max_threads)
+    pool: Pool = ThreadPool(max_threads)
     return pool
 
 
 class session_manager:
     def __init__(
         self,
-        auth: onlyfans_classes.auth_model.create_auth| fansly_classes.auth_model.create_auth,
+        auth: onlyfans_classes.auth_model.create_auth
+        | fansly_classes.auth_model.create_auth
+        | starsavn_classes.auth_model.create_auth,
         headers: dict[str, Any] = {},
         proxies: list[str] = [],
         max_threads: int = -1,
         use_cookies: bool = True,
     ) -> None:
         self.pool: Pool = auth.pool if auth.pool else multiprocessing()
-        max_threads= calculate_max_threads(max_threads)
+        max_threads = calculate_max_threads(max_threads)
         self.semaphore = asyncio.BoundedSemaphore(max_threads)
         self.max_threads = max_threads
         self.kill = False
@@ -157,8 +162,8 @@ class session_manager:
         method: str = "GET",
         stream: bool = False,
         json_format: bool = True,
-        payload: dict[str, str|bool] = {},
-        _handle_error_details:bool=True
+        payload: dict[str, str | bool] = {},
+        _handle_error_details: bool = True,
     ) -> Any:
         async with self.semaphore:
             headers = {}
@@ -196,13 +201,17 @@ class session_manager:
                         if json_format and not stream:
                             result = await response.json()
                             if "error" in result:
-                                match type(self.auth):
-                                    case onlyfans_classes.auth_model.create_auth:
-                                        result = onlyfans_extras.error_details(result)
-                                    case fansly_classes.auth_model.create_auth:
-                                        result = fansly_extras.error_details(result)
+                                if isinstance(
+                                    self.auth, onlyfans_classes.auth_model.create_auth
+                                ):
+                                    result = onlyfans_extras.ErrorDetails(result)
+                                elif isinstance(
+                                    self.auth, fansly_classes.auth_model.create_auth
+                                ):
+                                    result = fansly_extras.ErrorDetails(result)
+
                                 if _handle_error_details:
-                                    handle_error_details(result)
+                                    await handle_error_details(result)
                         elif stream and not json_format:
                             result = response
                         else:
@@ -223,7 +232,7 @@ class session_manager:
                 await session.close()
             return result
 
-    async def async_requests(self, items: list[str]) -> list[dict[str,Any]]:
+    async def async_requests(self, items: list[str]) -> list[dict[str, Any]]:
         tasks = []
 
         async def run(links: list[str]) -> list:
@@ -283,7 +292,7 @@ class session_manager:
                     )
                 elif api_type == "posts":
                     new_result = await subscription.get_post(post_id)
-                if isinstance(new_result, onlyfans_extras.error_details):
+                if isinstance(new_result, onlyfans_extras.ErrorDetails):
                     continue
                 if new_result and new_result.media:
                     media_list = [
@@ -351,15 +360,15 @@ async def test_proxies(proxies: list[str]):
                 ip = ip.strip()
                 print("Session IP: " + ip + "\n")
                 final_proxies.append(proxy)
-            except python_socks._errors.ProxyConnectionError|python_socks._errors.ProxyError as e:
+            except python_socks._errors.ProxyConnectionError | python_socks._errors.ProxyError as e:
                 print(f"Proxy Not Set: {proxy}\n")
                 continue
     return final_proxies
 
 
-def restore_missing_data(master_set2:list[str], media_set, split_by):
+def restore_missing_data(master_set2: list[str], media_set, split_by):
     count = 0
-    new_set:set[str] = set()
+    new_set: set[str] = set()
     for item in media_set:
         if not item:
             link = master_set2[count]
@@ -379,20 +388,18 @@ def restore_missing_data(master_set2:list[str], media_set, split_by):
     return list(new_set)
 
 
-async def scrape_endpoint_links(links:list[str], session_manager: Union[session_manager,None], api_type:str):
-    media_set:list[dict[str,str]] = []
+async def scrape_endpoint_links(
+    links: list[str], session_manager: session_manager | None, api_type: str
+):
+    media_set: list[dict[str, str]] = []
     max_attempts = 100
     api_type = api_type.capitalize()
     for attempt in list(range(max_attempts)):
-        if not links:
+        if not links or not session_manager:
             continue
         print("Scrape Attempt: " + str(attempt + 1) + "/" + str(max_attempts))
         results = await session_manager.async_requests(links)
-        match type(session_manager.auth):
-            case starsavn_classes.create_auth:
-                results = await starsavn_extras.remove_errors(results)
-            case _:
-                results = await onlyfans_extras.remove_errors(results)
+        results = await handle_error_details(results, True, session_manager.auth)
         not_faulty = [x for x in results if x]
         faulty = [
             {"key": k, "value": v, "link": links[k]}
@@ -420,8 +427,8 @@ async def scrape_endpoint_links(links:list[str], session_manager: Union[session_
     return final_media_set
 
 
-def calculate_the_unpredictable(link:str, limit:int, multiplier:int=1):
-    final_links:list[str] = []
+def calculate_the_unpredictable(link: str, limit: int, multiplier: int = 1):
+    final_links: list[str] = []
     a = list(range(1, multiplier + 1))
     for b in a:
         parsed_link = urlparse(link)
@@ -433,15 +440,43 @@ def calculate_the_unpredictable(link:str, limit:int, multiplier:int=1):
         final_links.append(new_link)
     return final_links
 
-def parse_config_inputs(custom_input:Any) -> list[str]:
-    if isinstance(custom_input,str):
+
+def parse_config_inputs(custom_input: Any) -> list[str]:
+    if isinstance(custom_input, str):
         custom_input = custom_input.split(",")
     return custom_input
 
 
-def handle_error_details(item:Any, remove_errors:bool=False):
-    if isinstance(item,list):
-        pass
-    if parsed_args.verbose:
-        # Will move to logging instead of printing later.
-        print(f"Error: {item.__dict__}")
+error_details_types = (
+    onlyfans_extras.ErrorDetails
+    | fansly_extras.ErrorDetails
+    | starsavn_extras.ErrorDetails
+)
+
+
+async def handle_error_details(
+    item: error_details_types
+    | dict[str, Any]
+    | list[dict[str, Any]]
+    | list[error_details_types],
+    remove_errors: bool = False,
+    api_type: Optional[
+        onlyfans_classes.auth_model.create_auth
+        | fansly_classes.auth_model.create_auth
+        | starsavn_classes.auth_model.create_auth
+    ] = None,
+):
+    results = []
+    if isinstance(item, list):
+        if remove_errors and api_type:
+            if isinstance(api_type, onlyfans_classes.auth_model.create_auth):
+                results = await onlyfans_extras.remove_errors(item)
+            elif isinstance(api_type, fansly_classes.auth_model.create_auth):
+                results = await fansly_extras.remove_errors(item)
+            elif isinstance(api_type, fansly_classes.auth_model.ErrorDetails):
+                results = await starsavn_extras.remove_errors(item)
+    else:
+        if parsed_args.verbose:
+            # Will move to logging instead of printing later.
+            print(f"Error: {item.__dict__}")
+    return results

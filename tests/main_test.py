@@ -1,7 +1,6 @@
 import sys
 import os
 from os.path import dirname as up
-from apis.onlyfans.onlyfans import start as OnlyFans_Api
 path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
 
@@ -71,9 +70,4 @@ def check_profiles():
                 f"{auth_filepath} has been created. Fill in the relevant details and then press enter to continue.",
                 auth_filepath)
         print
-    print
-async def surely_this_will_work():
-    onlyfans_api = OnlyFans_Api()
-    authed = onlyfans_api.add_auth()
-    authed = await authed.login(guest=True)
     print

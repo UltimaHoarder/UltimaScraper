@@ -23,9 +23,8 @@ class auth_details:
 
     def export(self):
         new_dict = copy.copy(self.__dict__)
-        if isinstance(self.cookie, cookie_parser):
-            cookie = self.cookie.convert()
-            new_dict["cookie"] = cookie
+        cookie = self.cookie.convert()
+        new_dict["cookie"] = cookie
         return new_dict
 
 

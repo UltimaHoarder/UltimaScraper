@@ -7,7 +7,6 @@ from apis.onlyfans.classes.user_model import create_user
 
 from .. import api_helper
 
-
 # def session_retry_rules(response, link: str) -> int:
 #     """
 #     0 Fine, 1 Continue, 2 Break
@@ -38,11 +37,22 @@ class start:
         self.pool: Pool = api_helper.multiprocessing()
         self.settings: dict[str, dict[str, Any]] = {}
 
-    def add_auth(self, options: dict[str, str] = {}, only_active: bool = False):
+    def add_auth(
+        self, auth_json: dict[str, Any] = {}, only_active: bool = False
+    ) -> create_auth:
+        """Creates and appends an auth object to auths property
+
+        Args:
+            auth_json (dict[str, str], optional): []. Defaults to {}.
+            only_active (bool, optional): [description]. Defaults to False.
+
+        Returns:
+            create_auth: [Auth object]
+        """
         auth = create_auth(pool=self.pool, max_threads=self.max_threads, api=self)
-        if only_active and not options.get("active"):
+        if only_active and not auth_json.get("active"):
             return auth
-        temp_auth_details = auth_details(options).upgrade_legacy(options)
+        temp_auth_details = auth_details(auth_json).upgrade_legacy(auth_json)
         auth.auth_details = temp_auth_details
         auth.extras["settings"] = self.settings
         self.auths.append(auth)
@@ -58,6 +68,17 @@ class start:
             if final_auth:
                 break
         return final_auth
+
+    def create_auth_details(self, auth_json: dict[str, Any] = {}) -> auth_details:
+        """If you've got a auth.json file, you can load it into python and pass it through here.
+
+        Args:
+            auth_json (dict[str, Any], optional): [description]. Defaults to {}.
+
+        Returns:
+            auth_details: [auth_details object]
+        """
+        return auth_details(auth_json).upgrade_legacy(auth_json)
 
     def close_pools(self):
         self.pool.close()

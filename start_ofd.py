@@ -43,7 +43,6 @@ try:
 
         # logging.basicConfig(level=logging.DEBUG, format="%(message)s")
         async def main():
-            # await main_test.surely_this_will_work()
             while True:
                 if domain:
                     if site_names:

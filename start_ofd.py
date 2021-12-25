@@ -20,7 +20,6 @@ except SyntaxError:
     print(string)
     exit()
 try:
-
     main_test.version_check()
     main_test.check_config()
     main_test.check_profiles()
@@ -44,6 +43,7 @@ try:
 
         # logging.basicConfig(level=logging.DEBUG, format="%(message)s")
         async def main():
+            # await main_test.surely_this_will_work()
             while True:
                 if domain:
                     if site_names:

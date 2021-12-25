@@ -10,14 +10,9 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import jsonpickle
 from apis import api_helper
-from apis.onlyfans.classes.extras import (
-    auth_details,
-    content_types,
-    create_headers,
-    endpoint_links,
-    ErrorDetails,
-    handle_refresh,
-)
+from apis.onlyfans.classes.extras import (ErrorDetails, auth_details,
+                                          content_types, create_headers,
+                                          endpoint_links, handle_refresh)
 from apis.onlyfans.classes.message_model import create_message
 from apis.onlyfans.classes.post_model import create_post
 from apis.onlyfans.classes.user_model import create_user
@@ -26,7 +21,6 @@ from user_agent import generate_user_agent
 
 if TYPE_CHECKING:
     from apis.onlyfans.onlyfans import start
-
 
 class create_auth(create_user):
     def __init__(
@@ -61,8 +55,8 @@ class create_auth(create_user):
         def __init__(
             self,
             auth: create_auth,
-            headers: dict[str, Any] = ...,
-            proxies: list[str] = ...,
+            headers: dict[str, Any] = {},
+            proxies: list[str] = [],
             max_threads: int = -1,
             use_cookies: bool = True,
         ) -> None:
@@ -94,7 +88,7 @@ class create_auth(create_user):
         a: list[Any] = [dynamic_rules, auth_id, auth_items.x_bc, user_agent, link]
         self.session_manager.headers = create_headers(*a)
         if guest:
-            print("Guest Authentication")
+            self.guest = True
             return self
 
         count = 1

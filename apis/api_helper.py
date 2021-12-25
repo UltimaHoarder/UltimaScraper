@@ -5,9 +5,11 @@ import copy
 import hashlib
 import json
 import os
+import random
 import re
 import threading
 import time
+import string
 from argparse import Namespace
 from itertools import chain
 from multiprocessing import cpu_count
@@ -318,6 +320,11 @@ class session_manager:
             headers["app-token"] = dynamic_rules["app_token"]
             # auth_id = headers["user-id"]
             a = [link, 0, dynamic_rules]
+            if self.auth.guest:
+                headers["x-bc"] = "".join(
+                    random.choice(string.digits + string.ascii_lowercase)
+                    for _ in range(40)
+                )
             headers2 = self.create_signed_headers(*a)
             headers |= headers2
         elif "https://apiv2.fansly.com" in link and isinstance(

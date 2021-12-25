@@ -20,12 +20,11 @@ if TYPE_CHECKING:
 
 class create_user:
     def __init__(self, option:dict[str,Any]={}, subscriber: Optional[create_auth] = None) -> None:
-        self.view: str = option.get("view")
-        self.avatar: Any = option.get("avatar")
-        self.avatarThumbs: Any = option.get("avatarThumbs")
-        self.header: Any = option.get("header")
-        self.headerSize: Any = option.get("headerSize")
-        self.headerThumbs: Any = option.get("headerThumbs")
+        self.avatar: Optional[str] = option.get("avatar")
+        self.avatarThumbs: Optional[list[str]] = option.get("avatarThumbs")
+        self.header: Optional[str] = option.get("header")
+        self.headerSize: Optional[dict[str,int]] = option.get("headerSize")
+        self.headerThumbs: Optional[list[str]] = option.get("headerThumbs")
         self.id: int = option.get("id")
         self.name: str = option.get("name")
         self.username: str = option.get("username")

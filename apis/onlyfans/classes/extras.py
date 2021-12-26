@@ -60,7 +60,7 @@ class cookie_parser:
         new_dict: dict[str, Any] = {}
         for crumble in options.strip().split(";"):
             if crumble:
-                key, value = crumble.strip().split("=")
+                key, value = crumble.strip().split("=",1)
                 new_dict[key] = value
         self.auth_id = new_dict.get("auth_id", "")
         self.sess = new_dict.get("sess", "")

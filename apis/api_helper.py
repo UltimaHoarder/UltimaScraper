@@ -66,7 +66,7 @@ if TYPE_CHECKING:
     onlyfans_classes, fansly_classes, starsavn_classes = load_classes()
     auth_types, user_types = load_classes2()
     onlyfans_extras, fansly_extras, starsavn_extras = load_extras()
-    error_details_types = onlyfans_extras | fansly_extras | starsavn_extras
+    error_details_types = onlyfans_extras.ErrorDetails | fansly_extras.ErrorDetails | starsavn_extras.ErrorDetails
 parsed_args = Namespace()
 
 path = up(up(os.path.realpath(__file__)))
@@ -172,7 +172,7 @@ class session_manager:
                 session = await self.create_client_session()
             headers = self.session_rules(link)
             headers["accept"] = "application/json, text/plain, */*"
-            headers["Connection"] = "keep-alive"
+            # headers["Connection"] = "keep-alive"
             temp_payload = payload.copy()
 
             request_method = None
@@ -319,20 +319,19 @@ class session_manager:
             break
         return new_task
 
-    def session_rules(self, link: str) -> dict[str, Any]:
+    def session_rules(self, link: str, signed_headers:dict[str,Any]={}) -> dict[str, Any]:
         _onlyfans_extras, fansly_extras, _starsavn_extras = load_extras()
-        headers = self.headers
+        headers:dict[str,Any]= {}
+        headers |= self.headers
         if "https://onlyfans.com/api2/v2/" in link:
             dynamic_rules = self.dynamic_rules
             headers["app-token"] = dynamic_rules["app_token"]
-            # auth_id = headers["user-id"]
-            a = [link, 0, dynamic_rules]
             if self.auth.guest:
                 headers["x-bc"] = "".join(
                     random.choice(string.digits + string.ascii_lowercase)
                     for _ in range(40)
                 )
-            headers2 = self.create_signed_headers(*a)
+            headers2 = self.create_signed_headers(link)
             headers |= headers2
         elif "https://apiv2.fansly.com" in link and isinstance(
             self.auth.auth_details, fansly_extras.auth_details
@@ -340,12 +339,17 @@ class session_manager:
             headers["authorization"] = self.auth.auth_details.authorization
         return headers
 
-    def create_signed_headers(self, link: str, auth_id: int, dynamic_rules: dict):
+    def create_signed_headers(self, link: str,  auth_id: int=0,time_:Optional[int]=None):
         # Users: 300000 | Creators: 301000
-        final_time = str(int(round(time.time())))
+        headers:dict[str,Any] = {}
+        final_time = str(int(round(time.time()))) if not time_ else str(time_)
         path = urlparse(link).path
         query = urlparse(link).query
+        if query:
+            auth_id = self.auth.id if self.auth.id else auth_id
+            headers["user-id"] = str(auth_id)
         path = path if not query else f"{path}?{query}"
+        dynamic_rules = self.dynamic_rules
         a = [dynamic_rules["static_param"], final_time, path, str(auth_id)]
         msg = "\n".join(a)
         message = msg.encode("utf-8")
@@ -356,7 +360,6 @@ class session_manager:
             sum([sha_1_b[number] for number in dynamic_rules["checksum_indexes"]])
             + dynamic_rules["checksum_constant"]
         )
-        headers = {}
         headers["sign"] = dynamic_rules["format"].format(sha_1_sign, abs(checksum))
         headers["time"] = final_time
         return headers
@@ -474,8 +477,10 @@ async def handle_error_details(
     results = []
     if isinstance(item, list):
         if remove_errors and api_type:
-            onlyfans_classes, fansly_classes, starsavn_classes = load_classes()
+            onlyfans_classes, fansly_classes, _starsavn_classes = load_classes()
             onlyfans_extras, fansly_extras, starsavn_extras = load_extras()
+            # if isinstance(item, onlyfans_extras.ErrorDetails):
+            #     results = await onlyfans_extras.remove_errors(item)
             if isinstance(api_type, onlyfans_classes.auth_model.create_auth):
                 results = await onlyfans_extras.remove_errors(item)
             elif isinstance(api_type, fansly_classes.auth_model.create_auth):

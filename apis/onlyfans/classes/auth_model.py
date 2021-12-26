@@ -36,7 +36,7 @@ class create_auth(create_user):
         max_threads: int = -1,
         api: Optional[start] = None,
     ) -> None:
-        create_user.__init__(self, option)
+        create_user.__init__(self, option, self)
         if not self.username:
             self.username = f"u{self.id}"
         self.lists = []

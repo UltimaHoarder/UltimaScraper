@@ -25,7 +25,7 @@ class create_message:
         self.fromUser = (
             user
             if 1 == option["fromUser"]["id"]
-            else user_model.create_user(option["fromUser"], user.subscriber)
+            else user_model.create_user(option["fromUser"], user.get_authed())
         )
         self.isFromQueue: Optional[bool] = option.get("isFromQueue")
         self.queueId: Optional[int] = option.get("queueId")

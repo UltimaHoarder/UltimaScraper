@@ -24,7 +24,7 @@ if TYPE_CHECKING:
 
 class create_user:
     def __init__(
-        self, option: dict[str, Any] = {}, subscriber: Optional[create_auth] = None
+        self, option: dict[str, Any], authed:create_auth, subscriber: Optional[create_auth] = None
     ) -> None:
         self.avatar: Optional[str] = option.get("avatar")
         self.avatarThumbs: Optional[list[str]] = option.get("avatarThumbs")
@@ -215,6 +215,7 @@ class create_user:
         self.pinnedPostsCount: int = option.get("pinnedPostsCount")
         self.maxPinnedPostsCount: int = option.get("maxPinnedPostsCount")
         # Custom
+        self.__authed = authed
         self.subscriber = subscriber
         self.session_manager = subscriber.session_manager if subscriber else None
         self.scraped = content_types()
@@ -231,6 +232,10 @@ class create_user:
         if self.email:
             status = True
         return status
+    def get_authed(self):
+        return self.__authed
+    def get_session_manager(self):
+        return self.__authed.session_manager
 
     async def get_stories(
         self, refresh: bool = True, limit: int = 100, offset: int = 0
@@ -265,14 +270,14 @@ class create_user:
             link = endpoint_links(
                 identifier=identifier, global_limit=limit, global_offset=offset
             ).list_highlights
-            results = await self.session_manager.json_request(link)
+            results = await self.get_session_manager().json_request(link)
             results = await remove_errors(results)
             results = [create_highlight(x) for x in results]
         else:
             link = endpoint_links(
                 identifier=hightlight_id, global_limit=limit, global_offset=offset
             ).highlight
-            results = await self.session_manager.json_request(link)
+            results = await self.get_session_manager().json_request(link)
             results = [create_story(x) for x in results["stories"]]
         return results
 
@@ -305,11 +310,12 @@ class create_user:
         link = endpoint_links(
             identifier=identifier, global_limit=limit, global_offset=offset
         ).post_by_id
-        response = await self.session_manager.json_request(link)
-        if isinstance(response, dict):
-            final_result = post_model.create_post(response, self)
+        result = await self.get_session_manager().json_request(link)
+        if isinstance(result, dict):
+            temp_result:dict[str,Any] = result
+            final_result = post_model.create_post(temp_result, self)
             return final_result
-        return response
+        return result
 
     async def get_messages(
         self,
@@ -324,7 +330,7 @@ class create_user:
             return result
         if links is None:
             links = []
-        multiplier = self.session_manager.max_threads
+        multiplier = self.get_session_manager().max_threads
         if links:
             link = links[-1]
         else:
@@ -337,7 +343,7 @@ class create_user:
             links += links2
         else:
             links = links2
-        results = await self.session_manager.async_requests(links)
+        results = await self.get_session_manager().async_requests(links)
         results = await remove_errors(results)
         final_results = []
         if isinstance(results, list):
@@ -380,9 +386,10 @@ class create_user:
             global_limit=limit,
             global_offset=offset,
         ).message_by_id
-        response = await self.session_manager.json_request(link)
+        response = await self.get_session_manager().json_request(link)
         if isinstance(response, dict):
-            results = [x for x in response["list"] if x["id"] == message_id]
+            temp_response:dict[str,Any] = response
+            results:list[dict[str,Any]] = [x for x in temp_response["list"] if x["id"] == message_id]
             result = results[0] if results else {}
             final_result = message_model.create_message(result, self)
             return final_result
@@ -395,7 +402,7 @@ class create_user:
         if status:
             return result
         link = endpoint_links(global_limit=limit, global_offset=offset).archived_stories
-        results = await self.session_manager.json_request(link)
+        results = await self.get_session_manager().json_request(link)
         results = await remove_errors(results)
         results = [create_story(x) for x in results]
         return results
@@ -430,51 +437,41 @@ class create_user:
         self.temp_scraped.Archived.Posts = final_results
         return final_results
 
-    async def get_archived(self, api):
-        items = []
-        if self.is_me():
-            item = {}
-            item["type"] = "Stories"
-            item["results"] = [await self.get_archived_stories()]
-            items.append(item)
-        item = {}
-        item["type"] = "Posts"
-        # item["results"] = test
-        item["results"] = await self.get_archived_posts()
-        items.append(item)
-        return items
-
-    async def search_chat(
-        self, identifier="", text="", refresh=True, limit=10, offset=0
+    async def  search_chat(
+        self, identifier:int|str="", text:str="", refresh:bool=True, limit:int=10, offset:int=0
     ):
+        # Onlyfans can't do a simple search, so this is broken. If you want it to "work", don't use commas, or basically any mysql injection characters (lol)
         if identifier:
-            identifier = parse.urljoin(identifier, "messages")
+            identifier = parse.urljoin(str(identifier), "messages")
+        else:
+            identifier = self.id
         link = endpoint_links(
             identifier=identifier, text=text, global_limit=limit, global_offset=offset
         ).search_chat
-        results = await self.session_manager.json_request(link)
+        results = await self.get_session_manager().json_request(link)
         return results
-
+        
     async def search_messages(
-        self, identifier="", text="", refresh=True, limit=10, offset=0
+        self, identifier:int|str="", text:str="", refresh:bool=True, limit:int=10, offset:int=0
     ):
+        # Onlyfans can't do a simple search, so this is broken. If you want it to "work", don't use commas, or basically any mysql injection characters (lol)
         if identifier:
-            identifier = parse.urljoin(identifier, "messages")
+            identifier = parse.urljoin(str(identifier), "messages")
         text = parse.quote_plus(text)
         link = endpoint_links(
             identifier=identifier, text=text, global_limit=limit, global_offset=offset
         ).search_messages
-        results = await self.session_manager.json_request(link)
+        results = await self.get_session_manager().json_request(link)
         return results
 
     async def like(self, category: str, identifier: int):
         link = endpoint_links(identifier=category, identifier2=identifier).like
-        results = await self.session_manager.json_request(link, method="POST")
+        results = await self.get_session_manager().json_request(link,method="POST")
         return results
 
     async def unlike(self, category: str, identifier: int):
         link = endpoint_links(identifier=category, identifier2=identifier).like
-        results = await self.session_manager.json_request(link, method="DELETE")
+        results = await self.get_session_manager().json_request(link,method="DELETE")
         return results
 
     async def subscription_price(self):
@@ -502,11 +499,9 @@ class create_user:
             "token": "",
             "unavailablePaymentGates": [],
         }
-        if self.subscriber.creditBalance >= subscription_price:
+        if self.__authed.creditBalance >= subscription_price:
             link = endpoint_links().pay
-            result = await self.session_manager.json_request(
-                link, method="POST", payload=x
-            )
+            result = await self.get_session_manager().json_request(link, method="POST", payload=x)
         else:
             result = ErrorDetails(
                 {"code": 2011, "message": "Insufficient Credit Balance"}

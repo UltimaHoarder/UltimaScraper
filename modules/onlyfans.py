@@ -80,13 +80,17 @@ def assign_vars(json_auth: auth_details, config, site_settings, site_name):
     text_length = json_settings["text_length"]
 
 
-async def account_setup(auth: create_auth, identifiers: list[int|str] = [], jobs: dict[str,Any] = {}, auth_count:int=0
-)-> tuple[bool,list[create_user]]:
+async def account_setup(
+    auth: create_auth,
+    identifiers: list[int | str] = [],
+    jobs: dict[str, Any] = {},
+    auth_count: int = 0,
+) -> tuple[bool, list[create_user]]:
     status = False
-    subscriptions:list[create_user] = []
+    subscriptions: list[create_user] = []
     authed = await auth.login()
     if authed.active:
-        profile_directory:str = json_global_settings["profile_directories"][0]
+        profile_directory: str = json_global_settings["profile_directories"][0]
         profile_directory = os.path.abspath(profile_directory)
         profile_directory = os.path.join(profile_directory, authed.username)
         profile_metadata_directory = os.path.join(profile_directory, "Metadata")
@@ -314,7 +318,7 @@ async def profile_scraper(
             progress_bar.close()
 
 
-async def paid_content_scraper(api: start, identifiers:list[int|str]=[]):
+async def paid_content_scraper(api: start, identifiers: list[int | str] = []):
 
     for authed in api.auths:
         paid_contents = await authed.get_paid_content()
@@ -326,8 +330,7 @@ async def paid_content_scraper(api: start, identifiers:list[int|str]=[]):
             author = await paid_content.get_author()
             if not author:
                 continue
-            subscription = await authed.get_subscription(identifier=author.id
-            )
+            subscription = await authed.get_subscription(identifier=author.id)
             if not subscription:
                 subscription = author
                 authed.subscriptions.append(subscription)
@@ -743,7 +746,7 @@ async def format_directories(
 # Prepares the API links to be scraped
 
 
-async def prepare_scraper(authed: create_auth, site_name:str, item:dict[str,Any]):
+async def prepare_scraper(authed: create_auth, site_name: str, item: dict[str, Any]):
     api_type = item["api_type"]
     api_array = item["api_array"]
     subscription: create_user = api_array["subscription"]
@@ -803,7 +806,7 @@ async def prepare_scraper(authed: create_auth, site_name:str, item:dict[str,Any]
     unrefined_set = []
     if master_set2:
         print(f"Processing Scraped {api_type}")
-        tasks:list[Any] = pool.starmap(
+        tasks: list[Any] = pool.starmap(
             media_scraper,
             product(
                 master_set2,
@@ -1286,7 +1289,7 @@ async def manage_subscriptions(
                 results.remove(result)
     results.sort(key=lambda x: x.subscribedByData["expiredAt"])
     results.sort(key=lambda x: x.is_me(), reverse=True)
-    results2:list[create_user] = []
+    results2: list[create_user] = []
     for result in results:
         # result.auth_count = auth_count
         username = result.username
@@ -1306,7 +1309,7 @@ def format_options(
     f_list: list[create_auth | create_user | SimpleNamespace | dict[str, Any] | str],
     choice_type: str,
     match_list: list[str] = [],
-) -> list[list[Any]|str]:
+) -> list[list[Any] | str]:
     new_item = {}
     new_item["auth_count"] = -1
     new_item["username"] = "All"
@@ -1338,7 +1341,11 @@ def format_options(
             case "usernames":
                 auth_count = 0
                 for x in f_list:
-                    if isinstance(x, create_auth) or isinstance(x, dict) or isinstance(x, str):
+                    if (
+                        isinstance(x, create_auth)
+                        or isinstance(x, dict)
+                        or isinstance(x, str)
+                    ):
                         continue
                     name = x.username
                     string += f"{count} = {name}"

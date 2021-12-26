@@ -22,41 +22,51 @@ from urllib.parse import urlparse
 import python_socks
 import requests
 from aiohttp import ClientSession
-from aiohttp.client_exceptions import (ClientConnectorError, ClientOSError,
-                                       ClientPayloadError, ContentTypeError,
-                                       ServerDisconnectedError)
+from aiohttp.client_exceptions import (
+    ClientConnectorError,
+    ClientOSError,
+    ClientPayloadError,
+    ContentTypeError,
+    ServerDisconnectedError,
+)
 from aiohttp.client_reqrep import ClientResponse
 from aiohttp_socks import ProxyConnectionError, ProxyConnector, ProxyError
-from database.databases.user_data.models.media_table import \
-    template_media_table
+from database.databases.user_data.models.media_table import template_media_table
 
 
 def load_classes():
     import apis.fansly.classes as fansly_classes
     import apis.onlyfans.classes as onlyfans_classes
     import apis.starsavn.classes as starsavn_classes
+
     return onlyfans_classes, fansly_classes, starsavn_classes
+
+
 def load_classes2():
     onlyfans_classes, fansly_classes, starsavn_classes = load_classes()
-    auth_types = (onlyfans_classes.auth_model.create_auth
-            | fansly_classes.auth_model.create_auth
-            | starsavn_classes.auth_model.create_auth)
-    user_types = (onlyfans_classes.user_model.create_user
-            | fansly_classes.user_model.create_user
-            | starsavn_classes.user_model.create_user)
-    return auth_types,user_types
+    auth_types = (
+        onlyfans_classes.auth_model.create_auth
+        | fansly_classes.auth_model.create_auth
+        | starsavn_classes.auth_model.create_auth
+    )
+    user_types = (
+        onlyfans_classes.user_model.create_user
+        | fansly_classes.user_model.create_user
+        | starsavn_classes.user_model.create_user
+    )
+    return auth_types, user_types
+
+
 def load_extras():
     onlyfans_classes, fansly_classes, starsavn_classes = load_classes()
     return onlyfans_classes.extras, fansly_classes.extras, starsavn_classes.extras
+
+
 if TYPE_CHECKING:
-    onlyfans_classes,fansly_classes,starsavn_classes = load_classes()
-    auth_types,user_types = load_classes2()
+    onlyfans_classes, fansly_classes, starsavn_classes = load_classes()
+    auth_types, user_types = load_classes2()
     onlyfans_extras, fansly_extras, starsavn_extras = load_extras()
-    error_details_types = (
-        onlyfans_extras
-        | fansly_extras
-        | starsavn_extras
-    )
+    error_details_types = onlyfans_extras | fansly_extras | starsavn_extras
 parsed_args = Namespace()
 
 path = up(up(os.path.realpath(__file__)))
@@ -123,7 +133,7 @@ class session_manager:
         self.use_cookies: bool = use_cookies
 
     async def get_cookies(self):
-        _onlyfans_classes,fansly_classes,_starsavn_classes = load_classes()
+        _onlyfans_classes, fansly_classes, _starsavn_classes = load_classes()
         if isinstance(self.auth, fansly_classes.auth_model.create_auth):
             final_cookies: dict[str, Any] = {}
         else:
@@ -190,9 +200,17 @@ class session_manager:
                         if json_format and not stream:
                             result = await response.json()
                             if "error" in result:
-                                
-                                onlyfans_classes,fansly_classes,_starsavn_classes = load_classes()
-                                onlyfans_extras, fansly_extras, _starsavn_extras = load_extras()
+
+                                (
+                                    onlyfans_classes,
+                                    fansly_classes,
+                                    _starsavn_classes,
+                                ) = load_classes()
+                                (
+                                    onlyfans_extras,
+                                    fansly_extras,
+                                    _starsavn_extras,
+                                ) = load_extras()
 
                                 if isinstance(
                                     self.auth, onlyfans_classes.auth_model.create_auth
@@ -385,7 +403,8 @@ def restore_missing_data(master_set2: list[str], media_set, split_by):
 
 
 async def scrape_endpoint_links(
-    links: list[str], session_manager: session_manager | None):
+    links: list[str], session_manager: session_manager | None
+):
     media_set: list[dict[str, str]] = []
     max_attempts = 100
     for attempt in list(range(max_attempts)):
@@ -418,7 +437,7 @@ async def scrape_endpoint_links(
             media_set.extend(not_faulty)
             break
     if media_set and "list" in media_set[0]:
-        final_media_set = list(chain(*[x["list"] for x in media_set] ))
+        final_media_set = list(chain(*[x["list"] for x in media_set]))
     else:
         final_media_set = list(chain(*media_set))
     return final_media_set
@@ -444,17 +463,13 @@ def parse_config_inputs(custom_input: Any) -> list[str]:
     return custom_input
 
 
-
-
 async def handle_error_details(
     item: error_details_types
     | dict[str, Any]
     | list[dict[str, Any]]
     | list[error_details_types],
     remove_errors: bool = False,
-    api_type: Optional[
-        auth_types
-    ] = None,
+    api_type: Optional[auth_types] = None,
 ):
     results = []
     if isinstance(item, list):
@@ -473,17 +488,31 @@ async def handle_error_details(
             print(f"Error: {item.__dict__}")
     return results
 
-async def get_function_name(function_that_called:str="",convert_to_api_type:bool=False):
+
+async def get_function_name(
+    function_that_called: str = "", convert_to_api_type: bool = False
+):
     if not function_that_called:
         function_that_called = inspect.stack()[1].function
     if convert_to_api_type:
         return function_that_called.split("_")[-1].capitalize()
     return function_that_called
-async def handle_refresh(api:auth_types|user_types,api_type:str, refresh:bool,function_that_called:str):
-    result:list[Any] = []
+
+
+async def handle_refresh(
+    api: auth_types | user_types,
+    api_type: str,
+    refresh: bool,
+    function_that_called: str,
+):
+    result: list[Any] = []
     # If refresh is False, get already set data
     if not api_type and not refresh:
-        api_type = await get_function_name(function_that_called,True) if not api_type else api_type
+        api_type = (
+            await get_function_name(function_that_called, True)
+            if not api_type
+            else api_type
+        )
         try:
             # We assume the class type is create_user
             result = getattr(api.temp_scraped, api_type)
@@ -493,25 +522,40 @@ async def handle_refresh(api:auth_types|user_types,api_type:str, refresh:bool,fu
             result = getattr(api, api_type)
 
     return result
-async def default_data(api: auth_types|user_types, refresh:bool=False,api_type: str = ""):
-    status:bool = False
+
+
+async def default_data(
+    api: auth_types | user_types, refresh: bool = False, api_type: str = ""
+):
+    status: bool = False
     result: list[Any] = []
     function_that_called = inspect.stack()[1].function
-    auth_types,_user_types = load_classes2()
-    if isinstance(api,auth_types ):
+    auth_types, _user_types = load_classes2()
+    if isinstance(api, auth_types):
         # create_auth class
         auth = api
         match function_that_called:
-            case function_that_called if function_that_called in ["get_paid_content","get_chats","get_lists_users","get_subscriptions"]:
+            case function_that_called if function_that_called in [
+                "get_paid_content",
+                "get_chats",
+                "get_lists_users",
+                "get_subscriptions",
+            ]:
                 if not auth.active or not refresh:
-                    result = await handle_refresh(auth,api_type,refresh,function_that_called)
+                    result = await handle_refresh(
+                        auth, api_type, refresh, function_that_called
+                    )
                     status = True
             case "get_mass_messages":
                 if not auth.active or not auth.isPerformer:
-                    result = await handle_refresh(auth,api_type,refresh,function_that_called)
+                    result = await handle_refresh(
+                        auth, api_type, refresh, function_that_called
+                    )
                     status = True
             case _:
-                result = await handle_refresh(auth,api_type,refresh,function_that_called)
+                result = await handle_refresh(
+                    auth, api_type, refresh, function_that_called
+                )
                 if result:
                     status = True
     else:
@@ -520,18 +564,28 @@ async def default_data(api: auth_types|user_types, refresh:bool=False,api_type: 
         match function_that_called:
             case "get_stories":
                 if not user.hasStories:
-                    result = await handle_refresh(user,api_type,refresh,function_that_called)
+                    result = await handle_refresh(
+                        user, api_type, refresh, function_that_called
+                    )
                     status = True
             case "get_messages":
                 if not user.subscriber or user.is_me():
-                    result = await handle_refresh(user,api_type,refresh,function_that_called)
+                    result = await handle_refresh(
+                        user, api_type, refresh, function_that_called
+                    )
                     status = True
-            case function_that_called if function_that_called in["get_archived_stories"]:
+            case function_that_called if function_that_called in [
+                "get_archived_stories"
+            ]:
                 if not (user.is_me() and user.isPerformer):
-                    result = await handle_refresh(user,api_type,refresh,function_that_called)
+                    result = await handle_refresh(
+                        user, api_type, refresh, function_that_called
+                    )
                     status = True
             case _:
-                result = await handle_refresh(user,api_type,refresh,function_that_called)
+                result = await handle_refresh(
+                    user, api_type, refresh, function_that_called
+                )
                 if result:
                     status = True
     return result, status

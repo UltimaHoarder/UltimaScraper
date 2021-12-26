@@ -4,7 +4,9 @@ from typing import Any
 
 
 class create_post:
-    def __init__(self, option: dict[str,Any], user: user_model, extra: dict[Any, Any] = {}) -> None:
+    def __init__(
+        self, option: dict[str, Any], user: user_model, extra: dict[Any, Any] = {}
+    ) -> None:
         self.responseType: str = option.get("responseType")
         self.id: int = int(option["id"])
         self.postedAt: str = option.get("createdAt")
@@ -102,7 +104,7 @@ class create_post:
                 media_url = variant["locations"][0]["location"]
             except (KeyError, IndexError):
                 continue
-            qualities.append( (media_quality, media_url) )
+            qualities.append((media_quality, media_url))
 
         if not qualities:
             return

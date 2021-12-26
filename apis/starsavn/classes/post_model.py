@@ -8,6 +8,7 @@ from apis.starsavn.classes.extras import endpoint_links
 if TYPE_CHECKING:
     from apis.onlyfans.classes.user_model import create_user
 
+
 class create_post:
     def __init__(self, option: dict[str, Any], user: create_user) -> None:
         self.responseType: str = option.get("responseType")

@@ -7,6 +7,7 @@ class discord(object):
             class image(object):
                 def __init__(self):
                     self.url = ""
+
             self.title = ""
             self.fields = []
             self.image = image()

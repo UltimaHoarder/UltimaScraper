@@ -165,7 +165,7 @@ async def start_datascraper(
 
 
 # Allows the user to choose which api they want to scrape
-def scrape_choice(authed: create_auth, subscription:create_user):
+def scrape_choice(authed: create_auth, subscription: create_user):
     user_id = subscription.id
     post_count = subscription.postsCount
     media_count = subscription.mediasCount["total"]
@@ -188,42 +188,42 @@ def scrape_choice(authed: create_auth, subscription:create_user):
     only_links = False
     mandatory = [download_directory, only_links]
     y = ["photo", "video", "stream", "gif", "audio", "text"]
-    u_array:list[str|list[Any]] = [
+    u_array: list[str | list[Any]] = [
         "You have chosen to scrape {}",
         [user_api, media_types, *mandatory, post_count],
         "Profile",
     ]
-    s_array:list[str|list[Any]] = [
+    s_array: list[str | list[Any]] = [
         "You have chosen to scrape {}",
         [stories_api, media_types, *mandatory, post_count],
         "Stories",
     ]
-    h_array :list[str|list[Any]]= [
+    h_array: list[str | list[Any]] = [
         "You have chosen to scrape {}",
         [list_highlights, media_types, *mandatory, post_count],
         "Highlights",
     ]
-    p_array:list[str|list[Any]] = [
+    p_array: list[str | list[Any]] = [
         "You have chosen to scrape {}",
         [post_api, media_types, *mandatory, post_count],
         "Posts",
     ]
-    pd_array :list[str|list[Any]]= [
+    pd_array: list[str | list[Any]] = [
         "You have chosen to scrape {}",
         [media_api, media_types, *mandatory, media_count],
         "Products",
     ]
-    m_array :list[str|list[Any]]= [
+    m_array: list[str | list[Any]] = [
         "You have chosen to scrape {}",
         [message_api, media_types, *mandatory, post_count],
         "Messages",
     ]
-    a_array:list[str|list[Any]] = [
+    a_array: list[str | list[Any]] = [
         "You have chosen to scrape {}",
         [archived_api, media_types, *mandatory, archived_count],
         "Archived",
     ]
-    array = [u_array, s_array, p_array,pd_array, a_array, m_array]
+    array = [u_array, s_array, p_array, pd_array, a_array, m_array]
     # array = [u_array, s_array, p_array, a_array, m_array]
     # array = [s_array, h_array, p_array, a_array, m_array]
     # array = [s_array]
@@ -339,8 +339,7 @@ async def paid_content_scraper(api: start, identifiers=[]):
                 author = paid_content.author
             if not author:
                 continue
-            subscription = await authed.get_subscription(identifier=author.id
-            )
+            subscription = await authed.get_subscription(identifier=author.id)
             if not subscription:
                 subscription = paid_content.user
                 authed.subscriptions.append(subscription)
@@ -820,7 +819,7 @@ async def prepare_scraper(authed: create_auth, site_name, item):
     unrefined_set = []
     if master_set2:
         print(f"Processing Scraped {api_type}")
-        tasks:list[Any] = pool.starmap(
+        tasks: list[Any] = pool.starmap(
             media_scraper,
             product(
                 master_set2,

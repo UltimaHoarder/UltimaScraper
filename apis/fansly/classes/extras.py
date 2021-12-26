@@ -211,7 +211,7 @@ class media_types:
             yield attr, value
 
 
-async def remove_errors(results: list[dict[str, Any]]|list[ErrorDetails]):
+async def remove_errors(results: list[dict[str, Any]] | list[ErrorDetails]):
     wrapped = False
     if not isinstance(results, list):
         wrapped = True

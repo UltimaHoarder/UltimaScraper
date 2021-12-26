@@ -332,8 +332,7 @@ async def paid_content_scraper(api: start, identifiers=[]):
                 author = paid_content.author
             if not author:
                 continue
-            subscription = await authed.get_subscription(identifier=author.id
-            )
+            subscription = await authed.get_subscription(identifier=author.id)
             if not subscription:
                 subscription = paid_content.user
                 authed.subscriptions.append(subscription)
@@ -1096,7 +1095,11 @@ async def media_scraper(
                 print
         new_post["price"] = price
         for temp_media in post_result.media:
-            media:dict[str,Any] = temp_media["media"] if "preview" not in temp_media else temp_media["preview"]
+            media: dict[str, Any] = (
+                temp_media["media"]
+                if "preview" not in temp_media
+                else temp_media["preview"]
+            )
             media_id = media["id"]
             preview_link = ""
             link: str = await post_result.link_picker(
@@ -1262,10 +1265,10 @@ async def manage_subscriptions(
     results = await authed.get_followings(identifiers=identifiers)
     results2 = await authed.get_subscriptions(identifiers=identifiers, refresh=refresh)
     for result2 in results2:
-        for found in  [x for x in results if x.username == result2.username]:
+        for found in [x for x in results if x.username == result2.username]:
             result2.subscribedByData = found.subscribedByData
             results.remove(found)
-    results +=results2
+    results += results2
     if blacklists:
         remote_blacklists = await authed.get_lists()
         if remote_blacklists:
@@ -1352,7 +1355,7 @@ def format_options(
                     name = x.username
                     string += f"{count} = {name}"
                     if isinstance(x, create_user):
-                        string+= f"(S)" if x.subscribed else "(F)"
+                        string += f"(S)" if x.subscribed else "(F)"
                         auth_count = match_list.index(x.subscriber)
                     names.append([auth_count, name])
                     if count + 1 != name_count:

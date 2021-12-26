@@ -5,17 +5,19 @@ import os
 def start():
     print
 
+
 try:
     if __name__ == "__main__":
         cwd = os.getcwd()
         cwd2 = os.path.dirname(__file__)
         if cwd == cwd2:
-            x = os.path.realpath('../../../')
+            x = os.path.realpath("../../../")
         else:
-            x = os.path.realpath('')
+            x = os.path.realpath("")
         sys.path.insert(0, x)
         while True:
             from helpers.db_helper import database_collection, run_revisions
+
             db_collection = database_collection()
             key_list = db_collection.__dict__.items()
             key_list = list(key_list)

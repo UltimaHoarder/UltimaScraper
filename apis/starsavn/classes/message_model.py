@@ -8,13 +8,14 @@ from apis.starsavn.classes.extras import endpoint_links
 if TYPE_CHECKING:
     from apis.starsavn.classes.user_model import create_user
 
+
 class create_message:
     def __init__(self, option: dict[str, Any], user: create_user) -> None:
         self.responseType: Optional[str] = option.get("responseType")
         self.text: Optional[str] = option.get("text")
         self.lockedText: Optional[bool] = option.get("lockedText")
         self.isFree: Optional[bool] = option.get("isFree")
-        self.price: Optional[float] = float(option.get("price","0").replace("$",""))
+        self.price: Optional[float] = float(option.get("price", "0").replace("$", ""))
         self.isMediaReady: Optional[bool] = option.get("isMediaReady")
         self.mediaCount: Optional[int] = option.get("mediaCount")
         self.media: list[dict[str, Any]] = option.get("media", [])
@@ -61,7 +62,7 @@ class create_message:
         )
         return result
 
-    async def link_picker(self,media, video_quality):
+    async def link_picker(self, media, video_quality):
         link = ""
         if "source" in media:
             quality_key = "source"

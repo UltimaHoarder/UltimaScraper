@@ -22,7 +22,7 @@ class create_story:
         self.placedContents: list = option.get("placedContents")
         self.answered: int = option.get("answered")
 
-    async def link_picker(self,media, video_quality):
+    async def link_picker(self, media, video_quality):
         link = ""
         if "source" in media:
             quality_key = "source"

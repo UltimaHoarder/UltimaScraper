@@ -10,20 +10,26 @@ from apis import api_helper
 from apis.onlyfans.classes import post_model
 from apis.onlyfans.classes.hightlight_model import create_highlight
 from apis.onlyfans.classes.story_model import create_story
-from apis.onlyfans.classes.extras import (content_types, endpoint_links,
-                                          ErrorDetails,
-                                          remove_errors)
+from apis.onlyfans.classes.extras import (
+    content_types,
+    endpoint_links,
+    ErrorDetails,
+    remove_errors,
+)
 
 if TYPE_CHECKING:
     from apis.onlyfans.classes.auth_model import create_auth
     from apis.onlyfans.classes.post_model import create_post
 
+
 class create_user:
-    def __init__(self, option:dict[str,Any]={}, subscriber: Optional[create_auth] = None) -> None:
+    def __init__(
+        self, option: dict[str, Any] = {}, subscriber: Optional[create_auth] = None
+    ) -> None:
         self.avatar: Optional[str] = option.get("avatar")
         self.avatarThumbs: Optional[list[str]] = option.get("avatarThumbs")
         self.header: Optional[str] = option.get("header")
-        self.headerSize: Optional[dict[str,int]] = option.get("headerSize")
+        self.headerSize: Optional[dict[str, int]] = option.get("headerSize")
         self.headerThumbs: Optional[list[str]] = option.get("headerThumbs")
         self.id: int = option.get("id")
         self.name: str = option.get("name")
@@ -67,7 +73,7 @@ class create_user:
         self.videosCount: int = option.get("videosCount")
         self.audiosCount: int = option.get("audiosCount")
         self.mediasCount: int = option.get("mediasCount")
-        self.promotions: list[dict[str,Any]] = option.get("promotions",{})
+        self.promotions: list[dict[str, Any]] = option.get("promotions", {})
         self.lastSeen: Any = option.get("lastSeen")
         self.favoritesCount: int = option.get("favoritesCount")
         self.favoritedCount: int = option.get("favoritedCount")
@@ -109,7 +115,7 @@ class create_user:
         self.isPaymentCardConnected: bool = option.get("isPaymentCardConnected")
         self.referalUrl: str = option.get("referalUrl")
         self.isVisibleOnline: bool = option.get("isVisibleOnline")
-        self.subscribesCount: int = option.get("subscribesCount",0)
+        self.subscribesCount: int = option.get("subscribesCount", 0)
         self.canPinPost: bool = option.get("canPinPost")
         self.hasNewAlerts: bool = option.get("hasNewAlerts")
         self.hasNewHints: bool = option.get("hasNewHints")
@@ -213,7 +219,7 @@ class create_user:
         self.session_manager = subscriber.session_manager if subscriber else None
         self.scraped = content_types()
         self.temp_scraped = content_types()
-        self.download_info:dict[str,Any] = {}
+        self.download_info: dict[str, Any] = {}
         self.__raw__ = option
 
     def get_link(self):
@@ -227,9 +233,9 @@ class create_user:
         return status
 
     async def get_stories(
-        self, refresh:bool=True, limit:int=100, offset:int=0
+        self, refresh: bool = True, limit: int = 100, offset: int = 0
     ) -> list[create_story]:
-        result, status = await api_helper.default_data(self,refresh)
+        result, status = await api_helper.default_data(self, refresh)
         if status:
             return result
         link = [
@@ -243,9 +249,14 @@ class create_user:
         return results
 
     async def get_highlights(
-        self, identifier:int|str="", refresh:bool=True, limit:int=100, offset:int=0, hightlight_id:int|str=""
+        self,
+        identifier: int | str = "",
+        refresh: bool = True,
+        limit: int = 100,
+        offset: int = 0,
+        hightlight_id: int | str = "",
     ) -> Union[list[create_highlight], list[create_story]]:
-        result, status = await api_helper.default_data(self,refresh)
+        result, status = await api_helper.default_data(self, refresh)
         if status:
             return result
         if not identifier:
@@ -266,9 +277,13 @@ class create_user:
         return results
 
     async def get_posts(
-        self, links: Optional[list[str]] = None, limit:int=10, offset:int=0, refresh:bool=True
+        self,
+        links: Optional[list[str]] = None,
+        limit: int = 10,
+        offset: int = 0,
+        refresh: bool = True,
     ) -> Optional[list[create_post]]:
-        result, status = await api_helper.default_data(self,refresh)
+        result, status = await api_helper.default_data(self, refresh)
         if status:
             return result
         if links is None:
@@ -276,16 +291,14 @@ class create_user:
         if not links:
             epl = endpoint_links()
             link = epl.list_posts(self.id)
-            links = epl.create_links(link,self.postsCount)
-        results = await api_helper.scrape_endpoint_links(
-            links, self.session_manager
-        )
+            links = epl.create_links(link, self.postsCount)
+        results = await api_helper.scrape_endpoint_links(links, self.session_manager)
         final_results = self.finalize_content_set(results)
         self.temp_scraped.Posts = final_results
         return final_results
 
     async def get_post(
-        self, identifier:Optional[int|str]=None, limit:int=10, offset:int=0
+        self, identifier: Optional[int | str] = None, limit: int = 10, offset: int = 0
     ) -> Union[create_post, ErrorDetails]:
         if not identifier:
             identifier = self.id
@@ -301,12 +314,12 @@ class create_user:
     async def get_messages(
         self,
         links: Optional[list[str]] = None,
-        limit:int=10,
-        offset:int=0,
-        refresh:bool=True,
-        inside_loop:bool=False,
+        limit: int = 10,
+        offset: int = 0,
+        refresh: bool = True,
+        inside_loop: bool = False,
     ):
-        result, status = await api_helper.default_data(self,refresh)
+        result, status = await api_helper.default_data(self, refresh)
         if status:
             return result
         if links is None:
@@ -327,7 +340,7 @@ class create_user:
         results = await self.session_manager.async_requests(links)
         results = await remove_errors(results)
         final_results = []
-        if isinstance(results,list):
+        if isinstance(results, list):
             results = [x for x in results if x]
             has_more = results[-1]["hasMore"] if results else False
             final_results = [x["list"] for x in results if "list" in x]
@@ -335,7 +348,10 @@ class create_user:
 
             if has_more:
                 results2 = await self.get_messages(
-                    links=[links[-1]], limit=limit, offset=limit + offset, inside_loop=True
+                    links=[links[-1]],
+                    limit=limit,
+                    offset=limit + offset,
+                    inside_loop=True,
                 )
                 final_results.extend(results2)
             print
@@ -349,7 +365,12 @@ class create_user:
         return final_results
 
     async def get_message_by_id(
-        self, user_id:Optional[int]=None, message_id:Optional[int]=None, refresh:bool=True, limit:int=10, offset:int=0
+        self,
+        user_id: Optional[int] = None,
+        message_id: Optional[int] = None,
+        refresh: bool = True,
+        limit: int = 10,
+        offset: int = 0,
     ):
         if not user_id:
             user_id = self.id
@@ -367,8 +388,10 @@ class create_user:
             return final_result
         return response
 
-    async def get_archived_stories(self, refresh:bool=True, limit:int=100, offset:int=0):
-        result, status = await api_helper.default_data(self,refresh)
+    async def get_archived_stories(
+        self, refresh: bool = True, limit: int = 100, offset: int = 0
+    ):
+        result, status = await api_helper.default_data(self, refresh)
         if status:
             return result
         link = endpoint_links(global_limit=limit, global_offset=offset).archived_stories
@@ -378,9 +401,13 @@ class create_user:
         return results
 
     async def get_archived_posts(
-        self, links: Optional[list[str]] = None, refresh:bool=True, limit:int=10, offset:int=0
+        self,
+        links: Optional[list[str]] = None,
+        refresh: bool = True,
+        limit: int = 10,
+        offset: int = 0,
     ):
-        result, status = await api_helper.default_data(self,refresh)
+        result, status = await api_helper.default_data(self, refresh)
         if status:
             return result
         if links is None:
@@ -397,9 +424,7 @@ class create_user:
                 link = link.replace(f"limit={limit}", f"limit={limit}")
                 new_link = link.replace("offset=0", f"offset={num}")
                 links.append(new_link)
-        results = await api_helper.scrape_endpoint_links(
-            links, self.session_manager
-        )
+        results = await api_helper.scrape_endpoint_links(links, self.session_manager)
         final_results = self.finalize_content_set(results)
 
         self.temp_scraped.Archived.Posts = final_results
@@ -459,7 +484,7 @@ class create_user:
         subscription_price = self.subscribePrice
         if self.promotions:
             for promotion in self.promotions:
-                promotion_price:int = promotion["price"]
+                promotion_price: int = promotion["price"]
                 if promotion_price < subscription_price:
                     subscription_price = promotion_price
         return subscription_price
@@ -469,7 +494,7 @@ class create_user:
         This function will subscribe to a model. If the model has a promotion available, it will use it.
         """
         subscription_price = await self.subscription_price()
-        x:dict[str,Any] = {
+        x: dict[str, Any] = {
             "paymentType": "subscribe",
             "userId": self.id,
             "subscribeSource": "profile",
@@ -488,17 +513,18 @@ class create_user:
             )
         return result
 
-    def set_scraped(self, name:str, scraped:list[Any]):
+    def set_scraped(self, name: str, scraped: list[Any]):
         setattr(self.scraped, name, scraped)
-    def finalize_content_set(self,results:list[dict[str,Any]]|list[str]):
-        final_results:list[create_post] = []
+
+    def finalize_content_set(self, results: list[dict[str, Any]] | list[str]):
+        final_results: list[create_post] = []
         for result in results:
-            if isinstance(result,str):
+            if isinstance(result, str):
                 continue
             content_type = result["responseType"]
             match content_type:
                 case "post":
-                    created = post_model.create_post(result,self)
+                    created = post_model.create_post(result, self)
                     final_results.append(created)
                 case _:
                     print

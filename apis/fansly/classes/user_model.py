@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-from itertools import chain
 from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib import parse
 
@@ -299,8 +298,6 @@ class create_user:
             result = handle_refresh(self, api_type)
             if result:
                 return result
-        if links is None:
-            links = []
         temp_results: list[Any] = []
         while True:
             link = endpoint_links(identifier=self.id, global_offset=offset).post_api

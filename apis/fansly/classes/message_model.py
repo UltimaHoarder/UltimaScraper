@@ -6,7 +6,9 @@ from . import user_model
 
 
 class create_message:
-    def __init__(self, option: dict[str,Any], user: user_model, extra: dict[Any, Any] = {}) -> None:
+    def __init__(
+        self, option: dict[str, Any], user: user_model, extra: dict[Any, Any] = {}
+    ) -> None:
         self.responseType: Optional[str] = option.get("responseType")
         self.text: Optional[str] = option.get("text")
         self.lockedText: Optional[bool] = option.get("lockedText")
@@ -14,11 +16,11 @@ class create_message:
         self.price: Optional[float] = option.get("price")
         self.isMediaReady: Optional[bool] = option.get("isMediaReady")
         self.mediaCount: Optional[int] = option.get("mediaCount")
-        self.media: list = option.get("media",[])
-        self.previews: list = option.get("previews",[])
+        self.media: list = option.get("media", [])
+        self.previews: list = option.get("previews", [])
         self.isTip: Optional[bool] = option.get("isTip")
         self.isReportedByMe: Optional[bool] = option.get("isReportedByMe")
-        self.fromUser  = user
+        self.fromUser = user
         self.isFromQueue: Optional[bool] = option.get("isFromQueue")
         self.queueId: Optional[int] = option.get("queueId")
         self.canUnsendQueue: Optional[bool] = option.get("canUnsendQueue")
@@ -102,7 +104,7 @@ class create_message:
                 media_url = variant["locations"][0]["location"]
             except (KeyError, IndexError):
                 continue
-            qualities.append( (media_quality, media_url) )
+            qualities.append((media_quality, media_url))
 
         if not qualities:
             return

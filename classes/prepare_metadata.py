@@ -209,7 +209,7 @@ class format_content(object):
         ) -> dict[str, Any]:
             if not keep_empty_items:
                 self.remove_empty()
-            value:dict[str,Any] = {}
+            value: dict[str, Any] = {}
             if convert_type == "json":
                 new_format_copied = copy.deepcopy(self)
                 for media in new_format_copied.medias:

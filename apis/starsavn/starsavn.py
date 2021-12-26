@@ -2,7 +2,11 @@ from multiprocessing.pool import Pool
 from typing import Any, Dict, Optional, Union
 
 from apis.starsavn.classes.auth_model import create_auth
-from apis.starsavn.classes.extras import auth_details, endpoint_links, legacy_auth_details
+from apis.starsavn.classes.extras import (
+    auth_details,
+    endpoint_links,
+    legacy_auth_details,
+)
 from apis.starsavn.classes.user_model import create_user
 
 from .. import api_helper

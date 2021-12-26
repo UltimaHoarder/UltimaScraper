@@ -210,8 +210,6 @@ def create_headers(
     return headers
 
 
-
-
 class media_types:
     def __init__(self, option={}, assign_states=False) -> None:
         self.Images = option.get("Images", [])
@@ -249,7 +247,7 @@ class media_types:
             yield attr, value
 
 
-async def remove_errors(results: list[dict[str, Any]]|list[ErrorDetails]):
+async def remove_errors(results: list[dict[str, Any]] | list[ErrorDetails]):
     wrapped = False
     if isinstance(results, ErrorDetails):
         wrapped = True

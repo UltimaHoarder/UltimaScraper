@@ -10,18 +10,18 @@ def launch_browser(headers=None, user_agent=None, proxy=None, browser_type="Fire
     options = {}
     if proxy:
         proxy = {
-            'http': proxy,
-            'https': proxy,
+            "http": proxy,
+            "https": proxy,
         }
         options["proxy"] = proxy
     directory = os.path.dirname(__file__)
     driver = None
     if browser_type == "Firefox":
-        matches = ["geckodriver.exe","geckodriver"]
-        driver_paths = list(
-            map(lambda match: os.path.join(directory, match), matches))
+        matches = ["geckodriver.exe", "geckodriver"]
+        driver_paths = list(map(lambda match: os.path.join(directory, match), matches))
         found_paths = [
-            driver_path for driver_path in driver_paths if os.path.exists(driver_path)]
+            driver_path for driver_path in driver_paths if os.path.exists(driver_path)
+        ]
         if found_paths:
             driver_path = found_paths[0]
             opts = webdriver.FirefoxOptions()
@@ -30,8 +30,12 @@ def launch_browser(headers=None, user_agent=None, proxy=None, browser_type="Fire
             if not user_agent:
                 user_agent = generate_user_agent()
             profile.set_preference("general.useragent.override", user_agent)
-            driver = webdriver.Firefox(firefox_profile=profile, executable_path=driver_path,
-                                       options=opts, seleniumwire_options=options)
+            driver = webdriver.Firefox(
+                firefox_profile=profile,
+                executable_path=driver_path,
+                options=opts,
+                seleniumwire_options=options,
+            )
         else:
             message = f"Download geckodriver from https://github.com/mozilla/geckodriver/releases/tag/v0.27.0 and paste it in {directory}"
             input(message)
@@ -40,7 +44,8 @@ def launch_browser(headers=None, user_agent=None, proxy=None, browser_type="Fire
         opts = webdriver.ChromeOptions()
         opts.add_argument(f"--proxy-server={opts}")
         driver = webdriver.Chrome(
-            executable_path=driver_path, options=opts, seleniumwire_options=options)
+            executable_path=driver_path, options=opts, seleniumwire_options=options
+        )
     if not driver:
         input("DRIVER NOT FOUND")
         exit(0)
@@ -74,24 +79,28 @@ def login(authed, domain, proxy=None):
         print("Opening Browser")
         if web_browser:
             web_browser.close()
-        web_browser = launch_browser(
-            user_agent=auth_details.user_agent, proxy=proxy)
-        web_browser.get(
-            domain)
+        web_browser = launch_browser(user_agent=auth_details.user_agent, proxy=proxy)
+        web_browser.get(domain)
         try:
-            WebDriverWait(web_browser, 60).until(expected_conditions.element_to_be_clickable(
-                (By.CLASS_NAME, "g-btn.m-rounded.m-flex.m-lg.m-login-btn")))
+            WebDriverWait(web_browser, 60).until(
+                expected_conditions.element_to_be_clickable(
+                    (By.CLASS_NAME, "g-btn.m-rounded.m-flex.m-lg.m-login-btn")
+                )
+            )
         except Exception as e:
             continue
         print
         email_input = web_browser.find_element_by_css_selector("input[type='email']")
         email_input.click()
         email_input.send_keys(email)
-        password_input = web_browser.find_element_by_css_selector("input[type='password']")
+        password_input = web_browser.find_element_by_css_selector(
+            "input[type='password']"
+        )
         password_input.click()
         password_input.send_keys(password)
         login_button = web_browser.find_element_by_class_name(
-            "g-btn.m-rounded.m-flex.m-lg.m-login-btn")
+            "g-btn.m-rounded.m-flex.m-lg.m-login-btn"
+        )
         login_button.submit()
         cookies = monitor_cookies(web_browser)
         if cookies:

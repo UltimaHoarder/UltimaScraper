@@ -136,7 +136,9 @@ class endpoint_links(object):
         self.media_api = f"{full_url_path}/media/{identifier}?limit={global_limit}&offset={global_offset}"
         self.archived_posts = f"https://onlyfans.com/api2/v2/users/{identifier}/posts/archived?limit={global_limit}&offset={global_offset}&order=publish_date_desc"
         self.archived_stories = f"https://onlyfans.com/api2/v2/stories/archive/?limit=100&offset=0&order=publish_date_desc"
-        self.paid_api = f"{full_url_path}/users/purchases?{global_limit}&offset={global_offset}"
+        self.paid_api = (
+            f"{full_url_path}/users/purchases?{global_limit}&offset={global_offset}"
+        )
         self.pay = f"https://onlyfans.com/api2/v2/payments/pay"
         self.subscribe = f"https://onlyfans.com/api2/v2/users/{identifier}/subscribe"
         self.like = f"https://onlyfans.com/api2/v2/{identifier}/{identifier2}/like"
@@ -145,7 +147,6 @@ class endpoint_links(object):
             f"https://onlyfans.com/api2/v2/payments/all/transactions?limit=10&offset=0"
         )
         self.two_factor = f"https://onlyfans.com/api2/v2/users/otp/check"
-
 
     def list_posts(
         self,
@@ -172,6 +173,8 @@ class endpoint_links(object):
                 new_link = link.replace(f"offset={offset}", f"offset={num}")
                 final_links.append(new_link)
         return final_links
+
+
 # Lol?
 class ErrorDetails:
     def __init__(self, result) -> None:
@@ -237,7 +240,8 @@ class media_types:
         for attr, value in self.__dict__.items():
             yield attr, value
 
-async def remove_errors(results: list[dict[str, Any]]|list[ErrorDetails]):
+
+async def remove_errors(results: list[dict[str, Any]] | list[ErrorDetails]):
     wrapped = False
     if isinstance(results, ErrorDetails):
         wrapped = True

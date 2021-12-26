@@ -221,7 +221,7 @@ class create_auth(create_user):
         limit: int = 100,
         offset: int = 0,
     ):
-        result, status = await api_helper.default_data(self)
+        result, status = await api_helper.default_data(self,refresh=True)
         if status:
             return result
         link = endpoint_links(

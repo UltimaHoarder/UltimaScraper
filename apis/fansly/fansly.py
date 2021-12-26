@@ -1,9 +1,9 @@
 from multiprocessing.pool import Pool
-from typing import Any, Dict, Optional, Union
+from typing import Any, Optional, Union
 
 from apis.fansly.classes import user_model
 from apis.fansly.classes.auth_model import create_auth
-from apis.fansly.classes.extras import auth_details, endpoint_links, legacy_auth_details
+from apis.fansly.classes.extras import auth_details, endpoint_links
 
 from .. import api_helper
 

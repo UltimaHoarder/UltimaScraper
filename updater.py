@@ -24,7 +24,6 @@ def rm_tree(pth: Path):
     for child in pth.iterdir():
         if child.is_file():
             child.unlink()
-            pass
         else:
             rm_tree(child)
     pth.rmdir()

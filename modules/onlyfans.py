@@ -80,8 +80,7 @@ def assign_vars(json_auth: auth_details, config, site_settings, site_name):
     text_length = json_settings["text_length"]
 
 
-async def account_setup(
-    auth: create_auth, identifiers: list[int|str] = [], jobs: dict[str,Any] = {}, auth_count:int=0
+async def account_setup(auth: create_auth, identifiers: list[int|str] = [], jobs: dict[str,Any] = {}, auth_count:int=0
 )-> tuple[bool,list[create_user]]:
     status = False
     subscriptions:list[create_user] = []

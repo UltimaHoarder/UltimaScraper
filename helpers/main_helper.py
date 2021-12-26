@@ -1,5 +1,4 @@
 from __future__ import annotations
-from argparse import Namespace
 from pathlib import Path
 from apis import api_helper
 from apis.onlyfans.classes.user_model import create_user
@@ -42,7 +41,7 @@ from apis.onlyfans import onlyfans as OnlyFans
 from apis.fansly import fansly as Fansly
 from apis.starsavn import starsavn as StarsAVN
 from apis.onlyfans.classes.auth_model import create_auth
-from apis.onlyfans.classes.extras import content_types, ErrorDetails
+from apis.onlyfans.classes.extras import content_types
 from bs4 import BeautifulSoup
 from classes.prepare_metadata import format_variables, prepare_reformat
 from mergedeep import Strategy, merge

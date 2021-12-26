@@ -468,18 +468,18 @@ class create_auth(create_user):
                 final_results.extend(results2)
             if not inside_loop:
                 temp = []
-                for final_result in final_results:
-                    continue
-                    content = None
-                    if final_result["responseType"] == "message":
-                        user = create_user(final_result["fromUser"], self)
-                        content = create_message(final_result, user)
-                        print
-                    elif final_result["responseType"] == "post":
-                        user = create_user(final_result["author"], self)
-                        content = create_post(final_result, user)
-                    if content:
-                        temp.append(content)
+                # for final_result in final_results:
+                #     continue
+                #     content = None
+                #     if final_result["responseType"] == "message":
+                #         user = create_user(final_result["fromUser"], self)
+                #         content = create_message(final_result, user)
+                #         print
+                #     elif final_result["responseType"] == "post":
+                #         user = create_user(final_result["author"], self)
+                #         content = create_post(final_result, user)
+                #     if content:
+                #         temp.append(content)
                 final_results = temp
             self.paid_content = final_results
         return final_results

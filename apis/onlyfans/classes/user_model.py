@@ -349,7 +349,7 @@ class create_user:
         return final_results
 
     async def get_message_by_id(
-        self, user_id=None, message_id=None, refresh=True, limit=10, offset=0
+        self, user_id:Optional[int]=None, message_id:Optional[int]=None, refresh:bool=True, limit:int=10, offset:int=0
     ):
         if not user_id:
             user_id = self.id

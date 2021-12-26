@@ -27,7 +27,6 @@ class create_post:
         self.canReport: bool = option.get("canReport")
         self.canDelete: bool = option.get("canDelete")
         self.canComment: bool = option.get("canComment")
-        self.comments: list[Any] = []
         self.canEdit: bool = option.get("canEdit")
         self.isPinned: bool = option.get("isPinned")
         self.favoritesCount: int = option.get("favoritesCount")
@@ -51,6 +50,7 @@ class create_post:
         self.canViewMedia: bool = option.get("canViewMedia")
         self.preview: list = option.get("preview")
         self.canPurchase: bool = option.get("canPurchase")
+        self.comments: list[Any] = []
 
     async def get_author(self):
         return self.author

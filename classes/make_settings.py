@@ -1,6 +1,5 @@
 import copy
 from typing import Any, List, Union
-from urllib.parse import urlparse
 import os
 import uuid as uuid
 

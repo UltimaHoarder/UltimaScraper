@@ -1,34 +1,33 @@
 from __future__ import annotations
 
 import math
-from datetime import datetime
 from itertools import chain
 from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib import parse
 
 import apis.starsavn.classes.message_model as message_model
 from apis import api_helper
+from apis.starsavn.classes import post_model, product_model
 from apis.starsavn.classes.extras import (
+    ErrorDetails,
     content_types,
     endpoint_links,
-    ErrorDetails,
     handle_refresh,
     remove_errors,
 )
 from apis.starsavn.classes.highlight_model import create_highlight
-from apis.starsavn.classes import post_model
-from apis.starsavn.classes.product_model import create_product
 from apis.starsavn.classes.story_model import create_story
-from dateutil.relativedelta import relativedelta
 
 if TYPE_CHECKING:
     from apis.starsavn.classes.auth_model import create_auth
     from apis.starsavn.classes.post_model import create_post
+    from apis.starsavn.classes.product_model import create_product
 
 
 class create_user:
-    def __init__(self, option={}, subscriber: create_auth = None) -> None:
-        self.view: str = option.get("view")
+    def __init__(
+        self, option: dict[str, Any] = {}, subscriber: Optional[create_auth] = None
+    ) -> None:
         self.avatar: Any = option.get("avatar")
         self.avatarThumbs: Any = option.get("avatarThumbs")
         self.header: Any = option.get("header")
@@ -522,7 +521,7 @@ class create_user:
         This function will subscribe to a model. If the model has a promotion available, it will use it.
         """
         subscription_price = await self.subscription_price()
-        x:dict[str,Any] = {
+        x: dict[str, Any] = {
             "paymentType": "subscribe",
             "userId": self.id,
             "subscribeSource": "profile",
@@ -559,6 +558,6 @@ class create_user:
             if "id" in result:
                 created = post_model.create_post(result, self)
             else:
-                created = create_product(result, self)
+                created = product_model.create_product(result, self)
             final_results.append(created)
         return final_results

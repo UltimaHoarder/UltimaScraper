@@ -1,18 +1,26 @@
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 import apis.starsavn.classes.user_model as user_model
 from apis.starsavn.classes.extras import endpoint_links
-from typing import Any
+
+if TYPE_CHECKING:
+    from apis.onlyfans.classes.user_model import create_user
 
 
 class create_product:
-    def __init__(self, option, user) -> None:
+    def __init__(self, option: dict[str, Any], user: create_user) -> None:
         self.responseType: str = option.get("responseType")
         self.id: int = option.get("productId")
         self.postedAt: str = option.get("postedAt")
         self.postedAtPrecise: str = option.get("postedAtPrecise")
         self.expiredAt: Any = option.get("expiredAt")
-        self.author = user_model.create_user(option.get("author", {}))
-        self.text: str = option.get("text")
-        self.rawText: str = option.get("rawText")
+        self.author = user
+        text: str = option.get("text", "")
+        self.text = str(text or "")
+        raw_text: str = option.get("rawText", "")
+        self.rawText = str(raw_text or "")
         self.lockedText: bool = option.get("lockedText")
         self.isFavorite: bool = option.get("isFavorite")
         self.isReportedByMe: bool = option.get("isReportedByMe")

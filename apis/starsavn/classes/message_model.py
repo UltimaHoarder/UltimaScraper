@@ -1,6 +1,6 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any, Optional, Union
+from typing import TYPE_CHECKING, Any, Optional
 
 from apis.starsavn.classes import user_model
 from apis.starsavn.classes.extras import endpoint_links

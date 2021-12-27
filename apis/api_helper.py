@@ -172,7 +172,7 @@ class session_manager:
                 session = await self.create_client_session()
             headers = self.session_rules(link)
             headers["accept"] = "application/json, text/plain, */*"
-            # headers["Connection"] = "keep-alive"
+            headers["Connection"] = "keep-alive"
             temp_payload = payload.copy()
 
             request_method = None

@@ -4,30 +4,24 @@
 # ![app-token](docs/assets/img/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 
 # Mandatory Tutorial
-If you're looking to set up Fansly, here [X34's Tutorial](https://forum.sexy-egirls.com/threads/fansly-downloading-a-work-in-progress.132433/)
 
 Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a issue.
 
-## Running the app via docker
-
-Build and run the image, mounting the appropriate directories:
-
-`docker build -t only-fans . && docker run -it --rm --name onlyfans -v ${PWD}/.settings:/usr/src/app/.settings -v ${PWD}/.profiles:/usr/src/app/.profiles -v ${PWD}/.sites:/usr/src/app/.sites only-fans`
-
-## Running on Linux
-
-[Running in Linux](/Linux.md)
-
 ## Running the app locally
+From the project folder open Windows Powershell/Terminal and run the commands below:
 
-From the project folder open Windows Powershell/Terminal and run the command below:
+### Installation commands (Choose one):
+>### Poetry Installation
+>`poetry install`
 
-`pip install --upgrade --user -r requirements.txt`
+>### Pip Installation
+>`pip install --upgrade --user -r requirements.txt`
 
 Start:
 
 `python start_ofd.py` | `python3 start_ofd.py` | `python3.10 start_ofd.py` | double click `start_ofd.py`
 
+If you're experimenting auth loops, run the program with `python -v start_ofd.py` and you'll see which errors you're getting.
 ---
 
 Open and edit:
@@ -54,7 +48,6 @@ Your auth config should look similar to this
 <!-- If you want to auth via browser, add your email and password. -->
 
 If you get auth attempt errors, only YOU can fix it unless you're willing to let me into your account so I can see if it's working or not.
-All issues about auth errors will be closed automatically. It's spam at this point, there's like 1000s of them and I don't care for anyone who can't use the search function lmao.
 
 Note: If active is set to False, the script will ignore the profile.
 
@@ -353,20 +346,32 @@ Types: list|int|str|bool
 
     2. Or simply put the username of the content creator in the list.
 
-# FAQ
+# Other Tutorials:
+
+>## Running the app via docker
+>>Build and run the image, mounting the appropriate directories:
+>
+>>`docker build -t only-fans . && docker run -it --rm --name onlyfans -v ${PWD}/.settings:/usr/src/app/.settings -v ${PWD}/.profiles:/usr/src/app/.profiles -v ${PWD}/.sites:/usr/src/app/.sites only-fans`
+
+>## Running on Linux
+>>[Running in Linux](/Linux.md)
+
+>### OnlyFans
+>>[X34's Collection of Scrapers](https://forum.sexy-egirls.com/threads/onlyfans-downloading-a-complete-guide-for-pc-and-mobile.70618/page-9)
+
+>### Fansly
+>>[X34's Tutorial](https://forum.sexy-egirls.com/threads/fansly-downloading-a-work-in-progress.132433/)
+
+# FAQ:
 
 Before troubleshooting, make sure you're using Python 3.10.1 and the latest commit of the script.
 
-Error: Access Denied / Auth Loop
+## Error: Access Denied / Auth Loop
 
 > Quadrupal check that the cookies and user agent are correct.
 > Remove 2FA.
 
-AttributeError: type object 'datetime.datetime' has no attribute 'fromisoformat'
-
-> Only works with Python 3.7 and above.
-
-I can't see ".settings" folder'
+## I can't see ".settings" folder'
 
 > Make sure you can see hidden files
 >
@@ -376,25 +381,21 @@ I can't see ".settings" folder'
 >
 > [Linux](https://www.google.com)
 
-I'm getting authed into the wrong account
+## I'm getting authed into the wrong account
 
 > Enjoy the free content. | This has been patched lol.
 
-I'm using Linux OS and something isn't working.
-
-> Script is being built on a Arch Linux machine. It used to be Windows 10, but I switched my dev enviroment.
-
-Do OnlyFans or OnlyFans models know I'm using this script?
+## Do OnlyFans or OnlyFans models know I'm using this script?
 
 > OnlyFans may know that you're using this script, but I try to keep it as anon as possible.
 
-> Generally, models will not know unless OnlyFans tells them but there is identifiable information in the metadata folder which contains your IP address, so don't share it unless you're using a proxy/vpn or just don't care.
+> Generally, models will not know unless OnlyFans tells them but other than that there is identifiable information in the metadata folder which contains your IP address, so don't share it unless you're using a proxy/vpn or just don't care.
 
-Do you collect session information?
+## Do you collect session information?
 
 > No. The code is on Github which allows you to audit the codebase yourself. You can use wireshark or any other network analysis program to verify the outgoing connections are respective to the modules you chose.
 
-Disclaimer (lmao):
+## Disclaimer (lmao):
 
 > OnlyFans is a registered trademark of Fenix International Limited.
 

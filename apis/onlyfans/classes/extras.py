@@ -211,7 +211,7 @@ def create_headers(
 
 
 class media_types:
-    def __init__(self, option={}, assign_states=False) -> None:
+    def __init__(self, option:dict[str,Any]={}, assign_states:bool=False) -> None:
         self.Images = option.get("Images", [])
         self.Videos = option.get("Videos", [])
         self.Audios = option.get("Audios", [])

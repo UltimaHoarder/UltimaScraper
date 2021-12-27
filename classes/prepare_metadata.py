@@ -1,22 +1,46 @@
 import copy
 import os
 from itertools import chain, groupby
-from typing import Any, MutableMapping, Union
+from typing import Any, MutableMapping, Optional
 
 import jsonpickle
-from apis.onlyfans.classes.auth_model import create_auth
 from apis.onlyfans.classes.extras import media_types
 from helpers import main_helper
 
+
+def load_classes():
+    import apis.fansly.classes as fansly_classes
+    import apis.onlyfans.classes as onlyfans_classes
+    import apis.starsavn.classes as starsavn_classes
+
+    return onlyfans_classes, fansly_classes, starsavn_classes
+
+
+def load_classes2():
+    onlyfans_classes, fansly_classes, starsavn_classes = load_classes()
+    auth_types = (
+        onlyfans_classes.auth_model.create_auth
+        | fansly_classes.auth_model.create_auth
+        | starsavn_classes.auth_model.create_auth
+    )
+    user_types = (
+        onlyfans_classes.user_model.create_user
+        | fansly_classes.user_model.create_user
+        | starsavn_classes.user_model.create_user
+    )
+    return auth_types, user_types
+
+
+auth_types, user_types = load_classes2()
 global_version = 2
 
-
+# Supports legacy metadata (.json and .db format) and converts it into the latest format (.db)
 class create_metadata(object):
     def __init__(
         self,
-        authed: create_auth = None,
-        metadata: Union[list, dict, MutableMapping] = {},
-        standard_format=False,
+        authed: Optional[auth_types] = None,
+        metadata: list[dict[str, Any]] | dict[str, Any] = {},
+        standard_format: bool = False,
         api_type: str = "",
     ) -> None:
         self.version = global_version

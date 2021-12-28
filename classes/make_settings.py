@@ -1,9 +1,13 @@
 import copy
-from typing import Any
 import os
 import uuid as uuid
+from pathlib import Path
+from typing import Any, Literal, Optional, Tuple, get_args
 
 from yarl import URL
+
+site_name_literals = Literal["OnlyFans", "Fansly", "StarsAVN"]
+site_names: Tuple[site_name_literals, ...] = get_args(site_name_literals)
 
 current_version = None
 
@@ -145,7 +149,7 @@ class config(object):
                 class jobs:
                     def __init__(self, option:dict[str,Any]={}) -> None:
                         self.scrape = scrape(option.get("scrape", {}))
-                        self.metadata_jobs = metadata(option.get("metadata", {}))
+                        self.metadata = metadata(option.get("metadata", {}))
                 class scrape:
                     def __init__(self, option:dict[str,bool]={}) -> None:
                         self.subscriptions = option.get("subscriptions", True)
@@ -170,9 +174,9 @@ class config(object):
                 self.auto_api_choice: list[int|str]|int|str|bool = option.get("auto_api_choice", True)
                 self.browser = browser(option.get("browser", {}))
                 self.jobs = jobs(option.get("jobs", {}))
-                self.download_directories = option.get( 
+                self.download_directories = [Path(directory) for directory in option.get( 
                     "download_directories", [".sites"]
-                )
+                )]
                 normpath = os.path.normpath
                 self.file_directory_format = normpath(
                     option.get(
@@ -192,6 +196,13 @@ class config(object):
                         "{site_name}/{model_username}/Metadata",
                     )
                 )
+                for key, value in self.__dict__.items():
+                    match key:
+                        case "download_directories" | "metadata_directories":
+                            new_list:list[str] = []
+                            for value2 in value:
+                                new_list.append( str(value2))
+                            self.__dict__[key] = new_list
                 self.delete_legacy_metadata = option.get(
                     "delete_legacy_metadata", False
                 )
@@ -221,7 +232,19 @@ class config(object):
             class StarsAvn:
                 def __init__(self, module:dict[str,Any]):
                     self.settings = SiteSettings(module.get("settings", {}))
-
+            def get_settings(self, site_name:site_name_literals):
+                if site_name == "OnlyFans":
+                    return self.onlyfans.settings
+                elif site_name == "Fansly":
+                    return self.fansly.settings
+                else:
+                    return self.starsavn.settings
         self.info = Info()
         self.settings = Settings(**settings)
         self.supported = Supported(**supported)
+    def export(self, inner:Optional[Any]=None):
+        base = self if not inner else inner
+        for name in site_names:
+            SS = base.supported.get_settings(site_name=name)
+            print
+        print

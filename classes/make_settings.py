@@ -2,7 +2,7 @@ import copy
 import os
 import uuid as uuid
 from pathlib import Path
-from typing import Any, Literal, Optional, Tuple, get_args
+from typing import Any, Literal, Tuple, get_args
 
 from yarl import URL
 
@@ -91,7 +91,7 @@ class config(object):
 
                 self.auto_site_choice = auto_site_choice
                 self.export_type = export_type
-                self.profile_directories = profile_directories
+                self.profile_directories = [Path(x) for x in profile_directories]
                 self.max_threads = max_threads
                 self.min_drive_space = min_drive_space
                 self.helpers = helpers_settings(settings.get("helpers", helpers))
@@ -187,22 +187,15 @@ class config(object):
                 self.filename_format = normpath(
                     option.get("filename_format", "{filename}.{ext}")
                 )
-                self.metadata_directories = option.get(
+                self.metadata_directories = [Path(directory) for directory in option.get( 
                     "metadata_directories", [".sites"]
-                )
+                )]
                 self.metadata_directory_format = normpath(
                     option.get(
                         "metadata_directory_format",
                         "{site_name}/{model_username}/Metadata",
                     )
                 )
-                for key, value in self.__dict__.items():
-                    match key:
-                        case "download_directories" | "metadata_directories":
-                            new_list:list[str] = []
-                            for value2 in value:
-                                new_list.append( str(value2))
-                            self.__dict__[key] = new_list
                 self.delete_legacy_metadata = option.get(
                     "delete_legacy_metadata", False
                 )
@@ -242,9 +235,16 @@ class config(object):
         self.info = Info()
         self.settings = Settings(**settings)
         self.supported = Supported(**supported)
-    def export(self, inner:Optional[Any]=None):
-        base = self if not inner else inner
+    def export(self):
+        base = copy.copy(self)
+        base.settings.__dict__["profile_directories"] = [str(x) for x in base.settings.profile_directories]
         for name in site_names:
             SS = base.supported.get_settings(site_name=name)
-            print
-        print
+            for key, value in SS.__dict__.items():
+                match key:
+                    case "profile_directories"|"download_directories" | "metadata_directories":
+                        new_list:list[str] = []
+                        for value2 in value:
+                            new_list.append( str(value2))
+                        SS.__dict__[key] = new_list
+        return base

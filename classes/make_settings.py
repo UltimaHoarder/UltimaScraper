@@ -135,11 +135,12 @@ class config(object):
                     case "blacklist_name":
                         new_options["blacklists"] = [value]
                     case "jobs":
-                        new_value:dict[str,Any] = {}
-                        new_value["scrape"] = {}
-                        new_value["scrape"]["subscriptions"] = value.get("scrape_names",True)
-                        new_value["scrape"]["paid_content"] = value.get("scrape_paid_content",True)
-                        new_options["jobs"] = new_value
+                        if not value.get("scrape"):
+                            new_value:dict[str,Any] = {}
+                            new_value["scrape"] = {}
+                            new_value["scrape"]["subscriptions"] = value.get("scrape_names",True)
+                            new_value["scrape"]["paid_content"] = value.get("scrape_paid_content",True)
+                            new_options["jobs"] = new_value
             return new_options
 
         class SiteSettings:

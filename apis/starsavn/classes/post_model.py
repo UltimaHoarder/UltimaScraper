@@ -2,11 +2,10 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any
 
-import apis.starsavn.classes.user_model as user_model
 from apis.starsavn.classes.extras import endpoint_links
 
 if TYPE_CHECKING:
-    from apis.onlyfans.classes.user_model import create_user
+    from apis.starsavn.classes.user_model import create_user
 
 
 class create_post:
@@ -48,9 +47,8 @@ class create_post:
         self.linkedPosts: list = option.get("linkedPosts")
         self.media: list[dict[str, Any]] = option.get("media", [])
         self.canViewMedia: bool = option.get("canViewMedia")
-        self.preview: list = option.get("preview", [])
+        self.preview: list[int] = option.get("preview", [])
         self.canPurchase: bool = option.get("canPurchase")
-        self.user: user_model.create_user = user
         self.comments: list[Any] = []
 
     async def favorite(self):

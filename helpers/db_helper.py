@@ -1,4 +1,6 @@
 import os
+from pathlib import Path
+from typing import Any, Literal
 import sqlalchemy
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.session import Session, sessionmaker
@@ -7,11 +9,21 @@ from alembic.config import Config
 from alembic import command
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import func
+from apis.onlyfans.classes.extras import media_types
 from database.databases.user_data import user_database
 
 
+async def import_database(database_path: Path):
+    _Session, engine = create_database_session(database_path)
+    database_session: Session = _Session()
+    return database_session, engine
+
+
 def create_database_session(
-    connection_info, connection_type="sqlite:///", autocommit=False, pool_size=5
+    connection_info: Path,
+    connection_type: str = "sqlite:///",
+    autocommit: bool = False,
+    pool_size: int = 5,
 ) -> tuple[scoped_session, Engine]:
     kwargs = {}
     if connection_type == "mysql+mysqldb://":
@@ -65,7 +77,7 @@ class database_collection(object):
     def __init__(self) -> None:
         self.user_database = user_database
 
-    def database_picker(self, database_name):
+    def database_picker(self, database_name: Literal["user_data"]):
         if database_name == "user_data":
             database = self.user_database
         else:

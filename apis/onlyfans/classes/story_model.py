@@ -17,12 +17,12 @@ class create_story:
         self.canDelete: bool = option.get("canDelete")
         self.isHighlightCover: bool = option.get("isHighlightCover")
         self.isLastInHighlight: bool = option.get("isLastInHighlight")
-        self.media: list = option.get("media")
+        self.media: list[dict[str, Any]] = option.get("media", [])
         self.question: Any = option.get("question")
         self.placedContents: list = option.get("placedContents")
         self.answered: int = option.get("answered")
 
-    async def link_picker(self, media, video_quality):
+    async def link_picker(self, media: dict[str, Any], video_quality: str):
         link = ""
         if "source" in media:
             quality_key = "source"
@@ -39,9 +39,6 @@ class create_story:
                             if quality_link:
                                 link = quality_link
                                 break
-                            print
-                        print
-                    print
         if "src" in media:
             link = media["src"]
         return link

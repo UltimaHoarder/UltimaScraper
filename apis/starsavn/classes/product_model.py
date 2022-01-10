@@ -6,7 +6,7 @@ import apis.starsavn.classes.user_model as user_model
 from apis.starsavn.classes.extras import endpoint_links
 
 if TYPE_CHECKING:
-    from apis.onlyfans.classes.user_model import create_user
+    from apis.starsavn.classes.user_model import create_user
 
 
 class create_product:
@@ -48,9 +48,8 @@ class create_product:
         self.linkedPosts: list = option.get("linkedPosts")
         self.media: list[dict[str, Any]] = option.get("media", [])
         self.canViewMedia: bool = option.get("canViewMedia")
-        self.preview: list = option.get("preview", [])
+        self.preview: list[int] = option.get("preview", [])
         self.canPurchase: bool = option.get("canPurchase")
-        self.user: user_model.create_user = user
 
     async def favorite(self):
         link = endpoint_links(
@@ -58,7 +57,9 @@ class create_product:
             identifier2=self.id,
             identifier3=self.author.id,
         ).favorite
-        results = await self.user.session_manager.json_request(link, method="POST")
+        results = await self.user.get_session_manager().json_request(
+            link, method="POST"
+        )
         self.isFavorite = True
         return results
 

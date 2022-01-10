@@ -10,7 +10,6 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import jsonpickle
 from apis import api_helper
-from apis.api_helper import session_manager
 from apis.onlyfans.classes.extras import (
     ErrorDetails,
     auth_details,
@@ -31,11 +30,12 @@ if TYPE_CHECKING:
 class create_auth(create_user):
     def __init__(
         self,
+        api: start,
         option: dict[str, Any] = {},
         pool: Optional[Pool] = None,
         max_threads: int = -1,
-        api: Optional[start] = None,
     ) -> None:
+        self.api = api
         create_user.__init__(self, option, self)
         if not self.username:
             self.username = f"u{self.id}"
@@ -46,18 +46,16 @@ class create_auth(create_user):
         self.archived_stories = {}
         self.mass_messages = []
         self.paid_content: list[create_message | create_post] = []
-        self.api = api
         temp_pool = pool if pool else api_helper.multiprocessing()
         self.pool = temp_pool
         self.session_manager = self._session_manager(self, max_threads=max_threads)
         self.auth_details = auth_details()
-        self.profile_directory = option.get("profile_directory", "")
         self.guest = False
         self.active: bool = False
         self.errors: list[ErrorDetails] = []
         self.extras: dict[str, Any] = {}
 
-    class _session_manager(session_manager):
+    class _session_manager(api_helper.session_manager):
         def __init__(
             self,
             auth: create_auth,
@@ -147,7 +145,10 @@ class create_auth(create_user):
                     print("Auth 404'ed")
                 continue
             else:
-                print(f"Welcome {self.name} | {self.username}")
+                print(
+                    f"Welcome {' | '.join([x for x in [self.name, self.username] if x])}"
+                )
+                self.create_directory_manager()
                 break
         if not self.active:
             user = await self.get_user(auth_id)
@@ -190,7 +191,11 @@ class create_auth(create_user):
             pass
         error.code = error_code
         error.message = error_message
-        await api_helper.handle_error_details(error)
+        match error_code:
+            case 0:
+                pass
+            case _:
+                await api_helper.handle_error_details(error)
         self.errors.append(error)
 
     async def get_lists(self, refresh: bool = True, limit: int = 100, offset: int = 0):
@@ -221,7 +226,7 @@ class create_auth(create_user):
         limit: int = 100,
         offset: int = 0,
     ):
-        result, status = await api_helper.default_data(self,refresh=True)
+        result, status = await api_helper.default_data(self, refresh=True)
         if status:
             return result
         link = endpoint_links(
@@ -286,7 +291,6 @@ class create_auth(create_user):
                 json_authed = json_authed | temp_auth.__dict__
 
             subscription = create_user(json_authed, self)
-            subscription.subscriber = self
             subscription.subscribedByData = {}
             new_date = datetime.now() + relativedelta(years=1)
             subscription.subscribedByData["expiredAt"] = new_date.isoformat()
@@ -329,8 +333,6 @@ class create_auth(create_user):
                         subscription = create_user(subscription, self)
                         if subscription.isBlocked:
                             continue
-                        subscription.session_manager = self.session_manager
-                        subscription.subscriber = self
                         valid_subscriptions.append(subscription)
                 return valid_subscriptions
 
@@ -350,8 +352,6 @@ class create_auth(create_user):
                 subscription = create_user(result, self)
                 if subscription.isBlocked:
                     continue
-                subscription.session_manager = self.session_manager
-                subscription.subscriber = self
                 results.append([subscription])
                 print
             print

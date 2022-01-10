@@ -2,30 +2,33 @@ from __future__ import annotations
 
 import math
 from itertools import chain
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib import parse
 
 import apis.onlyfans.classes.message_model as message_model
 from apis import api_helper
 from apis.onlyfans.classes import post_model
-from apis.onlyfans.classes.hightlight_model import create_highlight
-from apis.onlyfans.classes.story_model import create_story
 from apis.onlyfans.classes.extras import (
+    ErrorDetails,
     content_types,
     endpoint_links,
-    ErrorDetails,
     remove_errors,
 )
+from apis.onlyfans.classes.hightlight_model import create_highlight
+from apis.onlyfans.classes.story_model import create_story
 
 if TYPE_CHECKING:
     from apis.onlyfans.classes.auth_model import create_auth
     from apis.onlyfans.classes.post_model import create_post
 
+    from classes.prepare_directories import DirectoryManager, FileManager
+
 
 class create_user:
-    def __init__(
-        self, option: dict[str, Any], authed:create_auth, subscriber: Optional[create_auth] = None
-    ) -> None:
+    def __init__(self, option: dict[str, Any], authed: create_auth) -> None:
+        from classes.prepare_directories import DirectoryManager, FileManager
+
         self.avatar: Optional[str] = option.get("avatar")
         self.avatarThumbs: Optional[list[str]] = option.get("avatarThumbs")
         self.header: Optional[str] = option.get("header")
@@ -216,8 +219,8 @@ class create_user:
         self.maxPinnedPostsCount: int = option.get("maxPinnedPostsCount")
         # Custom
         self.__authed = authed
-        self.subscriber = subscriber
-        self.session_manager = subscriber.session_manager if subscriber else None
+        self.directory_manager: DirectoryManager = DirectoryManager()
+        self.file_manager: FileManager = FileManager(self.directory_manager)
         self.scraped = content_types()
         self.temp_scraped = content_types()
         self.download_info: dict[str, Any] = {}
@@ -232,8 +235,10 @@ class create_user:
         if self.email:
             status = True
         return status
+
     def get_authed(self):
         return self.__authed
+
     def get_session_manager(self):
         return self.__authed.session_manager
 
@@ -248,7 +253,9 @@ class create_user:
                 identifier=self.id, global_limit=limit, global_offset=offset
             ).stories_api
         ]
-        results = await api_helper.scrape_endpoint_links(link, self.session_manager)
+        results = await api_helper.scrape_endpoint_links(
+            link, self.get_session_manager()
+        )
         results = [create_story(x) for x in results]
         self.temp_scraped.Stories = results
         return results
@@ -287,7 +294,7 @@ class create_user:
         limit: int = 10,
         offset: int = 0,
         refresh: bool = True,
-    ) -> Optional[list[create_post]]:
+    ) -> list[create_post]:
         result, status = await api_helper.default_data(self, refresh)
         if status:
             return result
@@ -297,7 +304,9 @@ class create_user:
             epl = endpoint_links()
             link = epl.list_posts(self.id)
             links = epl.create_links(link, self.postsCount)
-        results = await api_helper.scrape_endpoint_links(links, self.session_manager)
+        results = await api_helper.scrape_endpoint_links(
+            links, self.get_session_manager()
+        )
         final_results = self.finalize_content_set(results)
         self.temp_scraped.Posts = final_results
         return final_results
@@ -312,7 +321,7 @@ class create_user:
         ).post_by_id
         result = await self.get_session_manager().json_request(link)
         if isinstance(result, dict):
-            temp_result:dict[str,Any] = result
+            temp_result: dict[str, Any] = result
             final_result = post_model.create_post(temp_result, self)
             return final_result
         return result
@@ -388,8 +397,10 @@ class create_user:
         ).message_by_id
         response = await self.get_session_manager().json_request(link)
         if isinstance(response, dict):
-            temp_response:dict[str,Any] = response
-            results:list[dict[str,Any]] = [x for x in temp_response["list"] if x["id"] == message_id]
+            temp_response: dict[str, Any] = response
+            results: list[dict[str, Any]] = [
+                x for x in temp_response["list"] if x["id"] == message_id
+            ]
             result = results[0] if results else {}
             final_result = message_model.create_message(result, self)
             return final_result
@@ -431,14 +442,21 @@ class create_user:
                 link = link.replace(f"limit={limit}", f"limit={limit}")
                 new_link = link.replace("offset=0", f"offset={num}")
                 links.append(new_link)
-        results = await api_helper.scrape_endpoint_links(links, self.session_manager)
+        results = await api_helper.scrape_endpoint_links(
+            links, self.get_session_manager()
+        )
         final_results = self.finalize_content_set(results)
 
         self.temp_scraped.Archived.Posts = final_results
         return final_results
 
-    async def  search_chat(
-        self, identifier:int|str="", text:str="", refresh:bool=True, limit:int=10, offset:int=0
+    async def search_chat(
+        self,
+        identifier: int | str = "",
+        text: str = "",
+        refresh: bool = True,
+        limit: int = 10,
+        offset: int = 0,
     ):
         # Onlyfans can't do a simple search, so this is broken. If you want it to "work", don't use commas, or basically any mysql injection characters (lol)
         if identifier:
@@ -450,9 +468,14 @@ class create_user:
         ).search_chat
         results = await self.get_session_manager().json_request(link)
         return results
-        
+
     async def search_messages(
-        self, identifier:int|str="", text:str="", refresh:bool=True, limit:int=10, offset:int=0
+        self,
+        identifier: int | str = "",
+        text: str = "",
+        refresh: bool = True,
+        limit: int = 10,
+        offset: int = 0,
     ):
         # Onlyfans can't do a simple search, so this is broken. If you want it to "work", don't use commas, or basically any mysql injection characters (lol)
         if identifier:
@@ -466,12 +489,12 @@ class create_user:
 
     async def like(self, category: str, identifier: int):
         link = endpoint_links(identifier=category, identifier2=identifier).like
-        results = await self.get_session_manager().json_request(link,method="POST")
+        results = await self.get_session_manager().json_request(link, method="POST")
         return results
 
     async def unlike(self, category: str, identifier: int):
         link = endpoint_links(identifier=category, identifier2=identifier).like
-        results = await self.get_session_manager().json_request(link,method="DELETE")
+        results = await self.get_session_manager().json_request(link, method="DELETE")
         return results
 
     async def subscription_price(self):
@@ -501,7 +524,9 @@ class create_user:
         }
         if self.__authed.creditBalance >= subscription_price:
             link = endpoint_links().pay
-            result = await self.get_session_manager().json_request(link, method="POST", payload=x)
+            result = await self.get_session_manager().json_request(
+                link, method="POST", payload=x
+            )
         else:
             result = ErrorDetails(
                 {"code": 2011, "message": "Insufficient Credit Balance"}
@@ -524,3 +549,37 @@ class create_user:
                 case _:
                     print
         return final_results
+
+    def create_directory_manager(self, path_formats: dict[str, Any] = {}):
+        from classes.prepare_directories import DirectoryManager
+
+        base_directory_manager = self.__authed.api.base_directory_manager
+        profile_directory = Path(
+            base_directory_manager.profile.root_directory, self.username
+        )
+        metadata_directory = base_directory_manager.root_metadata_directory
+        download_directory = base_directory_manager.root_download_directory
+        self.directory_manager = DirectoryManager(
+            profile_directory,
+            metadata_directory,
+            download_directory,
+            path_formats=path_formats,
+        )
+        self.file_manager.directory_manager = self.directory_manager
+        return self.directory_manager
+
+    def get_api(self):
+        return self.__authed.api
+
+    async def if_scraped(self):
+        status = False
+        for key, value in self.scraped.__dict__.items():
+            if key == "Archived":
+                for _key_2, value in value.__dict__.items():
+                    if value:
+                        status = True
+                        return status
+            if value:
+                status = True
+                break
+        return status

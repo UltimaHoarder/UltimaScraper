@@ -2,6 +2,7 @@ from __future__ import annotations
 
 import math
 from itertools import chain
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib import parse
 
@@ -18,16 +19,23 @@ from apis.starsavn.classes.extras import (
 from apis.starsavn.classes.highlight_model import create_highlight
 from apis.starsavn.classes.story_model import create_story
 
+
 if TYPE_CHECKING:
     from apis.starsavn.classes.auth_model import create_auth
     from apis.starsavn.classes.post_model import create_post
     from apis.starsavn.classes.product_model import create_product
+    from classes.prepare_directories import DirectoryManager
 
 
 class create_user:
     def __init__(
-        self, option: dict[str, Any] = {}, subscriber: Optional[create_auth] = None
+        self,
+        option: dict[str, Any],
+        authed: create_auth,
+        subscriber: Optional[create_auth] = None,
     ) -> None:
+        from classes.prepare_directories import DirectoryManager, FileManager
+
         self.avatar: Any = option.get("avatar")
         self.avatarThumbs: Any = option.get("avatarThumbs")
         self.header: Any = option.get("header")
@@ -217,13 +225,12 @@ class create_user:
         self.pinnedPostsCount: int = option.get("pinnedPostsCount")
         self.maxPinnedPostsCount: int = option.get("maxPinnedPostsCount")
         # Custom
-        self.subscriber = subscriber
+        self.__authed = authed
+        self.directory_manager: DirectoryManager = DirectoryManager()
+        self.file_manager: FileManager = FileManager(self.directory_manager)
         self.scraped = content_types()
         self.temp_scraped = content_types()
-        self.session_manager = None
-        if subscriber:
-            self.session_manager = subscriber.session_manager
-        self.download_info = {}
+        self.download_info: dict[str, Any] = {}
         self.__raw__ = option
 
     def get_link(self):
@@ -236,6 +243,12 @@ class create_user:
             status = True
         return status
 
+    def get_authed(self):
+        return self.__authed
+
+    def get_session_manager(self):
+        return self.__authed.session_manager
+
     async def get_stories(
         self, refresh: bool = True, limit: int = 100, offset: int = 0
     ) -> list[create_story]:
@@ -247,7 +260,9 @@ class create_user:
                 identifier=self.id, global_limit=limit, global_offset=offset
             ).stories_api
         ]
-        results = await api_helper.scrape_endpoint_links(link, self.session_manager)
+        results = await api_helper.scrape_endpoint_links(
+            link, self.get_session_manager()
+        )
         results = [create_story(x) for x in results]
         self.temp_scraped.Stories = results
         return results
@@ -269,14 +284,14 @@ class create_user:
             link = endpoint_links(
                 identifier=identifier, global_limit=limit, global_offset=offset
             ).list_highlights
-            results = await self.session_manager.json_request(link)
+            results = await self.get_session_manager().json_request(link)
             results = await remove_errors(results)
             results = [create_highlight(x) for x in results]
         else:
             link = endpoint_links(
                 identifier=hightlight_id, global_limit=limit, global_offset=offset
             ).highlight
-            results = await self.session_manager.json_request(link)
+            results = await self.get_session_manager().json_request(link)
             results = [create_story(x) for x in results["stories"]]
         return results
 
@@ -296,7 +311,9 @@ class create_user:
             epl = endpoint_links()
             link = epl.list_posts(self.id)
             links = epl.create_links(link, self.postsCount)
-        results = await api_helper.scrape_endpoint_links(links, self.session_manager)
+        results = await api_helper.scrape_endpoint_links(
+            links, self.get_session_manager()
+        )
         final_results = self.finalize_content_set(results)
         self.temp_scraped.Posts = final_results
         return final_results
@@ -309,11 +326,12 @@ class create_user:
         link = endpoint_links(
             identifier=identifier, global_limit=limit, global_offset=offset
         ).post_by_id
-        response = await self.session_manager.json_request(link)
-        if isinstance(response, dict):
-            final_result = post_model.create_post(response, self)
+        result = await self.get_session_manager().json_request(link)
+        if isinstance(result, dict):
+            temp_result: dict[str, Any] = result
+            final_result = post_model.create_post(temp_result, self)
             return final_result
-        return response
+        return result
 
     async def get_medias(
         self,
@@ -339,7 +357,9 @@ class create_user:
                 link = link.replace(f"limit={limit}", f"limit={limit}")
                 new_link = link.replace("offset=0", f"offset={num}")
                 links.append(new_link)
-        results = await api_helper.scrape_endpoint_links(links, self.session_manager)
+        results = await api_helper.scrape_endpoint_links(
+            links, self.get_session_manager()
+        )
         final_results = self.finalize_content_set(results)
         self.temp_scraped.Products = final_results
         return final_results
@@ -357,7 +377,7 @@ class create_user:
             return result
         if links is None:
             links = []
-        multiplier = self.session_manager.max_threads
+        multiplier = self.get_session_manager().max_threads
         if links:
             link = links[-1]
         else:
@@ -370,7 +390,7 @@ class create_user:
             links += links2
         else:
             links = links2
-        results = await self.session_manager.async_requests(links)
+        results = await self.get_session_manager().async_requests(links)
         results = await remove_errors(results)
         final_results = []
         if isinstance(results, list):
@@ -397,7 +417,12 @@ class create_user:
         return final_results
 
     async def get_message_by_id(
-        self, user_id=None, message_id=None, refresh=True, limit=10, offset=0
+        self,
+        user_id: Optional[int] = None,
+        message_id: Optional[int] = None,
+        refresh: bool = True,
+        limit: int = 10,
+        offset: int = 0,
     ):
         if not user_id:
             user_id = self.id
@@ -407,22 +432,25 @@ class create_user:
             global_limit=limit,
             global_offset=offset,
         ).message_by_id
-        response = await self.session_manager.json_request(link)
+        response = await self.get_session_manager().json_request(link)
         if isinstance(response, dict):
-            results = [x for x in response["list"] if x["id"] == message_id]
+            temp_response: dict[str, Any] = response
+            results: list[dict[str, Any]] = [
+                x for x in temp_response["list"] if x["id"] == message_id
+            ]
             result = results[0] if results else {}
             final_result = message_model.create_message(result, self)
             return final_result
         return response
 
-    async def get_archived_stories(self, refresh=True, limit=100, offset=0):
-        api_type = "archived_stories"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+    async def get_archived_stories(
+        self, refresh: bool = True, limit: int = 100, offset: int = 0
+    ):
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         link = endpoint_links(global_limit=limit, global_offset=offset).archived_stories
-        results = await self.session_manager.json_request(link)
+        results = await self.get_session_manager().json_request(link)
         results = await remove_errors(results)
         results = [create_story(x) for x in results]
         return results
@@ -451,57 +479,58 @@ class create_user:
                 link = link.replace(f"limit={limit}", f"limit={limit}")
                 new_link = link.replace("offset=0", f"offset={num}")
                 links.append(new_link)
-        results = await api_helper.scrape_endpoint_links(links, self.session_manager)
+        results = await api_helper.scrape_endpoint_links(
+            links, self.get_session_manager()
+        )
         final_results = self.finalize_content_set(results)
 
         self.temp_scraped.Archived.Posts = final_results
         return final_results
 
-    async def get_archived(self, api):
-        items = []
-        if self.is_me():
-            item = {}
-            item["type"] = "Stories"
-            item["results"] = [await self.get_archived_stories()]
-            items.append(item)
-        item = {}
-        item["type"] = "Posts"
-        # item["results"] = test
-        item["results"] = await self.get_archived_posts()
-        items.append(item)
-        return items
-
     async def search_chat(
-        self, identifier="", text="", refresh=True, limit=10, offset=0
+        self,
+        identifier: int | str = "",
+        text: str = "",
+        refresh: bool = True,
+        limit: int = 10,
+        offset: int = 0,
     ):
+        # Onlyfans can't do a simple search, so this is broken. If you want it to "work", don't use commas, or basically any mysql injection characters (lol)
         if identifier:
-            identifier = parse.urljoin(identifier, "messages")
+            identifier = parse.urljoin(str(identifier), "messages")
+        else:
+            identifier = self.id
         link = endpoint_links(
             identifier=identifier, text=text, global_limit=limit, global_offset=offset
         ).search_chat
-        results = await self.session_manager.json_request(link)
+        results = await self.get_session_manager().json_request(link)
         return results
 
     async def search_messages(
-        self, identifier="", text="", refresh=True, limit=10, offset=0
+        self,
+        identifier: int | str = "",
+        text: str = "",
+        refresh: bool = True,
+        limit: int = 10,
+        offset: int = 0,
     ):
         if identifier:
-            identifier = parse.urljoin(identifier, "messages")
+            identifier = parse.urljoin(str(identifier), "messages")
         text = parse.quote_plus(text)
         link = endpoint_links(
             identifier=identifier, text=text, global_limit=limit, global_offset=offset
         ).search_messages
-        results = await self.session_manager.json_request(link)
+        results = await self.get_session_manager().json_request(link)
         return results
 
     async def like(self, category: str, identifier: int):
         link = endpoint_links(identifier=category, identifier2=identifier).like
-        results = await self.session_manager.json_request(link, method="POST")
+        results = await self.get_session_manager().json_request(link, method="POST")
         return results
 
     async def unlike(self, category: str, identifier: int):
         link = endpoint_links(identifier=category, identifier2=identifier).like
-        results = await self.session_manager.json_request(link, method="DELETE")
+        results = await self.get_session_manager().json_request(link, method="DELETE")
         return results
 
     async def subscription_price(self):
@@ -511,7 +540,7 @@ class create_user:
         subscription_price = self.subscribePrice
         if self.promotions:
             for promotion in self.promotions:
-                promotion_price = promotion["price"]
+                promotion_price: int = promotion["price"]
                 if promotion_price < subscription_price:
                     subscription_price = promotion_price
         return subscription_price
@@ -529,9 +558,9 @@ class create_user:
             "token": "",
             "unavailablePaymentGates": [],
         }
-        if self.subscriber.creditBalance >= subscription_price:
+        if self.__authed.creditBalance >= subscription_price:
             link = endpoint_links().pay
-            result = await self.session_manager.json_request(
+            result = await self.get_session_manager().json_request(
                 link, method="POST", payload=x
             )
         else:
@@ -561,3 +590,37 @@ class create_user:
                 created = product_model.create_product(result, self)
             final_results.append(created)
         return final_results
+
+    def create_directory_manager(self, path_formats: dict[str, Any] = {}):
+        from classes.prepare_directories import DirectoryManager
+
+        base_directory_manager = self.__authed.api.base_directory_manager
+        profile_directory = Path(
+            base_directory_manager.profile.root_directory, self.username
+        )
+        metadata_directory = base_directory_manager.root_metadata_directory
+        download_directory = base_directory_manager.root_download_directory
+        self.directory_manager = DirectoryManager(
+            profile_directory,
+            metadata_directory,
+            download_directory,
+            path_formats=path_formats,
+        )
+        self.file_manager.directory_manager = self.directory_manager
+        return self.directory_manager
+
+    def get_api(self):
+        return self.__authed.api
+
+    async def if_scraped(self):
+        status = False
+        for key, value in self.scraped.__dict__.items():
+            if key == "Archived":
+                for _key_2, value in value.__dict__.items():
+                    if value:
+                        status = True
+                        return status
+            if value:
+                status = True
+                break
+        return status

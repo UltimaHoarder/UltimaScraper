@@ -1,35 +1,30 @@
 from __future__ import annotations
-from pathlib import Path
-from apis import api_helper
-from apis.onlyfans.classes.user_model import create_user
-from database.databases.user_data.models.api_table import api_table
+
 import asyncio
 import copy
-from aiohttp.client import ClientSession
-
-from aiohttp_socks.connector import ProxyConnector
-from database.databases.user_data.models.media_table import template_media_table
 import json
 import math
 import os
 import platform
 import random
-import subprocess
 import re
 import secrets
 import shutil
 import string
+import subprocess
 import traceback
 from datetime import datetime
 from itertools import zip_longest
 from multiprocessing.dummy import Pool as ThreadPool
+from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, Optional, Tuple, Union, BinaryIO
+from typing import TYPE_CHECKING, Any, BinaryIO, Optional, Tuple, Union
 
 import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
 import requests
 import ujson
+from aiohttp.client import ClientSession
 from aiohttp.client_exceptions import (
     ClientOSError,
     ClientPayloadError,
@@ -37,28 +32,46 @@ from aiohttp.client_exceptions import (
     ServerDisconnectedError,
 )
 from aiohttp.client_reqrep import ClientResponse
-from apis.onlyfans import onlyfans as OnlyFans
+from aiohttp_socks.connector import ProxyConnector
+from apis import api_helper
 from apis.fansly import fansly as Fansly
-from apis.starsavn import starsavn as StarsAVN
-from apis.onlyfans.classes.auth_model import create_auth
+from apis.onlyfans import onlyfans as OnlyFans
 from apis.onlyfans.classes.extras import content_types
+from apis.onlyfans.classes.user_model import create_user
+from apis.starsavn import starsavn as StarsAVN
 from bs4 import BeautifulSoup
-from classes.prepare_metadata import format_variables, prepare_reformat
+from classes.prepare_directories import DirectoryManager
+from database.databases.user_data.models.media_table import template_media_table
 from mergedeep import Strategy, merge
+from modules.fansly import FanslyDataScraper
+from modules.onlyfans import OnlyFansDataScraper
+from modules.starsavn import StarsAVNDataScraper
 from sqlalchemy import inspect
 from sqlalchemy.orm.session import Session
 from tqdm import tqdm
+
 import helpers.db_helper as db_helper
 
 if TYPE_CHECKING:
 
-    import modules.fansly as m_fansly
-    import modules.onlyfans as m_onlyfans
-    import modules.starsavn as m_starsavn
+    import apis.fansly.classes as fansly_classes
+    import apis.onlyfans.classes as onlyfans_classes
+    import apis.starsavn.classes as starsavn_classes
+
+    auth_types = (
+        onlyfans_classes.auth_model.create_auth
+        | fansly_classes.auth_model.create_auth
+        | starsavn_classes.auth_model.create_auth
+    )
+    user_types = (
+        onlyfans_classes.user_model.create_user
+        | fansly_classes.user_model.create_user
+        | starsavn_classes.user_model.create_user
+    )
 
 json_global_settings = {}
 min_drive_space = 0
-webhooks = {}
+webhooks: dict[str, Any] = {}
 max_threads = -1
 os_name = platform.system()
 proxies = None
@@ -70,8 +83,8 @@ if os_name == "Windows":
 try:
     from psutil import disk_usage
 except ImportError:
-    from collections import namedtuple
     import errno
+    from collections import namedtuple
 
     # https://github.com/giampaolo/psutil/blob/master/psutil/_common.py#L176
     sdiskusage = namedtuple("sdiskusage", ["total", "used", "free", "percent"])
@@ -197,10 +210,10 @@ async def format_image(filepath: str, timestamp: float):
 
 
 async def async_downloads(
-    download_list: list[template_media_table], subscription: create_user
+    download_list: list[template_media_table], subscription: user_types
 ):
     async def run(download_list: list[template_media_table]):
-        session_m = subscription.session_manager
+        session_m = subscription.get_session_manager()
         proxies = session_m.proxies
         proxy = (
             session_m.proxies[random.randint(0, len(proxies) - 1)] if proxies else ""
@@ -320,9 +333,13 @@ def filter_metadata(datas):
     return datas
 
 
-def import_archive(archive_path: str) -> Any:
+def import_archive(archive_path: Path) -> Any:
     metadata: dict[str, Any] = {}
-    if os.path.exists(archive_path) and os.path.getsize(archive_path):
+    if (
+        archive_path.exists()
+        and archive_path.stat().st_size
+        and archive_path.suffix != ".db"
+    ):
         with open(archive_path, "r", encoding="utf-8") as outfile:
             while not metadata:
                 try:
@@ -391,39 +408,12 @@ def legacy_database_fixer(database_path, database, database_name, database_exist
 
 
 async def fix_sqlite(
-    profile_directory,
-    download_directory,
-    metadata_directory,
-    format_directories,
-    authed: create_auth,
-    site_name,
-    username,
-    metadata_directory_format,
+    directory_manager: DirectoryManager,
 ):
     items = content_types().__dict__.items()
-    final_metadatas = []
-    for api_type, value in items:
-        mandatory_directories = {}
-        mandatory_directories["profile_directory"] = profile_directory
-        mandatory_directories["download_directory"] = download_directory
-        mandatory_directories["metadata_directory"] = metadata_directory
-        formatted_directories = await format_directories(
-            mandatory_directories,
-            authed,
-            site_name,
-            username,
-            metadata_directory_format,
-            "",
-            api_type,
-        )
-        final_metadata_directory = formatted_directories["metadata_directory"]
-        if all(final_metadata_directory != x for x in final_metadatas):
-            final_metadatas.append(final_metadata_directory)
-        print
-    print
-    for final_metadata in final_metadatas:
-        archived_database_path = os.path.join(final_metadata, "Archived.db")
-        if os.path.exists(archived_database_path):
+    for final_metadata in directory_manager.user.legacy_metadata_directories:
+        archived_database_path = final_metadata.joinpath("Archived.db")
+        if archived_database_path.exists():
             Session2, engine = db_helper.create_database_session(archived_database_path)
             database_session: Session = Session2()
             cwd = os.getcwd()
@@ -464,7 +454,12 @@ async def fix_sqlite(
                     database_session2.close()
             database_session.commit()
             database_session.close()
-            os.remove(archived_database_path)
+            new_filepath = Path(
+                archived_database_path.parent,
+                "__legacy_metadata__",
+                archived_database_path.name,
+            )
+            shutil.move(archived_database_path, f"{new_filepath}")
 
 
 def export_sqlite2(archive_path, datas, parent_type, legacy_fixer=False):
@@ -556,10 +551,10 @@ def export_sqlite2(archive_path, datas, parent_type, legacy_fixer=False):
 def legacy_sqlite_updater(
     legacy_metadata_path: str,
     api_type: str,
-    subscription: create_user,
-    delete_metadatas: list,
+    subscription: user_types,
+    delete_metadatas: list[Path],
 ):
-    final_result = []
+    final_result: list[dict[str, Any]] = []
     if os.path.exists(legacy_metadata_path):
         cwd = os.getcwd()
         alembic_location = os.path.join(
@@ -598,7 +593,7 @@ def legacy_sqlite_updater(
     return final_result, delete_metadatas
 
 
-def export_sqlite(database_path: str, api_type, datas: list[dict[str, Any]]):
+def export_sqlite(database_path: str, api_type: str, datas: list[dict[str, Any]]):
     metadata_directory = os.path.dirname(database_path)
     os.makedirs(metadata_directory, exist_ok=True)
     database_name = os.path.basename(database_path).replace(".db", "")
@@ -686,80 +681,7 @@ def format_paths(j_directories, site_name):
     return paths
 
 
-async def reformat(prepared_format: prepare_reformat, unformatted):
-    post_id = prepared_format.post_id
-    media_id = prepared_format.media_id
-    date = prepared_format.date
-    text = prepared_format.text
-    value = "Free"
-    maximum_length = prepared_format.maximum_length
-    text_length = prepared_format.text_length
-    post_id = "" if post_id is None else str(post_id)
-    media_id = "" if media_id is None else str(media_id)
-    extra_count = 0
-    if type(date) is str:
-        format_variables2 = format_variables()
-        if date != format_variables2.date and date != "":
-            date = datetime.strptime(date, "%d-%m-%Y %H:%M:%S")
-            date = date.strftime(prepared_format.date_format)
-    else:
-        if date != None:
-            date = date.strftime(prepared_format.date_format)
-    has_text = False
-    if "{text}" in unformatted:
-        has_text = True
-        text = clean_text(text)
-        extra_count = len("{text}")
-    if "{value}" in unformatted:
-        if prepared_format.price:
-            if not prepared_format.preview:
-                value = "Paid"
-    directory = prepared_format.directory
-    path = unformatted.replace("{site_name}", prepared_format.site_name)
-    path = path.replace(
-        "{first_letter}", prepared_format.model_username[0].capitalize()
-    )
-    path = path.replace("{post_id}", post_id)
-    path = path.replace("{media_id}", media_id)
-    path = path.replace("{profile_username}", prepared_format.profile_username)
-    path = path.replace("{model_username}", prepared_format.model_username)
-    path = path.replace("{api_type}", prepared_format.api_type)
-    path = path.replace("{media_type}", prepared_format.media_type)
-    path = path.replace("{filename}", prepared_format.filename)
-    path = path.replace("{ext}", prepared_format.ext)
-    path = path.replace("{value}", value)
-    path = path.replace("{date}", date)
-    directory_count = len(directory)
-    path_count = len(path)
-    maximum_length = maximum_length - (directory_count + path_count - extra_count)
-    text_length = text_length if text_length < maximum_length else maximum_length
-    if has_text:
-        # https://stackoverflow.com/a/43848928
-        def utf8_lead_byte(b):
-            """A UTF-8 intermediate byte starts with the bits 10xxxxxx."""
-            return (b & 0xC0) != 0x80
-
-        def utf8_byte_truncate(text, max_bytes):
-            """If text[max_bytes] is not a lead byte, back up until a lead byte is
-            found and truncate before that character."""
-            utf8 = text.encode("utf8")
-            if len(utf8) <= max_bytes:
-                return utf8
-            i = max_bytes
-            while i > 0 and not utf8_lead_byte(utf8[i]):
-                i -= 1
-            return utf8[:i]
-
-        filtered_text = utf8_byte_truncate(text, text_length).decode("utf8")
-        path = path.replace("{text}", filtered_text)
-    else:
-        path = path.replace("{text}", "")
-    directory2 = os.path.join(directory, path)
-    directory3 = os.path.abspath(directory2)
-    return directory3
-
-
-def get_directory(directories: list[str], extra_path):
+def get_directory(directories: list[str], extra_path: str):
     directories = format_paths(directories, extra_path)
     new_directories = []
     if not directories:
@@ -778,15 +700,18 @@ def get_directory(directories: list[str], extra_path):
 
 
 def check_space(
-    download_paths, min_size=min_drive_space, priority="download", create_directory=True
-):
+    download_paths: list[Path],
+    min_size: int = min_drive_space,
+    priority: str = "download",
+    create_directory: bool = True,
+) -> Path:
     root = ""
     while not root:
         paths = []
         for download_path in download_paths:
             if create_directory:
                 os.makedirs(download_path, exist_ok=True)
-            obj_Disk = disk_usage(download_path)
+            obj_Disk = disk_usage(str(download_path))
             free = obj_Disk.free / (1024.0 ** 3)
             x = {}
             x["path"] = download_path
@@ -864,7 +789,7 @@ class download_session(tqdm):
             self.total += tsize
 
 
-def prompt_modified(message, path):
+def prompt_modified(message: str, path: str):
     editor = shutil.which(
         os.environ.get("EDITOR", "notepad" if os_name == "Windows" else "nano")
     )
@@ -884,8 +809,11 @@ def get_config(config_path: Path):
     json_config2 = copy.deepcopy(json_config)
     json_config = make_settings.fix(json_config)
     file_name = os.path.basename(config_path)
+    wow = make_settings.Config(**json_config)
     json_config = ujson.loads(
-        json.dumps(make_settings.config(**json_config), default=lambda o: o.__dict__)
+        json.dumps(
+            make_settings.Config(**json_config).export(), default=lambda o: o.__dict__
+        )
     )
     updated = False
     if json_config != json_config2:
@@ -902,35 +830,83 @@ def get_config(config_path: Path):
     return json_config, updated
 
 
-def choose_auth(array):
-    names = []
-    array = [{"auth_count": -1, "username": "All"}] + array
-    string = ""
-    separator = " | "
-    name_count = len(array)
-    if name_count > 1:
+class OptionsFormat:
+    def __init__(
+        self,
+        items: list[Any],
+        options_type: str,
+        auto_choice: list[int | str] | int | str | bool = False,
+    ) -> None:
+        self.items = items
+        self.item_keys: list[str] = []
+        self.string = ""
+        self.auto_choice = auto_choice
+        self.final_choices = []
+        self.formatter(options_type)
 
-        count = 0
-        for x in array:
-            name = x["username"]
-            string += str(count) + " = " + name
-            names.append(x)
-            if count + 1 != name_count:
-                string += separator
+    def formatter(self, options_type: str):
+        final_string = f"Choose {options_type.capitalize()}: All = 0"
+        if isinstance(self.auto_choice, str):
+            self.auto_choice = self.auto_choice.split(",")
 
-            count += 1
+        match options_type:
+            case "profiles":
+                self.item_keys = [x.auth_details.username for x in self.items]
+                my_string = " | ".join(
+                    map(
+                        lambda x: f"{self.items.index(x)+1} = {x.auth_details.username}",
+                        self.items,
+                    )
+                )
+                final_string = f"{final_string} | {my_string}"
+                self.string = final_string
+                final_list = self.choose_option()
+                self.final_choices = [
+                    key
+                    for choice in final_list
+                    for key in self.items
+                    if choice == key.auth_details.username
+                ]
+            case "subscriptions":
+                self.item_keys = [x.username for x in self.items]
+                my_string = " | ".join(
+                    map(lambda x: f"{self.items.index(x)+1} = {x.username}", self.items)
+                )
+                final_string = f"{final_string} | {my_string}"
+                self.string = final_string
+                final_list = self.choose_option()
+                self.final_choices = [
+                    key
+                    for choice in final_list
+                    for key in self.items
+                    if choice == key.username
+                ]
 
-    print(f"Auth Usernames: {string}")
-    value = int(input().strip())
-    if value:
-        names = [names[value]]
-    else:
-        names.pop(0)
-    return names
+    def choose_option(self):
+        input_list: list[str] = self.item_keys
+        final_list: list[str] = []
+        if isinstance(self.auto_choice, list):
+            if not self.auto_choice:
+                print(self.string)
+                input_value = int(input())
+                if input_value != 0:
+                    input_list = []
+                    input_values = [input_value]
+                    for input_value in input_values:
+                        try:
+                            input_list.append(self.item_keys[input_value - 1])
+                        except IndexError:
+                            continue
+            else:
+                input_list = self.auto_choice
+        final_list = [
+            choice for choice in input_list for key in self.item_keys if choice == key
+        ]
+        return final_list
 
 
 def choose_option(
-    subscription_list, auto_scrape: Union[str, bool], use_default_message=False
+    subscription_list, auto_scrape: Union[str, bool], use_default_message: bool = False
 ):
     names = subscription_list[0]
     default_message = ""
@@ -971,9 +947,9 @@ def choose_option(
 def process_profiles(
     json_settings: dict[str, Any],
     proxies: list[str],
-    site_name: str,
     api: OnlyFans.start | Fansly.start | StarsAVN.start,
 ):
+    site_name = api.site_name
     profile_directories: list[str] = json_settings["profile_directories"]
     for profile_directory in profile_directories:
         x = os.path.join(profile_directory, site_name)
@@ -1007,39 +983,82 @@ def process_profiles(
     return api
 
 
-async def process_names(
-    module, subscription_list, auto_scrape, api, json_config, site_name_lower, site_name
-) -> list:
-    names = choose_option(subscription_list, auto_scrape, True)
-    if not names:
+async def account_setup(
+    auth: auth_types,
+    datascraper: OnlyFansDataScraper | FanslyDataScraper | StarsAVNDataScraper,
+    site_settings: make_settings.SiteSettings,
+    identifiers: list[int | str] = [],
+) -> tuple[bool, list[user_types]]:
+    status = False
+    subscriptions: list[user_types] = []
+    authed = await auth.login()
+    if authed.active and authed.directory_manager and site_settings:
+        metadata_filepath = (
+            authed.directory_manager.profile.metadata_directory.joinpath(
+                "Mass Messages.json"
+            )
+        )
+        if authed.isPerformer:
+            imported = import_archive(metadata_filepath)
+            if "auth" in imported:
+                imported = imported["auth"]
+            mass_messages = await authed.get_mass_messages(resume=imported)
+            if mass_messages:
+                export_data(mass_messages, metadata_filepath)
+        # chats = api.get_chats()
+        if identifiers or site_settings.jobs.scrape.subscriptions:
+            subscriptions.extend(
+                await datascraper.manage_subscriptions(
+                    authed, identifiers=identifiers  # type: ignore
+                )
+            )
+        status = True
+    elif (
+        auth.auth_details.email
+        and auth.auth_details.password
+        and site_settings.browser.auth
+    ):
+        # domain = "https://onlyfans.com"
+        # oflogin.login(auth, domain, auth.session_manager.get_proxy())
+        pass
+    return status, subscriptions
+
+
+async def process_jobs(
+    datascraper: OnlyFansDataScraper | FanslyDataScraper | StarsAVNDataScraper,
+    subscription_list: list[user_types],
+):
+    for authed in datascraper.api.auths:
+        await datascraper.paid_content_scraper(authed)  # type: ignore
+    if not subscription_list:
         print("There's nothing to scrape.")
-    for name in names:
+    for subscription in subscription_list:
         # Extra Auth Support
-        auth_count = name[0]
-        authed = api.auths[auth_count]
-        name = name[-1]
-        assign_vars(json_config)
-        username = parse_links(site_name_lower, name)
-        result = await module.start_datascraper(authed, username, site_name)
-    return names
+        authed = subscription.get_authed()
+        await datascraper.start_datascraper(authed, subscription.username)  # type: ignore
+    return subscription_list
 
 
 async def process_downloads(
     api: OnlyFans.start | Fansly.start | StarsAVN.start,
-    module: m_onlyfans | m_fansly | m_starsavn,
+    datascraper: OnlyFansDataScraper | FanslyDataScraper | StarsAVNDataScraper,
 ):
     if json_global_settings["helpers"]["downloader"]:
         for auth in api.auths:
             subscriptions = await auth.get_subscriptions(refresh=False)
             for subscription in subscriptions:
-                await module.prepare_downloads(subscription)
+                if not await subscription.if_scraped():
+                    continue
+                await datascraper.prepare_downloads(subscription)
                 if json_global_settings["helpers"]["delete_empty_directories"]:
                     delete_empty_directories(
                         subscription.download_info.get("base_directory", "")
                     )
 
 
-async def process_webhooks(api: Union[OnlyFans.start], category, category2):
+async def process_webhooks(
+    api: OnlyFans.start | Fansly.start | StarsAVN.start, category: str, category2: str
+):
     global_webhooks = webhooks["global_webhooks"]
     global_status = webhooks["global_status"]
     webhook = webhooks[category]
@@ -1079,7 +1098,9 @@ def open_partial(path: str) -> BinaryIO:
             pass
 
 
-async def write_data(response: ClientResponse, download_path: str, progress_bar):
+async def write_data(
+    response: ClientResponse, download_path: Path, progress_bar: download_session
+):
     status_code = 0
     if response.status == 200:
         total_length = 0
@@ -1092,7 +1113,7 @@ async def write_data(response: ClientResponse, download_path: str, progress_bar)
                     async for data in response.content.iter_chunked(4096):
                         length = len(data)
                         total_length += length
-                        progress_bar.update(length)
+                        progress_bar.update(length)  # type: ignore
                         f.write(data)
                 except (
                     ClientPayloadError,
@@ -1121,7 +1142,7 @@ async def write_data(response: ClientResponse, download_path: str, progress_bar)
 
 
 def export_data(
-    metadata: Union[list, dict], path: str, encoding: Optional[str] = "utf-8"
+    metadata: list[Any] | dict[str, Any], path: Path, encoding: Optional[str] = "utf-8"
 ):
     directory = os.path.dirname(path)
     if directory:
@@ -1312,3 +1333,80 @@ async def move_to_old(
     print(f"Moving {source} -> {local_destination}")
     shutil.copytree(source, local_destination, dirs_exist_ok=True)
     shutil.rmtree(source)
+
+
+async def format_directories(
+    directory_manager: DirectoryManager,
+    subscription: user_types,
+) -> DirectoryManager:
+    from classes.prepare_metadata import prepare_reformat
+
+    authed = subscription.get_authed()
+    site_settings = authed.api.get_site_settings()
+    if site_settings:
+        authed_username = authed.username
+        subscription_username = subscription.username
+        site_name = authed.api.site_name
+        p_r = prepare_reformat()
+        prepared_metadata_format = await p_r.standard(
+            site_name,
+            authed_username,
+            subscription_username,
+            datetime.today(),
+            site_settings.date_format,
+            site_settings.text_length,
+            directory_manager.root_metadata_directory,
+        )
+        string = await prepared_metadata_format.reformat_2(
+            site_settings.metadata_directory_format
+        )
+        directory_manager.user.metadata_directory = Path(string)
+        prepared_download_format = copy.copy(prepared_metadata_format)
+        prepared_download_format.directory = directory_manager.root_download_directory
+        string = await prepared_download_format.reformat_2(
+            site_settings.file_directory_format
+        )
+        directory_manager.user.download_directory = Path(string)
+        await subscription.file_manager.set_default_files(
+            prepared_metadata_format, prepared_download_format
+        )
+        metadata_filepaths = await subscription.file_manager.find_metadata_files(
+            legacy_files=False
+        )
+        for metadata_filepath in metadata_filepaths:
+            new_m_f = directory_manager.user.metadata_directory.joinpath(
+                metadata_filepath.name
+            )
+            if metadata_filepath != new_m_f:
+                counter = 0
+                while True:
+                    if not new_m_f.exists():
+                        shutil.move(metadata_filepath, new_m_f)
+                        break
+                    else:
+                        new_m_f = new_m_f.with_stem(
+                            f"{metadata_filepath.stem}_{counter}"
+                        )
+                        counter += 1
+        await subscription.file_manager.set_default_files(
+            prepared_metadata_format, prepared_download_format
+        )
+        user_metadata_directory = directory_manager.user.metadata_directory
+        _user_download_directory = directory_manager.user.download_directory
+        legacy_metadata_directory = user_metadata_directory
+        directory_manager.user.legacy_metadata_directories.append(
+            legacy_metadata_directory
+        )
+        items = content_types().__dict__.items()
+        for api_type, _ in items:
+            legacy_metadata_directory_2 = user_metadata_directory.joinpath(api_type)
+            directory_manager.user.legacy_metadata_directories.append(
+                legacy_metadata_directory_2
+            )
+        legacy_model_directory = directory_manager.root_download_directory.joinpath(
+            site_name, subscription_username
+        )
+        directory_manager.user.legacy_download_directories.append(
+            legacy_model_directory
+        )
+    return directory_manager

@@ -46,9 +46,9 @@ class create_post:
         self.mentionedUsers: list = option.get("mentionedUsers")
         self.linkedUsers: list = option.get("linkedUsers")
         self.linkedPosts: list = option.get("linkedPosts")
-        self.media: list = option.get("media", [])
+        self.media: list[dict[str, Any]] = option.get("media", [])
         self.canViewMedia: bool = option.get("canViewMedia")
-        self.preview: list = option.get("preview")
+        self.preview: list[int] = option.get("preview", [])
         self.canPurchase: bool = option.get("canPurchase")
         self.comments: list[Any] = []
 

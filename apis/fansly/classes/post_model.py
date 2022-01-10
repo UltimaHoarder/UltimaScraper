@@ -1,20 +1,27 @@
-import apis.fansly.classes.user_model as user_model
+from __future__ import annotations
+
+from typing import TYPE_CHECKING, Any
+
 from apis.fansly.classes.extras import endpoint_links
-from typing import Any
+
+if TYPE_CHECKING:
+    from apis.fansly.classes.user_model import create_user
 
 
 class create_post:
     def __init__(
-        self, option: dict[str, Any], user: user_model, extra: dict[Any, Any] = {}
+        self, option: dict[str, Any], user: create_user, extra: dict[str, Any]
     ) -> None:
         self.responseType: str = option.get("responseType")
         self.id: int = int(option["id"])
         self.postedAt: str = option.get("createdAt")
         self.postedAtPrecise: str = option.get("postedAtPrecise")
         self.expiredAt: Any = option.get("expiredAt")
-        self.author = user_model.create_user(extra["accounts"][0])
-        self.text: str = option.get("content")
-        self.rawText: str = option.get("rawText")
+        self.author = user
+        text: str = option.get("text", "")
+        self.text = str(text or "")
+        raw_text: str = option.get("rawText", "")
+        self.rawText = str(raw_text or "")
         self.lockedText: bool = option.get("lockedText")
         self.isFavorite: bool = option.get("isFavorite")
         self.isReportedByMe: bool = option.get("isReportedByMe")
@@ -62,7 +69,7 @@ class create_post:
                         final_media.append(account_media)
         self.media: list[Any] = final_media
         self.canViewMedia: bool = option.get("canViewMedia")
-        self.preview: list = option.get("preview")
+        self.preview: list[int] = option.get("preview", [])
         self.canPurchase: bool = option.get("canPurchase")
         self.user: user_model.create_user = user
 

@@ -1,7 +1,11 @@
+from __future__ import annotations
+
 import copy
 import os
+from datetime import datetime
 from itertools import chain, groupby
-from typing import Any, MutableMapping, Optional
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Optional
 
 import jsonpickle
 from apis.onlyfans.classes.extras import media_types
@@ -31,6 +35,10 @@ def load_classes2():
     return auth_types, user_types
 
 
+if TYPE_CHECKING:
+    from classes.prepare_directories import DirectoryManager
+
+
 auth_types, user_types = load_classes2()
 global_version = 2
 
@@ -38,7 +46,6 @@ global_version = 2
 class create_metadata(object):
     def __init__(
         self,
-        authed: Optional[auth_types] = None,
         metadata: list[dict[str, Any]] | dict[str, Any] = {},
         standard_format: bool = False,
         api_type: str = "",
@@ -46,11 +53,16 @@ class create_metadata(object):
         self.version = global_version
         fixed_metadata = self.fix_metadata(metadata, standard_format, api_type)
         self.content = format_content(
-            authed, fixed_metadata["version"], fixed_metadata["content"]
+            fixed_metadata["version"], fixed_metadata["content"]
         ).content
 
-    def fix_metadata(self, metadata, standard_format=False, api_type: str = "") -> dict:
-        new_format = {}
+    def fix_metadata(
+        self,
+        metadata: dict[str, Any] | list[dict[str, Any]],
+        standard_format: bool = False,
+        api_type: str = "",
+    ):
+        new_format: dict[str, Any] = {}
         new_format["version"] = 1
         new_format["content"] = {}
         if isinstance(metadata, list):
@@ -160,7 +172,6 @@ class create_metadata(object):
 class format_content(object):
     def __init__(
         self,
-        authed=None,
         version=None,
         temp_old_content: dict = {},
         export=False,
@@ -220,7 +231,7 @@ class format_content(object):
 
     class post_item(create_metadata, object):
         def __init__(self, option={}):
-            create_metadata.__init__(self, option)
+            # create_metadata.__init__(self, option)
             self.post_id = option.get("post_id", None)
             self.text = option.get("text", "")
             self.price = option.get("price", 0)
@@ -246,7 +257,7 @@ class format_content(object):
 
     class media_item(create_metadata):
         def __init__(self, option={}):
-            create_metadata.__init__(self, option)
+            # create_metadata.__init__(self, option)
             self.media_id = option.get("media_id", None)
             link = option.get("link", [])
             if link:
@@ -277,7 +288,7 @@ class format_content(object):
             yield attr, value
 
 
-class format_variables(object):
+class format_attributes(object):
     def __init__(self):
         self.site_name = "{site_name}"
         self.first_letter = "{first_letter}"
@@ -306,104 +317,9 @@ class format_variables(object):
             yield attr, value
 
 
-class format_types:
-    def __init__(self, options) -> None:
-        self.file_directory_format = options.get("file_directory_format")
-        self.filename_format = options.get("filename_format")
-        self.metadata_directory_format = options.get("metadata_directory_format")
-
-    def check_rules(self):
-        bool_status = True
-        wl = []
-        invalid_list = []
-        string = ""
-        for key, value in self:
-            if key == "file_directory_format":
-                bl = format_variables()
-                wl = [v for k, v in bl.__dict__.items()]
-                bl = bl.whitelist(wl)
-                invalid_list = []
-                for b in bl:
-                    if b in self.file_directory_format:
-                        invalid_list.append(b)
-            if key == "filename_format":
-                bl = format_variables()
-                wl = [v for k, v in bl.__dict__.items()]
-                bl = bl.whitelist(wl)
-                invalid_list = []
-                for b in bl:
-                    if b in self.filename_format:
-                        invalid_list.append(b)
-            if key == "metadata_directory_format":
-                wl = [
-                    "{site_name}",
-                    "{first_letter}",
-                    "{model_id}",
-                    "{profile_username}",
-                    "{model_username}",
-                ]
-                bl = format_variables().whitelist(wl)
-                invalid_list = []
-                for b in bl:
-                    if b in self.metadata_directory_format:
-                        invalid_list.append(b)
-            bool_status = True
-            if invalid_list:
-                string += f"You cannot use {','.join(invalid_list)} in {key}. Use any from this list {','.join(wl)}"
-                bool_status = False
-
-        return string, bool_status
-
-    def check_unique(self, return_unique=True):
-        string = ""
-        values = []
-        unique = []
-        new_format_copied = copy.deepcopy(self)
-        option = {}
-        option["string"] = ""
-        option["bool_status"] = True
-        option["unique"] = new_format_copied
-        f = format_variables()
-        for key, value in self:
-            if key == "file_directory_format":
-                unique = ["{media_id}", "{model_username}"]
-                value = os.path.normpath(value)
-                values = value.split(os.sep)
-                option["unique"].file_directory_format = unique
-            elif key == "filename_format":
-                values = []
-                unique = ["{media_id}", "{filename}"]
-                value = os.path.normpath(value)
-                for key2, value2 in f:
-                    if value2 in value:
-                        values.append(value2)
-                option["unique"].filename_format = unique
-            elif key == "metadata_directory_format":
-                unique = ["{model_username}"]
-                value = os.path.normpath(value)
-                values = value.split(os.sep)
-                option["unique"].metadata_directory_format = unique
-            if key != "filename_format":
-                e = [x for x in values if x in unique]
-            else:
-                e = [x for x in unique if x in values]
-            if e:
-                setattr(option["unique"], key, e)
-            else:
-                option[
-                    "string"
-                ] += f"{key} is a invalid format since it has no unique identifiers. Use any from this list {','.join(unique)}\n"
-                option["bool_status"] = False
-        return option
-
-    def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
-
-
 class prepare_reformat(object):
-    def __init__(self, option: dict[str, Any], keep_vars: bool = False):
-        format_variables2 = format_variables()
+    def __init__(self, option: dict[str, Any] = {}, keep_vars: bool = False):
+        format_variables2 = format_attributes()
         self.site_name = option.get("site_name", format_variables2.site_name)
         self.post_id = option.get("post_id", format_variables2.post_id)
         self.media_id = option.get("media_id", format_variables2.media_id)
@@ -422,11 +338,12 @@ class prepare_reformat(object):
         self.date = option.get("postedAt", format_variables2.date)
         self.price = option.get("price", 0)
         self.archived = option.get("archived", False)
-        self.date_format = option.get("date_format")
+        self.date_format = option.get("date_format", "%d-%m-%Y")
         self.maximum_length = 255
         self.text_length = option.get("text_length", self.maximum_length)
-        self.directory = option.get("directory")
+        self.directory: Optional[Path] = option.get("directory")
         self.preview = option.get("preview")
+        self.ignore_value = False
         if not keep_vars:
             for key, value in self:
                 print
@@ -442,26 +359,116 @@ class prepare_reformat(object):
         for attr, value in self.__dict__.items():
             yield attr, value
 
-    async def reformat(self, unformatted_list) -> list[str]:
-        x = []
-        format_variables2 = format_variables()
-        for key, unformatted_item in unformatted_list.items():
-            if "filename_format" == key:
-                unformatted_item = os.path.join(x[1], unformatted_item)
-                print
-            string = await main_helper.reformat(self, unformatted_item)
-            final_path = []
-            paths = string.split(os.sep)
-            for path in paths:
-                key = main_helper.find_between(path, "{", "}")
-                e = getattr(format_variables2, key, None)
-                if path == e:
-                    break
-                final_path.append(path)
-            final_path = os.sep.join(final_path)
-            print
-            x.append(final_path)
-        return x
+    async def standard(
+        self,
+        site_name: str,
+        profile_username: str,
+        user_username: str,
+        date: datetime,
+        date_format: str,
+        text_length: int,
+        directory: Path,
+    ):
+        p_r = prepare_reformat()
+        p_r.site_name = site_name
+        p_r.profile_username = profile_username
+        p_r.model_username = user_username
+        p_r.date = date
+        p_r.date_format = date_format
+        p_r.text_length = text_length
+        p_r.directory = directory
+        return p_r
+
+    # async def reformat(self, unformatted_list:dict[str,str]) -> list[str]:
+    #     x:list[str] = []
+    #     format_variables2 = format_variables()
+    #     for key, unformatted_item in unformatted_list.items():
+    #         if "filename_format" == key:
+    #             unformatted_item = os.path.join(x[1], unformatted_item)
+    #             print
+    #         string = await self.reformat_2(unformatted_item)
+    #         final_path = []
+    #         paths = string.split(os.sep)
+    #         for path in paths:
+    #             key = main_helper.find_between(path, "{", "}")
+    #             e = getattr(format_variables2, key, None)
+    #             if path == e:
+    #                 break
+    #             final_path.append(path)
+    #         final_path = os.sep.join(final_path)
+    #         print
+    #         x.append(final_path)
+    #     return x
+
+    async def reformat_2(self, unformatted: str):
+        post_id = self.post_id
+        media_id = self.media_id
+        date = self.date
+        text = self.text
+        value = "Free"
+        maximum_length = self.maximum_length
+        text_length = self.text_length
+        post_id = "" if post_id is None else str(post_id)
+        media_id = "" if media_id is None else str(media_id)
+        extra_count = 0
+        if type(date) is str:
+            format_variables2 = format_attributes()
+            if date != format_variables2.date and date != "":
+                date = datetime.strptime(date, "%d-%m-%Y %H:%M:%S")
+                date = date.strftime(self.date_format)
+        else:
+            if isinstance(date, datetime):
+                date = date.strftime(self.date_format)
+        has_text = False
+        if "{text}" in unformatted:
+            has_text = True
+            text = main_helper.clean_text(text)
+            extra_count = len("{text}")
+        if "{value}" in unformatted:
+            if self.price:
+                if not self.preview:
+                    value = "Paid"
+        directory = self.directory
+        path = unformatted.replace("{site_name}", self.site_name)
+        path = path.replace("{first_letter}", self.model_username[0].capitalize())
+        path = path.replace("{post_id}", post_id)
+        path = path.replace("{media_id}", media_id)
+        path = path.replace("{profile_username}", self.profile_username)
+        path = path.replace("{model_username}", self.model_username)
+        path = path.replace("{api_type}", self.api_type)
+        path = path.replace("{media_type}", self.media_type)
+        path = path.replace("{filename}", self.filename)
+        path = path.replace("{ext}", self.ext)
+        path = path.replace("{value}", value)
+        path = path.replace("{date}", date)
+        directory_count = len(str(directory))
+        path_count = len(path)
+        maximum_length = maximum_length - (directory_count + path_count - extra_count)
+        text_length = text_length if text_length < maximum_length else maximum_length
+        if has_text:
+            # https://stackoverflow.com/a/43848928
+            def utf8_lead_byte(b):
+                """A UTF-8 intermediate byte starts with the bits 10xxxxxx."""
+                return (b & 0xC0) != 0x80
+
+            def utf8_byte_truncate(text, max_bytes):
+                """If text[max_bytes] is not a lead byte, back up until a lead byte is
+                found and truncate before that character."""
+                utf8 = text.encode("utf8")
+                if len(utf8) <= max_bytes:
+                    return utf8
+                i = max_bytes
+                while i > 0 and not utf8_lead_byte(utf8[i]):
+                    i -= 1
+                return utf8[:i]
+
+            filtered_text = utf8_byte_truncate(text, text_length).decode("utf8")
+            path = path.replace("{text}", filtered_text)
+        else:
+            path = path.replace("{text}", "")
+        directory2 = os.path.join(directory, path)
+        directory3 = os.path.abspath(directory2)
+        return Path(directory3)
 
     def convert(self, convert_type="json", keep_empty_items=False) -> dict:
         if not keep_empty_items:
@@ -483,3 +490,44 @@ class prepare_reformat(object):
                 delattr(self, k)
             print
         return self
+
+    async def remove_non_unique(
+        self, directory_manager: DirectoryManager, format_key: str = ""
+    ):
+        formats = directory_manager.formats
+        unique_formats: dict[str, Any] = formats.check_unique()
+        new_dict: dict[str, Any] = {}
+
+        def takewhile_including(iterable: list[str], value: str):
+            for it in iterable:
+                yield it
+                if it == value:
+                    return
+
+        for key, unique_format in unique_formats["unique"].__dict__.items():
+            if "filename" in key or format_key != key:
+                continue
+            unique_format: str = unique_format[0]
+            new_dict[key] = unique_format
+            path_parts = Path(getattr(formats, key)).parts
+            p = Path(*list(takewhile_including(path_parts, unique_format))).as_posix()
+            w = await self.reformat_2(p)
+            if format_key:
+                return w
+            new_dict[f"{key}ted"] = w
+        return new_dict
+
+    async def find_metadata_files(
+        self, directories: list[Path], legacy_files: bool = True
+    ):
+        new_list: list[Path] = []
+        for directory in directories:
+            if not legacy_files:
+                if "__legacy_metadata__" in directory.parts:
+                    continue
+            match directory.suffix:
+                case ".db":
+                    new_list.append(directory)
+                case ".json":
+                    new_list.append(directory)
+        return new_list

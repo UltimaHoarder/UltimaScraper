@@ -29,3 +29,8 @@ class api_table:
             created_at = sqlalchemy.Column(sqlalchemy.DATETIME)
 
         return legacy_api_table
+
+    def convert(self):
+        item = self.__dict__
+        item.pop("_sa_instance_state")
+        return item

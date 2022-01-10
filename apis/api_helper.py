@@ -32,6 +32,7 @@ from aiohttp.client_exceptions import (
 from aiohttp.client_reqrep import ClientResponse
 from aiohttp_socks import ProxyConnectionError, ProxyConnector, ProxyError
 from database.databases.user_data.models.media_table import template_media_table
+from mergedeep.mergedeep import Strategy, merge
 
 
 def load_classes():
@@ -66,7 +67,11 @@ if TYPE_CHECKING:
     onlyfans_classes, fansly_classes, starsavn_classes = load_classes()
     auth_types, user_types = load_classes2()
     onlyfans_extras, fansly_extras, starsavn_extras = load_extras()
-    error_details_types = onlyfans_extras.ErrorDetails | fansly_extras.ErrorDetails | starsavn_extras.ErrorDetails
+    error_details_types = (
+        onlyfans_extras.ErrorDetails
+        | fansly_extras.ErrorDetails
+        | starsavn_extras.ErrorDetails
+    )
 parsed_args = Namespace()
 
 path = up(up(os.path.realpath(__file__)))
@@ -111,9 +116,7 @@ def calculate_max_threads(max_threads: Optional[int] = None):
 class session_manager:
     def __init__(
         self,
-        auth: onlyfans_classes.auth_model.create_auth
-        | fansly_classes.auth_model.create_auth
-        | starsavn_classes.auth_model.create_auth,
+        auth: auth_types,
         headers: dict[str, Any] = {},
         proxies: list[str] = [],
         max_threads: int = -1,
@@ -211,11 +214,15 @@ class session_manager:
                                     fansly_extras,
                                     _starsavn_extras,
                                 ) = load_extras()
-
+                                extras: dict[str, Any] = {}
+                                extras["auth"] = self.auth
+                                extras["link"] = link
                                 if isinstance(
                                     self.auth, onlyfans_classes.auth_model.create_auth
                                 ):
-                                    result = onlyfans_extras.ErrorDetails(result)
+                                    result = await onlyfans_extras.ErrorDetails(
+                                        result
+                                    ).format(extras)
                                 elif isinstance(
                                     self.auth, fansly_classes.auth_model.create_auth
                                 ):
@@ -319,9 +326,11 @@ class session_manager:
             break
         return new_task
 
-    def session_rules(self, link: str, signed_headers:dict[str,Any]={}) -> dict[str, Any]:
+    def session_rules(
+        self, link: str, signed_headers: dict[str, Any] = {}
+    ) -> dict[str, Any]:
         _onlyfans_extras, fansly_extras, _starsavn_extras = load_extras()
-        headers:dict[str,Any]= {}
+        headers: dict[str, Any] = {}
         headers |= self.headers
         if "https://onlyfans.com/api2/v2/" in link:
             dynamic_rules = self.dynamic_rules
@@ -339,9 +348,11 @@ class session_manager:
             headers["authorization"] = self.auth.auth_details.authorization
         return headers
 
-    def create_signed_headers(self, link: str,  auth_id: int=0,time_:Optional[int]=None):
+    def create_signed_headers(
+        self, link: str, auth_id: int = 0, time_: Optional[int] = None
+    ):
         # Users: 300000 | Creators: 301000
-        headers:dict[str,Any] = {}
+        headers: dict[str, Any] = {}
         final_time = str(int(round(time.time()))) if not time_ else str(time_)
         path = urlparse(link).path
         query = urlparse(link).query
@@ -574,7 +585,7 @@ async def default_data(
                     )
                     status = True
             case "get_messages":
-                if not user.subscriber or user.is_me():
+                if user.is_me():
                     result = await handle_refresh(
                         user, api_type, refresh, function_that_called
                     )
@@ -594,3 +605,8 @@ async def default_data(
                 if result:
                     status = True
     return result, status
+
+
+def merge_dictionaries(items: list[dict[str, Any]]):
+    final_dictionary: dict[str, Any] = merge({}, *items, strategy=Strategy.ADDITIVE)  # type: ignore
+    return final_dictionary

@@ -3,6 +3,7 @@ import hashlib
 import html
 import json
 import os
+from pathlib import Path
 import shutil
 from datetime import datetime, timedelta
 from itertools import product
@@ -10,6 +11,7 @@ from types import SimpleNamespace
 from typing import Any, Optional, Union
 from urllib.parse import urlparse
 from apis import api_helper
+from classes.make_settings import SiteSettings
 
 import extras.OFLogin.start_ofl as oflogin
 import extras.OFRenamer.start_ofr as ofrenamer
@@ -22,7 +24,7 @@ from apis.starsavn.classes.post_model import create_post
 from apis.starsavn.classes.product_model import create_product
 from apis.starsavn.classes.story_model import create_story
 from apis.starsavn.classes.user_model import create_user
-from apis.starsavn.classes.extras import auth_details, media_types
+from apis.starsavn.classes.extras import ErrorDetails, auth_details, media_types
 from apis.starsavn.starsavn import start
 from classes.prepare_metadata import create_metadata, prepare_reformat
 from helpers import db_helper
@@ -31,95 +33,156 @@ from sqlalchemy.exc import OperationalError
 from sqlalchemy.orm.scoping import scoped_session
 from tqdm.asyncio import tqdm
 
-site_name = "StarsAVN"
-json_config = None
-json_global_settings = {}
-json_settings = {}
-auto_media_choice = ""
-profile_directory = ""
-download_directory = ""
-metadata_directory = ""
-file_directory_format = None
-filename_format = None
-metadata_directory_format = ""
-delete_legacy_metadata = False
-overwrite_files = None
-date_format = None
-ignored_keywords = []
-ignore_type = None
-blacklists = []
-webhook = None
-text_length = None
-
-
-def assign_vars(json_auth: auth_details, config, site_settings, site_name):
-    global json_config, json_global_settings, json_settings, auto_media_choice, profile_directory, download_directory, metadata_directory, metadata_directory_format, delete_legacy_metadata, overwrite_files, date_format, file_directory_format, filename_format, ignored_keywords, ignore_type, blacklists, webhook, text_length
-
-    json_config = config
-    json_global_settings = json_config["settings"]
-    json_settings = site_settings
-    auto_media_choice = json_settings["auto_media_choice"]
-    profile_directory = main_helper.get_directory(
-        json_global_settings["profile_directories"], ".profiles"
-    )
-    download_directory = main_helper.get_directory(
-        json_settings["download_directories"], ".sites"
-    )
-    metadata_directory = main_helper.get_directory(
-        json_settings["metadata_directories"], ".metadatas"
-    )
-    file_directory_format = json_settings["file_directory_format"]
-    filename_format = json_settings["filename_format"]
-    metadata_directory_format = json_settings["metadata_directory_format"]
-    delete_legacy_metadata = json_settings["delete_legacy_metadata"]
-    overwrite_files = json_settings["overwrite_files"]
-    date_format = json_settings["date_format"]
-    ignored_keywords = json_settings["ignored_keywords"]
-    ignore_type = json_settings["ignore_type"]
-    blacklists = api_helper.parse_config_inputs(json_settings["blacklists"])
-    webhook = json_settings["webhook"]
-    text_length = json_settings["text_length"]
-
-
-async def account_setup(
-    auth: create_auth, identifiers: list = [], jobs: dict = {}, auth_count=0
-):
-    status = False
-    subscriptions = []
-    authed = await auth.login()
-    if authed.active:
-        profile_directory = json_global_settings["profile_directories"][0]
-        profile_directory = os.path.abspath(profile_directory)
-        profile_directory = os.path.join(profile_directory, authed.username)
-        profile_metadata_directory = os.path.join(profile_directory, "Metadata")
-        metadata_filepath = os.path.join(
-            profile_metadata_directory, "Mass Messages.json"
-        )
-        print
-        if authed.isPerformer:
-            imported = main_helper.import_archive(metadata_filepath)
-            if "auth" in imported:
-                imported = imported["auth"]
-            mass_messages = await authed.get_mass_messages(resume=imported)
-            if mass_messages:
-                main_helper.export_data(mass_messages, metadata_filepath)
-        # chats = api.get_chats()
-        if identifiers or jobs["scrape_names"]:
-            subscriptions += await manage_subscriptions(
-                authed, auth_count, identifiers=identifiers
-            )
-        status = True
-    elif (
-        auth.auth_details.email
-        and auth.auth_details.password
-        and json_settings["browser"]["auth"]
-    ):
-        domain = "https://onlyfans.com"
-        oflogin.login(auth, domain, auth.session_manager.get_proxy())
-    return status, subscriptions
-
-
 # The start lol
+
+
+class StarsAVNDataScraper:
+    def __init__(self, api: start) -> None:
+        self.api = api
+
+    async def manage_subscriptions(
+        self,
+        authed: create_auth,
+        identifiers: list[int | str] = [],
+        refresh: bool = True,
+    ):
+        temp_subscriptions: list[create_user] = []
+        results = await authed.get_subscriptions(
+            identifiers=identifiers, refresh=refresh
+        )
+        site_settings = authed.api.get_site_settings()
+        if not site_settings:
+            return temp_subscriptions
+        blacklists = site_settings.blacklists
+        ignore_type = site_settings.ignore_type
+        if blacklists:
+            remote_blacklists = await authed.get_lists(refresh=True)
+            if remote_blacklists:
+                for remote_blacklist in remote_blacklists:
+                    for blacklist in blacklists:
+                        if remote_blacklist["name"] == blacklist:
+                            list_users = remote_blacklist["users"]
+                            if remote_blacklist["usersCount"] > 2:
+                                list_id = remote_blacklist["id"]
+                                list_users = await authed.get_lists_users(list_id)
+                            if list_users:
+                                users = list_users
+                                bl_ids = [x["username"] for x in users]
+                                results2 = results.copy()
+                                for result in results2:
+                                    identifier = result.username
+                                    if identifier in bl_ids:
+                                        print(f"Blacklisted: {identifier}")
+                                        results.remove(result)
+        results.sort(key=lambda x: x.subscribedByData["expiredAt"])
+        results.sort(key=lambda x: x.is_me(), reverse=True)
+        for result in results:
+            path_formats: dict[str, Any] = {}
+            path_formats[
+                "metadata_directory_format"
+            ] = site_settings.metadata_directory_format
+            path_formats["file_directory_format"] = site_settings.file_directory_format
+            path_formats["filename_format"] = site_settings.filename_format
+            result.create_directory_manager(path_formats=path_formats)
+            subscribePrice = result.subscribePrice
+            if ignore_type in ["paid"]:
+                if subscribePrice > 0:
+                    continue
+            if ignore_type in ["free"]:
+                if subscribePrice == 0:
+                    continue
+            temp_subscriptions.append(result)
+        authed.subscriptions = temp_subscriptions
+        return authed.subscriptions
+
+    async def start_datascraper(self, authed: create_auth, identifier: int | str):
+        api = authed.api
+        site_settings = api.get_site_settings()
+        if not site_settings:
+            return
+        subscription = await authed.get_subscription(identifier=identifier)
+        if not subscription:
+            return [False, subscription]
+        print("Scrape Processing")
+        username = subscription.username
+        print(f"Name: {username}")
+        subscription_directory_manager = subscription.directory_manager
+        if subscription_directory_manager:
+            await main_helper.format_directories(
+                subscription_directory_manager, subscription
+            )
+            some_list = [subscription_directory_manager]
+            await main_helper.fix_sqlite(*some_list)
+            api_array = scrape_choice(authed, subscription)
+            api_array = format_options(api_array, "apis")
+            apis: list[dict[str, Any]] = api_array[0]
+            api_string = api_array[1]
+            if not site_settings.auto_api_choice:
+                print(f"Apis: {api_string}")
+                value = int(input().strip())
+            else:
+                value = 0
+            if value:
+                apis = [apis[value]]
+            else:
+                apis.pop(0)
+            for item in apis:
+                print("Type: " + item["api_type"])
+                item["api_array"]["username"] = username
+                item["api_array"]["subscription"] = subscription
+                await prepare_scraper(authed, item)
+            print("Scrape Completed" + "\n")
+            return True, subscription
+
+    async def paid_content_scraper(self, authed: create_auth):
+        return
+
+    async def prepare_downloads(self, subscription: create_user):
+        site_settings = subscription.get_authed().api.get_site_settings()
+        subscription_directory_manager = subscription.directory_manager
+        directory = subscription_directory_manager.root_download_directory
+        print
+        for api_type, metadata_path in subscription.scraped.__dict__.items():
+            metadata_path = (
+                subscription_directory_manager.user.metadata_directory.joinpath(
+                    "user_data.db"
+                )
+            )
+            database_session, _engine = await db_helper.import_database(metadata_path)
+            db_collection = db_helper.database_collection()
+            database = db_collection.database_picker("user_data")
+            if database:
+                media_table = database.media_table
+                overwrite_files = site_settings.overwrite_files
+                if overwrite_files:
+                    download_list: Any = (
+                        database_session.query(media_table)
+                        .filter(media_table.api_type == api_type)
+                        .all()
+                    )
+                    media_set_count = len(download_list)
+                else:
+                    download_list: Any = (
+                        database_session.query(media_table)
+                        .filter(media_table.downloaded == False)
+                        .filter(media_table.api_type == api_type)
+                    )
+                    media_set_count = db_helper.get_count(download_list)
+                location = ""
+                string = "Download Processing\n"
+                string += f"Name: {subscription.username} | Type: {api_type} | Count: {media_set_count}{location} | Directory: {directory}\n"
+                if media_set_count:
+                    print(string)
+                    await main_helper.async_downloads(download_list, subscription)
+                while True:
+                    try:
+                        database_session.commit()
+                        break
+                    except OperationalError:
+                        database_session.rollback()
+                database_session.close()
+            print
+        print
 
 
 async def start_datascraper(
@@ -166,6 +229,9 @@ async def start_datascraper(
 
 # Allows the user to choose which api they want to scrape
 def scrape_choice(authed: create_auth, subscription: create_user):
+    site_settings = authed.api.get_site_settings()
+    if not site_settings:
+        return
     user_id = subscription.id
     post_count = subscription.postsCount
     media_count = subscription.mediasCount["total"]
@@ -175,7 +241,9 @@ def scrape_choice(authed: create_auth, subscription: create_user):
         [["", "All"], ["", "Images"], ["", "Videos"], ["", "Audios"], ["", "Texts"]],
         message,
     ]
-    choice_list = main_helper.choose_option(media_types, auto_media_choice)
+    choice_list = main_helper.choose_option(
+        media_types, site_settings.auto_media_choice
+    )
     user_api = StarsAVN.endpoint_links(user_id).users
     message_api = StarsAVN.endpoint_links(user_id).message_api
     # mass_messages_api = StarsAVN.endpoint_links().mass_messages_api
@@ -186,7 +254,7 @@ def scrape_choice(authed: create_auth, subscription: create_user):
     archived_api = StarsAVN.endpoint_links(user_id).archived_posts
     # ARGUMENTS
     only_links = False
-    mandatory = [download_directory, only_links]
+    mandatory = [only_links]
     y = ["photo", "video", "stream", "gif", "audio", "text"]
     u_array: list[str | list[Any]] = [
         "You have chosen to scrape {}",
@@ -231,20 +299,19 @@ def scrape_choice(authed: create_auth, subscription: create_user):
     # array = [p_array]
     # array = [a_array]
     # array = [m_array]
-    new_array = []
+    new_array: list[dict[str, Any]] = []
     valid_input = True
     for xxx in array:
         if xxx[2] == "Mass Messages":
             if not subscription.is_me():
                 continue
-        new_item = dict()
+        new_item: dict[str, Any] = dict()
         new_item["api_message"] = xxx[0]
         new_item["api_array"] = {}
         new_item["api_array"]["api_link"] = xxx[1][0]
         new_item["api_array"]["media_types"] = xxx[1][1]
-        new_item["api_array"]["directory"] = xxx[1][2]
-        new_item["api_array"]["only_links"] = xxx[1][3]
-        new_item["api_array"]["post_count"] = xxx[1][4]
+        new_item["api_array"]["only_links"] = xxx[1][2]
+        new_item["api_array"]["post_count"] = xxx[1][3]
         formatted = format_media_types()
         final_format = []
         for choice in choice_list:
@@ -258,92 +325,88 @@ def scrape_choice(authed: create_auth, subscription: create_user):
 
 
 # Downloads the model's avatar and header
-async def profile_scraper(
-    authed: create_auth, site_name, api_type, model_username, base_directory
-):
-    reformats = {}
-    reformats["metadata_directory_format"] = json_settings["metadata_directory_format"]
-    reformats["file_directory_format"] = json_settings["file_directory_format"]
-    reformats["file_directory_format"] = reformats["file_directory_format"].replace(
-        "{value}", ""
-    )
-    reformats["filename_format"] = json_settings["filename_format"]
-    option = {}
-    option["site_name"] = site_name
-    option["api_type"] = api_type
-    option["profile_username"] = authed.username
-    option["model_username"] = model_username
-    option["date_format"] = date_format
-    option["maximum_length"] = text_length
-    option["directory"] = base_directory
-    a, b, c = await prepare_reformat(option, keep_vars=True).reformat(reformats)
-    print
-    subscription = await authed.get_subscription(identifier=model_username)
-    if subscription:
-        override_media_types = []
-        avatar = subscription.avatar
-        header = subscription.header
-        if avatar:
-            override_media_types.append(["Avatars", avatar])
-        if header:
-            override_media_types.append(["Headers", header])
-        session = await authed.session_manager.create_client_session()
-        progress_bar = None
-        for override_media_type in override_media_types:
-            new_dict = dict()
-            media_type = override_media_type[0]
-            media_link = override_media_type[1]
-            new_dict["links"] = [media_link]
-            directory2 = os.path.join(b, media_type)
-            os.makedirs(directory2, exist_ok=True)
-            download_path = os.path.join(directory2, media_link.split("/")[-2] + ".jpg")
-            response = await authed.session_manager.json_request(
-                media_link, method="HEAD"
-            )
-            if not response:
-                continue
-            if os.path.isfile(download_path):
-                if os.path.getsize(download_path) == response.content_length:
-                    continue
-            if not progress_bar:
-                progress_bar = main_helper.download_session()
-                progress_bar.start(unit="B", unit_scale=True, miniters=1)
-            progress_bar.update_total_size(response.content_length)
-            response = await authed.session_manager.json_request(
-                media_link,
-                session=session,
-                stream=True,
-                json_format=False,
-            )
-            downloaded = await main_helper.write_data(
-                response, download_path, progress_bar
-            )
-        await session.close()
-        if progress_bar:
-            progress_bar.close()
+async def profile_scraper(subscription: create_user, api_type: str):
+    authed = subscription.get_authed()
+    site_settings = authed.api.get_site_settings()
+    if not (subscription.directory_manager and site_settings):
+        return
+    subscription_directory_manager = subscription.directory_manager
+    authed_username = authed.username
+    subscription_username = subscription.username
+    site_name = authed.api.site_name
+    authed = subscription.get_authed()
+    override_media_types: list[list[Any]] = []
+    avatar = subscription.avatar
+    header = subscription.header
+    override_media_types.extend([["Avatars", avatar], ["Headers", header]])
+    session = await authed.session_manager.create_client_session()
+    progress_bar = None
+    p_r = prepare_reformat()
+    p_r.site_name = site_name
+    p_r.profile_username = authed_username
+    p_r.model_username = subscription_username
+    p_r.date_format = site_settings.date_format
+    p_r.text_length = site_settings.text_length
+    p_r.api_type = api_type
+    p_r.directory = subscription_directory_manager.root_download_directory
+
+    file_directory_format = site_settings.file_directory_format.replace("{value}", "")
+    directory = await p_r.reformat_2(file_directory_format)
+    for override_media_type in override_media_types:
+        media_type = override_media_type[0]
+        media_link = override_media_type[1]
+        if not media_link:
+            continue
+        directory2 = directory.joinpath(media_type)
+        os.makedirs(directory2, exist_ok=True)
+        download_path = directory2.joinpath(f"{media_link.split('/')[-2]}.jpg")
+        if os.path.isfile(download_path):
+            continue
+        response = await authed.session_manager.json_request(media_link, method="HEAD")
+        if not response:
+            continue
+        if not progress_bar:
+            progress_bar = main_helper.download_session()
+            progress_bar.start(unit="B", unit_scale=True, miniters=1)
+        progress_bar.update_total_size(response.content_length)
+        response = await authed.session_manager.json_request(
+            media_link,
+            session,
+            stream=True,
+            json_format=False,
+        )
+        await main_helper.write_data(response, download_path, progress_bar)
+    await session.close()
+    if progress_bar:
+        progress_bar.close()  # type: ignore
 
 
-async def paid_content_scraper(api: start, identifiers=[]):
-
+async def paid_content_scraper(api: start, identifiers: list[int] | list[str] = []):
+    site_settings = api.get_site_settings()
+    if not site_settings:
+        return
     for authed in api.auths:
-        paid_contents = []
         paid_contents = await authed.get_paid_content()
-        if not authed.active:
+        if not authed.active or isinstance(paid_contents, ErrorDetails):
             return
         authed.subscriptions = authed.subscriptions
         for paid_content in paid_contents:
             author = None
-            if isinstance(paid_content, create_message):
-                author = paid_content.fromUser
-            elif isinstance(paid_content, create_post):
-                author = paid_content.author
+            author = await paid_content.get_author()
             if not author:
                 continue
             subscription = await authed.get_subscription(identifier=author.id)
             if not subscription:
-                subscription = paid_content.user
+                subscription = author
                 authed.subscriptions.append(subscription)
             subscription.subscriber = authed
+            path_formats: dict[str, Any] = {}
+            path_formats[
+                "metadata_directory_format"
+            ] = site_settings.metadata_directory_format
+            path_formats["file_directory_format"] = site_settings.file_directory_format
+            path_formats["filename_format"] = site_settings.filename_format
+            subscription.create_directory_manager(path_formats=path_formats)
             if paid_content.responseType:
                 api_type = paid_content.responseType.capitalize() + "s"
                 api_media = getattr(subscription.temp_scraped, api_type)
@@ -356,9 +419,7 @@ async def paid_content_scraper(api: start, identifiers=[]):
             string = f"Scraping - {subscription.username} | {count+1} / {max_count}"
             print(string)
             subscription.session_manager = authed.session_manager
-            username = subscription.username
-            site_name = "StarsAVN"
-            media_type = format_media_types()
+            subscription_directory_manager = subscription.directory_manager
             count += 1
             for api_type, paid_contents in subscription.temp_scraped:
                 if api_type == "Archived":
@@ -370,37 +431,23 @@ async def paid_content_scraper(api: start, identifiers=[]):
                     continue
                 if not paid_contents:
                     continue
-                mandatory_directories = {}
-                mandatory_directories["profile_directory"] = profile_directory
-                mandatory_directories["download_directory"] = download_directory
-                mandatory_directories["metadata_directory"] = metadata_directory
-                formatted_directories = await format_directories(
-                    mandatory_directories,
-                    authed,
-                    site_name,
-                    username,
-                    metadata_directory_format,
-                    media_type,
-                    api_type,
+                await format_directories(
+                    subscription_directory_manager,
+                    subscription,
                 )
-                formatted_metadata_directory = formatted_directories[
-                    "metadata_directory"
-                ]
-                metadata_path = os.path.join(
-                    formatted_metadata_directory, "user_data.db"
-                )
-                legacy_metadata_path = os.path.join(
-                    formatted_metadata_directory, api_type + ".db"
+                metadata_path = (
+                    subscription_directory_manager.user.metadata_directory.joinpath(
+                        subscription_directory_manager.user.metadata_directory,
+                        "user_data.db",
+                    )
                 )
                 pool = subscription.session_manager.pool
                 tasks = pool.starmap(
                     media_scraper,
                     product(
                         paid_contents,
-                        [authed],
                         [subscription],
-                        [formatted_directories],
-                        [username],
+                        [subscription_directory_manager.root_download_directory],
                         [api_type],
                     ),
                 )
@@ -408,22 +455,23 @@ async def paid_content_scraper(api: start, identifiers=[]):
                 unrefined_set = await tqdm.gather(*tasks, **settings)
                 new_metadata = main_helper.format_media_set(unrefined_set)
                 new_metadata = new_metadata["content"]
+                legacy_metadata_path = (
+                    subscription_directory_manager.user.find_legacy_directory(
+                        "metadata", api_type
+                    ).with_suffix(".db")
+                )
                 if new_metadata:
-                    old_metadata, delete_metadatas = process_legacy_metadata(
-                        authed,
-                        new_metadata,
-                        formatted_directories,
+                    old_metadata, delete_metadatas = await process_legacy_metadata(
+                        subscription,
                         api_type,
                         metadata_path,
                     )
-                    new_metadata = new_metadata + old_metadata
+                    new_metadata.extend(old_metadata)
                     subscription.set_scraped(api_type, new_metadata)
                     await process_metadata(
-                        api,
                         metadata_path,
                         legacy_metadata_path,
                         new_metadata,
-                        site_name,
                         api_type,
                         subscription,
                         delete_metadatas,
@@ -581,118 +629,88 @@ async def process_mass_messages(
     return global_found
 
 
-def process_legacy_metadata(
-    authed: create_auth,
-    new_metadata_set,
-    formatted_directories,
-    api_type,
-    archive_path,
+async def process_legacy_metadata(
+    user: create_user,
+    api_type: str,
+    metadata_filepath: Path,
 ):
-    delete_metadatas = []
-    legacy_metadata2 = formatted_directories["legacy_metadatas"]["legacy_metadata2"]
-    legacy_metadata_path2 = os.path.join(
-        legacy_metadata2, os.path.basename(archive_path)
+    site_settings = user.get_authed().api.get_site_settings()
+    directory_manager = user.directory_manager
+    if not (site_settings and directory_manager):
+        return
+    p_r = prepare_reformat()
+    old_metadata_filepaths = await p_r.find_metadata_files(
+        user.file_manager.files, legacy_files=False
     )
-    exists = os.path.exists(legacy_metadata_path2)
-    exists2 = os.path.exists(archive_path)
-    if legacy_metadata_path2 != archive_path:
-        if exists and not exists2:
-            os.makedirs(os.path.dirname(archive_path), exist_ok=True)
-            shutil.move(legacy_metadata_path2, archive_path)
-    archive_path = archive_path.replace("db", "json")
-    legacy_archive_path = archive_path.replace("Posts.json", "Archived.json")
-    legacy_metadata_object, delete_legacy_metadatas = legacy_metadata_fixer(
-        formatted_directories, authed
+    for old_metadata_filepath in old_metadata_filepaths:
+        new_m_f = directory_manager.user.metadata_directory.joinpath(
+            old_metadata_filepath.name
+        )
+        if old_metadata_filepath.exists() and not new_m_f.exists():
+            shutil.move(old_metadata_filepath, new_m_f)
+    old_metadata_filepaths = await p_r.find_metadata_files(
+        user.file_manager.files, legacy_files=False
     )
+    legacy_metadata_filepaths = [
+        x for x in old_metadata_filepaths if x.stem.find(api_type) == 0
+    ]
+    legacy_metadata_object, delete_legacy_metadatas = await legacy_metadata_fixer(
+        metadata_filepath, legacy_metadata_filepaths
+    )
+    delete_metadatas: list[Path] = []
     if delete_legacy_metadatas:
         print("Merging new metadata with legacy metadata.")
         delete_metadatas.extend(delete_legacy_metadatas)
-    old_metadata_set = main_helper.import_archive(archive_path)
-    old_metadata_set2 = main_helper.import_archive(legacy_archive_path)
-    if old_metadata_set2:
-        delete_metadatas.append(legacy_archive_path)
-    old_metadata_set_type = type(old_metadata_set)
-    old_metadata_set2_type = type(old_metadata_set2)
-    delete_status = False
-    if all(v == dict for v in [old_metadata_set_type, old_metadata_set2_type]):
-        old_metadata_set = merge(
-            {}, *[old_metadata_set, old_metadata_set2], strategy=Strategy.ADDITIVE
-        )
-        delete_status = True
-    else:
-        if isinstance(old_metadata_set, dict) and not old_metadata_set:
-            old_metadata_set = []
-            old_metadata_set.append(old_metadata_set2)
-            delete_status = True
-    old_metadata_object = create_metadata(authed, old_metadata_set, api_type=api_type)
-    if old_metadata_set:
-        print("Merging new metadata with old metadata.")
-    old_metadata_object = compare_metadata(old_metadata_object, legacy_metadata_object)
-    old_metadata_set = []
-    for media_type, value in old_metadata_object.content:
-        for status, value2 in value:
+    final_set: list[dict[str, Any]] = []
+    for _media_type, value in legacy_metadata_object.content:
+        for _status, value2 in value:
             for value3 in value2:
-                x = value3.medias
                 item = value3.convert(keep_empty_items=True)
                 item["archived"] = False
-                old_metadata_set.append(item)
-            print
-        print
-    print
-    if old_metadata_set and delete_status:
-        delete_metadatas.append(archive_path)
-    final_set = []
-    for item in old_metadata_set:
-        item["api_type"] = api_type
-        x = [x for x in new_metadata_set if x["post_id"] == item["post_id"]]
-        if not x:
-            final_set.append(item)
-            print
-        print
+                item["api_type"] = api_type
+                final_set.append(item)
     print("Finished processing metadata.")
     return final_set, delete_metadatas
 
 
 async def process_metadata(
-    api,
     archive_path: str,
     legacy_metadata_path: str,
-    new_metadata_object,
-    site_name,
+    new_metadata_object: list[dict[str, Any]],
     api_type: str,
-    subscription,
-    delete_metadatas,
+    subscription: create_user,
+    delete_metadatas: list[Path],
 ):
-    final_result = []
+    api = subscription.get_api()
+    site_settings = api.get_site_settings()
+    config = api.config
+    if not (config and site_settings):
+        return
+    settings = config.settings
+    # We could put this in proccess_legacy_metadata
     final_result, delete_metadatas = main_helper.legacy_sqlite_updater(
         legacy_metadata_path, api_type, subscription, delete_metadatas
     )
-    new_metadata_object = new_metadata_object + final_result
+    new_metadata_object.extend(final_result)
     result = main_helper.export_sqlite(archive_path, api_type, new_metadata_object)
     if not result:
         return
-    Session, api_type, folder = result
-    if not subscription.download_info:
-        subscription.download_info["metadata_locations"] = {}
-    subscription.download_info["directory"] = download_directory
-    subscription.download_info["webhook"] = webhook
-    subscription.download_info["metadata_locations"][api_type] = {}
-    subscription.download_info["metadata_locations"][api_type] = archive_path
-    if json_global_settings["helpers"]["renamer"]:
+    Session, api_type, _folder = result
+    if settings.helpers.renamer:
         print("Renaming files.")
         new_metadata_object = await ofrenamer.start(
-            api,
-            Session,
-            api_type,
-            site_name,
-            subscription,
-            folder,
-            json_settings,
+            subscription, api_type, Session, site_settings
         )
-    if delete_legacy_metadata:
-        for old_metadata in delete_metadatas:
-            if os.path.exists(old_metadata):
-                os.remove(old_metadata)
+    for legacy_metadata in delete_metadatas:
+        if site_settings.delete_legacy_metadata:
+            os.remove(legacy_metadata)
+        else:
+            if legacy_metadata.exists():
+                new_filepath = Path(
+                    legacy_metadata.parent, "__legacy_metadata__", legacy_metadata.name
+                )
+                new_filepath.parent.mkdir(exist_ok=True)
+                shutil.move(legacy_metadata, f"{new_filepath}")
 
 
 async def format_directories(
@@ -755,34 +773,20 @@ async def format_directories(
 # Prepares the API links to be scraped
 
 
-async def prepare_scraper(authed: create_auth, site_name, item):
+async def prepare_scraper(authed: create_auth, item: dict[str, Any]):
     api_type = item["api_type"]
     api_array = item["api_array"]
     subscription: create_user = api_array["subscription"]
-    media_type = api_array["media_types"]
-    username = api_array["username"]
-    master_set = []
-    pool = authed.pool
-    mandatory_directories = {}
-    mandatory_directories["profile_directory"] = profile_directory
-    mandatory_directories["download_directory"] = download_directory
-    mandatory_directories["metadata_directory"] = metadata_directory
-    formatted_directories = await format_directories(
-        mandatory_directories,
-        authed,
-        site_name,
-        username,
-        metadata_directory_format,
-        media_type,
-        api_type,
+    subscription_directory_manager = subscription.directory_manager
+    if not subscription_directory_manager:
+        return
+    formatted_metadata_directory = (
+        subscription_directory_manager.user.metadata_directory
     )
-    legacy_model_directory = formatted_directories["legacy_model_directory"]
-    formatted_download_directory = formatted_directories["download_directory"]
-    formatted_metadata_directory = formatted_directories["metadata_directory"]
+    master_set: list[Any] = []
+    pool = authed.pool
     if api_type == "Profile":
-        await profile_scraper(
-            authed, site_name, api_type, username, formatted_download_directory
-        )
+        await profile_scraper(subscription, api_type)
         return True
     if api_type == "Stories":
         # master_set = await subscription.get_stories()
@@ -819,41 +823,36 @@ async def prepare_scraper(authed: create_auth, site_name, item):
     unrefined_set = []
     if master_set2:
         print(f"Processing Scraped {api_type}")
-        tasks: list[Any] = pool.starmap(
+        tasks = pool.starmap(
             media_scraper,
             product(
                 master_set2,
-                [authed],
                 [subscription],
-                [formatted_directories],
-                [username],
+                [subscription_directory_manager.root_download_directory],
                 [api_type],
             ),
         )
         settings = {"colour": "MAGENTA"}
         unrefined_set = await tqdm.gather(*tasks, **settings)
+        pass
     unrefined_set = [x for x in unrefined_set]
     new_metadata = main_helper.format_media_set(unrefined_set)
-    metadata_path = os.path.join(formatted_metadata_directory, "user_data.db")
-    legacy_metadata_path = os.path.join(formatted_metadata_directory, api_type + ".db")
+    metadata_path = formatted_metadata_directory.joinpath("user_data.db")
+    legacy_metadata_path = formatted_metadata_directory.joinpath(api_type + ".db")
     if new_metadata:
         new_metadata = new_metadata["content"]
         print("Processing metadata.")
-        old_metadata, delete_metadatas = process_legacy_metadata(
-            authed,
-            new_metadata,
-            formatted_directories,
+        old_metadata, delete_metadatas = await process_legacy_metadata(
+            subscription,
             api_type,
             metadata_path,
         )
         new_metadata = new_metadata + old_metadata
         subscription.set_scraped(api_type, new_metadata)
         await process_metadata(
-            authed,
             metadata_path,
             legacy_metadata_path,
             new_metadata,
-            site_name,
             api_type,
             subscription,
             delete_metadatas,
@@ -863,56 +862,28 @@ async def prepare_scraper(authed: create_auth, site_name, item):
     return True
 
 
-def legacy_metadata_fixer(
-    formatted_directories: dict, authed: create_auth
-) -> tuple[create_metadata, list]:
-    delete_legacy_metadatas = []
-    legacy_metadatas = formatted_directories["legacy_metadatas"]
-    new_metadata_directory = formatted_directories["metadata_directory"]
-    old_metadata_directory = os.path.dirname(legacy_metadatas["legacy_metadata"])
-    metadata_name = os.path.basename(f"{old_metadata_directory}.json")
-    q = []
-    for key, legacy_directory in legacy_metadatas.items():
-        if legacy_directory == formatted_directories["metadata_directory"]:
+async def legacy_metadata_fixer(
+    new_metadata_filepath: Path, legacy_metadata_filepaths: list[Path]
+) -> tuple[create_metadata, list[Path]]:
+    delete_legacy_metadatas: list[Path] = []
+    new_format: list[dict[str, Any]] = []
+    new_metadata_set = main_helper.import_archive(new_metadata_filepath)
+    for legacy_metadata_filepath in legacy_metadata_filepaths:
+        if (
+            legacy_metadata_filepath == new_metadata_filepath
+            or not legacy_metadata_filepath.exists()
+        ):
             continue
-        if os.path.exists(legacy_directory):
-            folders = os.listdir(legacy_directory)
-            api_names = [metadata_name]
-            metadata_names = media_types()
-            metadata_names = [f"{k}.json" for k, v in metadata_names]
-            api_names += metadata_names
-            print
-            type_one_files = main_helper.remove_mandatory_files(folders, keep=api_names)
-            new_format = []
-            for type_one_file in type_one_files:
-                api_type = type_one_file.removesuffix(".json")
-                legacy_metadata_path = os.path.join(legacy_directory, type_one_file)
-                legacy_metadata = main_helper.import_archive(legacy_metadata_path)
-                if legacy_metadata:
-                    delete_legacy_metadatas.append(legacy_metadata_path)
-                legacy_metadata = create_metadata(
-                    authed, legacy_metadata, api_type=api_type
-                ).convert()
-                new_format.append(legacy_metadata)
-            new_format = dict(merge({}, *new_format, strategy=Strategy.ADDITIVE))
-            old_metadata_object = create_metadata(authed, new_format)
-            if legacy_directory != new_metadata_directory:
-                import_path = os.path.join(legacy_directory, metadata_name)
-                new_metadata_set = main_helper.import_archive(import_path)
-                if new_metadata_set:
-                    new_metadata_object2 = create_metadata(authed, new_metadata_set)
-                    old_metadata_object = compare_metadata(
-                        new_metadata_object2, old_metadata_object
-                    )
-            q.append(old_metadata_object)
-            print
-        print
-    results = create_metadata()
-    for merge_into in q:
-        print
-        results = compare_metadata(results, merge_into)
-        print
-    print
+        api_type = legacy_metadata_filepath.stem
+        legacy_metadata = main_helper.import_archive(legacy_metadata_filepath)
+        legacy_metadata = create_metadata(legacy_metadata, api_type=api_type).convert()
+        new_format.append(legacy_metadata)
+        delete_legacy_metadatas.append(legacy_metadata_filepath)
+    new_metadata_object = create_metadata(new_metadata_set)
+    old_metadata_set = dict(api_helper.merge_dictionaries(new_format))
+    old_metadata_object = create_metadata(old_metadata_set)
+    results = compare_metadata(new_metadata_object, old_metadata_object)
+    pass
     return results, delete_legacy_metadatas
 
 
@@ -1014,13 +985,16 @@ def compare_metadata(
 
 async def media_scraper(
     post_result: Union[create_story, create_post, create_message],
-    authed: create_auth,
     subscription: create_user,
-    formatted_directories,
-    model_username,
-    api_type,
+    formatted_directory: Path,
+    api_type: str,
 ):
-    new_set = {}
+    authed = subscription.get_authed()
+    api = authed.api
+    site_settings = api.get_site_settings()
+    if not site_settings:
+        return
+    new_set: dict[str, Any] = {}
     new_set["content"] = []
     directories = []
     if api_type == "Stories":
@@ -1033,13 +1007,14 @@ async def media_scraper(
         pass
     if api_type == "Messages":
         pass
-    download_path = formatted_directories["download_directory"]
-    for location in formatted_directories["locations"]:
+    download_path = formatted_directory
+    model_username = subscription.username
+    date_format = site_settings.date_format
+    locations = api.Locations()
+    for media_type, alt_media_types in locations.__dict__.items():
         date_today = datetime.now()
         master_date = datetime.strftime(date_today, "%d-%m-%Y %H:%M:%S")
-        media_type = location["media_type"]
-        alt_media_type = location["alt_media_type"]
-        file_directory_format = json_settings["file_directory_format"]
+        file_directory_format = site_settings.file_directory_format
         post_id = post_result.id
         new_post = {}
         new_post["medias"] = []
@@ -1119,7 +1094,7 @@ async def media_scraper(
         for media in post_result.media:
             media_id = media["id"]
             preview_link = ""
-            link = await post_result.link_picker(media, json_settings["video_quality"])
+            link = await post_result.link_picker(media, site_settings.video_quality)
             matches = ["us", "uk", "ca", "ca2", "de"]
 
             if not link:
@@ -1138,7 +1113,7 @@ async def media_scraper(
             rules = [link == "", preview_link == ""]
             if all(rules):
                 continue
-            new_media = dict()
+            new_media: dict[str, Any] = dict()
             new_media["media_id"] = media_id
             new_media["links"] = []
             new_media["media_type"] = media_type
@@ -1157,11 +1132,11 @@ async def media_scraper(
                     new_media["links"].append(xlink)
                     break
 
-            if media["type"] not in alt_media_type:
+            if media["type"] not in alt_media_types:
                 continue
-            matches = [s for s in ignored_keywords if s in final_text]
+            matches = [s for s in site_settings.ignored_keywords if s in final_text]
             if matches:
-                print("Matches: ", matches)
+                print("Ignoring - ", f"PostID: {post_id}")
                 continue
             filename = link.rsplit("/", 1)[-1]
             filename, ext = os.path.splitext(filename)
@@ -1181,17 +1156,15 @@ async def media_scraper(
             option["model_username"] = model_username
             option["date_format"] = date_format
             option["postedAt"] = new_media["created_at"]
-            option["text_length"] = text_length
+            option["text_length"] = site_settings.text_length
             option["directory"] = download_path
             option["preview"] = new_media["preview"]
             option["archived"] = new_post["archived"]
 
             prepared_format = prepare_reformat(option)
-            file_directory = await main_helper.reformat(
-                prepared_format, file_directory_format
-            )
+            file_directory = await prepared_format.reformat_2(file_directory_format)
             prepared_format.directory = file_directory
-            file_path = await main_helper.reformat(prepared_format, filename_format)
+            file_path = await prepared_format.reformat_2(site_settings.filename_format)
             new_media["directory"] = os.path.join(file_directory)
             new_media["filename"] = os.path.basename(file_path)
             if file_directory not in directories:
@@ -1284,47 +1257,6 @@ async def prepare_downloads(subscription: create_user):
             database_session.close()
         print
     print
-
-
-async def manage_subscriptions(
-    authed: create_auth, auth_count=0, identifiers: list = [], refresh: bool = True
-):
-    results = await authed.get_subscriptions(identifiers=identifiers, refresh=refresh)
-    if blacklists:
-        remote_blacklists = await authed.get_lists()
-        if remote_blacklists:
-            for remote_blacklist in remote_blacklists:
-                for blacklist in blacklists:
-                    if remote_blacklist["name"] == blacklist:
-                        list_users = remote_blacklist["users"]
-                        if remote_blacklist["usersCount"] > 2:
-                            list_id = remote_blacklist["id"]
-                            list_users = await authed.get_lists_users(list_id)
-                        if list_users:
-                            users = list_users
-                            bl_ids = [x["username"] for x in users]
-                            results2 = results.copy()
-                            for result in results2:
-                                identifier = result.username
-                                if identifier in bl_ids:
-                                    print(f"Blacklisted: {identifier}")
-                                    results.remove(result)
-    results.sort(key=lambda x: x.subscribedByData["expiredAt"])
-    results.sort(key=lambda x: x.is_me(), reverse=True)
-    results2 = []
-    for result in results:
-        # result.auth_count = auth_count
-        username = result.username
-        subscribePrice = result.subscribePrice
-        if ignore_type in ["paid"]:
-            if subscribePrice > 0:
-                continue
-        if ignore_type in ["free"]:
-            if subscribePrice == 0:
-                continue
-        results2.append(result)
-    authed.subscriptions = results2
-    return results2
 
 
 def format_options(

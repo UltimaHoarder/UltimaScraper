@@ -1,23 +1,30 @@
+from __future__ import annotations
+
 import asyncio
 import math
+from asyncio.tasks import Task
 from datetime import datetime
 from itertools import chain, product
 from multiprocessing.pool import Pool
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
 import jsonpickle
 from apis import api_helper
-from apis.fansly.classes.message_model import create_message
 from apis.fansly.classes.extras import (
+    ErrorDetails,
     auth_details,
     content_types,
     create_headers,
     endpoint_links,
-    ErrorDetails,
     handle_refresh,
 )
+from apis.fansly.classes.message_model import create_message
 from apis.fansly.classes.post_model import create_post
 from apis.fansly.classes.user_model import create_user
+
+if TYPE_CHECKING:
+    from apis.fansly.fansly import start
+
 from dateutil.relativedelta import relativedelta
 from user_agent import generate_user_agent
 
@@ -25,11 +32,13 @@ from user_agent import generate_user_agent
 class create_auth(create_user):
     def __init__(
         self,
+        api: start,
         option: dict[str, Any] = {},
         pool: Optional[Pool] = None,
         max_threads: int = -1,
     ) -> None:
-        create_user.__init__(self, option)
+        self.api = api
+        create_user.__init__(self, option, self)
         if not self.username:
             self.username = f"u{self.id}"
         self.lists = {}
@@ -41,15 +50,27 @@ class create_auth(create_user):
         self.paid_content: list[create_message | create_post] = []
         temp_pool = pool if pool else api_helper.multiprocessing()
         self.pool = temp_pool
-        self.session_manager = api_helper.session_manager(
+        self.session_manager = self._session_manager(
             self, max_threads=max_threads, use_cookies=False
         )
         self.auth_details = auth_details()
-        self.profile_directory = option.get("profile_directory", "")
         self.guest = False
         self.active: bool = False
         self.errors: list[ErrorDetails] = []
         self.extras: dict[str, Any] = {}
+
+    class _session_manager(api_helper.session_manager):
+        def __init__(
+            self,
+            auth: create_auth,
+            headers: dict[str, Any] = {},
+            proxies: list[str] = [],
+            max_threads: int = -1,
+            use_cookies: bool = True,
+        ) -> None:
+            api_helper.session_manager.__init__(
+                self, auth, headers, proxies, max_threads, use_cookies
+            )
 
     def update(self, data: Dict[str, Any]):
         data = data["response"][0]
@@ -127,7 +148,10 @@ class create_auth(create_user):
                     print("Auth 404'ed")
                 continue
             else:
-                print(f"Welcome {self.name} | {self.username}")
+                print(
+                    f"Welcome {' | '.join([x for x in [self.name, self.username] if x])}"
+                )
+                self.create_directory_manager()
                 break
         return self
 
@@ -174,12 +198,9 @@ class create_auth(create_user):
         self.errors.append(error)
 
     async def get_lists(self, refresh: bool = True, limit: int = 100, offset: int = 0):
-        api_type = "lists"
-        if not self.active:
-            return
-        if not refresh:
-            results = handle_refresh(self, api_type)
-            return results
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         link = endpoint_links(global_limit=limit, global_offset=offset).lists
         results = await self.session_manager.json_request(link)
         self.lists = results
@@ -218,7 +239,7 @@ class create_auth(create_user):
             results.extend(results2)
         return results
 
-    async def get_followings(self, identifiers: list[str]) -> list[create_user]:
+    async def get_followings(self, identifiers: list[int | str]) -> list[create_user]:
         followings_link = endpoint_links(self.id).followings
         temp_followings: dict[str, Any] = await self.session_manager.json_request(
             followings_link
@@ -261,11 +282,9 @@ class create_auth(create_user):
     async def get_subscriptions(
         self, refresh: bool = True, identifiers: list[int | str] = []
     ) -> list[create_user]:
-        if not self.active:
-            return []
-        if not refresh:
-            subscriptions = self.subscriptions
-            return subscriptions
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         subscriptions_link = endpoint_links().subscriptions
         temp_subscriptions = await self.session_manager.json_request(subscriptions_link)
         subscriptions = temp_subscriptions["response"]["subscriptions"]

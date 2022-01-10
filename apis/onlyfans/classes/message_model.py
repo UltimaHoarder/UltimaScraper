@@ -24,7 +24,7 @@ class create_message:
         self.isReportedByMe: Optional[bool] = option.get("isReportedByMe")
         self.fromUser = (
             user
-            if 1 == option["fromUser"]["id"]
+            if user.id == option["fromUser"]["id"]
             else user_model.create_user(option["fromUser"], user.get_authed())
         )
         self.isFromQueue: Optional[bool] = option.get("isFromQueue")
@@ -63,7 +63,7 @@ class create_message:
         )
         return result
 
-    async def link_picker(self, media, video_quality):
+    async def link_picker(self, media: dict[str, Any], video_quality: str):
         link = ""
         if "source" in media:
             quality_key = "source"
@@ -80,9 +80,6 @@ class create_message:
                             if quality_link:
                                 link = quality_link
                                 break
-                            print
-                        print
-                    print
         if "src" in media:
             link = media["src"]
         return link

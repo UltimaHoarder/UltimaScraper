@@ -24,8 +24,8 @@ class create_message:
         self.isReportedByMe: Optional[bool] = option.get("isReportedByMe")
         self.fromUser = (
             user
-            if 1 == option["fromUser"]["id"]
-            else user_model.create_user(option["fromUser"], user.subscriber)
+            if user.id == option["fromUser"]["id"]
+            else user_model.create_user(option["fromUser"], user.get_authed())
         )
         self.isFromQueue: Optional[bool] = option.get("isFromQueue")
         self.queueId: Optional[int] = option.get("queueId")
@@ -41,8 +41,6 @@ class create_message:
         self.canPurchase: Optional[bool] = option.get("canPurchase")
         self.canPurchaseReason: Optional[str] = option.get("canPurchaseReason")
         self.canReport: Optional[bool] = option.get("canReport")
-        # Custom
-        self.user = user
 
     async def buy_message(self):
         """

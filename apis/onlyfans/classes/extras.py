@@ -1,7 +1,13 @@
+from __future__ import annotations
+
 import copy
-from itertools import chain
 import math
-from typing import Any, Literal, Optional, Union
+from itertools import chain
+from pathlib import Path
+from typing import TYPE_CHECKING, Any, Literal, Optional, Union
+
+if TYPE_CHECKING:
+    from apis.onlyfans.classes.auth_model import create_auth
 
 
 class auth_details:
@@ -60,7 +66,7 @@ class cookie_parser:
         new_dict: dict[str, Any] = {}
         for crumble in options.strip().split(";"):
             if crumble:
-                key, value = crumble.strip().split("=",1)
+                key, value = crumble.strip().split("=", 1)
                 new_dict[key] = value
         self.auth_id = new_dict.get("auth_id", "")
         self.sess = new_dict.get("sess", "")
@@ -185,12 +191,20 @@ class endpoint_links(object):
         return final_links
 
 
-# Lol?
 class ErrorDetails:
     def __init__(self, result: dict[str, Any]) -> None:
         error = result["error"] if "error" in result else result
         self.code = error["code"]
         self.message = error["message"]
+
+    async def format(self, extras: dict[str, Any]):
+        match self.code:
+            case 0:
+                match self.message:
+                    case "User not found":
+                        link = Path(extras["link"])
+                        self.message = f"{link.name} not found"
+        return self
 
 
 def create_headers(
@@ -211,7 +225,9 @@ def create_headers(
 
 
 class media_types:
-    def __init__(self, option:dict[str,Any]={}, assign_states:bool=False) -> None:
+    def __init__(
+        self, option: dict[str, Any] = {}, assign_states: bool = False
+    ) -> None:
         self.Images = option.get("Images", [])
         self.Videos = option.get("Videos", [])
         self.Audios = option.get("Audios", [])

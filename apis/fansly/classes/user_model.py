@@ -1,36 +1,42 @@
 from __future__ import annotations
 
 import math
+from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib import parse
 
 import apis.fansly.classes.message_model as message_model
 from apis import api_helper
-from apis.fansly.classes.hightlight_model import create_highlight
+from apis.fansly.classes import post_model
 from apis.fansly.classes.create_story import create_story
 from apis.fansly.classes.extras import (
+    ErrorDetails,
     content_types,
     endpoint_links,
-    ErrorDetails,
     handle_refresh,
     remove_errors,
 )
-from apis.fansly.classes.post_model import create_post
-from mergedeep.mergedeep import Strategy, merge
+from apis.fansly.classes.hightlight_model import create_highlight
 
 if TYPE_CHECKING:
     from apis.fansly.classes.auth_model import create_auth
     from apis.fansly.classes.post_model import create_post
 
+    from classes.prepare_directories import DirectoryManager
+
 
 class create_user:
     def __init__(
-        self, option: dict[str, Any] = {}, subscriber: Optional[create_auth] = None
+        self,
+        option: dict[str, Any],
+        authed: create_auth,
+        subscriber: Optional[create_auth] = None,
     ) -> None:
-        self.view: str = option.get("view")
+        from classes.prepare_directories import DirectoryManager, FileManager
+
         self.avatar: Any = option.get("avatar")
         self.avatarThumbs: Any = option.get("avatarThumbs")
-        self.header: Any = option.get("header")
+        self.header: Any = option.get("banner")
         self.headerSize: Any = option.get("headerSize")
         self.headerThumbs: Any = option.get("headerThumbs")
         self.id: int = option.get("id")
@@ -222,13 +228,12 @@ class create_user:
         self.pinnedPostsCount: int = option.get("pinnedPostsCount")
         self.maxPinnedPostsCount: int = option.get("maxPinnedPostsCount")
         # Custom
-        self.subscriber = subscriber
+        self.__authed = authed
+        self.directory_manager: DirectoryManager = DirectoryManager()
+        self.file_manager: FileManager = FileManager(self.directory_manager)
         self.scraped = content_types()
         self.temp_scraped = content_types()
-        self.session_manager = None
-        if subscriber:
-            self.session_manager = subscriber.session_manager
-        self.download_info = {}
+        self.download_info: dict[str, Any] = {}
         self.__raw__ = option
         if self.subscriptionBundles:
             self.subscribePrice = self.subscriptionBundles[0]["plans"][0]["price"]
@@ -244,6 +249,12 @@ class create_user:
         if self.email:
             status = True
         return status
+
+    def get_authed(self):
+        return self.__authed
+
+    def get_session_manager(self):
+        return self.__authed.session_manager
 
     async def get_stories(
         self, refresh: bool = True, limit: int = 100, offset: int = 0
@@ -292,48 +303,49 @@ class create_user:
         limit: int = 10,
         offset: int = 0,
         refresh: bool = True,
-    ) -> Optional[list[create_post]]:
-        api_type = "posts"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+    ) -> list[create_post]:
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         temp_results: list[Any] = []
         while True:
             link = endpoint_links(identifier=self.id, global_offset=offset).post_api
-            response = await self.session_manager.json_request(link)
+            response = await self.get_session_manager().json_request(link)
             data = response["response"]
             temp_posts = data.get("posts")
             if not temp_posts:
                 break
             offset = temp_posts[-1]["id"]
             temp_results.append(data)
-        results: dict[Any, Any] = merge({}, *temp_results, strategy=Strategy.ADDITIVE)
+        results = api_helper.merge_dictionaries(temp_results)
         final_results = []
         if results:
-            final_results = [create_post(x, self, results) for x in results["posts"]]
+            final_results = [
+                post_model.create_post(x, self, results) for x in results["posts"]
+            ]
             self.temp_scraped.Posts = final_results
         return final_results
 
     async def get_post(
-        self, identifier=None, limit=10, offset=0
+        self, identifier: Optional[int | str] = None, limit: int = 10, offset: int = 0
     ) -> Union[create_post, ErrorDetails]:
         if not identifier:
             identifier = self.id
         link = endpoint_links(
             identifier=identifier, global_limit=limit, global_offset=offset
         ).post_by_id
-        response = await self.session_manager.json_request(link)
-        if isinstance(response, dict):
-            final_result = create_post(response, self)
+        result = await self.get_session_manager().json_request(link)
+        if isinstance(result, dict):
+            temp_result: dict[str, Any] = result
+            final_result = post_model.create_post(temp_result, self,temp_result)
             return final_result
-        return response
+        return result
 
     async def get_groups(self) -> ErrorDetails | dict[str, Any]:
         link = endpoint_links().groups_api
         response: ErrorDetails | dict[
             str, Any
-        ] = await self.session_manager.json_request(link)
+        ] = await self.get_session_manager().json_request(link)
         if isinstance(response, dict):
             final_response: dict[str, Any] = response["response"]
             return final_response
@@ -347,13 +359,9 @@ class create_user:
         refresh: bool = True,
         inside_loop: bool = False,
     ) -> list[Any]:
-        api_type = "messages"
-        if not self.subscriber or self.is_me():
-            return []
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         groups = await self.get_groups()
         if isinstance(groups, ErrorDetails):
             return []
@@ -367,7 +375,7 @@ class create_user:
             print
         if links is None:
             links = []
-        multiplier = getattr(self.session_manager.pool, "_processes")
+        multiplier = self.get_session_manager().max_threads
         if links:
             link = links[-1]
         else:
@@ -380,27 +388,32 @@ class create_user:
             links += links2
         else:
             links = links2
-        temp_results = await self.session_manager.async_requests(links)
-        temp_results = await remove_errors(temp_results)
-        results: dict[Any, Any] = merge({}, *temp_results, strategy=Strategy.ADDITIVE)
-        if not results:
-            return []
-        extras = results["response"]
-        final_results = extras["messages"]
+        results = await self.get_session_manager().async_requests(links)
+        results = await remove_errors(results)
+        final_results = []
+        if isinstance(results, list):
+            results = api_helper.merge_dictionaries(results)
+            if not results:
+                return []
+            extras = results["response"]
+            final_results = extras["messages"]
 
-        if final_results:
-            results2 = await self.get_messages(
-                links=[links[-1]], limit=limit, offset=limit + offset, inside_loop=True
-            )
-            final_results.extend(results2)
-        print
-        if not inside_loop:
-            final_results = [
-                message_model.create_message(x, self, extras)
-                for x in final_results
-                if x
-            ]
-        self.temp_scraped.Messages = final_results
+            if final_results:
+                results2 = await self.get_messages(
+                    links=[links[-1]],
+                    limit=limit,
+                    offset=limit + offset,
+                    inside_loop=True,
+                )
+                final_results.extend(results2)
+            print
+            if not inside_loop:
+                final_results = [
+                    message_model.create_message(x, self, extras)
+                    for x in final_results
+                    if x
+                ]
+            self.temp_scraped.Messages = final_results
         return final_results
 
     async def get_message_by_id(
@@ -422,14 +435,14 @@ class create_user:
             return final_result
         return response
 
-    async def get_archived_stories(self, refresh=True, limit=100, offset=0):
-        api_type = "archived_stories"
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+    async def get_archived_stories(
+        self, refresh: bool = True, limit: int = 100, offset: int = 0
+    ):
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         link = endpoint_links(global_limit=limit, global_offset=offset).archived_stories
-        results = await self.session_manager.json_request(link)
+        results = await self.get_session_manager().json_request(link)
         results = await remove_errors(results)
         results = [create_story(x) for x in results]
         return results
@@ -458,8 +471,11 @@ class create_user:
                 link = link.replace(f"limit={limit}", f"limit={limit}")
                 new_link = link.replace("offset=0", f"offset={num}")
                 links.append(new_link)
-        results = await api_helper.scrape_endpoint_links(links, self.session_manager)
-        final_results = [create_post(x, self) for x in results if x]
+        results = await api_helper.scrape_endpoint_links(
+            links, self.get_session_manager()
+        )
+        final_results = self.finalize_content_set(results)
+
         self.temp_scraped.Archived.Posts = final_results
         return final_results
 
@@ -546,5 +562,53 @@ class create_user:
             )
         return result
 
-    def set_scraped(self, name, scraped):
+    def set_scraped(self, name: str, scraped: list[Any]):
         setattr(self.scraped, name, scraped)
+
+    def finalize_content_set(self, results: list[dict[str, Any]] | list[str]):
+        final_results: list[create_post] = []
+        for result in results:
+            if isinstance(result, str):
+                continue
+            content_type = result["responseType"]
+            match content_type:
+                case "post":
+                    created = post_model.create_post(result, self)
+                    final_results.append(created)
+                case _:
+                    print
+        return final_results
+
+    def create_directory_manager(self, path_formats: dict[str, Any] = {}):
+        from classes.prepare_directories import DirectoryManager
+
+        base_directory_manager = self.__authed.api.base_directory_manager
+        profile_directory = Path(
+            base_directory_manager.profile.root_directory, self.username
+        )
+        metadata_directory = base_directory_manager.root_metadata_directory
+        download_directory = base_directory_manager.root_download_directory
+        self.directory_manager = DirectoryManager(
+            profile_directory,
+            metadata_directory,
+            download_directory,
+            path_formats=path_formats,
+        )
+        self.file_manager.directory_manager = self.directory_manager
+        return self.directory_manager
+
+    def get_api(self):
+        return self.__authed.api
+
+    async def if_scraped(self):
+        status = False
+        for key, value in self.scraped.__dict__.items():
+            if key == "Archived":
+                for _key_2, value in value.__dict__.items():
+                    if value:
+                        status = True
+                        return status
+            if value:
+                status = True
+                break
+        return status

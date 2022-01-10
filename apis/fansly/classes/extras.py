@@ -1,5 +1,6 @@
 import copy
 from itertools import chain
+import math
 from typing import Any, Literal, Optional, Union
 
 
@@ -111,6 +112,7 @@ class endpoint_links(object):
         domain = "https://apiv2.fansly.com"
         api = "/api/v1"
         full_url_path = f"{domain}{api}"
+        self.full_url_path = full_url_path
         self.customer = f"{full_url_path}/account?ids={identifier}"
         self.settings = f"https://apiv2.fansly.com/api/v1/account/settings"
         self.users = f"https://onlyfans.com/api2/v2/users/{identifier}"
@@ -129,6 +131,7 @@ class endpoint_links(object):
         self.stories_api = f"https://onlyfans.com/api2/v2/users/{identifier}/stories?limit=100&offset=0&order=desc"
         self.list_highlights = f"https://onlyfans.com/api2/v2/users/{identifier}/stories/highlights?limit=100&offset=0&order=desc"
         self.highlight = f"https://onlyfans.com/api2/v2/stories/highlights/{identifier}"
+        self.list_posts_api = self.list_posts(identifier)
         self.post_api = f"https://apiv2.fansly.com/api/v1/timeline/{identifier}?before={global_offset}"
         self.archived_posts = f"https://onlyfans.com/api2/v2/users/{identifier}/posts/archived?limit={global_limit}&offset={global_offset}&order=publish_date_desc"
         self.archived_stories = f"https://onlyfans.com/api2/v2/stories/archive/?limit=100&offset=0&order=publish_date_desc"
@@ -141,6 +144,43 @@ class endpoint_links(object):
             f"https://onlyfans.com/api2/v2/payments/all/transactions?limit=10&offset=0"
         )
         self.two_factor = f"https://onlyfans.com/api2/v2/users/otp/check"
+
+    def list_posts(
+        self,
+        content_id: Optional[int | str],
+        global_limit: int = 10,
+        global_offset: int = 0,
+    ):
+        return f"{self.full_url_path}/timeline/{content_id}?before={global_offset}"
+
+    def list_comments(
+        self,
+        content_type: str,
+        content_id: Optional[int | str],
+        global_limit: int = 10,
+        global_offset: int = 0,
+        sort_order: Literal["asc", "desc"] = "desc",
+    ):
+        content_type = f"{content_type}s" if content_type[0] != "s" else content_type
+        return f"{self.full_url_path}/{content_type}/{content_id}/comments?limit={global_limit}&offset={global_offset}&sort={sort_order}"
+
+    def create_links(self, link: str, api_count: int, limit: int = 10, offset: int = 0):
+        """
+        This function will create a list of links depending on their content count.
+
+        Example:\n
+        create_links(link="base_link", api_count=50) will return a list with 5 links.
+        """
+        final_links: list[str] = []
+        if api_count:
+            ceil = math.ceil(api_count / limit)
+            numbers = list(range(ceil))
+            for num in numbers:
+                num = num * limit
+                link = link.replace(f"limit={limit}", f"limit={limit}")
+                new_link = link.replace(f"offset={offset}", f"offset={num}")
+                final_links.append(new_link)
+        return final_links
 
 
 # Lol?
@@ -216,7 +256,7 @@ async def remove_errors(results: list[dict[str, Any]] | list[ErrorDetails]):
     if not isinstance(results, list):
         wrapped = True
         results = [results]
-    results = [x for x in results if not isinstance(x, ErrorDetails)]
-    if wrapped and results:
-        results = results[0]
-    return results
+    results_ = [x for x in results if not isinstance(x, ErrorDetails)]
+    if wrapped and results_:
+        results_ = results_[0]
+    return results_

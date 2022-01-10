@@ -2,7 +2,7 @@ from typing import Any
 
 
 class create_story:
-    def __init__(self, option={}) -> None:
+    def __init__(self, option: dict[str, Any] = {}) -> None:
         self.id: int = option.get("id")
         self.userId: int = option.get("userId")
         self.createdAt: str = option.get("createdAt")
@@ -17,7 +17,7 @@ class create_story:
         self.canDelete: bool = option.get("canDelete")
         self.isHighlightCover: bool = option.get("isHighlightCover")
         self.isLastInHighlight: bool = option.get("isLastInHighlight")
-        self.media: list = option.get("media")
+        self.media: list[dict[str, Any]] = option.get("media", [])
         self.question: Any = option.get("question")
         self.placedContents: list = option.get("placedContents")
         self.answered: int = option.get("answered")

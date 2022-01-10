@@ -1,9 +1,11 @@
+from __future__ import annotations
 import asyncio
+from asyncio.tasks import Task
 import math
 from datetime import datetime, timezone
 from itertools import chain, product
 from multiprocessing.pool import Pool
-from typing import Any, Dict, List, Optional, Union
+from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 
 import jsonpickle
 from apis import api_helper
@@ -21,33 +23,50 @@ from apis.starsavn.classes.extras import (
 from dateutil.relativedelta import relativedelta
 from user_agent import generate_user_agent
 
+if TYPE_CHECKING:
+    from apis.fansly.fansly import start
+
 
 class create_auth(create_user):
     def __init__(
         self,
+        api: start,
         option: dict[str, Any] = {},
-        pool: Pool = None,
+        pool: Optional[Pool] = None,
         max_threads: int = -1,
     ) -> None:
-        create_user.__init__(self, option)
+        self.api = api
+        create_user.__init__(self, option, self)
         if not self.username:
             self.username = f"u{self.id}"
-        self.lists = {}
+        self.lists = []
         self.links = content_types()
         self.subscriptions: list[create_user] = []
         self.chats = None
         self.archived_stories = {}
         self.mass_messages = []
-        self.paid_content = []
+        self.paid_content: list[create_message | create_post] = []
         temp_pool = pool if pool else api_helper.multiprocessing()
         self.pool = temp_pool
-        self.session_manager = api_helper.session_manager(self, max_threads=max_threads)
-        self.auth_details: auth_details = auth_details()
-        self.profile_directory = option.get("profile_directory", "")
+        self.session_manager = self._session_manager(self, max_threads=max_threads)
+        self.auth_details = auth_details()
         self.guest = False
         self.active: bool = False
         self.errors: list[ErrorDetails] = []
         self.extras: dict[str, Any] = {}
+
+    class _session_manager(api_helper.session_manager):
+        def __init__(
+            self,
+            auth: create_auth,
+            headers: dict[str, Any] = {},
+            proxies: list[str] = [],
+            max_threads: int = -1,
+            use_cookies: bool = True,
+        ) -> None:
+            api_helper.session_manager.__init__(
+                self, auth, headers, proxies, max_threads, use_cookies
+            )
 
     def update(self, data: Dict[str, Any]):
         if not data["username"]:
@@ -127,7 +146,10 @@ class create_auth(create_user):
                     print("Auth 404'ed")
                 continue
             else:
-                print(f"Welcome {self.name} | {self.username}")
+                print(
+                    f"Welcome {' | '.join([x for x in [self.name, self.username] if x])}"
+                )
+                self.create_directory_manager()
                 break
         if not self.active:
             user = await self.get_user(auth_id)
@@ -174,14 +196,9 @@ class create_auth(create_user):
         error.message = error_message
         self.errors.append(error)
 
-    async def get_lists(self, refresh=True, limit=100, offset=0) -> list[Any]:
-        api_type = "lists"
-        if not self.active:
-            return
-        if not refresh:
-            subscriptions = handle_refresh(self, api_type)
-            return subscriptions
-        return []
+    async def get_lists(self, refresh: bool = True, limit: int = 100, offset: int = 0):
+        result, _status = await api_helper.default_data(self, refresh)
+        return result
 
     async def get_user(
         self, identifier: Union[str, int]
@@ -223,28 +240,26 @@ class create_auth(create_user):
 
     async def get_subscriptions(
         self,
-        resume=None,
-        refresh=True,
-        identifiers: list = [],
-        extra_info=True,
-        limit=20,
-        offset=0,
+        refresh: bool = True,
+        identifiers: list[int | str] = [],
+        extra_info: bool = True,
+        limit: int = 20,
     ) -> list[create_user]:
-        if not self.active:
-            return []
-        if not refresh:
-            subscriptions = self.subscriptions
-            return subscriptions
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
+        # if self.subscribesCount > 900:
+        #     limit = 100
         ceil = math.ceil(self.subscribesCount / limit)
         a = list(range(ceil))
-        offset_array = []
+        offset_array: list[str] = []
         for b in a:
             b = b * limit
             link = endpoint_links(global_limit=limit, global_offset=b).subscriptions
             offset_array.append(link)
 
         # Following logic is unique to creators only
-        results = []
+        results: list[list[create_user]] = []
         if self.isPerformer:
             temp_session_manager = self.session_manager
             temp_pool = self.pool
@@ -270,10 +285,10 @@ class create_auth(create_user):
             results.append(subscription)
         if not identifiers:
 
-            async def multi(item):
+            async def multi(item: str):
                 link = item
                 subscriptions = await self.session_manager.json_request(link)
-                valid_subscriptions = []
+                valid_subscriptions: list[create_user] = []
                 extras = {}
                 extras["auth_check"] = ""
                 if isinstance(subscriptions, ErrorDetails):
@@ -283,17 +298,21 @@ class create_auth(create_user):
                     for subscription in subscriptions["list"]
                     if "error" != subscription
                 ]
-                tasks = []
+                tasks: list[Task[create_user | ErrorDetails]] = []
                 for subscription in subscriptions:
                     subscription["session_manager"] = self.session_manager
                     if extra_info:
-                        task = self.get_user(subscription["username"])
+                        task = asyncio.create_task(
+                            self.get_user(subscription["username"])
+                        )
                         tasks.append(task)
-                tasks = await asyncio.gather(*tasks)
-                for task in tasks:
-                    if isinstance(task, ErrorDetails):
+                results2 = await asyncio.gather(*tasks)
+                for result in results2:
+                    if isinstance(result, ErrorDetails):
                         continue
-                    subscription2: create_user = task
+                    if not result:
+                        print
+                    subscription2: create_user = result
                     for subscription in subscriptions:
                         if subscription["id"] != subscription2.id:
                             continue
@@ -311,14 +330,14 @@ class create_auth(create_user):
                         subscription = create_user(subscription, self)
                         if subscription.isBlocked:
                             continue
-                        subscription.session_manager = self.session_manager
-                        subscription.subscriber = self
                         valid_subscriptions.append(subscription)
                 return valid_subscriptions
 
             pool = self.pool
             tasks = pool.starmap(multi, product(offset_array))
-            results += await asyncio.gather(*tasks)
+            results2 = await asyncio.gather(*tasks)
+            results2 = list(filter(None, results2))
+            results.extend(results2)
         else:
             for identifier in identifiers:
                 if self.id == identifier or self.username == identifier:
@@ -330,24 +349,13 @@ class create_auth(create_user):
                 subscription = create_user(result, self)
                 if subscription.isBlocked:
                     continue
-                subscription.session_manager = self.session_manager
-                subscription.subscriber = self
-                subscribedByData = {}
-                new_date = datetime.utcnow().replace(
-                    tzinfo=timezone.utc
-                ) + relativedelta(years=1)
-                temp = result.get("subscribedByExpireDate", new_date)
-                if isinstance(temp, str):
-                    new_date = datetime.fromisoformat(temp)
-                subscribedByData["expiredAt"] = new_date
-                subscription.subscribedByData = subscribedByData
                 results.append([subscription])
                 print
             print
-        results = [x for x in results if x is not None]
-        results = list(chain(*results))
-        self.subscriptions = results
-        return results
+        final_results = [x for x in results if x is not None]
+        final_results = list(chain(*final_results))
+        self.subscriptions = final_results
+        return final_results
 
     async def get_chats(
         self,

@@ -58,10 +58,10 @@ version = VSVersionInfo(
             StringTable(
                 '040904B0',
                 [
-                    StringStruct('FileDescription', 'OnlyFans DataScraper'),
+                    StringStruct('FileDescription', 'Ultima Scraper'),
                     StringStruct('FileVersion', '{}.{}.{}.{}'.format(major, minor, patch, build)),
                     StringStruct('LegalCopyright', 'GPLv3'),
-                    StringStruct('ProductName', 'OnlyFans DataScraper'),
+                    StringStruct('ProductName', 'Ultima Scraper'),
                     StringStruct('ProductVersion', '{}.{}.{}+{}@{}'.format(major, minor, patch, commit, branch))
                 ])
             ]),

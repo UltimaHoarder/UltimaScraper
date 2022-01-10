@@ -128,6 +128,14 @@ except ImportError:
             return sdiskusage(total, used, free, round(100 * used / total, round_))
 
 
+def getfrozencwd():
+    import sys
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        return sys._MEIPASS
+    else:
+        return os.getcwd()
+
+
 def assign_vars(config: dict[Any, Any]):
     global json_global_settings, min_drive_space, webhooks, max_threads, proxies, cert
 
@@ -416,7 +424,7 @@ async def fix_sqlite(
         if archived_database_path.exists():
             Session2, engine = db_helper.create_database_session(archived_database_path)
             database_session: Session = Session2()
-            cwd = os.getcwd()
+            cwd = getfrozencwd()
             for api_type, value in items:
                 database_path = os.path.join(final_metadata, f"{api_type}.db")
                 database_name = api_type.lower()
@@ -465,7 +473,7 @@ async def fix_sqlite(
 def export_sqlite2(archive_path, datas, parent_type, legacy_fixer=False):
     metadata_directory = os.path.dirname(archive_path)
     os.makedirs(metadata_directory, exist_ok=True)
-    cwd = os.getcwd()
+    cwd = getfrozencwd()
     api_type: str = os.path.basename(archive_path).removesuffix(".db")
     database_path = archive_path
     database_name = parent_type if parent_type else api_type
@@ -556,7 +564,7 @@ def legacy_sqlite_updater(
 ):
     final_result: list[dict[str, Any]] = []
     if os.path.exists(legacy_metadata_path):
-        cwd = os.getcwd()
+        cwd = getfrozencwd()
         alembic_location = os.path.join(
             cwd, "database", "archived_databases", api_type.lower()
         )
@@ -597,7 +605,7 @@ def export_sqlite(database_path: str, api_type: str, datas: list[dict[str, Any]]
     metadata_directory = os.path.dirname(database_path)
     os.makedirs(metadata_directory, exist_ok=True)
     database_name = os.path.basename(database_path).replace(".db", "")
-    cwd = os.getcwd()
+    cwd = getfrozencwd()
     alembic_location = os.path.join(cwd, "database", "databases", database_name.lower())
     db_helper.run_migrations(alembic_location, database_path)
     Session, engine = db_helper.create_database_session(database_path)

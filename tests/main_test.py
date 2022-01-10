@@ -1,8 +1,12 @@
+from sys import exit
 import sys
 import os
 from os.path import dirname as up
 
-path = up(up(os.path.realpath(__file__)))
+if getattr(sys, "frozen", False):
+    path = up(sys.executable)
+else:
+    path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
 
 

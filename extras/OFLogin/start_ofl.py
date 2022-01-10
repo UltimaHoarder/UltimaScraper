@@ -1,4 +1,6 @@
+from sys import exit
 import os
+import sys
 from seleniumwire import webdriver
 from selenium.webdriver.common.by import By
 from selenium.webdriver.support.ui import WebDriverWait
@@ -14,7 +16,10 @@ def launch_browser(headers=None, user_agent=None, proxy=None, browser_type="Fire
             "https": proxy,
         }
         options["proxy"] = proxy
-    directory = os.path.dirname(__file__)
+    if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
+        directory = sys._MEIPASS
+    else:
+        directory = os.path.dirname(__file__)
     driver = None
     if browser_type == "Firefox":
         matches = ["geckodriver.exe", "geckodriver"]

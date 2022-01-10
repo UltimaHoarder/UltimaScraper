@@ -337,7 +337,7 @@ class create_user:
         result = await self.get_session_manager().json_request(link)
         if isinstance(result, dict):
             temp_result: dict[str, Any] = result
-            final_result = post_model.create_post(temp_result, self,temp_result)
+            final_result = post_model.create_post(temp_result, self, temp_result)
             return final_result
         return result
 

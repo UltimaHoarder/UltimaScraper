@@ -3,7 +3,6 @@ from sys import exit
 import argparse
 import sys
 import asyncio
-import traceback
 from pathlib import Path
 
 parser = argparse.ArgumentParser()

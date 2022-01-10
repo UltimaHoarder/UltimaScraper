@@ -130,6 +130,7 @@ except ImportError:
 
 def getfrozencwd():
     import sys
+
     if getattr(sys, "frozen", False) and hasattr(sys, "_MEIPASS"):
         return sys._MEIPASS
     else:

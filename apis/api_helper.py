@@ -75,6 +75,7 @@ if TYPE_CHECKING:
 parsed_args = Namespace()
 
 import sys
+
 if getattr(sys, "frozen", False):
     path = up(sys.executable)
 else:

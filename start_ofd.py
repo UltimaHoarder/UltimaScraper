@@ -19,7 +19,6 @@ except SyntaxError:
     string = f"You're executing the script with Python {version_info}. Execute the script with Python 3.10.1+"
     print(string)
     exit()
-# try:
 main_test.version_check()
 main_test.check_config()
 main_test.check_profiles()
@@ -73,5 +72,3 @@ if __name__ == "__main__":
                 await asyncio.sleep(float(loop_timeout))
 
     asyncio.run(main())
-# except Exception as e:
-#     print(traceback.format_exc())

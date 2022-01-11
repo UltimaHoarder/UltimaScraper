@@ -99,7 +99,7 @@ class create_auth(create_user):
         while count < max_attempts + 1:
             string = f"Auth {auth_version} Attempt {count}/{max_attempts}"
             print(string)
-            await self.get_authed()
+            await self.process_auth()
             count += 1
 
             async def resolve_auth(auth: create_auth):
@@ -127,7 +127,7 @@ class create_auth(create_user):
                                     print("Success")
                                     auth.active = False
                                     auth.errors.remove(error)
-                                    await self.get_authed()
+                                    await self.process_auth()
                                     break
 
             await resolve_auth(self)
@@ -156,7 +156,7 @@ class create_auth(create_user):
                 self.update(user.__dict__)
         return self
 
-    async def get_authed(self):
+    async def process_auth(self):
         if not self.active:
             link = endpoint_links().customer
             response = await self.session_manager.json_request(link)
@@ -278,17 +278,17 @@ class create_auth(create_user):
             temp_session_manager = self.session_manager
             temp_pool = self.pool
             temp_paid_content = self.paid_content
+            delattr(self, "api")
             delattr(self, "session_manager")
             delattr(self, "pool")
             delattr(self, "paid_content")
-            json_authed = jsonpickle.encode(self, unpicklable=False)
+            json_authed:dict[str,Any] = jsonpickle.encode(self, unpicklable=False)
             json_authed = jsonpickle.decode(json_authed)
             self.session_manager = temp_session_manager
             self.pool = temp_pool
             self.paid_content = temp_paid_content
             temp_auth = await self.get_user(self.username)
-            if isinstance(json_authed, dict):
-                json_authed = json_authed | temp_auth.__dict__
+            json_authed = json_authed | temp_auth.__dict__
 
             subscription = create_user(json_authed, self)
             subscription.subscribedByData = {}

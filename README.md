@@ -19,9 +19,9 @@ From the project folder open Windows Powershell/Terminal and run the commands be
 
 Start:
 
-`python start_ofd.py` | `python3 start_ofd.py` | `python3.10 start_ofd.py` | double click `start_ofd.py`
-
-If you're experimenting auth loops, run the program with `python -v start_ofd.py` and you'll see which errors you're getting.
+>`python start_ofd.py` | `python3 start_ofd.py` | `python3.10 start_ofd.py` | double click `start_ofd.py`
+>
+> If you're experimenting auth loops, stuck downloads, run the program with `python -v start_ofd.py` and you may see which errors you're getting.
 ---
 
 Open and edit:
@@ -227,9 +227,9 @@ Types: list|int|str|bool
     If set to false, you'll be given the option to scrape individual apis.
 
 ### jobs:
-
-    "scrape_names" - This will scrape your standard content
-    "scrape_paid_content" - This will scrape paid content
+    (Downloads)
+    "subscriptions" - This will scrape your standard content
+    "paid_content" - This will scrape paid content
 
     If set to false, it won't do the job.
 

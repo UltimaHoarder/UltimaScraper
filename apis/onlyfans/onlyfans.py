@@ -93,9 +93,11 @@ class start:
         for auth in self.auths:
             if auth.username == identifier:
                 print
+
     def get_global_settings(self):
         if self.config:
             return self.config.settings
+
     def get_site_settings(self):
         if self.config:
             return self.config.supported.get_settings(self.site_name)

@@ -958,7 +958,7 @@ def choose_option(
 
 async def process_profiles(
     api: OnlyFans.start | Fansly.start | StarsAVN.start,
-    global_settings:make_settings.Settings
+    global_settings: make_settings.Settings,
 ):
     site_name = api.site_name
     profile_directories = global_settings.profile_directories
@@ -969,7 +969,7 @@ async def process_profiles(
         temp_users = remove_mandatory_files(temp_users)
         for user_profile in temp_users:
             user_auth_filepath = user_profile.joinpath("auth.json")
-            datas:dict[str,Any] = {}
+            datas: dict[str, Any] = {}
             if user_auth_filepath.exists():
                 with open(user_auth_filepath, encoding="utf-8") as fp:
                     temp_json_auth = ujson.load(fp)

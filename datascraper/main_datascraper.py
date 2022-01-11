@@ -42,10 +42,12 @@ async def start_datascraper(
         return None
 
     async def default(
-        datascraper: Optional[m_onlyfans.OnlyFansDataScraper
-        | m_fansly.FanslyDataScraper
-        | m_starsavn.StarsAVNDataScraper,]
-    ):  
+        datascraper: Optional[
+            m_onlyfans.OnlyFansDataScraper
+            | m_fansly.FanslyDataScraper
+            | m_starsavn.StarsAVNDataScraper,
+        ]
+    ):
         if not datascraper:
             return
         api = datascraper.api
@@ -53,7 +55,7 @@ async def start_datascraper(
         site_settings = api.get_site_settings()
         if not (global_settings and site_settings):
             return
-        await main_helper.process_profiles(api,global_settings)
+        await main_helper.process_profiles(api, global_settings)
         subscription_array: list[user_types] = []
         auth_count = 0
         profile_options = OptionsFormat(

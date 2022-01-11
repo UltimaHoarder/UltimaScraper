@@ -131,6 +131,7 @@ class SiteSettings:
                         new_options["jobs"] = new_value
         return new_options
 
+
 class Settings(object):
     def __init__(
         self,
@@ -162,16 +163,12 @@ class Settings(object):
 
                 class auth_webhook:
                     def __init__(self, option: dict[str, Any] = {}) -> None:
-                        self.succeeded = webhook_template(
-                            option.get("succeeded", {})
-                        )
+                        self.succeeded = webhook_template(option.get("succeeded", {}))
                         self.failed = webhook_template(option.get("failed", {}))
 
                 class download_webhook:
                     def __init__(self, option: dict[str, Any] = {}) -> None:
-                        self.succeeded = webhook_template(
-                            option.get("succeeded", {})
-                        )
+                        self.succeeded = webhook_template(option.get("succeeded", {}))
 
                 self.global_webhooks = option.get("global_webhooks", [])
                 self.global_status = option.get("global_status", True)
@@ -208,9 +205,8 @@ class Settings(object):
         self.dynamic_rules_link = str(dynamic_rules_link_)
         self.proxies = proxies
         self.cert = cert
-        self.random_string = (
-            random_string if random_string else uuid.uuid1().hex
-        )
+        self.random_string = random_string if random_string else uuid.uuid1().hex
+
 
 class Config(object):
     def __init__(
@@ -222,7 +218,6 @@ class Config(object):
         class Info(object):
             def __init__(self) -> None:
                 self.version = 7.2
-
 
         class Supported(object):
             def __init__(

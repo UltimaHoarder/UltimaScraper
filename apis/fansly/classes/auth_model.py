@@ -307,18 +307,20 @@ class create_auth(create_user):
         if not identifiers:
 
             async def multi(item: dict[str, Any]):
-                valid_subscriptions = await self.get_user(item["accountId"])
+                subscription = await self.get_user(item["accountId"])
+                valid_subscriptions: list[create_user] = []
 
                 if (
-                    isinstance(valid_subscriptions, create_user)
-                    and valid_subscriptions.following
-                    and not valid_subscriptions.subscribedByData
+                    isinstance(subscription, create_user)
+                    and subscription.following
+                    and not subscription.subscribedByData
                 ):
                     new_date = datetime.now() + relativedelta(years=1)
                     new_date = int(new_date.timestamp() * 1000)
-                    valid_subscriptions.subscribedByData = {}
-                    valid_subscriptions.subscribedByData["endsAt"] = new_date
-                return [valid_subscriptions]
+                    subscription.subscribedByData = {}
+                    subscription.subscribedByData["endsAt"] = new_date
+                    valid_subscriptions.append(subscription)
+                return valid_subscriptions
 
             pool = self.pool
             tasks = pool.starmap(multi, product(subscriptions))

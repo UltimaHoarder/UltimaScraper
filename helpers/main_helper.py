@@ -182,10 +182,11 @@ def parse_links(site_name, input_link):
 
 def clean_text(string: str, remove_spaces: bool = False):
     try:
-        import lxml as unused_lxml_ # type: ignore
-        html_parser = 'lxml'
+        import lxml as unused_lxml_  # type: ignore
+
+        html_parser = "lxml"
     except ImportError:
-            html_parser = 'html.parser'
+        html_parser = "html.parser"
     matches = ["\n", "<br>"]
     for m in matches:
         string = string.replace(m, " ").strip()
@@ -1023,15 +1024,21 @@ async def account_setup(
 async def process_jobs(
     datascraper: OnlyFansDataScraper | FanslyDataScraper | StarsAVNDataScraper,
     subscription_list: list[user_types],
+    site_settings: make_settings.SiteSettings,
 ):
-    for authed in datascraper.api.auths:
-        await datascraper.paid_content_scraper(authed)  # type: ignore
+    api = datascraper.api
+    if site_settings.jobs.scrape.paid_content and api.has_active_auths():
+        print("Scraping Paid Content")
+        for authed in datascraper.api.auths:
+            await datascraper.paid_content_scraper(authed)  # type: ignore
+    if site_settings.jobs.scrape.subscriptions and api.has_active_auths():
+        print("Scraping Subscriptions")
+        for subscription in subscription_list:
+            # Extra Auth Support
+            authed = subscription.get_authed()
+            await datascraper.start_datascraper(authed, subscription.username)  # type: ignore
     if not subscription_list:
-        print("There's nothing to scrape.")
-    for subscription in subscription_list:
-        # Extra Auth Support
-        authed = subscription.get_authed()
-        await datascraper.start_datascraper(authed, subscription.username)  # type: ignore
+        print("There's no subscriptions to scrape.")
     return subscription_list
 
 
@@ -1137,9 +1144,7 @@ async def write_data(
     return status_code
 
 
-def export_data(
-    metadata: list[Any] | dict[str, Any], path: Path, encoding: Optional[str] = "utf-8"
-):
+def export_data(metadata: list[Any] | dict[str, Any], path: Path):
     directory = os.path.dirname(path)
     if directory:
         os.makedirs(directory, exist_ok=True)

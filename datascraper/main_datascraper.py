@@ -87,16 +87,7 @@ async def start_datascraper(
             subscription_array, "subscriptions", site_settings.auto_model_choice
         )
         subscription_list = subscription_options.final_choices
-        if site_settings.jobs.scrape.paid_content and api.has_active_auths():
-            print("Scraping Paid Content")
-            for authed in api.auths:
-                await datascraper.paid_content_scraper(authed)
-        if site_settings.jobs.scrape.subscriptions and api.has_active_auths():
-            print("Scraping Subscriptions")
-            await main_helper.process_jobs(
-                datascraper,
-                subscription_list,
-            )
+        await main_helper.process_jobs(datascraper, subscription_list, site_settings)
         await main_helper.process_downloads(api, datascraper)
         if webhooks:
             await main_helper.process_webhooks(api, "download_webhook", "succeeded")

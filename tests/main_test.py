@@ -3,6 +3,7 @@ from sys import exit
 import sys
 import os
 from os.path import dirname as up
+from typing import Any
 
 if getattr(sys, "frozen", False):
     path = up(sys.executable)
@@ -61,7 +62,7 @@ def check_profiles():
         os.makedirs(default_profile_directory, exist_ok=True)
         auth_filepath = os.path.join(default_profile_directory, "auth.json")
         if not os.path.exists(auth_filepath):
-            new_item = {}
+            new_item: dict[str, Any] = {}
             match string_match:
                 case "OnlyFans":
                     new_item["auth"] = onlyfans_auth_details().export()

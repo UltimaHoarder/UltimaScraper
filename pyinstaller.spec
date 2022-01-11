@@ -35,9 +35,9 @@ def git(*args):
         encoding='utf-8',
         errors='replace').stdout.strip()
 
-major = 7
-minor = 6
-patch = 1
+major = 8
+minor = 0
+patch = 0
 build = int(git('rev-list', 'HEAD', '--count'))
 commit = git('rev-parse', '--short', 'HEAD')
 branch = git('rev-parse', '--abbrev-ref', 'HEAD')

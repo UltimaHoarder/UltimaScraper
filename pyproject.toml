@@ -1,6 +1,6 @@
 [tool.poetry]
 name = "ultimascraper"
-version = "7.7.0"
+version = "8.0.0"
 description = ""
 authors = ["DIGITALCRIMINAL <89371864+DIGITALCRIMINALS@users.noreply.github.com>"]
 license = "GPL-3.0"

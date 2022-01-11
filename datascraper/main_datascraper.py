@@ -115,7 +115,6 @@ async def start_datascraper(
                     max_threads=json_settings["max_threads"],
                     config=Config(**json_config),
                 )
-                main_helper.process_profiles(json_settings, proxies, api_)
             datascraper = m_fansly.FanslyDataScraper(api_)
             await default(datascraper)
         case "starsavn":
@@ -124,7 +123,6 @@ async def start_datascraper(
                     max_threads=json_settings["max_threads"],
                     config=Config(**json_config),
                 )
-                main_helper.process_profiles(json_settings, proxies, api_)
             datascraper = m_starsavn.StarsAVNDataScraper(api_)
             await default(datascraper)
     stop_time = str(int(timeit.default_timer() - archive_time) / 60)[:4]

@@ -841,7 +841,7 @@ class OptionsFormat:
         self.formatter(options_type)
 
     def formatter(self, options_type: str):
-        final_string = f"Choose {options_type.capitalize()}: All = 0"
+        final_string = f"Choose {options_type.capitalize()}: 0 = All"
         if isinstance(self.auto_choice, str):
             self.auto_choice = [x for x in self.auto_choice.split(",") if x]
         elif isinstance(self.auto_choice, list):
@@ -888,15 +888,19 @@ class OptionsFormat:
                 input_list = [str(x) for x in self.auto_choice]
         else:
             print(self.string)
-            input_value = int(input())
-            if input_value != 0:
+            input_value = input().lower()
+            if input_value != str(0) and input_value != "all":
                 input_list = []
                 input_values = [input_value]
                 for input_value in input_values:
-                    try:
-                        input_list.append(self.item_keys[input_value - 1])
-                    except IndexError:
-                        continue
+                    if input_value.isdigit():
+                        try:
+                            input_list.append(self.item_keys[int(input_value) - 1])
+                        except IndexError:
+                            continue
+                    else:
+                        x = [x for x in self.item_keys if x == input_value]
+                        input_list.extend(x)
 
         final_list = [
             choice for choice in input_list for key in self.item_keys if choice == key

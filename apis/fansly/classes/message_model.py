@@ -20,7 +20,7 @@ class create_message:
         self.price: Optional[float] = option.get("price")
         self.isMediaReady: Optional[bool] = option.get("isMediaReady")
         self.mediaCount: Optional[int] = option.get("mediaCount")
-        self.media: list = option.get("media", [])
+        self.media: list[Any] = option.get("media", [])
         self.previews: list = option.get("previews", [])
         self.isTip: Optional[bool] = option.get("isTip")
         self.isReportedByMe: Optional[bool] = option.get("isReportedByMe")
@@ -59,7 +59,7 @@ class create_message:
                 for account_media in extra["accountMedia"]:
                     if account_media["id"] == final_media_id:
                         final_media.append(account_media)
-        self.media: list[Any] = final_media
+        self.media = final_media
         self.user = user
 
     async def buy_message(self):

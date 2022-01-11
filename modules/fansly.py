@@ -983,9 +983,7 @@ async def media_scraper(
         new_post["price"] = price
         for temp_media in post_result.media:
             media: dict[str, Any] = (
-                temp_media["media"]
-                if "preview" not in temp_media
-                else temp_media["preview"]
+                temp_media["media"] if "media" in temp_media else temp_media["preview"]
             )
             media_id = media["id"]
             preview_link = ""

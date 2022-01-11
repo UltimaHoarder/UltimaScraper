@@ -310,7 +310,8 @@ class create_auth(create_user):
                 valid_subscriptions = await self.get_user(item["accountId"])
 
                 if (
-                    valid_subscriptions.following
+                    isinstance(valid_subscriptions, create_user)
+                    and valid_subscriptions.following
                     and not valid_subscriptions.subscribedByData
                 ):
                     new_date = datetime.now() + relativedelta(years=1)

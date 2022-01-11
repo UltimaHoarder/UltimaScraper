@@ -42,11 +42,9 @@ async def start_datascraper(
         return None
 
     async def default(
-        datascraper: Optional[
-            m_onlyfans.OnlyFansDataScraper
-            | m_fansly.FanslyDataScraper
-            | m_starsavn.StarsAVNDataScraper,
-        ]
+        datascraper: Optional[m_onlyfans.OnlyFansDataScraper]
+        | Optional[m_fansly.FanslyDataScraper]
+        | Optional[m_starsavn.StarsAVNDataScraper],
     ):
         if not datascraper:
             return

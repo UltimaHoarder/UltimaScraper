@@ -217,7 +217,7 @@ class Config(object):
     ):
         class Info(object):
             def __init__(self) -> None:
-                self.version = 7.2
+                self.version = 8.0
 
         class Supported(object):
             def __init__(

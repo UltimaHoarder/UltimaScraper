@@ -103,7 +103,7 @@ class start:
 
     class Locations:
         def __init__(self) -> None:
-            self.Images = ["photo", "images"]
+            self.Images = ["photo", "image"]
             self.Videos = ["video", "stream", "gif"]
             self.Audios = ["audio"]
             self.Texts = ["text"]

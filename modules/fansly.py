@@ -294,11 +294,14 @@ async def profile_scraper(subscription: create_user, api_type: str):
     site_name = authed.api.site_name
     authed = subscription.get_authed()
     override_media_types: list[list[Any]] = []
-
-    media_options = subscription.avatar["locations"]
-    avatar = media_options[0]["location"]
-    media_options = subscription.header["locations"]
-    header = media_options[0]["location"]
+    avatar = None
+    header = None
+    if subscription.avatar:
+        media_options = subscription.avatar["locations"]
+        avatar = media_options[0]["location"]
+    elif subscription.header:
+        media_options = subscription.header["locations"]
+        header = media_options[0]["location"]
     override_media_types.extend([["Avatars", avatar], ["Headers", header]])
     session = await authed.session_manager.create_client_session()
     progress_bar = None

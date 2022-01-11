@@ -956,42 +956,32 @@ def choose_option(
     return new_names
 
 
-def process_profiles(
-    json_settings: dict[str, Any],
-    proxies: list[str],
+async def process_profiles(
     api: OnlyFans.start | Fansly.start | StarsAVN.start,
+    global_settings:make_settings.Settings
 ):
     site_name = api.site_name
-    profile_directories: list[str] = json_settings["profile_directories"]
+    profile_directories = global_settings.profile_directories
     for profile_directory in profile_directories:
-        x = os.path.join(profile_directory, site_name)
-        x = os.path.abspath(x)
-        os.makedirs(x, exist_ok=True)
-        temp_users = os.listdir(x)
+        x = profile_directory.joinpath(site_name)
+        x.mkdir(exist_ok=True)
+        temp_users = x.iterdir()
         temp_users = remove_mandatory_files(temp_users)
-        if not temp_users:
-            default_profile_directory = os.path.join(x, "default")
-            os.makedirs(default_profile_directory)
-            temp_users.append("default")
-        for user in temp_users:
-            user_profile = os.path.join(x, user)
-            user_auth_filepath = os.path.join(user_profile, "auth.json")
-            datas = {}
-            if os.path.exists(user_auth_filepath):
+        for user_profile in temp_users:
+            user_auth_filepath = user_profile.joinpath("auth.json")
+            datas:dict[str,Any] = {}
+            if user_auth_filepath.exists():
                 with open(user_auth_filepath, encoding="utf-8") as fp:
                     temp_json_auth = ujson.load(fp)
                 json_auth = temp_json_auth["auth"]
                 if not json_auth.get("active", None):
                     continue
-                json_auth["username"] = user
+                json_auth["username"] = user_profile.name
                 auth = api.add_auth(json_auth)
-                auth.session_manager.proxies = proxies
-                auth.profile_directory = user_profile
+                auth.session_manager.proxies = global_settings.proxies
                 datas["auth"] = auth.auth_details.export()
             if datas:
                 export_data(datas, user_auth_filepath)
-            print
-        print
     return api
 
 

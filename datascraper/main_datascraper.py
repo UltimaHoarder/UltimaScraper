@@ -47,9 +47,11 @@ async def start_datascraper(
         | m_starsavn.StarsAVNDataScraper,
     ):
         api = datascraper.api
+        global_settings = api.get_global_settings()
         site_settings = api.get_site_settings()
-        if not site_settings:
+        if not (global_settings and site_settings):
             return
+        await main_helper.process_profiles(api,global_settings)
         subscription_array: list[user_types] = []
         auth_count = 0
         profile_options = OptionsFormat(
@@ -105,7 +107,6 @@ async def start_datascraper(
                     max_threads=json_settings["max_threads"],
                     config=Config(**json_config),
                 )
-                main_helper.process_profiles(json_settings, proxies, api_)
             datascraper = m_onlyfans.OnlyFansDataScraper(api_)
             await default(datascraper)
         case "fansly":

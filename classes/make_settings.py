@@ -131,6 +131,86 @@ class SiteSettings:
                         new_options["jobs"] = new_value
         return new_options
 
+class Settings(object):
+    def __init__(
+        self,
+        auto_site_choice: str = "",
+        profile_directories: list[str] = [".profiles"],
+        export_type: str = "json",
+        max_threads: int = -1,
+        min_drive_space: int = 0,
+        helpers: dict[str, bool] = {},
+        webhooks: dict[str, Any] = {},
+        exit_on_completion: bool = False,
+        infinite_loop: bool = True,
+        loop_timeout: int = 0,
+        dynamic_rules_link: str = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json",
+        proxies: list[str] = [],
+        cert: str = "",
+        random_string: str = "",
+    ):
+        class webhooks_settings:
+            def __init__(self, option: dict[str, Any] = {}) -> None:
+                class webhook_template:
+                    def __init__(self, option: dict[str, Any] = {}) -> None:
+                        self.webhooks = option.get("webhooks", [])
+                        self.status = option.get("status", None)
+                        self.hide_sensitive_info = option.get(
+                            "hide_sensitive_info", True
+                        )
+                        print
+
+                class auth_webhook:
+                    def __init__(self, option: dict[str, Any] = {}) -> None:
+                        self.succeeded = webhook_template(
+                            option.get("succeeded", {})
+                        )
+                        self.failed = webhook_template(option.get("failed", {}))
+
+                class download_webhook:
+                    def __init__(self, option: dict[str, Any] = {}) -> None:
+                        self.succeeded = webhook_template(
+                            option.get("succeeded", {})
+                        )
+
+                self.global_webhooks = option.get("global_webhooks", [])
+                self.global_status = option.get("global_status", True)
+                self.auth_webhook = auth_webhook(option.get("auth_webhook", {}))
+                self.download_webhook = download_webhook(
+                    option.get("download_webhook", {})
+                )
+
+        class helpers_settings:
+            def __init__(self, option: dict[str, bool] = {}) -> None:
+                self.renamer = option.get("renamer", True)
+                self.reformat_media = option.get("reformat_media", True)
+                self.downloader = option.get("downloader", True)
+                self.delete_empty_directories = option.get(
+                    "delete_empty_directories", False
+                )
+
+        self.auto_site_choice = auto_site_choice
+        self.export_type = export_type
+        self.profile_directories = [Path(x) for x in profile_directories]
+        self.max_threads = max_threads
+        self.min_drive_space = min_drive_space
+        self.helpers = helpers_settings(helpers)
+        self.webhooks = webhooks_settings(webhooks)
+        self.exit_on_completion = exit_on_completion
+        self.infinite_loop = infinite_loop
+        self.loop_timeout = loop_timeout
+        dynamic_rules_link_ = URL(dynamic_rules_link)
+        # url_host = dynamic_rules_link_.host
+        # if "github.com" == url_host:
+        #     if "raw" != url_host:
+        #         path = dynamic_rules_link.path.replace("blob/", "")
+        #         dynamic_rules_link = f"https://raw.githubusercontent.com/{path}"
+        self.dynamic_rules_link = str(dynamic_rules_link_)
+        self.proxies = proxies
+        self.cert = cert
+        self.random_string = (
+            random_string if random_string else uuid.uuid1().hex
+        )
 
 class Config(object):
     def __init__(
@@ -143,86 +223,6 @@ class Config(object):
             def __init__(self) -> None:
                 self.version = 7.2
 
-        class Settings(object):
-            def __init__(
-                self,
-                auto_site_choice: str = "",
-                profile_directories: list[str] = [".profiles"],
-                export_type: str = "json",
-                max_threads: int = -1,
-                min_drive_space: int = 0,
-                helpers: dict[str, bool] = {},
-                webhooks: dict[str, Any] = {},
-                exit_on_completion: bool = False,
-                infinite_loop: bool = True,
-                loop_timeout: int = 0,
-                dynamic_rules_link: str = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json",
-                proxies: list[str] = [],
-                cert: str = "",
-                random_string: str = "",
-            ):
-                class webhooks_settings:
-                    def __init__(self, option: dict[str, Any] = {}) -> None:
-                        class webhook_template:
-                            def __init__(self, option: dict[str, Any] = {}) -> None:
-                                self.webhooks = option.get("webhooks", [])
-                                self.status = option.get("status", None)
-                                self.hide_sensitive_info = option.get(
-                                    "hide_sensitive_info", True
-                                )
-                                print
-
-                        class auth_webhook:
-                            def __init__(self, option: dict[str, Any] = {}) -> None:
-                                self.succeeded = webhook_template(
-                                    option.get("succeeded", {})
-                                )
-                                self.failed = webhook_template(option.get("failed", {}))
-
-                        class download_webhook:
-                            def __init__(self, option: dict[str, Any] = {}) -> None:
-                                self.succeeded = webhook_template(
-                                    option.get("succeeded", {})
-                                )
-
-                        self.global_webhooks = option.get("global_webhooks", [])
-                        self.global_status = option.get("global_status", True)
-                        self.auth_webhook = auth_webhook(option.get("auth_webhook", {}))
-                        self.download_webhook = download_webhook(
-                            option.get("download_webhook", {})
-                        )
-
-                class helpers_settings:
-                    def __init__(self, option: dict[str, bool] = {}) -> None:
-                        self.renamer = option.get("renamer", True)
-                        self.reformat_media = option.get("reformat_media", True)
-                        self.downloader = option.get("downloader", True)
-                        self.delete_empty_directories = option.get(
-                            "delete_empty_directories", False
-                        )
-
-                self.auto_site_choice = auto_site_choice
-                self.export_type = export_type
-                self.profile_directories = [Path(x) for x in profile_directories]
-                self.max_threads = max_threads
-                self.min_drive_space = min_drive_space
-                self.helpers = helpers_settings(settings.get("helpers", helpers))
-                self.webhooks = webhooks_settings(settings.get("webhooks", webhooks))
-                self.exit_on_completion = exit_on_completion
-                self.infinite_loop = infinite_loop
-                self.loop_timeout = loop_timeout
-                dynamic_rules_link_ = URL(dynamic_rules_link)
-                # url_host = dynamic_rules_link_.host
-                # if "github.com" == url_host:
-                #     if "raw" != url_host:
-                #         path = dynamic_rules_link.path.replace("blob/", "")
-                #         dynamic_rules_link = f"https://raw.githubusercontent.com/{path}"
-                self.dynamic_rules_link = str(dynamic_rules_link_)
-                self.proxies = proxies
-                self.cert = cert
-                self.random_string = (
-                    random_string if random_string else uuid.uuid1().hex
-                )
 
         class Supported(object):
             def __init__(

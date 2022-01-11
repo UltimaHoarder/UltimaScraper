@@ -13,7 +13,6 @@ from apis.starsavn.classes.extras import (
     ErrorDetails,
     content_types,
     endpoint_links,
-    handle_refresh,
     remove_errors,
 )
 from apis.starsavn.classes.highlight_model import create_highlight

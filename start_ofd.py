@@ -31,7 +31,7 @@ if __name__ == "__main__":
     api_helper.parsed_args = parsed_args
 
     config_path = Path(".settings", "config.json")
-    json_config, json_config2 = main_helper.get_config(config_path)
+    json_config, _updated = main_helper.get_config(config_path)
     json_settings = json_config["settings"]
     exit_on_completion = json_settings["exit_on_completion"]
     infinite_loop = json_settings["infinite_loop"]

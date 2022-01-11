@@ -23,7 +23,7 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Optional, Tuple, Union
 import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
 import requests
-import ujson
+import orjson
 from aiohttp.client import ClientSession
 from aiohttp.client_exceptions import (
     ClientOSError,
@@ -340,22 +340,6 @@ def filter_metadata(datas):
             for item2 in items:
                 item2.pop("session")
     return datas
-
-
-def import_archive(archive_path: Path) -> Any:
-    metadata: dict[str, Any] = {}
-    if (
-        archive_path.exists()
-        and archive_path.stat().st_size
-        and archive_path.suffix != ".db"
-    ):
-        with open(archive_path, "r", encoding="utf-8") as outfile:
-            while not metadata:
-                try:
-                    metadata = ujson.load(outfile)
-                except OSError as e:
-                    print(traceback.format_exc())
-    return metadata
 
 
 def legacy_database_fixer(database_path, database, database_name, database_exists):
@@ -798,7 +782,7 @@ class download_session(tqdm):
             self.total += tsize
 
 
-def prompt_modified(message: str, path: str):
+def prompt_modified(message: str, path: Path):
     editor = shutil.which(
         os.environ.get("EDITOR", "notepad" if os_name == "Windows" else "nano")
     )
@@ -809,34 +793,37 @@ def prompt_modified(message: str, path: str):
         input(message)
 
 
+def import_json(json_path: Path):
+    json_file: dict[str, Any] = {}
+    if json_path.exists() and json_path.stat().st_size and json_path.suffix == ".json":
+        with open(json_path, encoding="utf-8") as fp:
+            json_file = orjson.loads(fp.read())
+    return json_file
+
+
+def object_to_json(item: Any):
+    _json = orjson.loads(orjson.dumps(item, default=lambda o: o.__dict__))
+    return _json
+
+
 def get_config(config_path: Path):
-    if os.path.exists(config_path):
-        with open(config_path, encoding="utf-8") as fp:
-            json_config = ujson.load(fp)
-    else:
-        json_config: dict[str, Any] = {}
-    json_config2 = copy.deepcopy(json_config)
-    json_config = make_settings.fix(json_config)
-    file_name = os.path.basename(config_path)
-    wow = make_settings.Config(**json_config)
-    json_config = ujson.loads(
-        json.dumps(
-            make_settings.Config(**json_config).export(), default=lambda o: o.__dict__
-        )
-    )
+    json_config = import_json(config_path)
+    old_json_config = copy.deepcopy(json_config)
+    new_json_config = make_settings.fix(json_config)
+    converted_object = make_settings.Config(**new_json_config).export()
+    new_json_config = object_to_json(converted_object)
     updated = False
-    if json_config != json_config2:
+    if new_json_config != old_json_config:
         updated = True
-        filepath = os.path.join(".settings", "config.json")
-        export_data(json_config, filepath)
+        export_data(new_json_config, config_path)
     if not json_config:
         prompt_modified(
-            f"The .settings\\{file_name} file has been created. Fill in whatever you need to fill in and then press enter when done.\n",
+            f"The {config_path} file has been created. Fill in whatever you need to fill in and then press enter when done.\n",
             config_path,
         )
-        with open(config_path, encoding="utf-8") as fp:
-            json_config = ujson.load(fp)
-    return json_config, updated
+        new_json_config = import_json(config_path)
+
+    return new_json_config, updated
 
 
 class OptionsFormat:
@@ -970,16 +957,14 @@ async def process_profiles(
         for user_profile in temp_users:
             user_auth_filepath = user_profile.joinpath("auth.json")
             datas: dict[str, Any] = {}
-            if user_auth_filepath.exists():
-                with open(user_auth_filepath, encoding="utf-8") as fp:
-                    temp_json_auth = ujson.load(fp)
-                json_auth = temp_json_auth["auth"]
-                if not json_auth.get("active", None):
-                    continue
-                json_auth["username"] = user_profile.name
-                auth = api.add_auth(json_auth)
-                auth.session_manager.proxies = global_settings.proxies
-                datas["auth"] = auth.auth_details.export()
+            temp_json_auth = import_json(user_auth_filepath)
+            json_auth = temp_json_auth["auth"]
+            if not json_auth.get("active", None):
+                continue
+            json_auth["username"] = user_profile.name
+            auth = api.add_auth(json_auth)
+            auth.session_manager.proxies = global_settings.proxies
+            datas["auth"] = auth.auth_details.export()
             if datas:
                 export_data(datas, user_auth_filepath)
     return api
@@ -1001,7 +986,7 @@ async def account_setup(
             )
         )
         if authed.isPerformer:
-            imported = import_archive(metadata_filepath)
+            imported = import_json(metadata_filepath)
             if "auth" in imported:
                 imported = imported["auth"]
             mass_messages = await authed.get_mass_messages(resume=imported)
@@ -1149,8 +1134,8 @@ def export_data(
     directory = os.path.dirname(path)
     if directory:
         os.makedirs(directory, exist_ok=True)
-    with open(path, "w", encoding=encoding) as outfile:
-        ujson.dump(metadata, outfile, indent=2, escape_forward_slashes=False)
+    with open(path, "wb") as outfile:
+        outfile.write(orjson.dumps(metadata, option=orjson.OPT_INDENT_2))
 
 
 def grouper(n, iterable, fillvalue: Optional[Union[str, int]] = None):
@@ -1171,22 +1156,6 @@ def remove_mandatory_files(files, keep=[]):
     if keep:
         folders = [x for x in files if x in keep]
     return folders
-
-
-def legacy_metadata(directory):
-    if os.path.exists(directory):
-        items = os.listdir(directory)
-        matches = ["desktop.ini"]
-        metadatas = []
-        items = [x for x in items if x not in matches]
-        if items:
-            for item in items:
-                path = os.path.join(directory, item)
-                with open(path, encoding="utf-8") as fp:
-                    metadata = ujson.load(fp)
-                metadatas.append(metadata)
-                print
-        print
 
 
 def metadata_fixer(directory):
@@ -1234,7 +1203,7 @@ async def send_webhook(
             embed.title = f"Auth {category2.capitalize()}"
             embed.add_field("username", username)
             message.embeds.append(embed)
-            message = ujson.loads(json.dumps(message, default=lambda o: o.__dict__))
+            message = orjson.loads(json.dumps(message, default=lambda o: o.__dict__))
             requests.post(webhook_link, json=message)
     if category == "download_webhook":
         subscriptions: list[create_user] = await item.get_subscriptions(refresh=False)
@@ -1250,7 +1219,7 @@ async def send_webhook(
                     embed.add_field("link", subscription.get_link())
                     embed.image.url = subscription.avatar
                     message.embeds.append(embed)
-                    message = ujson.loads(
+                    message = orjson.loads(
                         json.dumps(message, default=lambda o: o.__dict__)
                     )
                     requests.post(webhook_link, json=message)

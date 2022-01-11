@@ -2,13 +2,11 @@ from __future__ import annotations
 
 import asyncio
 import math
-from asyncio.tasks import Task
 from datetime import datetime
 from itertools import chain, product
 from multiprocessing.pool import Pool
 from typing import TYPE_CHECKING, Any, Dict, List, Optional, Union
 
-import jsonpickle
 from apis import api_helper
 from apis.fansly.classes.extras import (
     ErrorDetails,
@@ -71,6 +69,12 @@ class create_auth(create_user):
             api_helper.session_manager.__init__(
                 self, auth, headers, proxies, max_threads, use_cookies
             )
+
+    async def convert_to_user(self):
+        user = await self.get_user(self.username)
+        for k, _v in user.__dict__.items():
+            setattr(user, k, getattr(self, k))
+        return user
 
     def update(self, data: Dict[str, Any]):
         data = data["response"][0]
@@ -289,31 +293,17 @@ class create_auth(create_user):
         temp_subscriptions = await self.session_manager.json_request(subscriptions_link)
         subscriptions = temp_subscriptions["response"]["subscriptions"]
 
-        # Following logic is unique to creators only
+        # If user is a creator, add them to the subscription list
         results: list[list[create_user]] = []
         if self.isPerformer:
-            temp_session_manager = self.session_manager
-            temp_pool = self.pool
-            temp_paid_content = self.paid_content
-            delattr(self, "session_manager")
-            delattr(self, "pool")
-            delattr(self, "paid_content")
-            json_authed = jsonpickle.encode(self, unpicklable=False)
-            json_authed = jsonpickle.decode(json_authed)
-            self.session_manager = temp_session_manager
-            self.pool = temp_pool
-            self.paid_content = temp_paid_content
-            temp_auth = await self.get_user(self.username)
-            if isinstance(json_authed, dict):
-                json_authed = json_authed | temp_auth.__dict__
-
-            subscription = create_user(json_authed, self)
-            subscription.subscriber = self
+            subscription = await self.convert_to_user()
+            if isinstance(subscription, ErrorDetails):
+                return result
             subscription.subscribedByData = {}
             new_date = datetime.now() + relativedelta(years=1)
             subscription.subscribedByData["expiredAt"] = new_date.isoformat()
-            subscription = [subscription]
-            results.append(subscription)
+            subscriptions = [subscription]
+            results.append(subscriptions)
         if not identifiers:
 
             async def multi(item: dict[str, Any]):

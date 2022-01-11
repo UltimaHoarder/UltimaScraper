@@ -1,3 +1,4 @@
+from pathlib import Path
 from sys import exit
 import sys
 import os
@@ -23,28 +24,26 @@ def version_check():
 
 
 def check_config():
-    file_name = "config.json"
-    path = os.path.join(".settings", file_name)
     import helpers.main_helper as main_helper
 
-    json_config, updated = main_helper.get_config(path)
+    config_path = Path(".settings", "config.json")
+    json_config, updated = main_helper.get_config(config_path)
     if updated:
         main_helper.prompt_modified(
-            f"The .settings\\{file_name} file has been updated. Fill in whatever you need to fill in and then press enter when done.\n",
-            path,
+            f"The {config_path} file has been updated. Fill in whatever you need to fill in and then press enter when done.\n",
+            config_path,
         )
     return json_config
 
 
 def check_profiles():
-    file_name = "config.json"
-    path = os.path.join(".settings", file_name)
+    config_path = Path(".settings", "config.json")
     import helpers.main_helper as main_helper
     from apis.onlyfans.onlyfans import auth_details as onlyfans_auth_details
     from apis.fansly.fansly import auth_details as fansly_auth_details
     from apis.starsavn.starsavn import auth_details as starsavn_auth_details
 
-    json_config, json_config2 = main_helper.get_config(path)
+    json_config, _updated = main_helper.get_config(config_path)
     json_settings = json_config["settings"]
     profile_directories = json_settings["profile_directories"]
     profile_directory = profile_directories[0]

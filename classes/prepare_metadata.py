@@ -7,7 +7,6 @@ from itertools import chain, groupby
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
-import jsonpickle
 from apis.onlyfans.classes.extras import media_types
 from helpers import main_helper
 
@@ -118,30 +117,6 @@ class create_metadata(object):
             print
         return new_format
 
-    def export(self, convert_type="json", keep_empty_items=False) -> dict:
-        if not keep_empty_items:
-            self.remove_empty()
-        value = {}
-        if convert_type == "json":
-            new_format_copied = copy.deepcopy(self)
-            for key, status in new_format_copied.content:
-                for key2, posts in status:
-                    for post in posts:
-                        for media in post.medias:
-                            delattr(media, "session")
-                            if getattr(media, "old_filepath", None) != None:
-                                delattr(media, "old_filepath")
-                            if getattr(media, "new_filepath", None) != None:
-                                delattr(media, "new_filepath")
-                            print
-                        print
-                print
-            value = jsonpickle.encode(new_format_copied, unpicklable=False)
-            value = jsonpickle.decode(value)
-            if not isinstance(value, dict):
-                return {}
-        return value
-
     def convert(
         self, convert_type: str = "json", keep_empty_items: bool = False
     ) -> dict[str, Any]:
@@ -149,11 +124,7 @@ class create_metadata(object):
             self.remove_empty()
         value: dict[str, Any] = {}
         if convert_type == "json":
-            new_format_copied = copy.deepcopy(self)
-            value = jsonpickle.encode(new_format_copied, unpicklable=False)
-            value = jsonpickle.decode(value)
-            if not isinstance(value, dict):
-                return {}
+            value = main_helper.object_to_json(self)
         return value
 
     def remove_empty(self):
@@ -239,22 +210,6 @@ class format_content(object):
             self.medias = option.get("medias", [])
             self.postedAt = option.get("postedAt", "")
 
-        def convert(
-            self, convert_type: str = "json", keep_empty_items: bool = False
-        ) -> dict[str, Any]:
-            if not keep_empty_items:
-                self.remove_empty()
-            value: dict[str, Any] = {}
-            if convert_type == "json":
-                new_format_copied = copy.deepcopy(self)
-                for media in new_format_copied.medias:
-                    media.convert()
-                value = jsonpickle.encode(new_format_copied, unpicklable=False)
-                value = jsonpickle.decode(value)
-                if not isinstance(value, dict):
-                    return {}
-            return value
-
     class media_item(create_metadata):
         def __init__(self, option={}):
             # create_metadata.__init__(self, option)
@@ -269,19 +224,6 @@ class format_content(object):
             self.media_type = option.get("media_type", None)
             self.session = option.get("session", None)
             self.downloaded = option.get("downloaded", False)
-
-        def convert(self, convert_type="json", keep_empty_items=False) -> dict:
-            if not keep_empty_items:
-                self.remove_empty()
-            value = {}
-            if convert_type == "json":
-                value.pop("session", None)
-                new_format_copied = copy.deepcopy(self)
-                value = jsonpickle.encode(new_format_copied, unpicklable=False)
-                value = jsonpickle.decode(value)
-                if not isinstance(value, dict):
-                    return {}
-            return value
 
     def __iter__(self):
         for attr, value in self.__dict__.items():
@@ -469,19 +411,6 @@ class prepare_reformat(object):
         directory2 = os.path.join(directory, path)
         directory3 = os.path.abspath(directory2)
         return Path(directory3)
-
-    def convert(self, convert_type="json", keep_empty_items=False) -> dict:
-        if not keep_empty_items:
-            self.remove_empty()
-        value = {}
-        if convert_type == "json":
-            new_format_copied = copy.deepcopy(self)
-            delattr(new_format_copied, "session")
-            value = jsonpickle.encode(new_format_copied, unpicklable=False)
-            value = jsonpickle.decode(value)
-            if not isinstance(value, dict):
-                return {}
-        return value
 
     def remove_empty(self):
         copied = copy.deepcopy(self)

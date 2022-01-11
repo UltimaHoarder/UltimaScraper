@@ -6,8 +6,7 @@ python-socks[asyncio]
 python-dateutil
 lxml
 mergedeep
-jsonpickle
-ujson
+orjson
 sqlalchemy>=1.4.20
 alembic
 tqdm>=4.62.0

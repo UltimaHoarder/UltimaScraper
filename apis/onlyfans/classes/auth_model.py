@@ -282,7 +282,7 @@ class create_auth(create_user):
             delattr(self, "session_manager")
             delattr(self, "pool")
             delattr(self, "paid_content")
-            json_authed:dict[str,Any] = jsonpickle.encode(self, unpicklable=False)
+            json_authed: dict[str, Any] = jsonpickle.encode(self, unpicklable=False)
             json_authed = jsonpickle.decode(json_authed)
             self.session_manager = temp_session_manager
             self.pool = temp_pool

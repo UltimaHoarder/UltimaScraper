@@ -857,7 +857,7 @@ class OptionsFormat:
         final_string = f"Choose {options_type.capitalize()}: All = 0"
         if isinstance(self.auto_choice, str):
             self.auto_choice = [x for x in self.auto_choice.split(",") if x]
-        elif isinstance(self.auto_choice,list):
+        elif isinstance(self.auto_choice, list):
             self.auto_choice = [x for x in self.auto_choice if x]
 
         match options_type:
@@ -910,11 +910,12 @@ class OptionsFormat:
                         input_list.append(self.item_keys[input_value - 1])
                     except IndexError:
                         continue
-            
+
         final_list = [
             choice for choice in input_list for key in self.item_keys if choice == key
         ]
         return final_list
+
 
 def choose_option(
     subscription_list, auto_scrape: Union[str, bool], use_default_message: bool = False

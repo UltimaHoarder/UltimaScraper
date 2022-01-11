@@ -473,7 +473,7 @@ async def process_mass_messages(
     mass_message_path = profile_directory.joinpath("Mass Messages.json")
     chats_path = profile_directory.joinpath("Chats.json")
     if os.path.exists(chats_path):
-        chats = main_helper.import_archive(chats_path)
+        chats = main_helper.import_json(chats_path)
     date_object = datetime.today()
     date_string = date_object.strftime("%d-%m-%Y %H:%M:%S")
     for mass_message in mass_messages:

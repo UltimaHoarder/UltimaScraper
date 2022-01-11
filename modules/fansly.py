@@ -487,7 +487,7 @@ async def process_mass_messages(
     mass_message_path = os.path.join(profile_metadata_directory, "Mass Messages.json")
     chats_path = os.path.join(profile_metadata_directory, "Chats.json")
     if os.path.exists(chats_path):
-        chats = main_helper.import_archive(chats_path)
+        chats = main_helper.import_json(chats_path)
     date_object = datetime.today()
     date_string = date_object.strftime("%d-%m-%Y %H:%M:%S")
     for mass_message in mass_messages:
@@ -768,7 +768,7 @@ async def legacy_metadata_fixer(
 ) -> tuple[create_metadata, list[Path]]:
     delete_legacy_metadatas: list[Path] = []
     new_format: list[dict[str, Any]] = []
-    new_metadata_set = main_helper.import_archive(new_metadata_filepath)
+    new_metadata_set = main_helper.import_json(new_metadata_filepath)
     for legacy_metadata_filepath in legacy_metadata_filepaths:
         if (
             legacy_metadata_filepath == new_metadata_filepath
@@ -776,7 +776,7 @@ async def legacy_metadata_fixer(
         ):
             continue
         api_type = legacy_metadata_filepath.stem
-        legacy_metadata = main_helper.import_archive(legacy_metadata_filepath)
+        legacy_metadata = main_helper.import_json(legacy_metadata_filepath)
         legacy_metadata = create_metadata(legacy_metadata, api_type=api_type).convert()
         new_format.append(legacy_metadata)
         delete_legacy_metadatas.append(legacy_metadata_filepath)

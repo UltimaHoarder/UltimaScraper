@@ -42,10 +42,12 @@ async def start_datascraper(
         return None
 
     async def default(
-        datascraper: m_onlyfans.OnlyFansDataScraper
+        datascraper: Optional[m_onlyfans.OnlyFansDataScraper
         | m_fansly.FanslyDataScraper
-        | m_starsavn.StarsAVNDataScraper,
-    ):
+        | m_starsavn.StarsAVNDataScraper,]
+    ):  
+        if not datascraper:
+            return
         api = datascraper.api
         global_settings = api.get_global_settings()
         site_settings = api.get_site_settings()
@@ -100,6 +102,7 @@ async def start_datascraper(
             await main_helper.process_webhooks(api, "download_webhook", "succeeded")
 
     archive_time = timeit.default_timer()
+    datascraper = None
     match site_name_lower:
         case "onlyfans":
             if not isinstance(api_, OnlyFans.start):
@@ -108,7 +111,6 @@ async def start_datascraper(
                     config=Config(**json_config),
                 )
             datascraper = m_onlyfans.OnlyFansDataScraper(api_)
-            await default(datascraper)
         case "fansly":
             if not isinstance(api_, Fansly.start):
                 api_ = Fansly.start(
@@ -116,7 +118,6 @@ async def start_datascraper(
                     config=Config(**json_config),
                 )
             datascraper = m_fansly.FanslyDataScraper(api_)
-            await default(datascraper)
         case "starsavn":
             if not isinstance(api_, StarsAVN.start):
                 api_ = StarsAVN.start(
@@ -124,7 +125,7 @@ async def start_datascraper(
                     config=Config(**json_config),
                 )
             datascraper = m_starsavn.StarsAVNDataScraper(api_)
-            await default(datascraper)
+    await default(datascraper)
     stop_time = str(int(timeit.default_timer() - archive_time) / 60)[:4]
     print("Archive Completed in " + stop_time + " Minutes")
     return api_

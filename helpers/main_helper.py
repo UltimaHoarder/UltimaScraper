@@ -181,11 +181,16 @@ def parse_links(site_name, input_link):
 
 
 def clean_text(string: str, remove_spaces: bool = False):
+    try:
+        import lxml as unused_lxml_ # type: ignore
+        html_parser = 'lxml'
+    except ImportError:
+            html_parser = 'html.parser'
     matches = ["\n", "<br>"]
     for m in matches:
         string = string.replace(m, " ").strip()
     string = " ".join(string.split())
-    string = BeautifulSoup(string, "lxml").get_text()
+    string = BeautifulSoup(string, html_parser).get_text()
     SAFE_PTN = r"[|\^&+\-%*/=!:\"?><]"
     string = re.sub(SAFE_PTN, " ", string.strip()).strip()
     if remove_spaces:

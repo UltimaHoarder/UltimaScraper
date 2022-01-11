@@ -856,7 +856,9 @@ class OptionsFormat:
     def formatter(self, options_type: str):
         final_string = f"Choose {options_type.capitalize()}: All = 0"
         if isinstance(self.auto_choice, str):
-            self.auto_choice = self.auto_choice.split(",")
+            self.auto_choice = [x for x in self.auto_choice.split(",") if x]
+        elif isinstance(self.auto_choice,list):
+            self.auto_choice = [x for x in self.auto_choice if x]
 
         match options_type:
             case "profiles":
@@ -894,25 +896,25 @@ class OptionsFormat:
     def choose_option(self):
         input_list: list[str] = self.item_keys
         final_list: list[str] = []
-        if isinstance(self.auto_choice, list):
-            if not self.auto_choice:
-                print(self.string)
-                input_value = int(input())
-                if input_value != 0:
-                    input_list = []
-                    input_values = [input_value]
-                    for input_value in input_values:
-                        try:
-                            input_list.append(self.item_keys[input_value - 1])
-                        except IndexError:
-                            continue
-            else:
-                input_list = self.auto_choice
+        if self.auto_choice:
+            if isinstance(self.auto_choice, list):
+                input_list = [str(x) for x in self.auto_choice]
+        else:
+            print(self.string)
+            input_value = int(input())
+            if input_value != 0:
+                input_list = []
+                input_values = [input_value]
+                for input_value in input_values:
+                    try:
+                        input_list.append(self.item_keys[input_value - 1])
+                    except IndexError:
+                        continue
+            
         final_list = [
             choice for choice in input_list for key in self.item_keys if choice == key
         ]
         return final_list
-
 
 def choose_option(
     subscription_list, auto_scrape: Union[str, bool], use_default_message: bool = False

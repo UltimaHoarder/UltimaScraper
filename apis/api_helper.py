@@ -34,8 +34,6 @@ from aiohttp_socks import ProxyConnectionError, ProxyConnector, ProxyError
 from database.databases.user_data.models.media_table import template_media_table
 from mergedeep.mergedeep import Strategy, merge
 
-from helpers.main_helper import download_session
-
 
 def load_classes():
     import apis.fansly.classes as fansly_classes
@@ -66,6 +64,8 @@ def load_extras():
 
 
 if TYPE_CHECKING:
+    from helpers.main_helper import download_session
+
     onlyfans_classes, fansly_classes, starsavn_classes = load_classes()
     auth_types, user_types = load_classes2()
     onlyfans_extras, fansly_extras, starsavn_extras = load_extras()
@@ -83,14 +83,6 @@ if getattr(sys, "frozen", False):
 else:
     path = up(up(os.path.realpath(__file__)))
 os.chdir(path)
-
-
-class set_settings:
-    def __init__(self, option={}):
-        self.proxies = option.get("proxies")
-        self.cert = option.get("cert")
-        self.json_global_settings = option
-        global_settings = self.json_global_settings
 
 
 def chunks(l, n):

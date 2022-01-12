@@ -104,8 +104,6 @@ async def fix_directories(
             # a = randint(0,1)
             # await asyncio.sleep(a)
             if old_filepath and old_filepath != new_filepath:
-                if new_filepath.exists():
-                    os.remove(new_filepath)
                 moved = None
                 while not moved:
                     try:

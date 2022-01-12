@@ -22,8 +22,8 @@ from typing import TYPE_CHECKING, Any, BinaryIO, Optional, Tuple, Union
 
 import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
-import requests
 import orjson
+import requests
 from aiohttp.client import ClientSession
 from aiohttp.client_exceptions import (
     ClientOSError,
@@ -807,6 +807,13 @@ def import_json(json_path: Path):
     return json_file
 
 
+def export_json(metadata: list[Any] | dict[str, Any], filepath: Path):
+    if filepath.is_file():
+        filepath.parent.mkdir(exist_ok=True)
+    with open(filepath, "wb") as outfile:
+        outfile.write(orjson.dumps(metadata, option=orjson.OPT_INDENT_2))
+
+
 def object_to_json(item: Any):
     _json = orjson.loads(orjson.dumps(item, default=lambda o: o.__dict__))
     return _json
@@ -821,7 +828,7 @@ def get_config(config_path: Path):
     updated = False
     if new_json_config != old_json_config:
         updated = True
-        export_data(new_json_config, config_path)
+        export_json(new_json_config, config_path)
     if not json_config:
         prompt_modified(
             f"The {config_path} file has been created. Fill in whatever you need to fill in and then press enter when done.\n",
@@ -885,6 +892,7 @@ class OptionsFormat:
                     for key in self.items
                     if choice == key.username
                 ]
+        return
 
     def choose_option(self):
         input_list: list[str] = self.item_keys
@@ -976,7 +984,7 @@ async def process_profiles(
             auth.session_manager.proxies = global_settings.proxies
             datas["auth"] = auth.auth_details.export()
             if datas:
-                export_data(datas, user_auth_filepath)
+                export_json(datas, user_auth_filepath)
     return api
 
 
@@ -1001,7 +1009,7 @@ async def account_setup(
                 imported = imported["auth"]
             mass_messages = await authed.get_mass_messages(resume=imported)
             if mass_messages:
-                export_data(mass_messages, metadata_filepath)
+                export_json(mass_messages, metadata_filepath)
         # chats = api.get_chats()
         if identifiers or site_settings.jobs.scrape.subscriptions:
             subscriptions.extend(
@@ -1142,14 +1150,6 @@ async def write_data(
             progress_bar.update_total_size(-response.content_length)
         status_code = 2
     return status_code
-
-
-def export_data(metadata: list[Any] | dict[str, Any], path: Path):
-    directory = os.path.dirname(path)
-    if directory:
-        os.makedirs(directory, exist_ok=True)
-    with open(path, "wb") as outfile:
-        outfile.write(orjson.dumps(metadata, option=orjson.OPT_INDENT_2))
 
 
 def grouper(n, iterable, fillvalue: Optional[Union[str, int]] = None):

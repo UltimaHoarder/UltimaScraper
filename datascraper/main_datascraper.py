@@ -75,9 +75,11 @@ async def start_datascraper(
                     await main_helper.process_webhooks(api, "auth_webhook", "failed")
                 auth_details: dict[str, Any] = {}
                 auth_details["auth"] = auth.auth_details.export()
-                profile_directory = auth.directory_manager.profile.root_directory
-                user_auth_filepath = profile_directory.joinpath("auth.json")
-                main_helper.export_data(auth_details, user_auth_filepath)
+                profile_directory = api.base_directory_manager.profile.root_directory
+                user_auth_filepath = profile_directory.joinpath(
+                    api.site_name, auth.auth_details.username, "auth.json"
+                )
+                main_helper.export_json(auth_details, user_auth_filepath)
                 continue
             auth_count += 1
             subscription_array.extend(subscriptions)

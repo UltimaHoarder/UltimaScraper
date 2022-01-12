@@ -74,7 +74,7 @@ def check_profiles():
                     new_item["auth"] = starsavn_auth_details().export()
                 case _:
                     continue
-            main_helper.export_data(new_item, auth_filepath)
+            main_helper.export_json(new_item, auth_filepath)
             main_helper.prompt_modified(
                 f"{auth_filepath} has been created. Fill in the relevant details and then press enter to continue.",
                 auth_filepath,

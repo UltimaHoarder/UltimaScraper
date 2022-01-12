@@ -550,7 +550,7 @@ async def process_mass_messages(
             print
         if not mass_found:
             mass_message["status"] = False
-    main_helper.export_data(chats, chats_path)
+    main_helper.export_json(chats, chats_path)
     for mass_message in mass_messages:
         found = mass_message["found"]
         if found and found["media"]:
@@ -575,7 +575,7 @@ async def process_mass_messages(
             global_found.append(found)
         print
     print
-    main_helper.export_data(mass_messages, mass_message_path)
+    main_helper.export_json(mass_messages, mass_message_path)
     return global_found
 
 

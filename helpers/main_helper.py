@@ -777,7 +777,7 @@ def import_json(json_path: Path):
 
 
 def export_json(metadata: list[Any] | dict[str, Any], filepath: Path):
-    if filepath.is_file():
+    if filepath.suffix:
         filepath.parent.mkdir(exist_ok=True)
     with open(filepath, "wb") as outfile:
         outfile.write(orjson.dumps(metadata, option=orjson.OPT_INDENT_2))
@@ -796,14 +796,19 @@ def get_config(config_path: Path):
     new_json_config = object_to_json(converted_object.export())
     updated = False
     if new_json_config != old_json_config:
-        updated = True
         export_json(new_json_config, config_path)
-    if not json_config:
-        prompt_modified(
-            f"The {config_path} file has been created. Fill in whatever you need to fill in and then press enter when done.\n",
-            config_path,
-        )
-        new_json_config = import_json(config_path)
+        if json_config:
+            updated = True
+            prompt_modified(
+                f"The {config_path} file has been updated. Fill in whatever you need to fill in and then press enter when done.\n",
+                config_path,
+            )
+        else:
+            if not json_config:
+                prompt_modified(
+                    f"The {config_path} file has been created. Fill in whatever you need to fill in and then press enter when done.\n",
+                    config_path,
+                )
 
     return converted_object, updated
 

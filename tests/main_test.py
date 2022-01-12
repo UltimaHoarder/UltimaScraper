@@ -29,11 +29,6 @@ def check_config():
 
     config_path = Path(".settings", "config.json")
     json_config, updated = main_helper.get_config(config_path)
-    if updated:
-        main_helper.prompt_modified(
-            f"The {config_path} file has been updated. Fill in whatever you need to fill in and then press enter when done.\n",
-            config_path,
-        )
     return json_config
 
 

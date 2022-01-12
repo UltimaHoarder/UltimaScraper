@@ -68,7 +68,7 @@ if __name__ == "__main__":
                 print("Input anything to continue")
                 input()
             elif loop_timeout:
-                print("Pausing scraper for " + loop_timeout + " seconds.")
+                print(f"Pausing scraper for {loop_timeout} seconds.")
                 await asyncio.sleep(float(loop_timeout))
 
     asyncio.run(main())

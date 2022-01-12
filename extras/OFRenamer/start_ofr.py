@@ -50,11 +50,12 @@ async def fix_directories(
         for media in media_db:
             media_id = media.media_id
             if media.link:
-                path = urlparse.urlparse(media.link).path
+                url_path = urlparse.urlparse(media.link).path
+                url_path = Path(url_path)
             else:
-                path: str = media.filename
-            new_filename = os.path.basename(path)
-            original_filename, ext = os.path.splitext(new_filename)
+                url_path = Path(media.filename)
+            new_filename = url_path.name
+            original_filename, ext = (url_path.stem, url_path.suffix)
             ext = ext.replace(".", "")
 
             file_directory_format = site_settings.file_directory_format
@@ -104,6 +105,8 @@ async def fix_directories(
             # a = randint(0,1)
             # await asyncio.sleep(a)
             if old_filepath and old_filepath != new_filepath:
+                # if new_filepath.exists():
+                #     os.remove(new_filepath)
                 moved = None
                 while not moved:
                     try:

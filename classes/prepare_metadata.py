@@ -408,9 +408,8 @@ class prepare_reformat(object):
             path = path.replace("{text}", filtered_text)
         else:
             path = path.replace("{text}", "")
-        directory2 = os.path.join(directory, path)
-        directory3 = os.path.abspath(directory2)
-        return Path(directory3)
+        x_path = directory.joinpath(path)
+        return x_path
 
     def remove_empty(self):
         copied = copy.deepcopy(self)

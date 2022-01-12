@@ -169,6 +169,7 @@ class Settings(object):
                 class download_webhook:
                     def __init__(self, option: dict[str, Any] = {}) -> None:
                         self.succeeded = webhook_template(option.get("succeeded", {}))
+                        self.failed = webhook_template(option.get("failed", {}))
 
                 self.global_webhooks = option.get("global_webhooks", [])
                 self.global_status = option.get("global_status", True)
@@ -251,7 +252,7 @@ class Config(object):
         self.supported = Supported(**supported)
 
     def export(self):
-        base = copy.copy(self)
+        base = copy.deepcopy(self)
         base.settings.__dict__["profile_directories"] = [
             str(x) for x in base.settings.profile_directories
         ]

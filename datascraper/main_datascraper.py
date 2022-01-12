@@ -28,16 +28,15 @@ api_helper = OnlyFans.api_helper
 
 
 async def start_datascraper(
-    json_config: dict[Any, Any],
+    config: Config,
     site_name_lower: str,
     api_: Optional[OnlyFans.start | Fansly.start | StarsAVN.start] = None,
     webhooks: bool = True,
 ):
-    json_settings = json_config["settings"]
-    main_helper.assign_vars(json_config)
+    global_settings = config.settings
 
-    proxies: list[str] = await api_helper.test_proxies(json_settings["proxies"])
-    if json_settings["proxies"] and not proxies:
+    proxies: list[str] = await api_helper.test_proxies(global_settings.proxies)
+    if global_settings.proxies and not proxies:
         print("Unable to create session")
         return None
 
@@ -72,7 +71,9 @@ async def start_datascraper(
             )
             if not setup:
                 if webhooks:
-                    await main_helper.process_webhooks(api, "auth_webhook", "failed")
+                    await main_helper.process_webhooks(
+                        api, "auth_webhook", "failed", global_settings
+                    )
                 auth_details: dict[str, Any] = {}
                 auth_details["auth"] = auth.auth_details.export()
                 profile_directory = api.base_directory_manager.profile.root_directory
@@ -83,16 +84,20 @@ async def start_datascraper(
                 continue
             auth_count += 1
             subscription_array.extend(subscriptions)
-            await main_helper.process_webhooks(api, "auth_webhook", "succeeded")
+            await main_helper.process_webhooks(
+                api, "auth_webhook", "succeeded", global_settings
+            )
             # Do stuff with authed user
         subscription_options = OptionsFormat(
             subscription_array, "subscriptions", site_settings.auto_model_choice
         )
         subscription_list = subscription_options.final_choices
         await main_helper.process_jobs(datascraper, subscription_list, site_settings)
-        await main_helper.process_downloads(api, datascraper)
+        await main_helper.process_downloads(api, datascraper, global_settings)
         if webhooks:
-            await main_helper.process_webhooks(api, "download_webhook", "succeeded")
+            await main_helper.process_webhooks(
+                api, "download_webhook", "succeeded", global_settings
+            )
 
     archive_time = timeit.default_timer()
     datascraper = None
@@ -100,22 +105,22 @@ async def start_datascraper(
         case "onlyfans":
             if not isinstance(api_, OnlyFans.start):
                 api_ = OnlyFans.start(
-                    max_threads=json_settings["max_threads"],
-                    config=Config(**json_config),
+                    max_threads=global_settings.max_threads,
+                    config=config,
                 )
             datascraper = m_onlyfans.OnlyFansDataScraper(api_)
         case "fansly":
             if not isinstance(api_, Fansly.start):
                 api_ = Fansly.start(
-                    max_threads=json_settings["max_threads"],
-                    config=Config(**json_config),
+                    max_threads=global_settings.max_threads,
+                    config=config,
                 )
             datascraper = m_fansly.FanslyDataScraper(api_)
         case "starsavn":
             if not isinstance(api_, StarsAVN.start):
                 api_ = StarsAVN.start(
-                    max_threads=json_settings["max_threads"],
-                    config=Config(**json_config),
+                    max_threads=global_settings.max_threads,
+                    config=config,
                 )
             datascraper = m_starsavn.StarsAVNDataScraper(api_)
     await default(datascraper)

@@ -145,7 +145,10 @@ class FanslyDataScraper:
         return
 
     async def prepare_downloads(self, subscription: create_user):
-        site_settings = subscription.get_authed().api.get_site_settings()
+        global_settings = subscription.get_api().get_global_settings()
+        site_settings = subscription.get_api().get_site_settings()
+        if not (global_settings and site_settings):
+            return
         subscription_directory_manager = subscription.directory_manager
         directory = subscription_directory_manager.root_download_directory
         print
@@ -180,7 +183,9 @@ class FanslyDataScraper:
                 string += f"Name: {subscription.username} | Type: {api_type} | Count: {media_set_count}{location} | Directory: {directory}\n"
                 if media_set_count:
                     print(string)
-                    await main_helper.async_downloads(download_list, subscription)
+                    await main_helper.async_downloads(
+                        download_list, subscription, global_settings
+                    )
                 while True:
                     try:
                         database_session.commit()
@@ -188,8 +193,6 @@ class FanslyDataScraper:
                     except OperationalError:
                         database_session.rollback()
                 database_session.close()
-            print
-        print
 
 
 # Allows the user to choose which api they want to scrape
@@ -263,7 +266,7 @@ def scrape_choice(authed: create_auth, subscription: create_user):
         if xxx[2] == "Mass Messages":
             if not subscription.is_me():
                 continue
-        new_item = dict()
+        new_item: dict[str, Any] = dict()
         new_item["api_message"] = xxx[0]
         new_item["api_array"] = {}
         new_item["api_array"]["api_link"] = xxx[1][0]

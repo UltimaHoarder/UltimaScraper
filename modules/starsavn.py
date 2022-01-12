@@ -139,7 +139,10 @@ class StarsAVNDataScraper:
         return
 
     async def prepare_downloads(self, subscription: create_user):
-        site_settings = subscription.get_authed().api.get_site_settings()
+        global_settings = subscription.get_api().get_global_settings()
+        site_settings = subscription.get_api().get_site_settings()
+        if not (global_settings and site_settings):
+            return
         subscription_directory_manager = subscription.directory_manager
         directory = subscription_directory_manager.root_download_directory
         print
@@ -174,7 +177,9 @@ class StarsAVNDataScraper:
                 string += f"Name: {subscription.username} | Type: {api_type} | Count: {media_set_count}{location} | Directory: {directory}\n"
                 if media_set_count:
                     print(string)
-                    await main_helper.async_downloads(download_list, subscription)
+                    await main_helper.async_downloads(
+                        download_list, subscription, global_settings
+                    )
                 while True:
                     try:
                         database_session.commit()
@@ -182,8 +187,6 @@ class StarsAVNDataScraper:
                     except OperationalError:
                         database_session.rollback()
                 database_session.close()
-            print
-        print
 
 
 async def start_datascraper(
@@ -1208,56 +1211,6 @@ async def media_scraper(
             new_set["content"].append(new_post)
     new_set["directories"] = directories
     return new_set
-
-
-# Downloads scraped content
-
-
-async def prepare_downloads(subscription: create_user):
-    download_info = subscription.download_info
-    if not download_info:
-        return
-    directory = download_info["directory"]
-    for api_type, metadata_path in download_info["metadata_locations"].items():
-        Session, engine = db_helper.create_database_session(metadata_path)
-        database_session: scoped_session = Session()
-        db_collection = db_helper.database_collection()
-        database = db_collection.database_picker("user_data")
-        if database:
-            media_table = database.media_table
-            settings = subscription.subscriber.extras["settings"]["supported"][
-                "starsavn"
-            ]["settings"]
-            overwrite_files = settings["overwrite_files"]
-            if overwrite_files:
-                download_list: Any = (
-                    database_session.query(media_table)
-                    .filter(media_table.api_type == api_type)
-                    .all()
-                )
-                media_set_count = len(download_list)
-            else:
-                download_list: Any = (
-                    database_session.query(media_table)
-                    .filter(media_table.downloaded == False)
-                    .filter(media_table.api_type == api_type)
-                )
-                media_set_count = db_helper.get_count(download_list)
-            location = ""
-            string = "Download Processing\n"
-            string += f"Name: {subscription.username} | Type: {api_type} | Count: {media_set_count}{location} | Directory: {directory}\n"
-            if media_set_count:
-                print(string)
-                await main_helper.async_downloads(download_list, subscription)
-            while True:
-                try:
-                    database_session.commit()
-                    break
-                except OperationalError:
-                    database_session.rollback()
-            database_session.close()
-        print
-    print
 
 
 def format_options(

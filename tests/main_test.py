@@ -44,23 +44,22 @@ def check_profiles():
     from apis.fansly.fansly import auth_details as fansly_auth_details
     from apis.starsavn.starsavn import auth_details as starsavn_auth_details
 
-    json_config, _updated = main_helper.get_config(config_path)
-    json_settings = json_config["settings"]
-    profile_directories = json_settings["profile_directories"]
+    config, _updated = main_helper.get_config(config_path)
+    settings = config.settings
+    profile_directories = settings.profile_directories
     profile_directory = profile_directories[0]
     matches = ["OnlyFans", "Fansly", "StarsAVN"]
     for string_match in matches:
-        q = os.path.abspath(profile_directory)
-        profile_site_directory = os.path.join(q, string_match)
+        profile_site_directory = profile_directory.joinpath(string_match)
         if os.path.exists(profile_site_directory):
             e = os.listdir(profile_site_directory)
             e = [os.path.join(profile_site_directory, x, "auth.json") for x in e]
             e = [x for x in e if os.path.exists(x)]
             if e:
                 continue
-        default_profile_directory = os.path.join(profile_site_directory, "default")
+        default_profile_directory = profile_site_directory.joinpath("default")
         os.makedirs(default_profile_directory, exist_ok=True)
-        auth_filepath = os.path.join(default_profile_directory, "auth.json")
+        auth_filepath = default_profile_directory.joinpath("auth.json")
         if not os.path.exists(auth_filepath):
             new_item: dict[str, Any] = {}
             match string_match:

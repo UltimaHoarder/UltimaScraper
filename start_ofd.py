@@ -31,14 +31,14 @@ if __name__ == "__main__":
     api_helper.parsed_args = parsed_args
 
     config_path = Path(".settings", "config.json")
-    json_config, _updated = main_helper.get_config(config_path)
-    json_settings = json_config["settings"]
-    exit_on_completion = json_settings["exit_on_completion"]
-    infinite_loop = json_settings["infinite_loop"]
-    loop_timeout = json_settings["loop_timeout"]
-    json_sites = json_config["supported"]
-    domain = json_settings["auto_site_choice"]
-    string, site_names = main_helper.module_chooser(domain, json_sites)
+    config, _updated = main_helper.get_config(config_path)
+    global_settings = config.settings
+    exit_on_completion = global_settings.exit_on_completion
+    infinite_loop = global_settings.infinite_loop
+    loop_timeout = global_settings.loop_timeout
+    domain = global_settings.auto_site_choice
+    json_sites = config.supported
+    string, site_names = main_helper.module_chooser(domain, json_sites.__dict__)
 
     # logging.basicConfig(level=logging.DEBUG, format="%(message)s")
     async def main():
@@ -58,7 +58,7 @@ if __name__ == "__main__":
                 except (ValueError, IndexError):
                     continue
             site_name_lower = site_name.lower()
-            api = await main_datascraper.start_datascraper(json_config, site_name_lower)
+            api = await main_datascraper.start_datascraper(config, site_name_lower)
             if api:
                 api.close_pools()
             if exit_on_completion:

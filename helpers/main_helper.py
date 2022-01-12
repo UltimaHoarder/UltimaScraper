@@ -12,7 +12,6 @@ import secrets
 import shutil
 import string
 import subprocess
-import traceback
 from datetime import datetime
 from itertools import zip_longest
 from multiprocessing.dummy import Pool as ThreadPool
@@ -69,13 +68,7 @@ if TYPE_CHECKING:
         | starsavn_classes.user_model.create_user
     )
 
-json_global_settings = {}
-min_drive_space = 0
-webhooks: dict[str, Any] = {}
-max_threads = -1
 os_name = platform.system()
-proxies = None
-cert = None
 
 if os_name == "Windows":
     import ctypes
@@ -137,18 +130,6 @@ def getfrozencwd():
         return os.getcwd()
 
 
-def assign_vars(config: dict[Any, Any]):
-    global json_global_settings, min_drive_space, webhooks, max_threads, proxies, cert
-
-    json_config = config
-    json_global_settings = json_config["settings"]
-    min_drive_space = json_global_settings["min_drive_space"]
-    webhooks = json_global_settings["webhooks"]
-    max_threads = json_global_settings["max_threads"]
-    proxies = json_global_settings["proxies"]
-    cert = json_global_settings["cert"]
-
-
 def rename_duplicates(seen, filename):
     filename_lower = filename.lower()
     if filename_lower not in seen:
@@ -208,8 +189,8 @@ def format_media_set(media_set):
     return merged
 
 
-async def format_image(filepath: str, timestamp: float):
-    if json_global_settings["helpers"]["reformat_media"]:
+async def format_image(filepath: str, timestamp: float, reformat_media: bool):
+    if reformat_media:
         while True:
             try:
                 if os_name == "Windows":
@@ -225,7 +206,9 @@ async def format_image(filepath: str, timestamp: float):
 
 
 async def async_downloads(
-    download_list: list[template_media_table], subscription: user_types
+    download_list: list[template_media_table],
+    subscription: user_types,
+    global_settings: make_settings.Settings,
 ):
     async def run(download_list: list[template_media_table]):
         session_m = subscription.get_session_manager()
@@ -318,7 +301,11 @@ async def async_downloads(
                             elif status_code == 2:
                                 break
                             timestamp = download_item.created_at.timestamp()
-                            await format_image(download_path, timestamp)
+                            await format_image(
+                                download_path,
+                                timestamp,
+                                global_settings.helpers.reformat_media,
+                            )
                             download_item.size = response.content_length
                             download_item.downloaded = True
                     break
@@ -680,27 +667,9 @@ def format_paths(j_directories, site_name):
     return paths
 
 
-def get_directory(directories: list[str], extra_path: str):
-    directories = format_paths(directories, extra_path)
-    new_directories = []
-    if not directories:
-        directories = [""]
-    for directory in directories:
-        if not os.path.isabs(directory):
-            if directory:
-                fp: str = os.path.abspath(directory)
-            else:
-                fp: str = os.path.abspath(extra_path)
-            directory = os.path.abspath(fp)
-        os.makedirs(directory, exist_ok=True)
-        new_directories.append(directory)
-    directory = check_space(new_directories, min_size=min_drive_space)
-    return directory
-
-
 def check_space(
     download_paths: list[Path],
-    min_size: int = min_drive_space,
+    min_size: int = 0,
     priority: str = "download",
     create_directory: bool = True,
 ) -> Path:
@@ -823,8 +792,8 @@ def get_config(config_path: Path):
     json_config = import_json(config_path)
     old_json_config = copy.deepcopy(json_config)
     new_json_config = make_settings.fix(json_config)
-    converted_object = make_settings.Config(**new_json_config).export()
-    new_json_config = object_to_json(converted_object)
+    converted_object = make_settings.Config(**new_json_config)
+    new_json_config = object_to_json(converted_object.export())
     updated = False
     if new_json_config != old_json_config:
         updated = True
@@ -836,7 +805,7 @@ def get_config(config_path: Path):
         )
         new_json_config = import_json(config_path)
 
-    return new_json_config, updated
+    return converted_object, updated
 
 
 class OptionsFormat:
@@ -1053,40 +1022,53 @@ async def process_jobs(
 async def process_downloads(
     api: OnlyFans.start | Fansly.start | StarsAVN.start,
     datascraper: OnlyFansDataScraper | FanslyDataScraper | StarsAVNDataScraper,
+    global_settings: make_settings.Settings,
 ):
-    if json_global_settings["helpers"]["downloader"]:
+    helpers = global_settings.helpers
+    if helpers.downloader:
         for auth in api.auths:
             subscriptions = await auth.get_subscriptions(refresh=False)
             for subscription in subscriptions:
                 if not await subscription.if_scraped():
                     continue
                 await datascraper.prepare_downloads(subscription)
-                if json_global_settings["helpers"]["delete_empty_directories"]:
+                if helpers.delete_empty_directories:
                     delete_empty_directories(
                         subscription.download_info.get("base_directory", "")
                     )
 
 
 async def process_webhooks(
-    api: OnlyFans.start | Fansly.start | StarsAVN.start, category: str, category2: str
+    api: OnlyFans.start | Fansly.start | StarsAVN.start,
+    category: str,
+    category_2: str,
+    global_settings: make_settings.Settings,
 ):
-    global_webhooks = webhooks["global_webhooks"]
-    global_status = webhooks["global_status"]
-    webhook = webhooks[category]
-    webhook_state = webhook[category2]
+    webhooks = global_settings.webhooks
+    global_webhooks = webhooks.global_webhooks
+    global_status = webhooks.global_status
+    if category == "auth_webhook":
+        webhook = webhooks.auth_webhook
+    else:
+        webhook = webhooks.download_webhook
+
+    if category_2 == "succeeded":
+        webhook_state = webhook.succeeded
+    else:
+        webhook_state = webhook.failed
     webhook_links = []
     webhook_status = global_status
     webhook_hide_sensitive_info = True
-    if webhook_state["status"] != None:
-        webhook_status = webhook_state["status"]
+    if webhook_state.status != None:
+        webhook_status = webhook_state.status
     if global_webhooks:
         webhook_links = global_webhooks
-    if webhook_state["webhooks"]:
-        webhook_links = webhook_state["webhooks"]
+    if webhook_state.webhooks:
+        webhook_links = webhook_state.webhooks
     if webhook_status:
         for auth in api.auths:
             await send_webhook(
-                auth, webhook_hide_sensitive_info, webhook_links, category, category2
+                auth, webhook_hide_sensitive_info, webhook_links, category, category_2
             )
         print
     print
@@ -1266,14 +1248,6 @@ def delete_empty_directories(directory):
     if os.path.exists(directory):
         if not os.listdir(directory):
             os.rmdir(directory)
-
-
-def multiprocessing():
-    if max_threads < 1:
-        pool = ThreadPool()
-    else:
-        pool = ThreadPool(max_threads)
-    return pool
 
 
 def module_chooser(domain: str, json_sites: dict[str, Any]):

@@ -1,5 +1,4 @@
 #!/usr/bin/env python3
-from sys import exit
 import asyncio
 import os
 import shutil
@@ -8,6 +7,7 @@ import urllib.parse as urlparse
 from datetime import datetime
 from itertools import chain
 from pathlib import Path
+from sys import exit
 
 import apis.fansly.classes as fansly_classes
 import apis.onlyfans.classes as onlyfans_classes
@@ -105,13 +105,11 @@ async def fix_directories(
             # a = randint(0,1)
             # await asyncio.sleep(a)
             if old_filepath and old_filepath != new_filepath:
-                # if new_filepath.exists():
-                #     os.remove(new_filepath)
                 moved = None
                 while not moved:
                     try:
-                        if os.path.exists(old_filepath):
-                            old_filename, old_ext = os.path.splitext(old_filepath)
+                        if old_filepath.exists():
+                            _old_filename, old_ext = (url_path.stem, url_path.suffix)
                             if ".part" == old_ext:
                                 os.remove(old_filepath)
                                 continue

@@ -1,9 +1,9 @@
 #!/usr/bin/env python3
-from sys import exit
 import argparse
-import sys
 import asyncio
+import sys
 from pathlib import Path
+from sys import exit
 
 parser = argparse.ArgumentParser()
 parser.add_argument(
@@ -24,9 +24,9 @@ main_test.check_config()
 main_test.check_profiles()
 
 if __name__ == "__main__":
+    import apis.api_helper as api_helper
     import datascraper.main_datascraper as main_datascraper
     import helpers.main_helper as main_helper
-    import apis.api_helper as api_helper
 
     api_helper.parsed_args = parsed_args
 
@@ -61,6 +61,7 @@ if __name__ == "__main__":
             api = await main_datascraper.start_datascraper(config, site_name_lower)
             if api:
                 api.close_pools()
+                await asyncio.sleep(1)
             if exit_on_completion:
                 print("Now exiting.")
                 break

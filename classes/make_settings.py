@@ -197,11 +197,6 @@ class Settings(object):
         self.infinite_loop = infinite_loop
         self.loop_timeout = loop_timeout
         dynamic_rules_link_ = URL(dynamic_rules_link)
-        # url_host = dynamic_rules_link_.host
-        # if "github.com" == url_host:
-        #     if "raw" != url_host:
-        #         path = dynamic_rules_link.path.replace("blob/", "")
-        #         dynamic_rules_link = f"https://raw.githubusercontent.com/{path}"
         self.dynamic_rules_link = str(dynamic_rules_link_)
         self.proxies = proxies
         self.cert = cert

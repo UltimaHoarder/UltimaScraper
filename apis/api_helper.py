@@ -34,6 +34,8 @@ from aiohttp_socks import ProxyConnectionError, ProxyConnector, ProxyError
 from database.databases.user_data.models.media_table import template_media_table
 from mergedeep.mergedeep import Strategy, merge
 
+from helpers.main_helper import download_session
+
 
 def load_classes():
     import apis.fansly.classes as fansly_classes
@@ -83,15 +85,8 @@ else:
 os.chdir(path)
 
 
-global_settings: dict[str, Any] = {}
-global_settings[
-    "dynamic_rules_link"
-] = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json"
-
-
 class set_settings:
     def __init__(self, option={}):
-        global global_settings
         self.proxies = option.get("proxies")
         self.cert = option.get("cert")
         self.json_global_settings = option
@@ -134,7 +129,11 @@ class session_manager:
         self.kill = False
         self.headers = headers
         self.proxies: list[str] = proxies
-        dr_link = global_settings["dynamic_rules_link"]
+        global_settings = auth.get_api().get_global_settings()
+        dynamic_rules_link = (
+            global_settings.dynamic_rules_link if global_settings else ""
+        )
+        dr_link = dynamic_rules_link
         dynamic_rules = requests.get(dr_link).json()  # type: ignore
         self.dynamic_rules = dynamic_rules
         self.auth = auth
@@ -281,8 +280,8 @@ class session_manager:
         self,
         download_item: template_media_table,
         session: ClientSession,
-        progress_bar,
-        subscription: onlyfans_classes.create_user,
+        progress_bar: download_session,
+        subscription: user_types,
     ):
         onlyfans_extras, _fansly_extras, _starsavn_extras = load_extras()
         attempt_count = 1
@@ -382,7 +381,7 @@ class session_manager:
 
 
 async def test_proxies(proxies: list[str]):
-    final_proxies = []
+    final_proxies: list[str] = []
     for proxy in proxies:
         connector = ProxyConnector.from_url(proxy) if proxy else None
         async with ClientSession(connector=connector) as session:

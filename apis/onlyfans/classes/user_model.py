@@ -11,7 +11,6 @@ from apis import api_helper
 from apis.onlyfans.classes import post_model
 from apis.onlyfans.classes.extras import (
     ErrorDetails,
-    content_types,
     endpoint_links,
     remove_errors,
 )
@@ -221,8 +220,8 @@ class create_user:
         self.__authed = authed
         self.directory_manager: DirectoryManager = DirectoryManager()
         self.file_manager: FileManager = FileManager(self.directory_manager)
-        self.scraped = content_types()
-        self.temp_scraped = content_types()
+        self.scraped = authed.api.ContentTypes()
+        self.temp_scraped = authed.api.ContentTypes()
         self.download_info: dict[str, Any] = {}
         self.__raw__ = option
 

@@ -237,8 +237,12 @@ class create_user:
         self.__raw__ = option
         if self.subscriptionBundles:
             self.subscribePrice = self.subscriptionBundles[0]["plans"][0]["price"]
-        else:
-            print
+        if self.avatar:
+            media_options = self.avatar["locations"]
+            self.avatar = media_options[0]["location"]
+        if self.header:
+            media_options = self.header["locations"]
+            self.header = media_options[0]["location"]
 
     def get_link(self):
         link = f"https://onlyfans.com/{self.username}"

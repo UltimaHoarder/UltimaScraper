@@ -102,9 +102,37 @@ class start:
         if self.config:
             return self.config.supported.get_settings(self.site_name)
 
+    class ContentTypes:
+        def __init__(self) -> None:
+            class ArchivedTypes:
+                def __init__(self) -> None:
+                    self.Posts = []
+
+                def __iter__(self):
+                    for attr, value in self.__dict__.items():
+                        yield attr, value
+
+            self.Stories = []
+            self.Posts = []
+            self.Archived = ArchivedTypes()
+            self.Chats = []
+            self.Messages = []
+            self.Highlights = []
+            self.MassMessages = []
+
+        def __iter__(self):
+            for attr, value in self.__dict__.items():
+                yield attr, value
+
+        async def get_keys(self):
+            return [item[0] for item in self]
+
     class Locations:
         def __init__(self) -> None:
             self.Images = ["photo"]
             self.Videos = ["video", "stream", "gif"]
             self.Audios = ["audio"]
             self.Texts = ["text"]
+
+        async def get_keys(self):
+            return [item[0] for item in self.__dict__.items()]

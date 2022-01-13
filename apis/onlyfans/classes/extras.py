@@ -90,25 +90,6 @@ class cookie_parser:
         return new_dict
 
 
-class content_types:
-    def __init__(self, option={}) -> None:
-        class archived_types(content_types):
-            def __init__(self) -> None:
-                self.Posts = []
-
-        self.Stories = []
-        self.Posts = []
-        self.Archived = archived_types()
-        self.Chats = []
-        self.Messages = []
-        self.Highlights = []
-        self.MassMessages = []
-
-    def __iter__(self):
-        for attr, value in self.__dict__.items():
-            yield attr, value
-
-
 class endpoint_links(object):
     def __init__(
         self,

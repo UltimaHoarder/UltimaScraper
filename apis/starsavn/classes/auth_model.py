@@ -23,7 +23,7 @@ from dateutil.relativedelta import relativedelta
 from user_agent import generate_user_agent
 
 if TYPE_CHECKING:
-    from apis.fansly.fansly import start
+    from apis.starsavn.starsavn import start
 
 
 class create_auth(create_user):
@@ -216,10 +216,15 @@ class create_auth(create_user):
         return response
 
     async def get_lists_users(
-        self, identifier, check: bool = False, refresh=True, limit=100, offset=0
+        self,
+        identifier: int | str,
+        check: bool = False,
+        limit: int = 100,
+        offset: int = 0,
     ):
-        if not self.active:
-            return
+        result, status = await api_helper.default_data(self, refresh=True)
+        if status:
+            return result
         link = endpoint_links(
             identifier, global_limit=limit, global_offset=offset
         ).lists_users

@@ -14,7 +14,6 @@ import string
 import subprocess
 from datetime import datetime
 from itertools import zip_longest
-from multiprocessing.dummy import Pool as ThreadPool
 from pathlib import Path
 from types import SimpleNamespace
 from typing import TYPE_CHECKING, Any, BinaryIO, Optional, Tuple, Union
@@ -35,7 +34,6 @@ from aiohttp_socks.connector import ProxyConnector
 from apis import api_helper
 from apis.fansly import fansly as Fansly
 from apis.onlyfans import onlyfans as OnlyFans
-from apis.onlyfans.classes.extras import content_types
 from apis.onlyfans.classes.user_model import create_user
 from apis.starsavn import starsavn as StarsAVN
 from bs4 import BeautifulSoup
@@ -394,16 +392,16 @@ def legacy_database_fixer(database_path, database, database_name, database_exist
 
 
 async def fix_sqlite(
+    api: OnlyFans.start | Fansly.start | StarsAVN.start,
     directory_manager: DirectoryManager,
 ):
-    items = content_types().__dict__.items()
     for final_metadata in directory_manager.user.legacy_metadata_directories:
         archived_database_path = final_metadata.joinpath("Archived.db")
         if archived_database_path.exists():
             Session2, engine = db_helper.create_database_session(archived_database_path)
             database_session: Session = Session2()
             cwd = getfrozencwd()
-            for api_type, value in items:
+            for api_type, value in api.ContentTypes():
                 database_path = os.path.join(final_metadata, f"{api_type}.db")
                 database_name = api_type.lower()
                 alembic_location = os.path.join(
@@ -778,7 +776,7 @@ def import_json(json_path: Path):
 
 def export_json(metadata: list[Any] | dict[str, Any], filepath: Path):
     if filepath.suffix:
-        filepath.parent.mkdir(exist_ok=True)
+        filepath.parent.mkdir(parents=True, exist_ok=True)
     with open(filepath, "wb") as outfile:
         outfile.write(orjson.dumps(metadata, option=orjson.OPT_INDENT_2))
 
@@ -850,7 +848,7 @@ class OptionsFormat:
                     key
                     for choice in final_list
                     for key in self.items
-                    if choice == key.auth_details.username
+                    if choice == key.auth_details.username.lower()
                 ]
             case "subscriptions":
                 self.item_keys = [x.username for x in self.items]
@@ -864,16 +862,44 @@ class OptionsFormat:
                     key
                     for choice in final_list
                     for key in self.items
-                    if choice == key.username
+                    if choice == key.username.lower()
+                ]
+            case "contents":
+                self.item_keys = self.items
+                my_string = " | ".join(
+                    map(lambda x: f"{self.items.index(x)+1} = {x}", self.items)
+                )
+                final_string = f"{final_string} | {my_string}"
+                self.string = final_string
+                final_list = self.choose_option()
+                self.final_choices = [
+                    key
+                    for choice in final_list
+                    for key in self.items
+                    if choice == key.lower()
+                ]
+            case "medias":
+                self.item_keys = self.items
+                my_string = " | ".join(
+                    map(lambda x: f"{self.items.index(x)+1} = {x}", self.items)
+                )
+                final_string = f"{final_string} | {my_string}"
+                self.string = final_string
+                final_list = self.choose_option()
+                self.final_choices = [
+                    key
+                    for choice in final_list
+                    for key in self.items
+                    if choice == key.lower()
                 ]
         return
 
     def choose_option(self):
-        input_list: list[str] = self.item_keys
+        input_list: list[str] = [x.lower() for x in self.item_keys]
         final_list: list[str] = []
         if self.auto_choice:
             if isinstance(self.auto_choice, list):
-                input_list = [str(x) for x in self.auto_choice]
+                input_list = [str(x).lower() for x in self.auto_choice]
         else:
             print(self.string)
             input_value = input().lower()
@@ -891,7 +917,10 @@ class OptionsFormat:
                         input_list.extend(x)
 
         final_list = [
-            choice for choice in input_list for key in self.item_keys if choice == key
+            choice
+            for choice in input_list
+            for key in self.item_keys
+            if choice == key.lower()
         ]
         return final_list
 
@@ -943,7 +972,7 @@ async def process_profiles(
     profile_directories = global_settings.profile_directories
     for profile_directory in profile_directories:
         x = profile_directory.joinpath(site_name)
-        x.mkdir(exist_ok=True)
+        x.mkdir(parents=True, exist_ok=True)
         temp_users = x.iterdir()
         temp_users = remove_mandatory_files(temp_users)
         for user_profile in temp_users:
@@ -1306,6 +1335,7 @@ async def format_directories(
     from classes.prepare_metadata import prepare_reformat
 
     authed = subscription.get_authed()
+    api = authed.api
     site_settings = authed.api.get_site_settings()
     if site_settings:
         authed_username = authed.username
@@ -1361,7 +1391,7 @@ async def format_directories(
         directory_manager.user.legacy_metadata_directories.append(
             legacy_metadata_directory
         )
-        items = content_types().__dict__.items()
+        items = api.ContentTypes().__dict__.items()
         for api_type, _ in items:
             legacy_metadata_directory_2 = user_metadata_directory.joinpath(api_type)
             directory_manager.user.legacy_metadata_directories.append(

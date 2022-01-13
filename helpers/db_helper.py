@@ -114,5 +114,5 @@ def get_or_create(session: Session, model, defaults=None, fbkwargs: dict = {}):
 
 def get_count(q):
     count_q = q.statement.with_only_columns([func.count()]).order_by(None)
-    count = q.session.execute(count_q).scalar()
+    count: int = q.session.execute(count_q).scalar()
     return count

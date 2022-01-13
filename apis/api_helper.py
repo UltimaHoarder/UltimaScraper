@@ -208,7 +208,7 @@ class session_manager:
                                 (
                                     onlyfans_extras,
                                     fansly_extras,
-                                    _starsavn_extras,
+                                    starsavn_extras,
                                 ) = load_extras()
                                 extras: dict[str, Any] = {}
                                 extras["auth"] = self.auth
@@ -216,14 +216,15 @@ class session_manager:
                                 if isinstance(
                                     self.auth, onlyfans_classes.auth_model.create_auth
                                 ):
-                                    result = await onlyfans_extras.ErrorDetails(
-                                        result
-                                    ).format(extras)
+                                    handle_error = onlyfans_extras.ErrorDetails
                                 elif isinstance(
                                     self.auth, fansly_classes.auth_model.create_auth
                                 ):
-                                    result = fansly_extras.ErrorDetails(result)
+                                    handle_error = fansly_extras.ErrorDetails
+                                else:
+                                    handle_error = starsavn_extras.ErrorDetails
 
+                                result = await handle_error(result).format(extras)
                                 if _handle_error_details:
                                     await handle_error_details(result)
                         elif stream and not json_format:

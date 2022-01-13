@@ -61,7 +61,7 @@ class create_post:
         self.isFavorite = True
         return results
 
-    async def link_picker(self, media, video_quality):
+    async def link_picker(self, media: dict[str, Any], video_quality: str):
         link = ""
         if "source" in media:
             quality_key = "source"
@@ -78,9 +78,6 @@ class create_post:
                             if quality_link:
                                 link = quality_link
                                 break
-                            print
-                        print
-                    print
         if "src" in media:
             link = media["src"]["source"]
         return link

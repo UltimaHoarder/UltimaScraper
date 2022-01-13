@@ -1,6 +1,7 @@
 import copy
 from itertools import chain
 import math
+from pathlib import Path
 from typing import Any, Literal, Optional, Union
 
 
@@ -183,14 +184,20 @@ class endpoint_links(object):
         return final_links
 
 
-# Lol?
 class ErrorDetails:
-    def __init__(self, result: dict[Any, Any]) -> None:
-        error: dict[Any, Any] = result["error"] if "error" in result else result
+    def __init__(self, result: dict[str, Any]) -> None:
+        error = result["error"] if "error" in result else result
         self.code = error["code"]
-        self.message = error.get("details", "")
-        if not self.message:
-            self.message = error.get("message", "")
+        self.message = error["details"]
+
+    async def format(self, extras: dict[str, Any]):
+        match self.code:
+            case 0:
+                match self.message:
+                    case "User not found":
+                        link = Path(extras["link"])
+                        self.message = f"{link.name} not found"
+        return self
 
 
 def create_headers(

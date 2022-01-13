@@ -12,7 +12,6 @@ from apis import api_helper
 from apis.onlyfans.classes.extras import (
     ErrorDetails,
     auth_details,
-    content_types,
     create_headers,
     endpoint_links,
 )
@@ -40,7 +39,7 @@ class create_auth(create_user):
         if not self.username:
             self.username = f"u{self.id}"
         self.lists = []
-        self.links = content_types()
+        self.links = api.ContentTypes()
         self.subscriptions: list[create_user] = []
         self.chats = None
         self.archived_stories = {}

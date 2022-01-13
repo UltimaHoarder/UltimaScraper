@@ -2,11 +2,13 @@ from __future__ import annotations
 
 import copy
 import os
+import shutil
 from datetime import datetime
 from itertools import chain, groupby
 from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional
 
+from apis import api_helper
 from apis.onlyfans.classes.extras import media_types
 from helpers import main_helper
 
@@ -116,6 +118,87 @@ class create_metadata(object):
         if "content" not in new_format:
             print
         return new_format
+
+    def compare_metadata(self, old_metadata: create_metadata) -> create_metadata:
+        for key, value in old_metadata.content:
+            new_value = getattr(self.content, key, None)
+            if not new_value:
+                continue
+            if not value:
+                setattr(old_metadata, key, new_value)
+            for key2, value2 in value:
+                new_value2 = getattr(new_value, key2)
+                seen = set()
+                old_status = []
+                for d in value2:
+                    if d.post_id not in seen:
+                        seen.add(d.post_id)
+                        old_status.append(d)
+                    else:
+                        print
+                setattr(value, key2, old_status)
+                value2 = old_status
+                new_status = new_value2
+                for post in old_status:
+                    if key != "Texts":
+                        for old_media in post.medias:
+                            # if old_item.post_id == 1646808:
+                            #     l = True
+                            new_found = None
+                            new_items = [
+                                x for x in new_status if post.post_id == x.post_id
+                            ]
+                            if new_items:
+                                for new_item in (x for x in new_items if not new_found):
+                                    for new_media in (
+                                        x for x in new_item.medias if not new_found
+                                    ):
+                                        new_found = test(new_media, old_media)
+                                        print
+                            if new_found:
+                                for key3, v in new_found:
+                                    if key3 in [
+                                        "directory",
+                                        "downloaded",
+                                        "size",
+                                        "filename",
+                                    ]:
+                                        continue
+                                    setattr(old_media, key3, v)
+                                setattr(new_found, "found", True)
+                    else:
+                        new_items = [x for x in new_status if post.post_id == x.post_id]
+                        if new_items:
+                            new_found = new_items[0]
+                            for key3, v in new_found:
+                                if key3 in [
+                                    "directory",
+                                    "downloaded",
+                                    "size",
+                                    "filename",
+                                ]:
+                                    continue
+                                setattr(post, key3, v)
+                            setattr(new_found, "found", True)
+                        print
+                for new_post in new_status:
+                    not_found = []
+                    if key != "Texts":
+                        not_found = [
+                            new_post
+                            for media in new_post.medias
+                            if not getattr(media, "found", None)
+                        ][:1]
+                    else:
+                        found = getattr(new_post, "found", None)
+                        if not found:
+                            not_found.append(new_post)
+
+                    if not_found:
+                        old_status += not_found
+                old_status.sort(key=lambda x: x.post_id, reverse=True)
+        new_metadata = old_metadata
+        return new_metadata
 
     def convert(
         self, convert_type: str = "json", keep_empty_items: bool = False
@@ -463,3 +546,113 @@ class prepare_reformat(object):
                 case ".json":
                     new_list.append(filepath)
         return new_list
+
+
+async def process_legacy_metadata(
+    user: user_types,
+    api_type: str,
+    metadata_filepath: Path,
+    directory_manager: DirectoryManager,
+):
+    p_r = prepare_reformat()
+    old_metadata_filepaths = await p_r.find_metadata_files(
+        user.file_manager.files, legacy_files=False
+    )
+    for old_metadata_filepath in old_metadata_filepaths:
+        new_m_f = directory_manager.user.metadata_directory.joinpath(
+            old_metadata_filepath.name
+        )
+        if old_metadata_filepath.exists() and not new_m_f.exists():
+            shutil.move(old_metadata_filepath, new_m_f)
+    old_metadata_filepaths = await p_r.find_metadata_files(
+        user.file_manager.files, legacy_files=False
+    )
+    legacy_metadata_filepaths = [
+        x for x in old_metadata_filepaths if x.stem.find(api_type) == 0
+    ]
+    legacy_metadata_object, delete_legacy_metadatas = await legacy_metadata_fixer(
+        metadata_filepath, legacy_metadata_filepaths
+    )
+    delete_metadatas: list[Path] = []
+    if delete_legacy_metadatas:
+        print("Merging new metadata with legacy metadata.")
+        delete_metadatas.extend(delete_legacy_metadatas)
+    final_set: list[dict[str, Any]] = []
+    for _media_type, value in legacy_metadata_object.content:
+        for _status, value2 in value:
+            for value3 in value2:
+                item = value3.convert(keep_empty_items=True)
+                item["archived"] = False
+                item["api_type"] = api_type
+                final_set.append(item)
+    print("Finished processing metadata.")
+    return final_set, delete_metadatas
+
+
+# Legacy .db and .json files
+# We'll just merge things together based on their api_type
+# create_metadata fixes metadata automatically
+async def legacy_metadata_fixer(
+    new_metadata_filepath: Path, legacy_metadata_filepaths: list[Path]
+) -> tuple[create_metadata, list[Path]]:
+    delete_legacy_metadatas: list[Path] = []
+    new_format: list[dict[str, Any]] = []
+    new_metadata_set = main_helper.import_json(new_metadata_filepath)
+    for legacy_metadata_filepath in legacy_metadata_filepaths:
+        if (
+            legacy_metadata_filepath == new_metadata_filepath
+            or not legacy_metadata_filepath.exists()
+        ):
+            continue
+        api_type = legacy_metadata_filepath.stem
+        legacy_metadata = main_helper.import_json(legacy_metadata_filepath)
+        legacy_metadata = create_metadata(legacy_metadata, api_type=api_type).convert()
+        new_format.append(legacy_metadata)
+        delete_legacy_metadatas.append(legacy_metadata_filepath)
+    new_metadata_object = create_metadata(new_metadata_set)
+    old_metadata_set = dict(api_helper.merge_dictionaries(new_format))
+    old_metadata_object = create_metadata(old_metadata_set)
+    results = new_metadata_object.compare_metadata(old_metadata_object)
+    return results, delete_legacy_metadatas
+
+
+async def process_metadata(
+    archive_path: Path,
+    legacy_metadata_path: Path,
+    new_metadata_object: list[dict[str, Any]],
+    api_type: str,
+    subscription: user_types,
+    delete_metadatas: list[Path],
+):
+    import extras.OFRenamer.start_ofr as ofrenamer
+
+    api = subscription.get_api()
+    site_settings = api.get_site_settings()
+    config = api.config
+    if not (config and site_settings):
+        return
+    settings = config.settings
+    # We could put this in proccess_legacy_metadata
+    final_result, delete_metadatas = main_helper.legacy_sqlite_updater(
+        legacy_metadata_path, api_type, subscription, delete_metadatas
+    )
+    new_metadata_object.extend(final_result)
+    result = main_helper.export_sqlite(archive_path, api_type, new_metadata_object)
+    if not result:
+        return
+    Session, api_type, _folder = result
+    if settings.helpers.renamer:
+        print("Renaming files.")
+        new_metadata_object = await ofrenamer.start(
+            subscription, api_type, Session, site_settings
+        )
+    for legacy_metadata in delete_metadatas:
+        if site_settings.delete_legacy_metadata:
+            os.remove(legacy_metadata)
+        else:
+            if legacy_metadata.exists():
+                new_filepath = Path(
+                    legacy_metadata.parent, "__legacy_metadata__", legacy_metadata.name
+                )
+                new_filepath.parent.mkdir(parents=True, exist_ok=True)
+                shutil.move(legacy_metadata, f"{new_filepath}")

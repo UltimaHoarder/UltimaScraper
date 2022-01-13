@@ -1344,7 +1344,7 @@ async def format_directories(
             if metadata_filepath != new_m_f:
                 counter = 0
                 while True:
-                    if not new_m_f.exists():
+                    if metadata_filepath.exists() and not new_m_f.exists():
                         shutil.move(metadata_filepath, new_m_f)
                         break
                     else:

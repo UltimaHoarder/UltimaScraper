@@ -202,21 +202,21 @@ Usage: You can automatically choose which site you want to scrape.
     OnlyFans = "onlyfans"
 
 ### auto_media_choice:
-Types: list|int|str|bool
+Types: list|str|bool
 
 Usage: You can automatically choose which media type you want to scrape.
 
     Default = ""
 
-    Inputs: Images, Videos, etc
-    Inputs: 0,1,etc
+    Inputs: All, Images, Videos, etc
 
     You can automatically choose which type of media you want to scrape.
 
 ### auto_model_choice:
-Types: list|int|str|bool
+Types: list|str|bool
 
     Default = false
+    Inputs: All, username, etc
 
     If set to true, the script will scrape all the names.
 

@@ -446,16 +446,20 @@ class prepare_reformat(object):
         return new_dict
 
     async def find_metadata_files(
-        self, directories: list[Path], legacy_files: bool = True
+        self, filepaths: list[Path], legacy_files: bool = True
     ):
         new_list: list[Path] = []
-        for directory in directories:
+        for filepath in filepaths:
             if not legacy_files:
-                if "__legacy_metadata__" in directory.parts:
+                if "__legacy_metadata__" in filepath.parts:
                     continue
-            match directory.suffix:
+            match filepath.suffix:
                 case ".db":
-                    new_list.append(directory)
+                    red_list = ["thumbs.db"]
+                    status = [x for x in red_list if x == filepath.name.lower()]
+                    if status:
+                        continue
+                    new_list.append(filepath)
                 case ".json":
-                    new_list.append(directory)
+                    new_list.append(filepath)
         return new_list

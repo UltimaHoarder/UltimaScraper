@@ -92,6 +92,10 @@ class FileManager:
                     continue
             match filepath.suffix:
                 case ".db":
+                    red_list = ["thumbs.db"]
+                    status = [x for x in red_list if x == filepath.name.lower()]
+                    if status:
+                        continue
                     new_list.append(filepath)
                 case ".json":
                     new_list.append(filepath)

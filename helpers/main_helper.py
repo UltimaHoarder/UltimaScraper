@@ -606,6 +606,8 @@ def export_sqlite(database_path: str, api_type: str, datas: list[dict[str, Any]]
         post_db = result.filter_by(post_id=post_id).first()
         if not post_db:
             post_db = api_table()
+        if api_type == "Products":
+            post_db.title = post["title"]
         if api_type == "Messages":
             post_db.user_id = post.get("user_id", None)
         post_db.post_id = post_id

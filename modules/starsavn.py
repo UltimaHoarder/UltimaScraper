@@ -139,11 +139,13 @@ class StarsAVNDataScraper(StreamlinedDatascraper):
             if isinstance(post_result, create_product):
                 if post_result.isReportedByMe:
                     continue
+                title = post_result.title
                 rawText = post_result.rawText
                 text = post_result.text
                 previews = post_result.preview
                 date = post_result.postedAt
                 price = post_result.price
+                new_post["title"] = title
                 new_post["archived"] = post_result.isArchived
             if isinstance(post_result, create_message):
                 if post_result.isReportedByMe:

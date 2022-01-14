@@ -37,6 +37,7 @@ class messages_table(api_table, Base):
 
 class products_table(api_table, Base):
     api_table.__tablename__ = "products"
+    title = sqlalchemy.Column(sqlalchemy.String)
 
 
 class others_table(api_table, Base):

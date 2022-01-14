@@ -15,7 +15,7 @@ class create_message:
         self.text: Optional[str] = option.get("text")
         self.lockedText: Optional[bool] = option.get("lockedText")
         self.isFree: Optional[bool] = option.get("isFree")
-        self.price: Optional[float] = float(option.get("price", "0").replace("$", ""))
+        self.price: float = float(option["amount"])
         self.isMediaReady: Optional[bool] = option.get("isMediaReady")
         self.mediaCount: Optional[int] = option.get("mediaCount")
         self.media: list[dict[str, Any]] = option.get("media", [])
@@ -77,6 +77,6 @@ class create_message:
                             if quality_link:
                                 link = quality_link
                                 break
-        if "src" in media:
+        if media["src"]:
             link = media["src"]["source"]
         return link

@@ -28,7 +28,7 @@ def check_config():
     import helpers.main_helper as main_helper
 
     config_path = Path(".settings", "config.json")
-    json_config, updated = main_helper.get_config(config_path)
+    json_config, _updated = main_helper.get_config(config_path)
     return json_config
 
 

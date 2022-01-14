@@ -230,6 +230,7 @@ class StreamlinedDatascraper:
                         subscription,
                         api_type,
                         metadata_path,
+                        subscription_directory_manager
                     )
                     new_metadata.extend(old_metadata)
                     subscription.set_scraped(api_type, new_metadata)

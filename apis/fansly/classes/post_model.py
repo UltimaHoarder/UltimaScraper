@@ -73,6 +73,9 @@ class create_post:
         self.canPurchase: bool = option.get("canPurchase")
         self.user: user_model.create_user = user
 
+    async def get_author(self):
+        return self.author
+
     async def favorite(self):
         link = endpoint_links(
             identifier=f"{self.responseType}s",

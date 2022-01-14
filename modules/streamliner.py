@@ -1,7 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
-from typing import Any
+from typing import Any, Optional
 
 from sqlalchemy.exc import OperationalError
 
@@ -47,6 +47,8 @@ if TYPE_CHECKING:
 class StreamlinedDatascraper:
     def __init__(self, datascraper: datascraper_types) -> None:
         self.datascraper = datascraper
+        self.profile_options: Optional[main_helper.OptionsFormat] = None
+        self.subscription_options: Optional[main_helper.OptionsFormat] = None
 
     async def start_datascraper(self, authed: auth_types, identifier: int | str):
         api = authed.api
@@ -158,31 +160,34 @@ class StreamlinedDatascraper:
     # Move this to StreamlinedDatascraper
     async def paid_content_scraper(self, authed: auth_types):
         site_settings = authed.api.get_site_settings()
-        if not site_settings:
+        if not site_settings or not authed.active:
             return
         paid_contents = await authed.get_paid_content()
-        if not authed.active or isinstance(paid_contents, error_types):
+        if isinstance(paid_contents, error_types):
             return
-        authed.subscriptions = authed.subscriptions
         for paid_content in paid_contents:
             author = None
             author = await paid_content.get_author()
             if not author:
                 continue
-            subscription = await authed.get_subscription(identifier=author.id)
-            if not subscription:
-                subscription = author
-                authed.subscriptions.append(subscription)
+            if self.subscription_options and self.subscription_options.scrape_all():
+                subscription = await authed.get_subscription(identifier=author.id)
+                if not subscription:
+                    subscription = author
+                    authed.subscriptions.append(subscription)
             path_formats: dict[str, Any] = {}
             path_formats[
                 "metadata_directory_format"
             ] = site_settings.metadata_directory_format
             path_formats["file_directory_format"] = site_settings.file_directory_format
             path_formats["filename_format"] = site_settings.filename_format
-            subscription.create_directory_manager(path_formats=path_formats)
+            author.create_directory_manager(path_formats=path_formats)
             if paid_content.responseType:
                 api_type = paid_content.responseType.capitalize() + "s"
-                api_media = getattr(subscription.temp_scraped, api_type)
+                if api_type == "Posts" and paid_content.isArchived:
+                    api_media = getattr(author.temp_scraped.Archived, api_type)
+                else:
+                    api_media = getattr(author.temp_scraped, api_type)
                 api_media.append(paid_content)
         count = 0
         max_count = len(authed.subscriptions)
@@ -191,56 +196,19 @@ class StreamlinedDatascraper:
             print(string)
             subscription_directory_manager = subscription.directory_manager
             count += 1
-            for api_type, paid_contents in subscription.temp_scraped:
-                if api_type == "Archived":
-                    continue
-                if not paid_contents:
-                    continue
-                await main_helper.format_directories(
-                    subscription_directory_manager,
-                    subscription,
-                )
-                metadata_path = (
-                    subscription_directory_manager.user.metadata_directory.joinpath(
-                        subscription_directory_manager.user.metadata_directory,
-                        "user_data.db",
-                    )
-                )
-                pool = subscription.get_session_manager().pool
-                tasks = pool.starmap(
-                    self.datascraper.media_scraper,
-                    product(
-                        paid_contents,
-                        [subscription],
-                        [subscription_directory_manager.root_download_directory],
-                        [api_type],
-                    ),
-                )
-                settings = {"colour": "MAGENTA"}
-                unrefined_set = await tqdm.gather(*tasks, **settings)
-                new_metadata = main_helper.format_media_set(unrefined_set)
-                new_metadata = new_metadata["content"]
-                legacy_metadata_path = (
-                    subscription_directory_manager.user.find_legacy_directory(
-                        "metadata", api_type
-                    ).with_suffix(".db")
-                )
-                if new_metadata:
-                    old_metadata, delete_metadatas = await process_legacy_metadata(
-                        subscription,
-                        api_type,
-                        metadata_path,
-                        subscription_directory_manager
-                    )
-                    new_metadata.extend(old_metadata)
-                    subscription.set_scraped(api_type, new_metadata)
-                    await process_metadata(
-                        metadata_path,
-                        legacy_metadata_path,
-                        new_metadata,
-                        api_type,
-                        subscription,
-                        delete_metadatas,
+            await main_helper.format_directories(
+                subscription_directory_manager,
+                subscription,
+            )
+            for content_type, master_set in subscription.temp_scraped:
+                if content_type == "Archived":
+                    for content_type_2, master_set_2 in master_set:
+                        await self.process_scraped_content(
+                            master_set_2, content_type_2, subscription
+                        )
+                else:
+                    await self.process_scraped_content(
+                        master_set, content_type, subscription
                     )
 
     # Prepares the API links to be scraped
@@ -248,13 +216,10 @@ class StreamlinedDatascraper:
     async def prepare_scraper(self, subscription: user_types, content_type: str):
         authed = subscription.get_authed()
         subscription_directory_manager = subscription.directory_manager
-        if not subscription_directory_manager:
-            return
         formatted_metadata_directory = (
             subscription_directory_manager.user.metadata_directory
         )
         master_set: list[Any] = []
-        pool = authed.pool
         match content_type:
             case "Stories":
                 master_set.extend(await self.datascraper.get_all_stories(subscription))
@@ -280,23 +245,36 @@ class StreamlinedDatascraper:
                     any = await subscription.get_medias()
                     if any:
                         master_set = any
+        await self.process_scraped_content(master_set, content_type, subscription)
 
-        master_set2 = master_set
+    async def process_scraped_content(
+        self,
+        master_set: list[dict[str, Any]],
+        content_type: str,
+        subscription: user_types,
+    ):
+        if not master_set:
+            return False
+        authed = subscription.get_authed()
+        subscription_directory_manager = subscription.directory_manager
+        formatted_metadata_directory = (
+            subscription_directory_manager.user.metadata_directory
+        )
         unrefined_set = []
-        if master_set2:
-            print(f"Processing Scraped {content_type}")
-            tasks = pool.starmap(
-                self.datascraper.media_scraper,
-                product(
-                    master_set2,
-                    [subscription],
-                    [subscription_directory_manager.root_download_directory],
-                    [content_type],
-                ),
-            )
-            settings = {"colour": "MAGENTA"}
-            unrefined_set = await tqdm.gather(*tasks, **settings)
-            pass
+        pool = authed.pool
+        print(f"Processing Scraped {content_type}")
+        tasks = pool.starmap(
+            self.datascraper.media_scraper,
+            product(
+                master_set,
+                [subscription],
+                [subscription_directory_manager.root_download_directory],
+                [content_type],
+            ),
+        )
+        settings = {"colour": "MAGENTA"}
+        unrefined_set = await tqdm.gather(*tasks, **settings)
+        pass
         unrefined_set = [x for x in unrefined_set]
         new_metadata = main_helper.format_media_set(unrefined_set)
         metadata_path = formatted_metadata_directory.joinpath("user_data.db")
@@ -312,7 +290,7 @@ class StreamlinedDatascraper:
                 metadata_path,
                 subscription_directory_manager,
             )
-            new_metadata = new_metadata + old_metadata
+            new_metadata.extend(old_metadata)
             subscription.set_scraped(content_type, new_metadata)
             await process_metadata(
                 metadata_path,

@@ -654,5 +654,5 @@ async def process_metadata(
                 new_filepath = Path(
                     legacy_metadata.parent, "__legacy_metadata__", legacy_metadata.name
                 )
-                new_filepath.parent.mkdir(parents=True, exist_ok=True)
+                new_filepath.parent.mkdir(exist_ok=True)
                 shutil.move(legacy_metadata, f"{new_filepath}")

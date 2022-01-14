@@ -776,7 +776,7 @@ def import_json(json_path: Path):
 
 def export_json(metadata: list[Any] | dict[str, Any], filepath: Path):
     if filepath.suffix:
-        filepath.parent.mkdir(parents=True, exist_ok=True)
+        filepath.parent.mkdir(exist_ok=True)
     with open(filepath, "wb") as outfile:
         outfile.write(orjson.dumps(metadata, option=orjson.OPT_INDENT_2))
 
@@ -822,6 +822,7 @@ class OptionsFormat:
         self.item_keys: list[str] = []
         self.string = ""
         self.auto_choice = auto_choice
+        self.choice_list: list[str] = []
         self.final_choices = []
         self.formatter(options_type)
 
@@ -915,53 +916,28 @@ class OptionsFormat:
                     else:
                         x = [x for x in self.item_keys if x == input_value]
                         input_list.extend(x)
-
-        final_list = [
-            choice
-            for choice in input_list
-            for key in self.item_keys
-            if choice == key.lower()
-        ]
+        if self.item_keys:
+            final_list = [
+                choice
+                for choice in input_list
+                for key in self.item_keys
+                if choice == key.lower()
+            ]
+        else:
+            final_list = input_list
+        self.choice_list = final_list
         return final_list
 
-
-def choose_option(
-    subscription_list, auto_scrape: Union[str, bool], use_default_message: bool = False
-):
-    names = subscription_list[0]
-    default_message = ""
-    separator = " | "
-    if use_default_message:
-        default_message = f"Names: Username = username {separator}"
-    new_names = []
-    if names:
-        if isinstance(auto_scrape, bool):
-            if auto_scrape:
-                values = [x[1] for x in names]
-            else:
-                print(f"{default_message}{subscription_list[1]}")
-                values = input().strip().split(",")
-        else:
-            if not auto_scrape:
-                print(f"{default_message}{subscription_list[1]}")
-                values = input().strip().split(",")
-            else:
-                values = auto_scrape
-                if isinstance(auto_scrape, str):
-                    values = auto_scrape.split(",")
-        for value in values:
-            if value.isdigit():
-                if value == "0":
-                    new_names = names[1:]
-                    break
-                else:
-                    new_name = names[int(value)]
-                    new_names.append(new_name)
-            else:
-                new_name = [name for name in names if value == name[1]]
-                new_names.extend(new_name)
-    new_names = [x for x in new_names if not isinstance(x[0], SimpleNamespace)]
-    return new_names
+    def scrape_all(self):
+        status = False
+        if (
+            self.auto_choice == True
+            or isinstance(self.auto_choice, list)
+            and isinstance(self.auto_choice[0], str)
+            and self.auto_choice[0].lower() == "all"
+        ):
+            status = True
+        return status
 
 
 async def process_profiles(
@@ -971,9 +947,9 @@ async def process_profiles(
     site_name = api.site_name
     profile_directories = global_settings.profile_directories
     for profile_directory in profile_directories:
-        x = profile_directory.joinpath(site_name)
-        x.mkdir(parents=True, exist_ok=True)
-        temp_users = x.iterdir()
+        pd_s = profile_directory.joinpath(site_name)
+        pd_s.mkdir(parents=True, exist_ok=True)
+        temp_users = pd_s.iterdir()
         temp_users = remove_mandatory_files(temp_users)
         for user_profile in temp_users:
             user_auth_filepath = user_profile.joinpath("auth.json")
@@ -995,7 +971,7 @@ async def account_setup(
     auth: auth_types,
     datascraper: OnlyFansDataScraper | FanslyDataScraper | StarsAVNDataScraper,
     site_settings: make_settings.SiteSettings,
-    identifiers: list[int | str] = [],
+    identifiers: list[int | str] | list[str] = [],
 ) -> tuple[bool, list[user_types]]:
     status = False
     subscriptions: list[user_types] = []
@@ -1374,7 +1350,7 @@ async def format_directories(
             if metadata_filepath != new_m_f:
                 counter = 0
                 while True:
-                    if metadata_filepath.exists() and not new_m_f.exists():
+                    if not new_m_f.exists():
                         shutil.move(metadata_filepath, new_m_f)
                         break
                     else:

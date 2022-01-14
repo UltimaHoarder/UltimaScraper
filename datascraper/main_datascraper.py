@@ -59,15 +59,19 @@ async def start_datascraper(
             api.auths, "profiles", site_settings.auto_profile_choice
         )
         api.auths = profile_options.final_choices
+        identifiers = []
+        if site_settings.auto_model_choice:
+            subscription_options = OptionsFormat(
+                subscription_array, "subscriptions", site_settings.auto_model_choice
+            )
+            identifiers = subscription_options.choice_list
         for auth in api.auths:
             auth: auth_types = auth
             if not auth.auth_details:
                 continue
             setup = False
             setup, subscriptions = await account_setup(
-                auth,
-                datascraper,
-                site_settings,
+                auth, datascraper, site_settings, identifiers
             )
             if not setup:
                 if webhooks:
@@ -91,6 +95,7 @@ async def start_datascraper(
         subscription_options = OptionsFormat(
             subscription_array, "subscriptions", site_settings.auto_model_choice
         )
+        datascraper.subscription_options = subscription_options
         subscription_list = subscription_options.final_choices
         await main_helper.process_jobs(datascraper, subscription_list, site_settings)
         await main_helper.process_downloads(api, datascraper, global_settings)

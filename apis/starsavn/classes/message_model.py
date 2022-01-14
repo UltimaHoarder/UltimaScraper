@@ -42,6 +42,9 @@ class create_message:
         self.canPurchaseReason: Optional[str] = option.get("canPurchaseReason")
         self.canReport: Optional[bool] = option.get("canReport")
 
+    async def get_author(self):
+        return self.fromUser
+
     async def buy_message(self):
         """
         This function will buy a ppv message from a model.

@@ -403,15 +403,15 @@ class create_auth(create_user):
         return final_results
 
     async def get_mass_messages(
-        self, resume=None, refresh=True, limit=10, offset=0
-    ) -> list:
-        api_type = "mass_messages"
-        if not self.active:
-            return []
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+        self,
+        resume: Optional[list[dict[str, Any]]] = None,
+        refresh: bool = True,
+        limit: int = 10,
+        offset: int = 0,
+    ) -> list[dict[str, Any]]:
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         link = endpoint_links(
             global_limit=limit, global_offset=offset
         ).mass_messages_api
@@ -447,7 +447,7 @@ class create_auth(create_user):
         limit: int = 99,
         offset: int = 0,
         inside_loop: bool = False,
-    ) -> list[Union[create_message, create_post]]:
+    ) -> list[create_message | create_post]:
         return []
         # api_type = "paid_content"
         # if not self.active:

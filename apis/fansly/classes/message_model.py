@@ -62,6 +62,9 @@ class create_message:
         self.media = final_media
         self.user = user
 
+    async def get_author(self):
+        return self.fromUser
+
     async def buy_message(self):
         """
         This function will buy a ppv message from a model.

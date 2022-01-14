@@ -277,17 +277,7 @@ class create_auth(create_user):
             link = endpoint_links(global_limit=limit, global_offset=b).subscriptions
             offset_array.append(link)
 
-        # If user is a creator, add them to the subscription list
         results: list[list[create_user]] = []
-        if self.isPerformer:
-            subscription = await self.convert_to_user()
-            if isinstance(subscription, ErrorDetails):
-                return result
-            subscription.subscribedByData = {}
-            new_date = datetime.now() + relativedelta(years=1)
-            subscription.subscribedByData["expiredAt"] = new_date.isoformat()
-            subscriptions = [subscription]
-            results.append(subscriptions)
         if not identifiers:
 
             async def multi(item: str):
@@ -328,6 +318,16 @@ class create_auth(create_user):
                         valid_subscriptions.append(subscription)
                 return valid_subscriptions
 
+            # If user is a creator, add them to the subscription list
+            if self.isPerformer:
+                subscription = await self.convert_to_user()
+                if isinstance(subscription, ErrorDetails):
+                    return result
+                subscription.subscribedByData = {}
+                new_date = datetime.now() + relativedelta(years=1)
+                subscription.subscribedByData["expiredAt"] = new_date.isoformat()
+                subscriptions = [subscription]
+                results.append(subscriptions)
             pool = self.pool
             tasks = pool.starmap(multi, product(offset_array))
             results2 = await asyncio.gather(*tasks)

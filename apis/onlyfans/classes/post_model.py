@@ -63,7 +63,7 @@ class create_post:
         links = epl.create_links(link, self.commentsCount)
         if links:
             results = await api_helper.scrape_endpoint_links(
-                links, self.author.session_manager, api_type
+                links, self.author.get_session_manager(), api_type
             )
             self.comments = results
         return final_results
@@ -74,7 +74,9 @@ class create_post:
             identifier2=self.id,
             identifier3=self.author.id,
         ).favorite
-        results = await self.author.session_manager.json_request(link, method="POST")
+        results = await self.author.get_session_manager().json_request(
+            link, method="POST"
+        )
         self.isFavorite = True
         return results
 

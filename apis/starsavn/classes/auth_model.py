@@ -10,6 +10,7 @@ from typing import TYPE_CHECKING, Any, Dict, Optional, Union
 from apis import api_helper
 from apis.starsavn.classes.message_model import create_message
 from apis.starsavn.classes.post_model import create_post
+from apis.starsavn.classes.product_model import create_product
 from apis.starsavn.classes.user_model import create_user
 from apis.starsavn.classes.extras import (
     auth_details,
@@ -44,7 +45,7 @@ class create_auth(create_user):
         self.chats = None
         self.archived_stories = {}
         self.mass_messages = []
-        self.paid_content: list[create_message | create_post] = []
+        self.paid_content: list[create_product] = []
         temp_pool = pool if pool else api_helper.multiprocessing()
         self.pool = temp_pool
         self.session_manager = self._session_manager(self, max_threads=max_threads)
@@ -239,7 +240,7 @@ class create_auth(create_user):
     async def get_subscription(
         self,
         identifier: int | str = "",
-    ) -> Union[create_user, None]:
+    ) -> create_user | None:
         subscriptions = await self.get_subscriptions(refresh=False)
         valid = None
         for subscription in subscriptions:
@@ -268,17 +269,7 @@ class create_auth(create_user):
             link = endpoint_links(global_limit=limit, global_offset=b).subscriptions
             offset_array.append(link)
 
-        # If user is a creator, add them to the subscription list
         results: list[list[create_user]] = []
-        if self.isPerformer:
-            subscription = await self.convert_to_user()
-            if isinstance(subscription, ErrorDetails):
-                return result
-            subscription.subscribedByData = {}
-            new_date = datetime.now() + relativedelta(years=1)
-            subscription.subscribedByData["expiredAt"] = new_date.isoformat()
-            subscriptions = [subscription]
-            results.append(subscriptions)
         if not identifiers:
 
             async def multi(item: str):
@@ -329,6 +320,16 @@ class create_auth(create_user):
                         valid_subscriptions.append(subscription)
                 return valid_subscriptions
 
+            # If user is a creator, add them to the subscription list
+            if self.isPerformer:
+                subscription = await self.convert_to_user()
+                if isinstance(subscription, ErrorDetails):
+                    return result
+                subscription.subscribedByData = {}
+                new_date = datetime.now() + relativedelta(years=1)
+                subscription.subscribedByData["expiredAt"] = new_date.isoformat()
+                subscriptions = [subscription]
+                results.append(subscriptions)
             pool = self.pool
             tasks = pool.starmap(multi, product(offset_array))
             results2 = await asyncio.gather(*tasks)
@@ -451,39 +452,28 @@ class create_auth(create_user):
         self,
         check: bool = False,
         refresh: bool = True,
-        limit: int = 99,
+        limit: int = 10,
         offset: int = 0,
         inside_loop: bool = False,
-    ) -> list[Union[create_message, create_post]]:
-        api_type = "paid_content"
-        if not self.active:
-            return []
-        if not refresh:
-            result = handle_refresh(self, api_type)
-            if result:
-                return result
+    ) -> list[create_product] | ErrorDetails:
+        result, status = await api_helper.default_data(self, refresh)
+        if status:
+            return result
         link = endpoint_links(global_limit=limit, global_offset=offset).paid_api
         final_results = await self.session_manager.json_request(link)
         if not isinstance(final_results, ErrorDetails):
             if len(final_results) >= limit and not check:
-                results2 = self.get_paid_content(
+                results2 = await self.get_paid_content(
                     limit=limit, offset=limit + offset, inside_loop=True
                 )
                 final_results.extend(results2)
             if not inside_loop:
-                temp = []
-                # for final_result in final_results:
-                #     continue
-                #     content = None
-                #     if final_result["responseType"] == "message":
-                #         user = create_user(final_result["fromUser"], self)
-                #         content = create_message(final_result, user)
-                #         print
-                #     elif final_result["responseType"] == "post":
-                #         user = create_user(final_result["author"], self)
-                #         content = create_post(final_result, user)
-                #     if content:
-                #         temp.append(content)
+                temp: list[create_product] = []
+                for final_result in final_results:
+                    user = create_user(final_result["author"], self)
+                    content = create_product(final_result, user)
+                    content.media = [content.media]
+                    temp.append(content)
                 final_results = temp
             self.paid_content = final_results
         return final_results

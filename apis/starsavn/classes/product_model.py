@@ -1,8 +1,7 @@
 from __future__ import annotations
 
-from typing import TYPE_CHECKING, Any
+from typing import TYPE_CHECKING, Any, Optional
 
-import apis.starsavn.classes.user_model as user_model
 from apis.starsavn.classes.extras import endpoint_links
 
 if TYPE_CHECKING:
@@ -11,12 +10,13 @@ if TYPE_CHECKING:
 
 class create_product:
     def __init__(self, option: dict[str, Any], user: create_user) -> None:
-        self.responseType: str = option.get("responseType")
+        self.responseType: str = "product"
         self.id: int = option.get("productId")
         self.postedAt: str = option.get("postedAt")
         self.postedAtPrecise: str = option.get("postedAtPrecise")
         self.expiredAt: Any = option.get("expiredAt")
         self.author = user
+        self.title: str = option["title"]
         text: str = option.get("text", "")
         self.text = str(text or "")
         raw_text: str = option.get("rawText", "")
@@ -47,9 +47,13 @@ class create_product:
         self.linkedUsers: list = option.get("linkedUsers")
         self.linkedPosts: list = option.get("linkedPosts")
         self.media: list[dict[str, Any]] = option.get("media", [])
-        self.canViewMedia: bool = option.get("canViewMedia")
+        self.canViewMedia: Optional[bool] = option.get("canViewMedia")
         self.preview: list[int] = option.get("preview", [])
         self.canPurchase: bool = option.get("canPurchase")
+        self.__raw__ = option
+
+    async def get_author(self):
+        return self.author
 
     async def favorite(self):
         link = endpoint_links(

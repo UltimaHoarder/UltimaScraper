@@ -166,15 +166,18 @@ class StreamlinedDatascraper:
         if isinstance(paid_contents, error_types):
             return
         for paid_content in paid_contents:
-            author = None
             author = await paid_content.get_author()
             if not author:
                 continue
             if self.subscription_options and self.subscription_options.scrape_all():
                 subscription = await authed.get_subscription(identifier=author.id)
                 if not subscription:
+                    if not author.username and author.name == "Deleted user":
+                        author.username = "__deleted_users__"
                     subscription = author
                     authed.subscriptions.append(subscription)
+                else:
+                    author = subscription
             path_formats: dict[str, Any] = {}
             path_formats[
                 "metadata_directory_format"

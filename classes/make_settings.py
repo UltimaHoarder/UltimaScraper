@@ -166,10 +166,22 @@ class Settings(object):
                         self.succeeded = webhook_template(option.get("succeeded", {}))
                         self.failed = webhook_template(option.get("failed", {}))
 
+                    def get_webhook(self, name: Literal["succeeded", "failed"]):
+                        if name == "succeeded":
+                            return self.succeeded
+                        else:
+                            return self.failed
+
                 class download_webhook:
                     def __init__(self, option: dict[str, Any] = {}) -> None:
                         self.succeeded = webhook_template(option.get("succeeded", {}))
                         self.failed = webhook_template(option.get("failed", {}))
+
+                    def get_webhook(self, name: Literal["succeeded", "failed"]):
+                        if name == "succeeded":
+                            return self.succeeded
+                        else:
+                            return self.failed
 
                 self.global_webhooks = option.get("global_webhooks", [])
                 self.global_status = option.get("global_status", True)

@@ -16,7 +16,7 @@ from datetime import datetime
 from itertools import zip_longest
 from pathlib import Path
 from types import SimpleNamespace
-from typing import TYPE_CHECKING, Any, BinaryIO, Optional, Tuple, Union
+from typing import TYPE_CHECKING, Any, BinaryIO, Literal, Optional, Tuple, Union
 
 import classes.make_settings as make_settings
 import classes.prepare_webhooks as prepare_webhooks
@@ -1053,31 +1053,35 @@ async def process_downloads(
 async def process_webhooks(
     api: OnlyFans.start | Fansly.start | StarsAVN.start,
     category: str,
-    category_2: str,
+    category_2: Literal["succeeded", "failed"],
     global_settings: make_settings.Settings,
 ):
-    webhooks = global_settings.webhooks
-    global_webhooks = webhooks.global_webhooks
-    global_status = webhooks.global_status
-    if category == "auth_webhook":
-        webhook = webhooks.auth_webhook
-    else:
-        webhook = webhooks.download_webhook
-
-    if category_2 == "succeeded":
-        webhook_state = webhook.succeeded
-    else:
-        webhook_state = webhook.failed
-    webhook_links = []
-    webhook_status = global_status
+    webhook_settings = global_settings.webhooks
+    global_webhooks = webhook_settings.global_webhooks
+    final_webhooks = global_webhooks
+    global_status = webhook_settings.global_status
+    final_webhook_status = global_status
     webhook_hide_sensitive_info = True
-    if webhook_state.status != None:
-        webhook_status = webhook_state.status
-    if global_webhooks:
-        webhook_links = global_webhooks
-    if webhook_state.webhooks:
-        webhook_links = webhook_state.webhooks
-    if webhook_status:
+    if category == "auth_webhook":
+        category_webhook = webhook_settings.auth_webhook
+        webhook = category_webhook.get_webhook(category_2)
+        webhook_status = webhook.status
+        webhook_hide_sensitive_info = webhook.hide_sensitive_info
+        if webhook_status != None:
+            final_webhook_status = webhook_status
+        if webhook.webhooks:
+            final_webhooks = webhook.webhooks
+    elif webhook_settings.download_webhook:
+        category_webhook = webhook_settings.download_webhook
+        webhook = category_webhook.get_webhook(category_2)
+        webhook_status = webhook.status
+        if webhook_status != None:
+            final_webhook_status = webhook_status
+        webhook_hide_sensitive_info = webhook.hide_sensitive_info
+        if webhook.webhooks:
+            final_webhooks = webhook.webhooks
+    webhook_links = final_webhooks
+    if final_webhook_status:
         for auth in api.auths:
             await send_webhook(
                 auth, webhook_hide_sensitive_info, webhook_links, category, category_2
@@ -1198,7 +1202,11 @@ def byteToGigaByte(n):
 
 
 async def send_webhook(
-    item, webhook_hide_sensitive_info, webhook_links, category, category2: str
+    item: auth_types,
+    webhook_hide_sensitive_info: bool,
+    webhook_links: list[str],
+    category: str,
+    category2: str,
 ):
     if category == "auth_webhook":
         for webhook_link in webhook_links:
@@ -1214,10 +1222,9 @@ async def send_webhook(
             message = orjson.loads(json.dumps(message, default=lambda o: o.__dict__))
             requests.post(webhook_link, json=message)
     if category == "download_webhook":
-        subscriptions: list[create_user] = await item.get_subscriptions(refresh=False)
+        subscriptions = await item.get_subscriptions(refresh=False)
         for subscription in subscriptions:
-            download_info = subscription.download_info
-            if download_info:
+            if subscription.if_scraped():
                 for webhook_link in webhook_links:
                     message = prepare_webhooks.discord()
                     embed = message.embed()

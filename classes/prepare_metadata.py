@@ -329,10 +329,10 @@ class format_attributes(object):
         self.date = "{date}"
         self.ext = "{ext}"
 
-    def whitelist(self, wl):
-        new_wl = []
+    def whitelist(self, wl: list[str]):
+        new_wl: list[str] = []
         new_format_copied = copy.deepcopy(self)
-        for key, value in new_format_copied:
+        for _key, value in new_format_copied:
             if value not in wl:
                 new_wl.append(value)
         return new_wl
@@ -425,7 +425,7 @@ class prepare_reformat(object):
     #         x.append(final_path)
     #     return x
 
-    async def reformat_2(self, unformatted: str):
+    async def reformat_2(self, unformatted: Path):
         post_id = self.post_id
         media_id = self.media_id
         date = self.date
@@ -435,6 +435,7 @@ class prepare_reformat(object):
         text_length = self.text_length
         post_id = "" if post_id is None else str(post_id)
         media_id = "" if media_id is None else str(media_id)
+        unformatted_string = unformatted.as_posix()
         extra_count = 0
         if type(date) is str:
             format_variables2 = format_attributes()
@@ -445,16 +446,18 @@ class prepare_reformat(object):
             if isinstance(date, datetime):
                 date = date.strftime(self.date_format)
         has_text = False
-        if "{text}" in unformatted:
+        if "{text}" in unformatted_string:
             has_text = True
             text = main_helper.clean_text(text)
             extra_count = len("{text}")
-        if "{value}" in unformatted:
+        if "{value}" in unformatted_string:
             if self.price:
                 if not self.preview:
                     value = "Paid"
         directory = self.directory
-        path = unformatted.replace("{site_name}", self.site_name)
+        if not directory:
+            raise Exception("Directory not found")
+        path = unformatted_string.replace("{site_name}", self.site_name)
         path = path.replace("{first_letter}", self.model_username[0].capitalize())
         path = path.replace("{post_id}", post_id)
         path = path.replace("{media_id}", media_id)
@@ -472,11 +475,11 @@ class prepare_reformat(object):
         text_length = text_length if text_length < maximum_length else maximum_length
         if has_text:
             # https://stackoverflow.com/a/43848928
-            def utf8_lead_byte(b):
+            def utf8_lead_byte(b: int):
                 """A UTF-8 intermediate byte starts with the bits 10xxxxxx."""
                 return (b & 0xC0) != 0x80
 
-            def utf8_byte_truncate(text, max_bytes):
+            def utf8_byte_truncate(text: str, max_bytes: int):
                 """If text[max_bytes] is not a lead byte, back up until a lead byte is
                 found and truncate before that character."""
                 utf8 = text.encode("utf8")
@@ -521,7 +524,7 @@ class prepare_reformat(object):
             unique_format: str = unique_format[0]
             new_dict[key] = unique_format
             path_parts = Path(getattr(formats, key)).parts
-            p = Path(*list(takewhile_including(path_parts, unique_format))).as_posix()
+            p = Path(*takewhile_including(list(path_parts), unique_format))
             w = await self.reformat_2(p)
             if format_key:
                 return w

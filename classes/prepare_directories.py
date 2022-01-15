@@ -1,7 +1,9 @@
 import copy
+from sys import exit
 import os
 from pathlib import Path
 from typing import Any, Literal
+from classes.make_settings import SiteSettings
 
 from classes.prepare_metadata import format_attributes, prepare_reformat
 
@@ -9,17 +11,22 @@ from classes.prepare_metadata import format_attributes, prepare_reformat
 class DirectoryManager:
     def __init__(
         self,
-        profile_directory: str | Path = "",
-        metadata_directory: str | Path = "",
-        download_directory: str | Path = "",
-        path_formats: dict[str, Any] = {},
+        site_settings: SiteSettings,
+        profile_directory: Path = Path(),
+        metadata_directory: Path = Path(),
+        download_directory: Path = Path(),
     ) -> None:
         self.root_directory = Path()
         self.root_metadata_directory = Path(metadata_directory)
         self.root_download_directory = Path(download_directory)
         self.profile = self.ProfileDirectories(Path(profile_directory))
         self.user = self.UserDirectories()
-        self.formats = FormatTypes(path_formats)
+        formats = FormatTypes(site_settings)
+        string, status = formats.check_rules()
+        if not status:
+            print(string)
+            exit(0)
+        self.formats = formats
         pass
 
     class ProfileDirectories:
@@ -103,32 +110,37 @@ class FileManager:
 
 
 class FormatTypes:
-    def __init__(self, options: dict[str, Any]) -> None:
-        self.metadata_directory_format = options.get("metadata_directory_format")
-        self.file_directory_format = options.get("file_directory_format")
-        self.filename_format = options.get("filename_format")
+    def __init__(self, site_settings: SiteSettings) -> None:
+        self.metadata_directory_format = site_settings.metadata_directory_format
+        self.file_directory_format = site_settings.file_directory_format
+        self.filename_format = site_settings.filename_format
 
     def check_rules(self):
+        """Checks for invalid filepath
+
+        Returns:
+            tuple(str,bool): Returns a string which explains invalid filepath format
+        """
         bool_status = True
         wl = []
         invalid_list = []
         string = ""
-        for key, value in self:
+        for key, _value in self:
             if key == "file_directory_format":
-                bl = format_variables()
-                wl = [v for k, v in bl.__dict__.items()]
+                bl = format_attributes()
+                wl = [v for _k, v in bl.__dict__.items()]
                 bl = bl.whitelist(wl)
                 invalid_list = []
                 for b in bl:
-                    if b in self.file_directory_format:
+                    if b in self.file_directory_format.as_posix():
                         invalid_list.append(b)
             if key == "filename_format":
-                bl = format_variables()
-                wl = [v for k, v in bl.__dict__.items()]
+                bl = format_attributes()
+                wl = [v for _k, v in bl.__dict__.items()]
                 bl = bl.whitelist(wl)
                 invalid_list = []
                 for b in bl:
-                    if b in self.filename_format:
+                    if b in self.filename_format.as_posix():
                         invalid_list.append(b)
             if key == "metadata_directory_format":
                 wl = [
@@ -138,46 +150,42 @@ class FormatTypes:
                     "{profile_username}",
                     "{model_username}",
                 ]
-                bl = format_variables().whitelist(wl)
-                invalid_list = []
+                bl = format_attributes().whitelist(wl)
+                invalid_list: list[str] = []
                 for b in bl:
-                    if b in self.metadata_directory_format:
+                    if b in self.metadata_directory_format.as_posix():
                         invalid_list.append(b)
-            bool_status = True
             if invalid_list:
                 string += f"You cannot use {','.join(invalid_list)} in {key}. Use any from this list {','.join(wl)}"
                 bool_status = False
 
         return string, bool_status
 
-    def check_unique(self, return_unique=True):
-        string = ""
-        values = []
+    def check_unique(self):
+        values: list[str] = []
         unique = []
         new_format_copied = copy.deepcopy(self)
-        option = {}
+        option: dict[str, Any] = {}
         option["string"] = ""
         option["bool_status"] = True
         option["unique"] = new_format_copied
         f = format_attributes()
         for key, value in self:
+            value: Path
             if key == "file_directory_format":
                 unique = ["{media_id}", "{model_username}"]
-                value = os.path.normpath(value)
-                values = value.split(os.sep)
+                values = list(value.parts)
                 option["unique"].file_directory_format = unique
             elif key == "filename_format":
                 values = []
                 unique = ["{media_id}", "{filename}"]
-                value = os.path.normpath(value)
-                for key2, value2 in f:
-                    if value2 in value:
+                for _key2, value2 in f:
+                    if value2 in value.as_posix():
                         values.append(value2)
                 option["unique"].filename_format = unique
             elif key == "metadata_directory_format":
                 unique = ["{model_username}"]
-                value = os.path.normpath(value)
-                values = value.split(os.sep)
+                values = list(value.parts)
                 option["unique"].metadata_directory_format = unique
             if key != "filename_format":
                 e = [x for x in values if x in unique]

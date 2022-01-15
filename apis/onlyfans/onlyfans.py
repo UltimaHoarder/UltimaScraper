@@ -1,41 +1,20 @@
-from multiprocessing.pool import Pool
 from typing import Any, Literal, Optional, Union
 
+from apis.api_streamliner import StreamlinedAPI
 from apis.onlyfans.classes.auth_model import create_auth
 from apis.onlyfans.classes.extras import auth_details, endpoint_links
 from apis.onlyfans.classes.user_model import create_user
 
 from classes.make_settings import Config
-from classes.prepare_directories import DirectoryManager
-
-from .. import api_helper
 
 
-class start:
-    def __init__(self, max_threads: int = -1, config: Optional[Config] = None) -> None:
-        from helpers.main_helper import check_space
-
+class start(StreamlinedAPI):
+    def __init__(self, config: Config) -> None:
         self.site_name: Literal["OnlyFans"] = "OnlyFans"
+        StreamlinedAPI.__init__(self, self, config)
         self.auths: list[create_auth] = []
         self.subscriptions: list[create_user] = []
-        self.max_threads = max_threads
-        self.lists = None
         self.endpoint_links = endpoint_links
-        self.pool: Pool = api_helper.multiprocessing()
-        self.config = config
-        self.base_directory_manager = DirectoryManager()
-        site_settings = self.get_site_settings()
-        if self.config and site_settings:
-            self.base_directory_manager.profile.root_directory = check_space(
-                self.config.settings.profile_directories
-            )
-            self.base_directory_manager.root_metadata_directory = check_space(
-                site_settings.metadata_directories
-            )
-            self.base_directory_manager.root_download_directory = check_space(
-                site_settings.download_directories
-            )
-            print
 
     def add_auth(
         self, auth_json: dict[str, Any] = {}, only_active: bool = False
@@ -79,28 +58,6 @@ class start:
             auth_details: [auth_details object]
         """
         return auth_details(auth_json).upgrade_legacy(auth_json)
-
-    def close_pools(self):
-        self.pool.close()
-        for auth in self.auths:
-            if auth.session_manager:
-                auth.session_manager.pool.close()
-
-    def has_active_auths(self):
-        return bool([x for x in self.auths if x.active])
-
-    def get_auths_via_subscription_identifier(self, identifier: str):
-        for auth in self.auths:
-            if auth.username == identifier:
-                print
-
-    def get_global_settings(self):
-        if self.config:
-            return self.config.settings
-
-    def get_site_settings(self):
-        if self.config:
-            return self.config.supported.get_settings(self.site_name)
 
     class ContentTypes:
         def __init__(self) -> None:

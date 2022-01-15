@@ -1,5 +1,6 @@
 import timeit
 from typing import Any, Optional
+from apis import api_helper
 
 import apis.fansly.classes as fansly_classes
 import apis.onlyfans.classes as onlyfans_classes
@@ -24,7 +25,6 @@ user_types = (
     | fansly_classes.user_model.create_user
     | starsavn_classes.user_model.create_user
 )
-api_helper = OnlyFans.api_helper
 
 
 async def start_datascraper(
@@ -110,21 +110,18 @@ async def start_datascraper(
         case "onlyfans":
             if not isinstance(api_, OnlyFans.start):
                 api_ = OnlyFans.start(
-                    max_threads=global_settings.max_threads,
                     config=config,
                 )
             datascraper = m_onlyfans.OnlyFansDataScraper(api_)
         case "fansly":
             if not isinstance(api_, Fansly.start):
                 api_ = Fansly.start(
-                    max_threads=global_settings.max_threads,
                     config=config,
                 )
             datascraper = m_fansly.FanslyDataScraper(api_)
         case "starsavn":
             if not isinstance(api_, StarsAVN.start):
                 api_ = StarsAVN.start(
-                    max_threads=global_settings.max_threads,
                     config=config,
                 )
             datascraper = m_starsavn.StarsAVNDataScraper(api_)

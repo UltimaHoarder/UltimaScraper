@@ -17,8 +17,6 @@ from classes.prepare_metadata import prepare_reformat
 
 from modules.streamliner import StreamlinedDatascraper
 
-# The start lol
-
 
 class FanslyDataScraper(StreamlinedDatascraper):
     def __init__(self, api: start) -> None:
@@ -28,15 +26,12 @@ class FanslyDataScraper(StreamlinedDatascraper):
     async def manage_subscriptions(
         self,
         authed: create_auth,
-        auth_count: int = 0,
         identifiers: list[int | str] = [],
         refresh: bool = True,
     ):
         temp_subscriptions: list[create_user] = []
         results = await authed.get_followings(identifiers=identifiers)
-        results2 = await authed.get_subscriptions(
-            identifiers=identifiers, refresh=refresh
-        )
+        results2 = []
         for result2 in results2:
             for found in [x for x in results if x.username == result2.username]:
                 result2.subscribedByData = found.subscribedByData
@@ -70,13 +65,7 @@ class FanslyDataScraper(StreamlinedDatascraper):
         results.sort(key=lambda x: x.subscribedByData["endsAt"])
         results.sort(key=lambda x: x.is_me(), reverse=True)
         for result in results:
-            path_formats: dict[str, Any] = {}
-            path_formats[
-                "metadata_directory_format"
-            ] = site_settings.metadata_directory_format
-            path_formats["file_directory_format"] = site_settings.file_directory_format
-            path_formats["filename_format"] = site_settings.filename_format
-            result.create_directory_manager(path_formats=path_formats)
+            result.create_directory_manager()
             subscribePrice = result.subscribePrice
             if ignore_type in ["paid"]:
                 if subscribePrice > 0:
@@ -207,8 +196,7 @@ class FanslyDataScraper(StreamlinedDatascraper):
                 url = urlparse(link)
                 if not url.hostname:
                     continue
-                subdomain = url.hostname.split(".")[0]
-                new_media = dict()
+                new_media: dict[str, Any] = dict()
                 new_media["media_id"] = media_id
                 new_media["links"] = []
                 new_media["media_type"] = media_type

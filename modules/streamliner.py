@@ -122,9 +122,8 @@ class StreamlinedDatascraper:
         p_r.text_length = site_settings.text_length
         p_r.api_type = "Profile"
         p_r.directory = subscription_directory_manager.root_download_directory
-
-        file_directory_format = site_settings.file_directory_format.replace(
-            "{value}", ""
+        file_directory_format = await main_helper.replace_path(
+            "{value}", "", site_settings.file_directory_format
         )
         directory = await p_r.reformat_2(file_directory_format)
         for override_media_type in override_media_types:

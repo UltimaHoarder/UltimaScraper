@@ -218,7 +218,9 @@ class create_user:
         self.maxPinnedPostsCount: int = option.get("maxPinnedPostsCount")
         # Custom
         self.__authed = authed
-        self.directory_manager: DirectoryManager = DirectoryManager()
+        self.directory_manager: DirectoryManager = DirectoryManager(
+            authed.api.get_site_settings()
+        )
         self.file_manager: FileManager = FileManager(self.directory_manager)
         self.scraped = authed.api.ContentTypes()
         self.temp_scraped = authed.api.ContentTypes()
@@ -549,20 +551,22 @@ class create_user:
                     print
         return final_results
 
-    def create_directory_manager(self, path_formats: dict[str, Any] = {}):
+    def create_directory_manager(self):
         from classes.prepare_directories import DirectoryManager
 
-        base_directory_manager = self.__authed.api.base_directory_manager
-        profile_directory = Path(
-            base_directory_manager.profile.root_directory, self.username
+        api = self.get_api()
+        base_directory_manager = api.base_directory_manager
+        profile_directory = base_directory_manager.profile.root_directory.joinpath(
+            self.username
         )
+
         metadata_directory = base_directory_manager.root_metadata_directory
         download_directory = base_directory_manager.root_download_directory
         self.directory_manager = DirectoryManager(
+            api.get_site_settings(),
             profile_directory,
             metadata_directory,
             download_directory,
-            path_formats=path_formats,
         )
         self.file_manager.directory_manager = self.directory_manager
         return self.directory_manager

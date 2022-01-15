@@ -86,7 +86,7 @@ async def fix_directories(
             prepared_format.directory = file_directory
             old_filepath = ""
             if media.linked:
-                filename_format = f"linked_{filename_format}"
+                filename_format = filename_format.with_name(f"linked_{filename_format}")
             new_filepath = await prepared_format.reformat_2(filename_format)
             old_filepaths = [
                 x

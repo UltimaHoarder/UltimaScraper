@@ -1,5 +1,4 @@
 import copy
-import os
 import uuid as uuid
 from pathlib import Path
 from typing import Any, Literal, Tuple, get_args
@@ -66,21 +65,18 @@ class SiteSettings:
             Path(directory)
             for directory in option.get("download_directories", [".sites"])
         ]
-        normpath = os.path.normpath
-        self.file_directory_format = normpath(
+        self.file_directory_format = Path(
             option.get(
                 "file_directory_format",
                 "{site_name}/{model_username}/{api_type}/{value}/{media_type}",
             )
         )
-        self.filename_format = normpath(
-            option.get("filename_format", "{filename}.{ext}")
-        )
+        self.filename_format = Path(option.get("filename_format", "{filename}.{ext}"))
         self.metadata_directories = [
             Path(directory)
             for directory in option.get("metadata_directories", [".sites"])
         ]
-        self.metadata_directory_format = normpath(
+        self.metadata_directory_format = Path(
             option.get(
                 "metadata_directory_format",
                 "{site_name}/{model_username}/Metadata",
@@ -273,8 +269,11 @@ class Config(object):
             for key, value in SS.__dict__.items():
                 match key:
                     case "profile_directories" | "download_directories" | "metadata_directories":
-                        new_list: list[str] = []
-                        for value2 in value:
-                            new_list.append(str(value2))
+                        items: list[Path] = value
+                        new_list = [x.as_posix() for x in items]
                         SS.__dict__[key] = new_list
+                    case "file_directory_format" | "filename_format" | "metadata_directory_format":
+                        value_: Path = value
+                        final_path = value_.as_posix()
+                        SS.__dict__[key] = final_path
         return base

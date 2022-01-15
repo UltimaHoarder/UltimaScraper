@@ -19,8 +19,6 @@ from classes.prepare_metadata import prepare_reformat
 
 from modules.streamliner import StreamlinedDatascraper
 
-# The start lol
-
 
 class StarsAVNDataScraper(StreamlinedDatascraper):
     def __init__(self, api: start) -> None:
@@ -64,13 +62,7 @@ class StarsAVNDataScraper(StreamlinedDatascraper):
         results.sort(key=lambda x: x.subscribedByData["expiredAt"])
         results.sort(key=lambda x: x.is_me(), reverse=True)
         for result in results:
-            path_formats: dict[str, Any] = {}
-            path_formats[
-                "metadata_directory_format"
-            ] = site_settings.metadata_directory_format
-            path_formats["file_directory_format"] = site_settings.file_directory_format
-            path_formats["filename_format"] = site_settings.filename_format
-            result.create_directory_manager(path_formats=path_formats)
+            result.create_directory_manager()
             subscribePrice = result.subscribePrice
             if ignore_type in ["paid"]:
                 if subscribePrice > 0:

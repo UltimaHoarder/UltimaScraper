@@ -115,10 +115,10 @@ class endpoint_links(object):
         full_url_path = f"{domain}{api}"
         self.full_url_path = full_url_path
         self.customer = f"{full_url_path}/account?ids={identifier}"
-        self.settings = f"https://apiv2.fansly.com/api/v1/account/settings"
+        self.settings = f"{full_url_path}/account/settings"
         self.users = f"https://onlyfans.com/api2/v2/users/{identifier}"
-        self.followings = f"https://apiv2.fansly.com/api/v1/account/{identifier}/following?before={global_offset}&after=0&limit=100&offset=0"
-        self.subscriptions = f"https://apiv2.fansly.com/api/v1/subscriptions"
+        self.followings = f"{full_url_path}/account/{identifier}/following?before={global_offset}&after=0&limit=100&offset=0"
+        self.subscriptions = f"{full_url_path}/subscriptions"
         self.lists = f"https://onlyfans.com/api2/v2/lists?limit={global_limit}&offset={global_offset}"
         self.lists_users = f"https://onlyfans.com/api2/v2/lists/{identifier}/users?limit={global_limit}&offset={global_offset}&query="
         self.list_chats = f"https://onlyfans.com/api2/v2/chats?limit={global_limit}&offset={global_offset}&order=desc"
@@ -133,7 +133,7 @@ class endpoint_links(object):
         self.list_highlights = f"https://onlyfans.com/api2/v2/users/{identifier}/stories/highlights?limit=100&offset=0&order=desc"
         self.highlight = f"https://onlyfans.com/api2/v2/stories/highlights/{identifier}"
         self.list_posts_api = self.list_posts(identifier)
-        self.post_api = f"https://apiv2.fansly.com/api/v1/timeline/{identifier}?before={global_offset}"
+        self.post_api = f"{full_url_path}/timeline/{identifier}?before={global_offset}"
         self.archived_posts = f"https://onlyfans.com/api2/v2/users/{identifier}/posts/archived?limit={global_limit}&offset={global_offset}&order=publish_date_desc"
         self.archived_stories = f"https://onlyfans.com/api2/v2/stories/archive/?limit=100&offset=0&order=publish_date_desc"
         self.paid_api = f"https://onlyfans.com/api2/v2/posts/paid?{global_limit}&offset={global_offset}"
@@ -145,6 +145,19 @@ class endpoint_links(object):
             f"https://onlyfans.com/api2/v2/payments/all/transactions?limit=10&offset=0"
         )
         self.two_factor = f"https://onlyfans.com/api2/v2/users/otp/check"
+
+    def list_followings(self):
+        print
+
+    def list_users(self, identifiers: list[int] | list[str]):
+        if all(isinstance(x, int) for x in identifiers):
+            identifier_type = "ids"
+        else:
+            identifier_type = "usernames"
+        link = ""
+        if identifiers:
+            link = f"{self.full_url_path}/account?{identifier_type}={','.join([str(x) for x in identifiers])}"
+        return link
 
     def list_posts(
         self,

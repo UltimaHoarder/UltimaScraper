@@ -21,7 +21,7 @@ class create_message:
         self.isMediaReady: Optional[bool] = option.get("isMediaReady")
         self.mediaCount: Optional[int] = option.get("mediaCount")
         self.media: list[Any] = option.get("media", [])
-        self.previews: list = option.get("previews", [])
+        self.previews: list[dict[str, Any]] = option.get("previews", [])
         self.isTip: Optional[bool] = option.get("isTip")
         self.isReportedByMe: Optional[bool] = option.get("isReportedByMe")
         self.fromUser = user

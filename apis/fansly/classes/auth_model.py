@@ -244,6 +244,7 @@ class create_auth(create_user):
         return results
 
     async def get_followings(self, identifiers: list[int | str]) -> list[create_user]:
+        offset_count = 0
         followings_link = endpoint_links(self.id).followings
         temp_followings: dict[str, Any] = await self.session_manager.json_request(
             followings_link
@@ -326,21 +327,19 @@ class create_auth(create_user):
             tasks = pool.starmap(multi, product(subscriptions))
             results += await asyncio.gather(*tasks)
         else:
-            for identifier in identifiers:
-                if self.id == identifier or self.username == identifier:
-                    continue
-                link = endpoint_links(identifier=identifier).users
-                result = await self.session_manager.json_request(link)
-                if isinstance(result, ErrorDetails) or not result["subscribedBy"]:
-                    continue
-                subscription = create_user(result, self)
-                if subscription.isBlocked:
-                    continue
-                subscription.session_manager = self.session_manager
-                subscription.subscriber = self
-                results.append([subscription])
-                print
-            print
+            identifier_links: list[str] = []
+            integer_identifiers = [x for x in identifiers if isinstance(x, int)]
+            link = endpoint_links().list_users(integer_identifiers)
+            if link:
+                identifier_links.append(link)
+            string_identifiers = [x for x in identifiers if isinstance(x, str)]
+            link = endpoint_links().list_users(string_identifiers)
+            if link:
+                identifier_links.append(link)
+            for identifier_link in identifier_links:
+                result = await self.session_manager.json_request(identifier_link)
+                x = [create_user(x, self) for x in result["response"]]
+                results.append(x)
         results = [x for x in results if x is not None]
         results = list(chain(*results))
         self.subscriptions = results

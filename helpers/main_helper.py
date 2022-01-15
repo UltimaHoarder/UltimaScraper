@@ -771,16 +771,14 @@ def prompt_modified(message: str, path: Path):
 def import_json(json_path: Path):
     json_file: dict[str, Any] = {}
     if json_path.exists() and json_path.stat().st_size and json_path.suffix == ".json":
-        with open(json_path, encoding="utf-8") as fp:
-            json_file = orjson.loads(fp.read())
+        json_file = orjson.loads(json_path.open(encoding="utf-8").read())
     return json_file
 
 
 def export_json(metadata: list[Any] | dict[str, Any], filepath: Path):
     if filepath.suffix:
         filepath.parent.mkdir(exist_ok=True)
-    with open(filepath, "wb") as outfile:
-        outfile.write(orjson.dumps(metadata, option=orjson.OPT_INDENT_2))
+    filepath.write_bytes(orjson.dumps(metadata, option=orjson.OPT_INDENT_2))
 
 
 def object_to_json(item: Any):
@@ -1389,3 +1387,7 @@ async def format_directories(
             legacy_model_directory
         )
     return directory_manager
+
+
+async def replace_path(old_string: str, new_string: str, path: Path):
+    return Path(path.as_posix().replace(old_string, new_string))

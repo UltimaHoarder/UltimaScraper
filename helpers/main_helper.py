@@ -1224,7 +1224,7 @@ async def send_webhook(
     if category == "download_webhook":
         subscriptions = await item.get_subscriptions(refresh=False)
         for subscription in subscriptions:
-            if subscription.if_scraped():
+            if await subscription.if_scraped():
                 for webhook_link in webhook_links:
                     message = prepare_webhooks.discord()
                     embed = message.embed()

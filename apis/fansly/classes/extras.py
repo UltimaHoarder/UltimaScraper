@@ -201,7 +201,9 @@ class ErrorDetails:
     def __init__(self, result: dict[str, Any]) -> None:
         error = result["error"] if "error" in result else result
         self.code = error["code"]
-        self.message = error.get("details", error["message"])
+        self.message = error.get("details", "")
+        if not self.message:
+            self.message = error["message"]
 
     async def format(self, extras: dict[str, Any]):
         match self.code:

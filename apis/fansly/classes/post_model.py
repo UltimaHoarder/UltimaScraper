@@ -47,9 +47,9 @@ class create_post:
         self.mentionedUsers: list = option.get("mentionedUsers")
         self.linkedUsers: list = option.get("linkedUsers")
         self.linkedPosts: list = option.get("linkedPosts")
-        self.attachments: list = option.get("attachments")
+        self.previews: list[dict[str, Any]] = option.get("previews", [])
+        self.attachments: list[dict[str, Any]] = option.get("attachments", {})
         # Custom
-        final_media: list[Any] = []
         final_media_ids: list[Any] = []
         for attachment in self.attachments:
             attachment_content_id = attachment["contentId"]
@@ -62,16 +62,23 @@ class create_post:
                             final_media_ids.extend(bundle["accountMediaIds"])
                 case _:
                     print
+        final_media: list[Any] = []
         if final_media_ids:
             for final_media_id in final_media_ids:
                 for account_media in extra["accountMedia"]:
                     if account_media["id"] == final_media_id:
-                        final_media.append(account_media)
+                        temp_media = None
+                        if "preview" in account_media:
+                            temp_media = account_media["preview"]
+                            self.previews.append(temp_media)
+                        if account_media["media"]["locations"]:
+                            temp_media = account_media["media"]
+                        if temp_media:
+                            final_media.append(temp_media)
         self.media: list[Any] = final_media
         self.canViewMedia: bool = option.get("canViewMedia")
         self.preview: list[int] = option.get("preview", [])
         self.canPurchase: bool = option.get("canPurchase")
-        self.user: user_model.create_user = user
 
     async def get_author(self):
         return self.author

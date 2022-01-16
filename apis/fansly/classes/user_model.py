@@ -1,7 +1,6 @@
 from __future__ import annotations
 
 import math
-from pathlib import Path
 from typing import TYPE_CHECKING, Any, Optional, Union
 from urllib import parse
 
@@ -16,7 +15,6 @@ from apis.fansly.classes.extras import (
     handle_refresh,
 )
 from apis.fansly.classes.hightlight_model import create_highlight
-from classes.make_settings import SiteSettings
 
 if TYPE_CHECKING:
     from apis.fansly.classes.auth_model import create_auth
@@ -378,25 +376,25 @@ class create_user:
                     break
                 print
             print
-        if links is None:
-            links = []
-        multiplier = self.get_session_manager().max_threads
-        if links:
-            link = links[-1]
-        else:
-            link = endpoint_links(
-                identifier=found_id, global_limit=limit, global_offset=offset
-            ).message_api
-            links.append(link)
-        links2 = api_helper.calculate_the_unpredictable(link, limit, multiplier)
-        if not inside_loop:
-            links += links2
-        else:
-            links = links2
-        results = await self.get_session_manager().async_requests(links)
-        results = await api_helper.remove_errors(results)
-        final_results = []
-        if isinstance(results, list):
+        final_results: list[message_model.create_message] = []
+        if found_id:
+            if links is None:
+                links = []
+            multiplier = self.get_session_manager().max_threads
+            if links:
+                link = links[-1]
+            else:
+                link = endpoint_links(
+                    identifier=found_id, global_limit=limit, global_offset=offset
+                ).message_api
+                links.append(link)
+            links2 = api_helper.calculate_the_unpredictable(link, limit, multiplier)
+            if not inside_loop:
+                links += links2
+            else:
+                links = links2
+            results = await self.get_session_manager().async_requests(links)
+            results = await api_helper.remove_errors(results)
             results = api_helper.merge_dictionaries(results)
             if not results:
                 return []

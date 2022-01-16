@@ -46,6 +46,8 @@ class FanslyDataScraper(StreamlinedDatascraper):
         if api_type == "Posts":
             pass
         if api_type == "Messages":
+            if post_result.media:
+                print
             pass
         download_path = formatted_directory
         model_username = subscription.username
@@ -126,12 +128,11 @@ class FanslyDataScraper(StreamlinedDatascraper):
                 else:
                     print
             new_post["price"] = price
+            # We can store previews and accesible media in .media
             for temp_media in post_result.media:
-                media: dict[str, Any] = (
-                    temp_media["media"]
-                    if "media" in temp_media
-                    else temp_media["preview"]
-                )
+                media = temp_media
+                if api_type == "Messages":
+                    print
                 media_id = media["id"]
                 preview_link = ""
                 link = await post_result.link_picker(media, site_settings.video_quality)

@@ -21,6 +21,7 @@ class create_story:
         self.question: Any = option.get("question")
         self.placedContents: list = option.get("placedContents")
         self.answered: int = option.get("answered")
+        self.previews: list[dict[str, Any]] = option.get("previews", [])
 
     async def link_picker(self, media: dict[Any, Any], target_quality: str):
         # There are two media results at play here.

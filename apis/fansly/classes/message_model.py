@@ -14,13 +14,13 @@ class create_message:
         self, option: dict[str, Any], user: create_user, extra: dict[Any, Any] = {}
     ) -> None:
         self.responseType: Optional[str] = option.get("responseType")
-        self.text: Optional[str] = option.get("text")
+        self.text: Optional[str] = option["content"]
         self.lockedText: Optional[bool] = option.get("lockedText")
         self.isFree: Optional[bool] = option.get("isFree")
         self.price: Optional[float] = option.get("price")
         self.isMediaReady: Optional[bool] = option.get("isMediaReady")
         self.mediaCount: Optional[int] = option.get("mediaCount")
-        self.media: list[Any] = option.get("media", [])
+        self.media: list[Any] = option.get("attachments", [])
         self.previews: list[dict[str, Any]] = option.get("previews", [])
         self.isTip: Optional[bool] = option.get("isTip")
         self.isReportedByMe: Optional[bool] = option.get("isReportedByMe")
@@ -39,9 +39,9 @@ class create_message:
         self.canPurchase: Optional[bool] = option.get("canPurchase")
         self.canPurchaseReason: Optional[str] = option.get("canPurchaseReason")
         self.canReport: Optional[bool] = option.get("canReport")
-        self.attachments: list = option.get("attachments")
+        self.attachments: list[dict[str, Any]] = option.get("attachments", {})
+        self.__raw__ = option
         # Custom
-        final_media: list[Any] = []
         final_media_ids: list[Any] = []
         for attachment in self.attachments:
             attachment_content_id = attachment["contentId"]
@@ -54,11 +54,19 @@ class create_message:
                             final_media_ids.extend(bundle["accountMediaIds"])
                 case _:
                     print
+        final_media: list[Any] = []
         if final_media_ids:
             for final_media_id in final_media_ids:
                 for account_media in extra["accountMedia"]:
                     if account_media["id"] == final_media_id:
-                        final_media.append(account_media)
+                        temp_media = None
+                        if "preview" in account_media:
+                            temp_media = account_media["preview"]
+                            self.previews.append(temp_media)
+                        if account_media["media"]["locations"]:
+                            temp_media = account_media["media"]
+                        if temp_media:
+                            final_media.append(temp_media)
         self.media = final_media
         self.user = user
 

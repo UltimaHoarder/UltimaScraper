@@ -177,13 +177,7 @@ class StreamlinedDatascraper:
                     authed.subscriptions.append(subscription)
                 else:
                     author = subscription
-            path_formats: dict[str, Any] = {}
-            path_formats[
-                "metadata_directory_format"
-            ] = site_settings.metadata_directory_format
-            path_formats["file_directory_format"] = site_settings.file_directory_format
-            path_formats["filename_format"] = site_settings.filename_format
-            author.create_directory_manager(path_formats=path_formats)
+            author.create_directory_manager()
             if paid_content.responseType:
                 api_type = paid_content.responseType.capitalize() + "s"
                 if api_type == "Posts" and paid_content.isArchived:

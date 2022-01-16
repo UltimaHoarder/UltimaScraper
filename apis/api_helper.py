@@ -16,7 +16,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing.pool import Pool
 from os.path import dirname as up
 from random import randint
-from typing import TYPE_CHECKING, Any, Optional
+from typing import TYPE_CHECKING, Any, Optional, final
 from urllib.parse import urlparse
 
 import python_socks
@@ -479,22 +479,13 @@ async def handle_error_details(
     | dict[str, Any]
     | list[dict[str, Any]]
     | list[error_details_types],
-    remove_errors: bool = False,
+    remove_errors_status: bool = False,
     api_type: Optional[auth_types] = None,
 ):
     results = []
     if isinstance(item, list):
-        if remove_errors and api_type:
-            onlyfans_classes, fansly_classes, _starsavn_classes = load_classes()
-            onlyfans_extras, fansly_extras, starsavn_extras = load_extras()
-            # if isinstance(item, onlyfans_extras.ErrorDetails):
-            #     results = await onlyfans_extras.remove_errors(item)
-            if isinstance(api_type, onlyfans_classes.auth_model.create_auth):
-                results = await onlyfans_extras.remove_errors(item)
-            elif isinstance(api_type, fansly_classes.auth_model.create_auth):
-                results = await fansly_extras.remove_errors(item)
-            else:
-                results = await starsavn_extras.remove_errors(item)
+        if remove_errors_status and api_type:
+            results = await remove_errors(item)
     else:
         if parsed_args.verbose:
             # Will move to logging instead of printing later.
@@ -607,3 +598,23 @@ async def default_data(
 def merge_dictionaries(items: list[dict[str, Any]]):
     final_dictionary: dict[str, Any] = merge({}, *items, strategy=Strategy.ADDITIVE)  # type: ignore
     return final_dictionary
+
+
+async def remove_errors(results: Any):
+    final_results: list[Any] = []
+    onlyfans_extras, fansly_extras, starsavn_extras = load_extras()
+    error_details_types = (
+        onlyfans_extras.ErrorDetails
+        | fansly_extras.ErrorDetails
+        | starsavn_extras.ErrorDetails
+    )
+    wrapped = False
+    if not isinstance(results, list):
+        wrapped = True
+        final_results.append(results)
+    else:
+        final_results = results
+    final_results = [x for x in final_results if not isinstance(x, error_details_types)]
+    if wrapped and final_results:
+        final_results = final_results[0]
+    return final_results

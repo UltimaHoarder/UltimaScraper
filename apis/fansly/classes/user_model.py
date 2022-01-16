@@ -14,7 +14,6 @@ from apis.fansly.classes.extras import (
     content_types,
     endpoint_links,
     handle_refresh,
-    remove_errors,
 )
 from apis.fansly.classes.hightlight_model import create_highlight
 from classes.make_settings import SiteSettings
@@ -395,7 +394,7 @@ class create_user:
         else:
             links = links2
         results = await self.get_session_manager().async_requests(links)
-        results = await remove_errors(results)
+        results = await api_helper.remove_errors(results)
         final_results = []
         if isinstance(results, list):
             results = api_helper.merge_dictionaries(results)
@@ -449,7 +448,7 @@ class create_user:
             return result
         link = endpoint_links(global_limit=limit, global_offset=offset).archived_stories
         results = await self.get_session_manager().json_request(link)
-        results = await remove_errors(results)
+        results = await api_helper.remove_errors(results)
         results = [create_story(x) for x in results]
         return results
 

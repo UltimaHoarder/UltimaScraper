@@ -13,7 +13,6 @@ from apis.starsavn.classes.extras import (
     ErrorDetails,
     content_types,
     endpoint_links,
-    remove_errors,
 )
 from apis.starsavn.classes.highlight_model import create_highlight
 from apis.starsavn.classes.story_model import create_story
@@ -286,7 +285,7 @@ class create_user:
                 identifier=identifier, global_limit=limit, global_offset=offset
             ).list_highlights
             results = await self.get_session_manager().json_request(link)
-            results = await remove_errors(results)
+            results = await api_helper.remove_errors(results)
             results = [create_highlight(x) for x in results]
         else:
             link = endpoint_links(
@@ -392,7 +391,7 @@ class create_user:
         else:
             links = links2
         results = await self.get_session_manager().async_requests(links)
-        results = await remove_errors(results)
+        results = await api_helper.remove_errors(results)
         final_results = []
         if isinstance(results, list):
             has_more = results[-1]["list"] if results else False
@@ -452,7 +451,7 @@ class create_user:
             return result
         link = endpoint_links(global_limit=limit, global_offset=offset).archived_stories
         results = await self.get_session_manager().json_request(link)
-        results = await remove_errors(results)
+        results = await api_helper.remove_errors(results)
         results = [create_story(x) for x in results]
         return results
 

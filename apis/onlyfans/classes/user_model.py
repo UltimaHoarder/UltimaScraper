@@ -12,7 +12,6 @@ from apis.onlyfans.classes import post_model
 from apis.onlyfans.classes.extras import (
     ErrorDetails,
     endpoint_links,
-    remove_errors,
 )
 from apis.onlyfans.classes.hightlight_model import create_highlight
 from apis.onlyfans.classes.story_model import create_story
@@ -279,7 +278,7 @@ class create_user:
                 identifier=identifier, global_limit=limit, global_offset=offset
             ).list_highlights
             results = await self.get_session_manager().json_request(link)
-            results = await remove_errors(results)
+            results = await api_helper.remove_errors(results)
             results = [create_highlight(x) for x in results]
         else:
             link = endpoint_links(
@@ -354,7 +353,7 @@ class create_user:
         else:
             links = links2
         results = await self.get_session_manager().async_requests(links)
-        results = await remove_errors(results)
+        results = await api_helper.remove_errors(results)
         final_results = []
         if isinstance(results, list):
             results = [x for x in results if x]
@@ -415,7 +414,7 @@ class create_user:
             return result
         link = endpoint_links(global_limit=limit, global_offset=offset).archived_stories
         results = await self.get_session_manager().json_request(link)
-        results = await remove_errors(results)
+        results = await api_helper.remove_errors(results)
         results = [create_story(x) for x in results]
         return results
 

@@ -357,3 +357,57 @@ class StreamlinedDatascraper:
                     except OperationalError:
                         database_session.rollback()
                 database_session.close()
+
+    async def manage_subscriptions(
+        self,
+        authed: auth_types,
+        identifiers: list[int | str] = [],
+        refresh: bool = True,
+    ):
+        temp_subscriptions: list[user_types] = []
+        results = await self.datascraper.get_all_subscriptions(
+            authed, identifiers, refresh
+        )
+        site_settings = authed.api.get_site_settings()
+        if not site_settings:
+            return temp_subscriptions
+        blacklists = site_settings.blacklists
+        ignore_type = site_settings.ignore_type
+        if blacklists:
+            remote_blacklists = await authed.get_lists()
+            if remote_blacklists:
+                for remote_blacklist in remote_blacklists:
+                    for blacklist in blacklists:
+                        if remote_blacklist["name"] == blacklist:
+                            list_users = remote_blacklist["users"]
+                            if remote_blacklist["usersCount"] > 2:
+                                list_id = remote_blacklist["id"]
+                                list_users = await authed.get_lists_users(list_id)
+                            if list_users:
+                                users = list_users
+                                bl_ids = [x["username"] for x in users]
+                                results2 = results.copy()
+                                for result in results2:
+                                    identifier = result.username
+                                    if identifier in bl_ids:
+                                        print(f"Blacklisted: {identifier}")
+                                        results.remove(result)
+            results2 = results.copy()
+            for result in results2:
+                identifier = result.username
+                if identifier in blacklists:
+                    print(f"Blacklisted: {identifier}")
+                    results.remove(result)
+        results.sort(key=lambda x: x.is_me(), reverse=True)
+        for result in results:
+            result.create_directory_manager()
+            subscribePrice = result.subscribePrice
+            if ignore_type in ["paid"]:
+                if subscribePrice > 0:
+                    continue
+            if ignore_type in ["free"]:
+                if subscribePrice == 0:
+                    continue
+            temp_subscriptions.append(result)
+        authed.subscriptions = temp_subscriptions
+        return authed.subscriptions

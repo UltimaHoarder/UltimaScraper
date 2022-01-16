@@ -210,10 +210,8 @@ class create_auth(create_user):
         self.lists = results
         return results
 
-    async def get_user(
-        self, identifier: Union[str, int]
-    ) -> Union[create_user, ErrorDetails]:
-        link = endpoint_links(identifier).customer
+    async def get_user(self, identifier: int | str) -> Union[create_user, ErrorDetails]:
+        link = endpoint_links().list_users([identifier])
         response = await self.session_manager.json_request(link)
         if not isinstance(response, ErrorDetails):
             if response["response"]:
@@ -245,32 +243,41 @@ class create_auth(create_user):
 
     async def get_followings(self, identifiers: list[int | str]) -> list[create_user]:
         offset_count = 0
-        followings_link = endpoint_links(self.id).followings
-        temp_followings: dict[str, Any] = await self.session_manager.json_request(
-            followings_link
-        )
-        followings = temp_followings["response"]
+        followings: list[dict[str, Any]] = []
+        while True:
+            followings_link = endpoint_links().list_followings(self.id, offset_count)
+            temp_followings: dict[str, Any] = await self.session_manager.json_request(
+                followings_link
+            )
+            account_ids = temp_followings["response"]
+            if account_ids:
+                followings.extend(account_ids)
+                offset_count += 100
+            else:
+                break
+        final_followings: list[create_user] = []
         if followings:
             followings_id: str = ",".join([x["accountId"] for x in followings])
             customer_link = endpoint_links(followings_id).customer
-            followings = await self.session_manager.json_request(customer_link)
+            temp_followings = await self.session_manager.json_request(customer_link)
             if identifiers:
-                followings = [
+                final_followings = [
                     create_user(x, self)
-                    for x in followings["response"]
+                    for x in temp_followings["response"]
                     for identifier in identifiers
                     if x["username"] == identifier or x["id"] == identifier
                 ]
             else:
-                followings = [create_user(x, self) for x in followings["response"]]
-            for following in followings:
+                final_followings = [
+                    create_user(x, self) for x in temp_followings["response"]
+                ]
+            for following in final_followings:
                 if not following.subscribedByData:
                     new_date = datetime.now() + relativedelta(years=1)
                     new_date = int(new_date.timestamp() * 1000)
                     following.subscribedByData = {}
                     following.subscribedByData["endsAt"] = new_date
-                    print
-        return followings
+        return final_followings
 
     async def get_subscription(
         self,
@@ -303,8 +310,8 @@ class create_auth(create_user):
             subscription.subscribedByData = {}
             new_date = datetime.now() + relativedelta(years=1)
             subscription.subscribedByData["expiredAt"] = new_date.isoformat()
-            subscriptions = [subscription]
-            results.append(subscriptions)
+            subscriptions_ = [subscription]
+            results.append(subscriptions_)
         if not identifiers:
 
             async def multi(item: dict[str, Any]):
@@ -327,19 +334,15 @@ class create_auth(create_user):
             tasks = pool.starmap(multi, product(subscriptions))
             results += await asyncio.gather(*tasks)
         else:
-            identifier_links: list[str] = []
-            integer_identifiers = [x for x in identifiers if isinstance(x, int)]
-            link = endpoint_links().list_users(integer_identifiers)
-            if link:
-                identifier_links.append(link)
-            string_identifiers = [x for x in identifiers if isinstance(x, str)]
-            link = endpoint_links().list_users(string_identifiers)
-            if link:
-                identifier_links.append(link)
-            for identifier_link in identifier_links:
-                result = await self.session_manager.json_request(identifier_link)
-                x = [create_user(x, self) for x in result["response"]]
-                results.append(x)
+            for identifier in identifiers:
+                results_2 = await self.get_user(identifier)
+                results_2 = await api_helper.remove_errors(results_2)
+                if isinstance(results_2, create_user):
+                    x = [x for x in subscriptions if x["accountId"] == results_2.id]
+                    if x:
+                        results_2.subscribedByData = {}
+                        results_2.subscribedByData["endsAt"] = x[0]["endsAt"]
+                    results.append([results_2])
         results = [x for x in results if x is not None]
         results = list(chain(*results))
         self.subscriptions = results

@@ -23,60 +23,6 @@ class FanslyDataScraper(StreamlinedDatascraper):
         self.api = api
         StreamlinedDatascraper.__init__(self, self)
 
-    async def manage_subscriptions(
-        self,
-        authed: create_auth,
-        identifiers: list[int | str] = [],
-        refresh: bool = True,
-    ):
-        temp_subscriptions: list[create_user] = []
-        results = await authed.get_followings(identifiers=identifiers)
-        results2 = []
-        for result2 in results2:
-            for found in [x for x in results if x.username == result2.username]:
-                result2.subscribedByData = found.subscribedByData
-                results.remove(found)
-        site_settings = authed.api.get_site_settings()
-        if not site_settings:
-            return temp_subscriptions
-        results += results2
-        blacklists = site_settings.blacklists
-        ignore_type = site_settings.ignore_type
-        if blacklists:
-            remote_blacklists = await authed.get_lists()
-            if remote_blacklists:
-                for remote_blacklist in remote_blacklists:
-                    for blacklist in blacklists:
-                        if remote_blacklist["name"] == blacklist:
-                            list_users = remote_blacklist["users"]
-                            if remote_blacklist["usersCount"] > 2:
-                                list_id = remote_blacklist["id"]
-                                list_users = await authed.get_lists_users(list_id)
-                            if list_users:
-                                users = list_users
-                                bl_ids = [x["username"] for x in users]
-                                results2 = results.copy()
-                                for result in results2:
-                                    identifier = result.username
-                                    if identifier in bl_ids:
-                                        print(f"Blacklisted: {identifier}")
-                                        results.remove(result)
-        results = [x for x in results if x.subscribedByData or x.following]
-        results.sort(key=lambda x: x.subscribedByData["endsAt"])
-        results.sort(key=lambda x: x.is_me(), reverse=True)
-        for result in results:
-            result.create_directory_manager()
-            subscribePrice = result.subscribePrice
-            if ignore_type in ["paid"]:
-                if subscribePrice > 0:
-                    continue
-            if ignore_type in ["free"]:
-                if subscribePrice == 0:
-                    continue
-            temp_subscriptions.append(result)
-        authed.subscriptions = temp_subscriptions
-        return authed.subscriptions
-
     # Scrapes the API for content
     async def media_scraper(
         self,
@@ -436,3 +382,22 @@ class FanslyDataScraper(StreamlinedDatascraper):
         master_set.extend(await subscription.get_stories())
         master_set.extend(await subscription.get_archived_stories())
         return master_set
+
+    async def get_all_subscriptions(
+        self,
+        authed: create_auth,
+        identifiers: list[int | str] = [],
+        refresh: bool = True,
+    ):
+        results = await authed.get_followings(identifiers=identifiers)
+        results2 = await authed.get_subscriptions(
+            identifiers=identifiers, refresh=refresh
+        )
+        for result2 in results2:
+            for found in [x for x in results if x.username == result2.username]:
+                result2.subscribedByData = found.subscribedByData
+                results.remove(found)
+        results.extend(results2)
+        results = [x for x in results if x.subscribedByData or x.following]
+        results.sort(key=lambda x: x.subscribedByData["endsAt"])
+        return results

@@ -242,14 +242,3 @@ class media_types:
     def __iter__(self):
         for attr, value in self.__dict__.items():
             yield attr, value
-
-
-async def remove_errors(results: list[dict[str, Any]] | list[ErrorDetails]):
-    wrapped = False
-    if isinstance(results, ErrorDetails):
-        wrapped = True
-        results = [results]
-    final_results = [x for x in results if not isinstance(x, ErrorDetails)]
-    if wrapped and final_results:
-        final_results = final_results[0]
-    return final_results

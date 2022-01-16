@@ -5,6 +5,8 @@ import sys
 from pathlib import Path
 from sys import exit
 
+from helpers.main_helper import OptionsFormat
+
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-v", "--verbose", help="increase output verbosity", action="store_true"
@@ -43,25 +45,12 @@ if __name__ == "__main__":
     # logging.basicConfig(level=logging.DEBUG, format="%(message)s")
     async def main():
         while True:
-            if domain:
-                if site_names:
-                    site_name = domain
-                else:
-                    print(string)
-                    continue
-            else:
-                print(string)
-                try:
-                    site_choice = str(input())
-                    site_choice = int(site_choice)
-                    site_name = site_names[site_choice]
-                except (ValueError, IndexError):
-                    continue
-            site_name_lower = site_name.lower()
-            api = await main_datascraper.start_datascraper(config, site_name_lower)
-            if api:
-                api.close_pools()
-                await asyncio.sleep(1)
+            site_options = OptionsFormat(site_names, "sites", domain)
+            for site_name in site_options.final_choices:
+                api = await main_datascraper.start_datascraper(config, site_name)
+                if api:
+                    api.close_pools()
+                    await asyncio.sleep(1)
             if exit_on_completion:
                 print("Now exiting.")
                 break

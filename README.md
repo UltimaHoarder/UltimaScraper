@@ -193,13 +193,13 @@ Usage: You can automatically choose which profile you want to scrape.
     If you've got a profile folder named "user_one", set auto_profile_choice to "user_one" and it will choose it automatically.
 
 ### auto_site_choice:
-Types: str|int
+Types: list|str|bool
 
 Usage: You can automatically choose which site you want to scrape.
 
     Default = ""
 
-    OnlyFans = "onlyfans"
+    Inputs: onlyfans, fansly, starsavn
 
 ### auto_media_choice:
 Types: list|str|bool

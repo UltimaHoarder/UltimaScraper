@@ -834,6 +834,20 @@ class OptionsFormat:
             self.auto_choice = [x for x in self.auto_choice if x]
 
         match options_type:
+            case "sites":
+                self.item_keys = self.items
+                my_string = " | ".join(
+                    map(lambda x: f"{self.items.index(x)+1} = {x}", self.items)
+                )
+                final_string = f"{final_string} | {my_string}"
+                self.string = final_string
+                final_list = self.choose_option()
+                self.final_choices = [
+                    key
+                    for choice in final_list
+                    for key in self.items
+                    if choice == key.lower()
+                ]
             case "profiles":
                 self.item_keys = [x.auth_details.username for x in self.items]
                 my_string = " | ".join(

@@ -64,7 +64,8 @@ async def start_datascraper(
             subscription_options = OptionsFormat(
                 subscription_array, "subscriptions", site_settings.auto_model_choice
             )
-            identifiers = subscription_options.choice_list
+            if not subscription_options.scrape_all():
+                identifiers = subscription_options.choice_list
         for auth in api.auths:
             auth: auth_types = auth
             if not auth.auth_details:

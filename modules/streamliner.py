@@ -3,8 +3,6 @@ from __future__ import annotations
 from itertools import product
 from typing import Any, Optional
 
-from sqlalchemy.exc import OperationalError
-
 import apis.fansly.classes as fansly_classes
 import apis.onlyfans.classes as onlyfans_classes
 import apis.starsavn.classes as starsavn_classes
@@ -15,7 +13,9 @@ from classes.prepare_metadata import (
     process_legacy_metadata,
     process_metadata,
 )
+from dateutil.parser import parse as datetime_parser
 from helpers import db_helper, main_helper
+from sqlalchemy.exc import OperationalError
 from tqdm.asyncio import tqdm
 
 auth_types = (
@@ -127,6 +127,7 @@ class StreamlinedDatascraper:
         p_r.profile_username = authed_username
         p_r.model_username = subscription_username
         p_r.date_format = site_settings.date_format
+        # p_r.date = datetime_parser(subscription.joinDate)
         p_r.text_length = site_settings.text_length
         p_r.api_type = "Profile"
         p_r.directory = subscription_directory_manager.root_download_directory

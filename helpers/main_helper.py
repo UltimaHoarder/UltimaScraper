@@ -879,6 +879,7 @@ class OptionsFormat:
                     for key in self.items
                     if choice == key.username.lower()
                 ]
+
             case "contents":
                 self.item_keys = self.items
                 my_string = " | ".join(

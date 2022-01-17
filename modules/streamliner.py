@@ -230,8 +230,6 @@ class StreamlinedDatascraper:
                     mass_messages = getattr(authed, "mass_messages")
                     unrefined_set2 = await self.datascraper.process_mass_messages(
                         authed,
-                        subscription,
-                        formatted_metadata_directory,
                         mass_messages,
                     )
                     unrefined_set += unrefined_set2

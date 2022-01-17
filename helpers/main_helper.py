@@ -364,7 +364,7 @@ def legacy_database_fixer(database_path, database, database_name, database_exist
         for post in post_db:
             post_id = post.id
             created_at = post.created_at
-            new_item:dict[str,Any] = {}
+            new_item: dict[str, Any] = {}
             new_item["post_id"] = post_id
             new_item["text"] = post.text
             new_item["price"] = post.price

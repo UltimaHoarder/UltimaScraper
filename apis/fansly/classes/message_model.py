@@ -2,7 +2,6 @@ from __future__ import annotations
 
 from typing import TYPE_CHECKING, Any, Optional
 
-from apis.fansly.classes import user_model
 from apis.fansly.classes.extras import endpoint_links
 
 if TYPE_CHECKING:

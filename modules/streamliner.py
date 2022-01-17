@@ -49,6 +49,10 @@ class StreamlinedDatascraper:
         self.datascraper = datascraper
         self.profile_options: Optional[main_helper.OptionsFormat] = None
         self.subscription_options: Optional[main_helper.OptionsFormat] = None
+        self.content_options: Optional[main_helper.OptionsFormat] = None
+        self.media_types = self.datascraper.api.ContentTypes()
+        self.media_options: Optional[main_helper.OptionsFormat] = None
+        self.media_types = self.datascraper.api.Locations()
 
     async def start_datascraper(self, authed: auth_types, identifier: int | str):
         api = authed.api
@@ -87,6 +91,8 @@ class StreamlinedDatascraper:
         for type_ in content_types_keys:
             if type_ not in content_options.final_choices:
                 delattr(content_types, type_)
+        self.content_options = content_options
+        self.content_types = content_types
         media_types = authed.api.Locations()
         media_types_keys = await media_types.get_keys()
         media_options = main_helper.OptionsFormat(
@@ -95,6 +101,8 @@ class StreamlinedDatascraper:
         for type_ in media_types_keys:
             if type_ not in media_options.final_choices:
                 delattr(media_types, type_)
+        self.media_options = media_options
+        self.media_types = media_types
         return content_types, media_types
 
     # Downloads the model's avatar and header

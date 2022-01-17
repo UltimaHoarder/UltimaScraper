@@ -52,7 +52,7 @@ class OnlyFansDataScraper(StreamlinedDatascraper):
         download_path = formatted_directory
         model_username = subscription.username
         date_format = site_settings.date_format
-        locations = api.Locations()
+        locations = self.media_types
         for media_type, alt_media_types in locations.__dict__.items():
             date_today = datetime.now()
             master_date = datetime.strftime(date_today, "%d-%m-%Y %H:%M:%S")

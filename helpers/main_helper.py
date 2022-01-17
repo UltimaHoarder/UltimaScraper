@@ -846,7 +846,7 @@ class OptionsFormat:
                     key
                     for choice in final_list
                     for key in self.items
-                    if choice == key.lower()
+                    if choice.lower() == key.lower()
                 ]
             case "profiles":
                 self.item_keys = [x.auth_details.username for x in self.items]
@@ -863,7 +863,7 @@ class OptionsFormat:
                     key
                     for choice in final_list
                     for key in self.items
-                    if choice == key.auth_details.username.lower()
+                    if choice.lower() == key.auth_details.username.lower()
                 ]
             case "subscriptions":
                 self.item_keys = [x.username for x in self.items]
@@ -877,7 +877,7 @@ class OptionsFormat:
                     key
                     for choice in final_list
                     for key in self.items
-                    if choice == key.username.lower()
+                    if choice.lower() == key.username.lower()
                 ]
 
             case "contents":
@@ -892,7 +892,7 @@ class OptionsFormat:
                     key
                     for choice in final_list
                     for key in self.items
-                    if choice == key.lower()
+                    if choice.lower() == key.lower()
                 ]
             case "medias":
                 self.item_keys = self.items
@@ -906,7 +906,7 @@ class OptionsFormat:
                     key
                     for choice in final_list
                     for key in self.items
-                    if choice == key.lower()
+                    if choice.lower() == key.lower()
                 ]
         return
 

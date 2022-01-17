@@ -1,6 +1,7 @@
 from __future__ import annotations
 
 from itertools import product
+from pathlib import Path
 from typing import Any, Optional
 
 import apis.fansly.classes as fansly_classes
@@ -13,7 +14,6 @@ from classes.prepare_metadata import (
     process_legacy_metadata,
     process_metadata,
 )
-from dateutil.parser import parse as datetime_parser
 from helpers import db_helper, main_helper
 from sqlalchemy.exc import OperationalError
 from tqdm.asyncio import tqdm
@@ -112,7 +112,6 @@ class StreamlinedDatascraper:
         if not (subscription.directory_manager and site_settings):
             return
         subscription_directory_manager = subscription.directory_manager
-        authed_username = authed.username
         subscription_username = subscription.username
         site_name = authed.api.site_name
         authed = subscription.get_authed()
@@ -124,17 +123,16 @@ class StreamlinedDatascraper:
         progress_bar = None
         p_r = prepare_reformat()
         p_r.site_name = site_name
-        p_r.profile_username = authed_username
         p_r.model_username = subscription_username
-        p_r.date_format = site_settings.date_format
-        # p_r.date = datetime_parser(subscription.joinDate)
-        p_r.text_length = site_settings.text_length
         p_r.api_type = "Profile"
+        p_r.text_length = site_settings.text_length
         p_r.directory = subscription_directory_manager.root_download_directory
-        file_directory_format = await main_helper.replace_path(
-            "{value}", "", site_settings.file_directory_format
+        directory = await p_r.remove_non_unique(
+            subscription_directory_manager, "file_directory_format"
         )
-        directory = await p_r.reformat_2(file_directory_format)
+        if not isinstance(directory, Path):
+            return
+        directory = directory.joinpath(p_r.api_type)
         for override_media_type in override_media_types:
             media_type = override_media_type[0]
             media_link = override_media_type[1]

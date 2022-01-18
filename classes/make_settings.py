@@ -53,11 +53,11 @@ class SiteSettings:
         self.auto_model_choice: list[int | str] | int | str | bool = option.get(
             "auto_model_choice", False
         )
-        self.auto_media_choice: list[int | str] | int | str | bool = option.get(
-            "auto_media_choice", ""
-        )
         self.auto_api_choice: list[int | str] | int | str | bool = option.get(
             "auto_api_choice", True
+        )
+        self.auto_media_choice: list[int | str] | int | str | bool = option.get(
+            "auto_media_choice", ""
         )
         self.browser = browser(option.get("browser", {}))
         self.jobs = jobs(option.get("jobs", {}))

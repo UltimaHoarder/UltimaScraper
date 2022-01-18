@@ -910,30 +910,36 @@ class OptionsFormat:
                 ]
             case _:
                 final_list = []
-        self.choice_list = final_list
         return
 
     def choose_option(self):
+        def process_option(input_values: list[str]):
+            input_list_2: list[str] = []
+            for input_value in input_values:
+                if input_value.isdigit():
+                    try:
+                        input_list_2.append(self.item_keys[int(input_value) - 1])
+                    except IndexError:
+                        continue
+                else:
+                    x = [x for x in self.item_keys if x.lower() == input_value.lower()]
+                    input_list_2.extend(x)
+            return input_list_2
+
         input_list: list[str] = [x.lower() for x in self.item_keys]
         final_list: list[str] = []
         if self.auto_choice:
-            if isinstance(self.auto_choice, list):
-                input_list = [str(x).lower() for x in self.auto_choice]
+            if not self.scrape_all():
+                if isinstance(self.auto_choice, list):
+                    input_values = [str(x).lower() for x in self.auto_choice]
+                    input_list = process_option(input_values)
+                    self.choice_list = [x for x in input_values if x.isalpha()]
         else:
             print(self.string)
             input_value = input().lower()
-            if input_value != str(0) and input_value != "all":
-                input_list = []
+            if input_value != "0" and input_value != "all":
                 input_values = input_value.split(",")
-                for input_value in input_values:
-                    if input_value.isdigit():
-                        try:
-                            input_list.append(self.item_keys[int(input_value) - 1])
-                        except IndexError:
-                            continue
-                    else:
-                        x = [x for x in self.item_keys if x == input_value]
-                        input_list.extend(x)
+                input_list = process_option(input_values)
         final_list = input_list
         return final_list
 
@@ -943,7 +949,10 @@ class OptionsFormat:
             self.auto_choice == True
             or isinstance(self.auto_choice, list)
             and isinstance(self.auto_choice[0], str)
-            and self.auto_choice[0].lower() == "all"
+            and (
+                self.auto_choice[0].lower() == "all"
+                or self.auto_choice[0].lower() == "0"
+            )
         ):
             status = True
         return status

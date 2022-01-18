@@ -4,6 +4,7 @@ import asyncio
 import sys
 from pathlib import Path
 from sys import exit
+from typing import Literal, get_args
 
 from helpers.main_helper import OptionsFormat
 
@@ -40,8 +41,9 @@ if __name__ == "__main__":
     loop_timeout = global_settings.loop_timeout
     domain = global_settings.auto_site_choice
     json_sites = config.supported
-    string, site_names = main_helper.module_chooser(domain, json_sites.__dict__)
-
+    string, site_names_ = main_helper.module_chooser(domain, json_sites.__dict__)
+    site_name_literals = Literal["OnlyFans", "Fansly", "StarsAVN"]
+    site_names: list[site_name_literals] = list(get_args(site_name_literals))
     # logging.basicConfig(level=logging.DEBUG, format="%(message)s")
     async def main():
         while True:

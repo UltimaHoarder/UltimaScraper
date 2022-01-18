@@ -29,7 +29,7 @@ user_types = (
 
 async def start_datascraper(
     config: Config,
-    site_name_lower: str,
+    site_name: str,
     api_: Optional[OnlyFans.start | Fansly.start | StarsAVN.start] = None,
     webhooks: bool = True,
 ):
@@ -107,20 +107,20 @@ async def start_datascraper(
 
     archive_time = timeit.default_timer()
     datascraper = None
-    match site_name_lower:
-        case "onlyfans":
+    match site_name:
+        case "OnlyFans":
             if not isinstance(api_, OnlyFans.start):
                 api_ = OnlyFans.start(
                     config=config,
                 )
             datascraper = m_onlyfans.OnlyFansDataScraper(api_)
-        case "fansly":
+        case "Fansly":
             if not isinstance(api_, Fansly.start):
                 api_ = Fansly.start(
                     config=config,
                 )
             datascraper = m_fansly.FanslyDataScraper(api_)
-        case "starsavn":
+        case "StarsAVN":
             if not isinstance(api_, StarsAVN.start):
                 api_ = StarsAVN.start(
                     config=config,

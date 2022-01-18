@@ -908,6 +908,9 @@ class OptionsFormat:
                     for key in self.items
                     if choice.lower() == key.lower()
                 ]
+            case _:
+                final_list = []
+        self.choice_list = final_list
         return
 
     def choose_option(self):
@@ -921,7 +924,7 @@ class OptionsFormat:
             input_value = input().lower()
             if input_value != str(0) and input_value != "all":
                 input_list = []
-                input_values = [input_value]
+                input_values = input_value.split(",")
                 for input_value in input_values:
                     if input_value.isdigit():
                         try:
@@ -931,16 +934,7 @@ class OptionsFormat:
                     else:
                         x = [x for x in self.item_keys if x == input_value]
                         input_list.extend(x)
-        if self.item_keys:
-            final_list = [
-                choice
-                for choice in input_list
-                for key in self.item_keys
-                if choice == key.lower()
-            ]
-        else:
-            final_list = input_list
-        self.choice_list = final_list
+        final_list = input_list
         return final_list
 
     def scrape_all(self):

@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import Any, Literal
+from typing import  Literal
 import sqlalchemy
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.session import Session, sessionmaker
@@ -9,7 +9,6 @@ from alembic.config import Config
 from alembic import command
 from sqlalchemy.exc import IntegrityError
 from sqlalchemy.sql.functions import func
-from apis.onlyfans.classes.extras import media_types
 from database.databases.user_data import user_database
 
 

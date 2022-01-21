@@ -354,7 +354,7 @@ Types: list|str|bool
 >>`docker build -t only-fans . && docker run -it --rm --name onlyfans -v ${PWD}/.settings:/usr/src/app/.settings -v ${PWD}/.profiles:/usr/src/app/.profiles -v ${PWD}/.sites:/usr/src/app/.sites only-fans`
 
 >## Running on Linux
->>[Running in Linux](/Linux.md)
+>>[Running in Linux](/docs/Linux.md)
 
 >### OnlyFans
 >>[X34's Collection of Scrapers](https://forum.sexy-egirls.com/threads/onlyfans-downloading-a-complete-guide-for-pc-and-mobile.70618/page-9)

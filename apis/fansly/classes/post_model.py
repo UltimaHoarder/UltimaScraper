@@ -71,7 +71,10 @@ class create_post:
                         if "preview" in account_media:
                             temp_media = account_media["preview"]
                             self.previews.append(temp_media)
-                        if account_media["media"]["locations"]:
+                        if (
+                            account_media["media"]["locations"]
+                            or account_media["media"]["variants"]
+                        ):
                             temp_media = account_media["media"]
                         if temp_media:
                             final_media.append(temp_media)

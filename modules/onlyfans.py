@@ -16,7 +16,7 @@ from apis.onlyfans.classes.user_model import create_user
 from apis.onlyfans.onlyfans import start
 from classes.prepare_metadata import prepare_reformat
 
-from modules.streamliner import StreamlinedDatascraper
+from modules.module_streamliner import StreamlinedDatascraper
 
 
 class OnlyFansDataScraper(StreamlinedDatascraper):

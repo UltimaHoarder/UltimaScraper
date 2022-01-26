@@ -1,6 +1,6 @@
 import os
 from pathlib import Path
-from typing import  Literal
+from typing import Literal
 import sqlalchemy
 from sqlalchemy.engine.base import Engine
 from sqlalchemy.orm.session import Session, sessionmaker

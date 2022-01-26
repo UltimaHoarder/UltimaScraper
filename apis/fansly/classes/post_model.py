@@ -60,8 +60,10 @@ class create_post:
                     for bundle in extra["accountMediaBundles"]:
                         if bundle["id"] == attachment_content_id:
                             final_media_ids.extend(bundle["accountMediaIds"])
+                case 32001:
+                    pass
                 case _:
-                    print
+                    pass
         final_media: list[Any] = []
         if final_media_ids:
             for final_media_id in final_media_ids:

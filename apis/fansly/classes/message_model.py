@@ -51,8 +51,10 @@ class create_message:
                     for bundle in extra["accountMediaBundles"]:
                         if bundle["id"] == attachment_content_id:
                             final_media_ids.extend(bundle["accountMediaIds"])
+                case 32001:
+                    pass
                 case _:
-                    print
+                    pass
         final_media: list[Any] = []
         if final_media_ids:
             for final_media_id in final_media_ids:
@@ -62,7 +64,10 @@ class create_message:
                         if "preview" in account_media:
                             temp_media = account_media["preview"]
                             self.previews.append(temp_media)
-                        if account_media["media"]["locations"]:
+                        if (
+                            account_media["media"]["locations"]
+                            or account_media["media"]["variants"]
+                        ):
                             temp_media = account_media["media"]
                         if temp_media:
                             final_media.append(temp_media)

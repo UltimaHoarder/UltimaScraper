@@ -10,12 +10,11 @@ Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a is
 ## Running the app locally
 From the project folder open Windows Powershell/Terminal and run the commands below:
 
-### Installation commands (Choose one):
+### Installation commands:
 >### Poetry Installation
+>`pip install poetry`
+>
 >`poetry install`
-
->### Pip Installation
->`pip install --upgrade --user -r requirements.txt`
 
 Start:
 

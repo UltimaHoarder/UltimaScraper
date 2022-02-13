@@ -19,7 +19,7 @@ From the project folder open Windows Powershell/Terminal and run the commands be
 
 Start:
 
->`python start_ofd.py` | `python3 start_ofd.py` | `python3.10 start_ofd.py` | double click `start_ofd.py`
+>`python start_ofd.py` | `python3 start_ofd.py` | `python3.10 start_ofd.py` | double click `start_ofd.py | poetry run python ./start_ofd.py`
 >
 > If you're experimenting auth loops, stuck downloads, run the program with `python -v start_ofd.py` and you may see which errors you're getting.
 ---
@@ -36,7 +36,7 @@ You have to fill in the following:
 - `{"x_bc":"x-bc_value"}`
 - `{"user_agent":"user-agent_value"}`
 
-Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get said above auth values
+Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get said above auth values. Using Chrome for this process is recommended, as other browsers sometimes have issues producing values that will auth properly.
 
 ![app-token](docs/assets/img/3.png)
 ![app-token](docs/assets/img/4.png)
@@ -53,7 +53,7 @@ Note: If active is set to False, the script will ignore the profile.
 
 # USAGE
 
-`python start_ofd.py` | `python3 start_ofd.py` | double click `start_ofd.py`
+`python start_ofd.py` | `python3 start_ofd.py` | `poetry run python ./start_ofd.py` | double click `start_ofd.py`
 
 Enter in inputs as prompted by console.
 

@@ -6,7 +6,7 @@ authors = ["DIGITALCRIMINAL <89371864+DIGITALCRIMINALS@users.noreply.github.com>
 license = "GPL-3.0"
 
 [tool.poetry.dependencies]
-python = "^3.10.1"
+python = "^3.10"
 requests = "^2.26.0"
 beautifulsoup4 = "^4.10.0"
 win32-setctime = "^1.0.4"

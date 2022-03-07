@@ -16,7 +16,7 @@ from multiprocessing.dummy import Pool as ThreadPool
 from multiprocessing.pool import Pool
 from os.path import dirname as up
 from random import randint
-from typing import TYPE_CHECKING, Any, Optional, final
+from typing import TYPE_CHECKING, Any, Optional
 from urllib.parse import urlparse
 
 import python_socks
@@ -455,7 +455,7 @@ async def scrape_endpoint_links(
 
 
 def calculate_the_unpredictable(link: str, limit: int, multiplier: int = 1):
-    final_links: list[str] = []
+    final_links: list[str] = [link]
     a = list(range(1, multiplier + 1))
     for b in a:
         parsed_link = urlparse(link)

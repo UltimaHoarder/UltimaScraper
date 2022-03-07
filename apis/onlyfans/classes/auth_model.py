@@ -25,6 +25,7 @@ from user_agent import generate_user_agent
 if TYPE_CHECKING:
     from apis.onlyfans.onlyfans import start
 
+# auth_model.py handles functions that only relate to the authenticated user
 
 class create_auth(create_user):
     def __init__(
@@ -384,23 +385,27 @@ class create_auth(create_user):
             link = endpoint_links(
                 identifier=self.id, global_limit=limit, global_offset=offset
             ).list_chats
-        links2 = api_helper.calculate_the_unpredictable(link, limit, multiplier)
+        links_2 = api_helper.calculate_the_unpredictable(link, limit, multiplier)
+        final_links = links
         if not inside_loop:
-            links += links2
+            final_links += links_2
         else:
-            links = links2
-        results = await self.session_manager.async_requests(links)
+            final_links = links_2
+        results = await self.session_manager.async_requests(final_links)
         has_more = results[-1]["hasMore"]
         final_results = [x["list"] for x in results]
         final_results = list(chain.from_iterable(final_results))
+        for result in final_results:
+            result["withUser"] = create_user(result["withUser"],self)
+            result["lastMessage"] = create_message(result["lastMessage"],result["withUser"])
 
         if has_more:
             results2 = await self.get_chats(
-                links=[links[-1]], limit=limit, offset=limit + offset, inside_loop=True
+                links=[final_links[-1]], limit=limit, offset=limit + offset, inside_loop=True
             )
             final_results.extend(results2)
 
-        final_results.sort(key=lambda x: x["withUser"]["id"], reverse=True)
+        final_results.sort(key=lambda x: x["withUser"].id, reverse=True)
         self.chats = final_results
         return final_results
 

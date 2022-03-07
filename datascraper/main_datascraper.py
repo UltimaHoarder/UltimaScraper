@@ -126,6 +126,8 @@ async def start_datascraper(
                     config=config,
                 )
             datascraper = m_starsavn.StarsAVNDataScraper(api_)
+        case _:
+            pass
     await default(datascraper)
     stop_time = str(int(timeit.default_timer() - archive_time) / 60)[:4]
     print("Archive Completed in " + stop_time + " Minutes")

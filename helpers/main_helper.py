@@ -1007,7 +1007,6 @@ async def account_setup(
             mass_messages = await authed.get_mass_messages(resume=imported)
             if mass_messages:
                 export_json(mass_messages, metadata_filepath)
-        # chats = api.get_chats()
         if identifiers or site_settings.jobs.scrape.subscriptions:
             subscriptions.extend(
                 await datascraper.manage_subscriptions(
@@ -1035,13 +1034,26 @@ async def process_jobs(
     if site_settings.jobs.scrape.paid_content and api.has_active_auths():
         print("Scraping Paid Content")
         for authed in datascraper.api.auths:
-            await datascraper.paid_content_scraper(authed)  # type: ignore
+            await datascraper.paid_content_scraper(authed)
+    if site_settings.jobs.scrape.messages and api.has_active_auths() and isinstance(datascraper, OnlyFansDataScraper):
+        print("Scraping Message Content")
+        for authed in datascraper.api.auths:
+            chats = await authed.get_chats()
+            for chat in chats:
+                username:str = chat["withUser"].username
+                subscription = await authed.get_subscription(identifier=username)
+                if not subscription:
+                    subscription = chat["withUser"]
+                    authed.subscriptions.append(subscription)
+                    subscription.create_directory_manager()
+                await datascraper.start_datascraper(authed, username,whitelist=["Messages"])
+            print
     if site_settings.jobs.scrape.subscriptions and api.has_active_auths():
         print("Scraping Subscriptions")
         for subscription in subscription_list:
             # Extra Auth Support
             authed = subscription.get_authed()
-            await datascraper.start_datascraper(authed, subscription.username)  # type: ignore
+            await datascraper.start_datascraper(authed, subscription.username)
     if not subscription_list:
         print("There's no subscriptions to scrape.")
     return subscription_list

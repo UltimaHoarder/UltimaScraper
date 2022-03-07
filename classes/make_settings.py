@@ -36,6 +36,7 @@ class SiteSettings:
         class scrape:
             def __init__(self, option: dict[str, bool] = {}) -> None:
                 self.subscriptions = option.get("subscriptions", True)
+                self.messages = option.get("messages", True)
                 self.paid_content = option.get("paid_content", True)
 
         class browser:
@@ -125,6 +126,8 @@ class SiteSettings:
                             "scrape_paid_content", True
                         )
                         new_options["jobs"] = new_value
+                case _:
+                    pass
         return new_options
 
 
@@ -276,4 +279,6 @@ class Config(object):
                         value_: Path = value
                         final_path = value_.as_posix()
                         SS.__dict__[key] = final_path
+                    case _:
+                        pass
         return base

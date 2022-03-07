@@ -461,7 +461,7 @@ class create_auth(create_user):
         link = endpoint_links(global_limit=limit, global_offset=offset).paid_api
         final_results = await self.session_manager.json_request(link)
         if not isinstance(final_results, ErrorDetails):
-            if len(final_results) >= limit and not check:
+            if len(final_results) > 0 and not check:
                 results2 = await self.get_paid_content(
                     limit=limit, offset=limit + offset, inside_loop=True
                 )

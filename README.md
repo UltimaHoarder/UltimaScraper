@@ -19,7 +19,7 @@ From the project folder open Windows Powershell/Terminal and run the commands be
 
 Start:
 
->`python start_ofd.py` | `python3 start_ofd.py` | `python3.10 start_ofd.py` | double click `start_ofd.py | poetry run python ./start_ofd.py`
+>`python start_ofd.py` | `python3 start_ofd.py` | `python3.10 start_ofd.py` | `poetry run python ./start_ofd.py` | double click `start_ofd.py`
 >
 > If you're experimenting auth loops, stuck downloads, run the program with `python -v start_ofd.py` and you may see which errors you're getting.
 ---

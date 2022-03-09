@@ -93,7 +93,9 @@ We now are inside of our python3.10 virtual enviroment. This makes it so that ot
 
 5. Install Requiremtents
 
-	`pip3 install --upgrade -r requirements.txt`
+	`pip install poetry`
+	
+	`poetry install`
 
 6. Exit Virtual Enviroment
 

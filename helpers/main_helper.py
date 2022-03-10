@@ -1031,6 +1031,12 @@ async def process_jobs(
     site_settings: make_settings.SiteSettings,
 ):
     api = datascraper.api
+    if site_settings.jobs.scrape.subscriptions and api.has_active_auths():
+        print("Scraping Subscriptions")
+        for subscription in subscription_list:
+            # Extra Auth Support
+            authed = subscription.get_authed()
+            await datascraper.start_datascraper(authed, subscription.username)
     if site_settings.jobs.scrape.paid_content and api.has_active_auths():
         print("Scraping Paid Content")
         for authed in datascraper.api.auths:
@@ -1048,12 +1054,6 @@ async def process_jobs(
                     subscription.create_directory_manager()
                 await datascraper.start_datascraper(authed, username,whitelist=["Messages"])
             print
-    if site_settings.jobs.scrape.subscriptions and api.has_active_auths():
-        print("Scraping Subscriptions")
-        for subscription in subscription_list:
-            # Extra Auth Support
-            authed = subscription.get_authed()
-            await datascraper.start_datascraper(authed, subscription.username)
     if not subscription_list:
         print("There's no subscriptions to scrape.")
     return subscription_list

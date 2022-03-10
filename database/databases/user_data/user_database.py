@@ -15,9 +15,11 @@ Base = declarative_base()
 LegacyBase = declarative_base()
 
 
-# class user_table(api_table,Base):
-#     api_table.__tablename__ = "user_table"
-
+class profiles_table(Base):
+    __tablename__ = "profiles"
+    id = sqlalchemy.Column(sqlalchemy.Integer, primary_key=True)
+    user_id = cast(int, sqlalchemy.Column(sqlalchemy.Integer, nullable=False))
+    username = sqlalchemy.Column(sqlalchemy.String, unique=True, nullable=False)
 
 class stories_table(api_table, Base):
     api_table.__tablename__ = "stories"

@@ -443,6 +443,7 @@ async def fix_sqlite(
                 "__legacy_metadata__",
                 archived_database_path.name,
             )
+            new_filepath.parent.mkdir(exist_ok=True)
             shutil.move(archived_database_path, f"{new_filepath}")
 
 
@@ -1388,6 +1389,8 @@ async def format_directories(
                 counter = 0
                 while True:
                     if not new_m_f.exists():
+                        # If there's metadata present already before the directory is created, we'll create it here
+                        directory_manager.user.metadata_directory.mkdir(exist_ok=True,parents=True )
                         shutil.move(metadata_filepath, new_m_f)
                         break
                     else:

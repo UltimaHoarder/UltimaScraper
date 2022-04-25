@@ -212,5 +212,15 @@ async def start(
 
 if __name__ == "__main__":
     # WORK IN PROGRESS
-    input("You can't use this manually yet lmao xqcl")
+    from classes.make_settings import Config
+    from apis.onlyfans import onlyfans as OnlyFans
+    import helpers.main_helper as main_helper
+
+    config_path = Path(".settings", "config.json")
+    config, _updated = main_helper.get_config(config_path)
+    api_ = OnlyFans.start(
+        config=config,
+    )
+    subscription = ""
+    input("WIP")
     exit()

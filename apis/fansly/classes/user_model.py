@@ -233,6 +233,7 @@ class create_user:
         self.scraped = content_types()
         self.temp_scraped = content_types()
         self.download_info: dict[str, Any] = {}
+        self.duplicate_media = []
         self.__raw__ = option
         if self.subscriptionBundles:
             self.subscribePrice = self.subscriptionBundles[0]["plans"][0]["price"]
@@ -617,3 +618,20 @@ class create_user:
                 status = True
                 break
         return status
+
+    async def find_duplicate_media(self):
+        # A user had 10 photos but only 5 were downloaded, this was because some media on OnlyFans have the same filename but an invalid link.
+        # Even if the link returns a 404, OnlyFans still counts it as a valid media when providing model statistics.
+        # I'll have to create a diagnosis function that checks if any media fails to download and return the reason why.
+        for post in self.scraped.Posts:
+            for media in post["medias"]:
+                a = [
+                    media_2
+                    for post_2 in self.scraped.Posts
+                    for media_2 in post_2["medias"]
+                    if media["media_id"] != media_2["media_id"]
+                    and media["filename"] == media_2["filename"]
+                ]
+                if a:
+                    self.duplicate_media.extend(a)
+        return self.duplicate_media

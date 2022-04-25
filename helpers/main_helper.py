@@ -1042,18 +1042,24 @@ async def process_jobs(
         print("Scraping Paid Content")
         for authed in datascraper.api.auths:
             await datascraper.paid_content_scraper(authed)
-    if site_settings.jobs.scrape.messages and api.has_active_auths() and isinstance(datascraper, OnlyFansDataScraper):
+    if (
+        site_settings.jobs.scrape.messages
+        and api.has_active_auths()
+        and isinstance(datascraper, OnlyFansDataScraper)
+    ):
         print("Scraping Message Content")
         for authed in datascraper.api.auths:
             chats = await authed.get_chats()
             for chat in chats:
-                username:str = chat["withUser"].username
+                username: str = chat["withUser"].username
                 subscription = await authed.get_subscription(identifier=username)
                 if not subscription:
                     subscription = chat["withUser"]
                     authed.subscriptions.append(subscription)
                     subscription.create_directory_manager()
-                await datascraper.start_datascraper(authed, username,whitelist=["Messages"])
+                await datascraper.start_datascraper(
+                    authed, username, whitelist=["Messages"]
+                )
             print
     if not subscription_list:
         print("There's no subscriptions to scrape.")
@@ -1390,7 +1396,9 @@ async def format_directories(
                 while True:
                     if not new_m_f.exists():
                         # If there's metadata present already before the directory is created, we'll create it here
-                        directory_manager.user.metadata_directory.mkdir(exist_ok=True,parents=True )
+                        directory_manager.user.metadata_directory.mkdir(
+                            exist_ok=True, parents=True
+                        )
                         shutil.move(metadata_filepath, new_m_f)
                         break
                     else:

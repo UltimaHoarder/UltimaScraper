@@ -21,6 +21,7 @@ class profiles_table(Base):
     user_id = cast(int, sqlalchemy.Column(sqlalchemy.Integer, nullable=False))
     username = sqlalchemy.Column(sqlalchemy.String, unique=True, nullable=False)
 
+
 class stories_table(api_table, Base):
     api_table.__tablename__ = "stories"
 

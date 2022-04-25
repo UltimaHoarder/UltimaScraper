@@ -54,7 +54,9 @@ class StreamlinedDatascraper:
         self.media_options: Optional[main_helper.OptionsFormat] = None
         self.media_types = self.datascraper.api.Locations()
 
-    async def start_datascraper(self, authed: auth_types, identifier: int | str,whitelist:list[str]=[]):
+    async def start_datascraper(
+        self, authed: auth_types, identifier: int | str, whitelist: list[str] = []
+    ):
         api = authed.api
         site_settings = api.get_site_settings()
         if not site_settings:

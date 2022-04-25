@@ -27,6 +27,7 @@ if TYPE_CHECKING:
 
 # auth_model.py handles functions that only relate to the authenticated user
 
+
 class create_auth(create_user):
     def __init__(
         self,
@@ -396,12 +397,17 @@ class create_auth(create_user):
         final_results = [x["list"] for x in results]
         final_results = list(chain.from_iterable(final_results))
         for result in final_results:
-            result["withUser"] = create_user(result["withUser"],self)
-            result["lastMessage"] = create_message(result["lastMessage"],result["withUser"])
+            result["withUser"] = create_user(result["withUser"], self)
+            result["lastMessage"] = create_message(
+                result["lastMessage"], result["withUser"]
+            )
 
         if has_more:
             results2 = await self.get_chats(
-                links=[final_links[-1]], limit=limit, offset=limit + offset, inside_loop=True
+                links=[final_links[-1]],
+                limit=limit,
+                offset=limit + offset,
+                inside_loop=True,
             )
             final_results.extend(results2)
 

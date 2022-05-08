@@ -83,5 +83,5 @@ exe = EXE(pyz,
     upx_exclude=[],
     runtime_tmpdir=None,
     console=True,
-    icon='assets/img/icon.ico',
+    icon='docs/assets/img/icon.ico',
     version=version)

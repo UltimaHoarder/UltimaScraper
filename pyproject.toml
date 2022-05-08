@@ -6,7 +6,7 @@ authors = ["DIGITALCRIMINAL <89371864+DIGITALCRIMINALS@users.noreply.github.com>
 license = "GPL-3.0"
 
 [tool.poetry.dependencies]
-python = "^3.10"
+python = "~3.10.1"
 requests = "^2.26.0"
 beautifulsoup4 = "^4.10.0"
 win32-setctime = "^1.0.4"
@@ -28,8 +28,11 @@ lxml = { version = "^4.7.1", optional = true }
 
 [tool.poetry.extras]
 performance = ["lxml"]
+
 [tool.poetry.dev-dependencies]
 black = {version = "^21.12b0", allow-prereleases = true}
+pyinstaller = {version = "^5.0.1", markers = "sys_platform == 'win32'"}
+
 [build-system]
 requires = ["poetry-core>=1.0.0"]
 build-backend = "poetry.core.masonry.api"

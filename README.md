@@ -15,7 +15,7 @@ From the project folder open Windows Powershell/Terminal and run the commands be
 >### Poetry Installation
 >`pip install poetry`
 >
->`poetry install`
+>`poetry install --no-dev`
 
 Start:
 

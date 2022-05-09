@@ -10,11 +10,10 @@ To build, a Windows machine (or VM) is required. PyInstaller cannot cross-compil
 
 **Python 3.10.1 is required.** There is a bug with the `dis` module in 3.10.0 that prevents successful build.
 
-1. Clone the repository and install the regular dependencies using `pip` like normal.
-2. Install PyInstaller with `pip install pyinstaller` - it's not in the `requirements.txt` file because it's not a requirement for regular usage of the scraper.
-3. Download and extract [`geckodriver.exe`](https://github.com/mozilla/geckodriver/releases/download/v0.27.0/geckodriver-v0.27.0-win64.zip) in `extras\OFLogin`.
-4. Ensure reproducible builds by doing `set PYTHONHASHSEED=1`.
-5. Run `pyinstaller pyinstaller.spec`, if it works, the EXE will be in `dist`.
+1. Clone the repository and install the dependencies using `poetry install` (don't specify `--no-dev`).
+2. Download and extract [`geckodriver.exe`](https://github.com/mozilla/geckodriver/releases/download/v0.27.0/geckodriver-v0.27.0-win64.zip) in `extras\OFLogin`.
+3. Ensure reproducible builds by doing `set PYTHONHASHSEED=1`.
+4. Run `poetry run pyinstaller pyinstaller.spec`, if it works, the EXE will be in `dist`.
 
 The version number is embedded in the file name and inside the file as metadata.
 It can be changed by changing the `major`, `minor` and `patch` variables inside `pyinstaller.spec` before building.

@@ -111,7 +111,7 @@ async def fix_directories(
                         if old_filepath.exists():
                             _old_filename, old_ext = (url_path.stem, url_path.suffix)
                             if ".part" == old_ext:
-                                os.remove(old_filepath)
+                                old_filepath.unlink()
                                 continue
                             if media.size:
                                 media.downloaded = True

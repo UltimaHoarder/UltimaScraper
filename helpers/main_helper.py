@@ -128,20 +128,6 @@ def getfrozencwd():
         return os.getcwd()
 
 
-def rename_duplicates(seen, filename):
-    filename_lower = filename.lower()
-    if filename_lower not in seen:
-        seen.add(filename_lower)
-    else:
-        count = 1
-        while filename_lower in seen:
-            filename = filename + " (" + str(count) + ")"
-            filename_lower = filename.lower()
-            count += 1
-        seen.add(filename_lower)
-    return [seen, filename]
-
-
 def parse_links(site_name, input_link):
     if site_name in {"onlyfans", "fansly", "starsavn"}:
         username = input_link.rsplit("/", 1)[-1]

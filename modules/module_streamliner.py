@@ -233,7 +233,14 @@ class StreamlinedDatascraper:
             case "Posts":
                 master_set = await subscription.get_posts()
                 print(f"Type: Archived Posts")
-                master_set += await subscription.get_archived_posts()
+                if type(authed) == fansly_classes.auth_model.create_auth:
+                    collections = await subscription.get_collections()
+                    for collection in collections:
+                        master_set.append(
+                            await subscription.get_collection_content(collection)
+                        )
+                else:
+                    master_set += await subscription.get_archived_posts()
             case "Messages":
                 unrefined_set = await subscription.get_messages()
                 mass_messages = getattr(authed, "mass_messages")

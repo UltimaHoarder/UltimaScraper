@@ -135,6 +135,8 @@ class endpoint_links(object):
         self.highlight = f"https://onlyfans.com/api2/v2/stories/highlights/{identifier}"
         self.list_posts_api = self.list_posts(identifier)
         self.post_api = f"{full_url_path}/timeline/{identifier}?before={global_offset}"
+        self.collections_api = f"{full_url_path}/uservault/albums?accountId={identifier}"
+        self.collection_api = f"{full_url_path}/uservault/album/content?albumId={identifier}&before={global_offset}&after=0&limit={global_limit}"
         self.archived_posts = f"https://onlyfans.com/api2/v2/users/{identifier}/posts/archived?limit={global_limit}&offset={global_offset}&order=publish_date_desc"
         self.archived_stories = f"https://onlyfans.com/api2/v2/stories/archive/?limit=100&offset=0&order=publish_date_desc"
         self.paid_api = f"https://onlyfans.com/api2/v2/posts/paid?{global_limit}&offset={global_offset}"

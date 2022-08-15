@@ -5,6 +5,7 @@ from datetime import datetime, timedelta
 from pathlib import Path
 from typing import Any, Union
 from urllib.parse import urlparse
+from apis.fansly.classes.collection_model import create_collection
 
 import helpers.main_helper as main_helper
 from apis.fansly.classes.auth_model import create_auth
@@ -70,6 +71,15 @@ class FanslyDataScraper(StreamlinedDatascraper):
             if isinstance(post_result, create_story):
                 date = post_result.createdAt
             if isinstance(post_result, create_post):
+                if post_result.isReportedByMe:
+                    continue
+                rawText = post_result.rawText
+                text = post_result.text
+                previews = post_result.preview
+                date = post_result.postedAt
+                price = post_result.price
+                new_post["archived"] = post_result.isArchived
+            if isinstance(post_result, create_collection):
                 if post_result.isReportedByMe:
                     continue
                 rawText = post_result.rawText

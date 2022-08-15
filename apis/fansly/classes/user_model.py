@@ -6,7 +6,7 @@ from urllib import parse
 
 import apis.fansly.classes.message_model as message_model
 from apis import api_helper
-from apis.fansly.classes import post_model
+from apis.fansly.classes import collection_model, post_model
 from apis.fansly.classes.create_story import create_story
 from apis.fansly.classes.extras import (
     ErrorDetails,
@@ -629,3 +629,27 @@ class create_user:
                 if a:
                     self.duplicate_media.extend(a)
         return self.duplicate_media
+
+    async def get_collections(self):
+        link = endpoint_links(
+                identifier=self.id
+            ).collections_api
+        results = await self.get_session_manager().json_request(link)
+        return results["response"]
+
+    async def get_collection_content(self, collection: dict[str, Any], offset: int = 0):
+        temp_responses: list[dict[str, Any]] = []
+        while True:
+            link = endpoint_links(
+                identifier=collection["id"], global_limit=25, global_offset=offset
+            ).collection_api
+            results = await self.get_session_manager().json_request(link)
+            response = results["response"]
+            album_content = response["albumContent"]
+            if not album_content:
+                break
+            offset = int(album_content[-1]["id"])
+            temp_responses.append(response)
+        responses = api_helper.merge_dictionaries(temp_responses)
+        final_result = collection_model.create_collection(collection, self, responses)
+        return final_result

@@ -339,7 +339,7 @@ class session_manager:
                 )
             headers2 = self.create_signed_headers(link)
             headers |= headers2
-        elif "https://apiv2.fansly.com" in link and isinstance(
+        elif "https://apiv3.fansly.com" in link and isinstance(
             self.auth.auth_details, fansly_extras.auth_details
         ):
             headers["authorization"] = self.auth.auth_details.authorization

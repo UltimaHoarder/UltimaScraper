@@ -358,8 +358,8 @@ class create_user:
     async def get_messages(
         self,
         links: Optional[list[str]] = None,
-        limit: int = 10,
-        offset: int = 0,
+        limit: int = 100000,
+        before: str = "",
         refresh: bool = True,
         inside_loop: bool = False,
     ) -> list[Any]:
@@ -381,19 +381,12 @@ class create_user:
         if found_id:
             if links is None:
                 links = []
-            multiplier = self.get_session_manager().max_threads
-            if links:
-                link = links[-1]
-            else:
-                link = endpoint_links(
-                    identifier=found_id, global_limit=limit, global_offset=offset
-                ).message_api
-                links.append(link)
-            links2 = api_helper.calculate_the_unpredictable(link, limit, multiplier)
-            if not inside_loop:
-                links += links2
-            else:
-                links = links2
+
+            link = endpoint_links(
+                identifier=found_id, global_limit=limit, before_id=before
+            ).message_api
+            links.append(link)
+
             results = await self.get_session_manager().async_requests(links)
             results = await api_helper.remove_errors(results)
             results = api_helper.merge_dictionaries(results)
@@ -403,10 +396,11 @@ class create_user:
             final_results = extras["messages"]
 
             if final_results:
+                lastId = final_results[-1]["id"]
                 results2 = await self.get_messages(
                     links=[links[-1]],
                     limit=limit,
-                    offset=limit + offset,
+                    before=lastId,
                     inside_loop=True,
                 )
                 final_results.extend(results2)

@@ -109,8 +109,9 @@ class endpoint_links(object):
         global_limit: int = 10,
         global_offset: int = 0,
         sort_order: Literal["asc", "desc"] = "desc",
+        before_id: str = ""
     ):
-        domain = "https://apiv2.fansly.com"
+        domain = "https://apiv3.fansly.com"
         api = "/api/v1"
         full_url_path = f"{domain}{api}"
         self.full_url_path = full_url_path
@@ -126,7 +127,7 @@ class endpoint_links(object):
         self.message_by_id = f"https://onlyfans.com/api2/v2/chats/{identifier}/messages?limit=10&offset=0&firstId={identifier2}&order=desc&skip_users=all&skip_users_dups=1"
         self.search_chat = f"https://onlyfans.com/api2/v2/chats/{identifier}/messages/search?query={text}"
         self.groups_api = f"{full_url_path}/group"
-        self.message_api = f"{full_url_path}/message?groupId={identifier}&limit={global_limit}&offset={global_offset}&order=desc"
+        self.message_api = f"{full_url_path}/message?groupId={identifier}&limit={global_limit}&before={before_id}&order=desc"
         self.search_messages = f"https://onlyfans.com/api2/v2/chats/{identifier}?limit=10&offset=0&filter=&order=activity&query={text}"
         self.mass_messages_api = f"https://onlyfans.com/api2/v2/messages/queue/stats?limit=100&offset=0&format=infinite"
         self.stories_api = f"https://onlyfans.com/api2/v2/users/{identifier}/stories?limit=100&offset=0&order=desc"

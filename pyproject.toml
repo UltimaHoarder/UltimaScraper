@@ -21,17 +21,20 @@ selenium-wire = "2.1.2"
 user-agent = "^0.1.10"
 aiohttp = "^3.8.1"
 aiohttp-socks = "^0.7.1"
-rich = "^10.16.1"
+rich = "^12.4.4"
 orjson = "^3.6.5"
 
-lxml = { version = "^4.7.1", optional = true }
+lxml = { version = "^4.9.1", optional = true }
 
 [tool.poetry.extras]
 performance = ["lxml"]
 
 [tool.poetry.dev-dependencies]
-black = {version = "^21.12b0", allow-prereleases = true}
 pyinstaller = {version = "^5.0.1", markers = "sys_platform == 'win32'"}
+requests-html = "^0.10.0"
+black = "^22.6.0"
+textual = "^0.1.18"
+textual-inputs = "^0.2.5"
 
 [build-system]
 requires = ["poetry-core>=1.0.0"]

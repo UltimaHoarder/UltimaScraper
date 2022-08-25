@@ -280,7 +280,7 @@ class create_user:
             ).list_highlights
             results = await self.get_session_manager().json_request(link)
             results = await api_helper.remove_errors(results)
-            results = [create_highlight(x) for x in results["data"]]
+            results = [create_highlight(x) for x in results["list"]]
         else:
             link = endpoint_links(
                 identifier=hightlight_id, global_limit=limit, global_offset=offset

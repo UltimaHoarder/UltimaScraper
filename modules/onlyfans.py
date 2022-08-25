@@ -134,7 +134,11 @@ class OnlyFansDataScraper(StreamlinedDatascraper):
                 if not url.hostname:
                     continue
                 subdomain = url.hostname.split(".")[0]
-                preview_link = media["preview"]
+                if "files" in media:
+                    if "preview" in media["files"] and "url" in media["files"]["preview"]:
+                        preview_link = media["files"]["preview"]["url"]
+                else:
+                    preview_link = media["preview"]
                 if any(subdomain in nm for nm in matches):
                     subdomain = url.hostname.split(".")[1]
                     if "upload" in subdomain:

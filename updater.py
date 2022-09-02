@@ -12,8 +12,9 @@ import time
 # response_json = response.json()
 # commit_id = response_json["commit"]["sha"]
 # downloaded = requests.get(f"https://github.com/DIGITALCRIMINAL/OnlyFans/archive/{commit_id}.zip")
+# OpenRefactory Warning: The 'requests.get' method does not use any 'timeout' threshold which may cause program to hang indefinitely.
 downloaded = requests.get(
-    f"https://github.com/DIGITALCRIMINAL/OnlyFans/archive/refs/heads/master.zip"
+    f"https://github.com/DIGITALCRIMINAL/OnlyFans/archive/refs/heads/master.zip", timeout=100
 )
 content = io.BytesIO(downloaded.content)
 # Zip download for manual extraction

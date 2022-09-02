@@ -96,7 +96,8 @@ class session_manager:
         self.headers = headers
         self.proxies: list[str] = proxies
         dr_link = global_settings["dynamic_rules_link"]
-        dynamic_rules = requests.get(dr_link).json()  # type: ignore
+        # OpenRefactory Warning: The 'requests.get' method does not use any 'timeout' threshold which may cause program to hang indefinitely.
+        dynamic_rules = requests.get(dr_link, timeout=100).json()  # type: ignore
         self.dynamic_rules = dynamic_rules
         self.auth = auth
 

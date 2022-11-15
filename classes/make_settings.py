@@ -144,7 +144,7 @@ class Settings(object):
         exit_on_completion: bool = False,
         infinite_loop: bool = True,
         loop_timeout: int = 0,
-        dynamic_rules_link: str = "https://raw.githubusercontent.com/DATAHOARDERS/dynamic-rules/main/onlyfans.json",
+        dynamic_rules_link: str = "https://github.com/DIGITALCRIMINALS/dynamic-rules/blob/main/onlyfans.json",
         proxies: list[str] = [],
         cert: str = "",
         random_string: str = "",

@@ -25,7 +25,7 @@ def version_check():
 
 
 def check_config():
-    import helpers.main_helper as main_helper
+    import ultima_scraper_api.helpers.main_helper as main_helper
 
     config_path = Path(".settings", "config.json")
     json_config, _updated = main_helper.get_config(config_path)
@@ -34,16 +34,15 @@ def check_config():
 
 def check_profiles():
     config_path = Path(".settings", "config.json")
-    import helpers.main_helper as main_helper
-    from apis.onlyfans.onlyfans import auth_details as onlyfans_auth_details
-    from apis.fansly.fansly import auth_details as fansly_auth_details
-    from apis.starsavn.starsavn import auth_details as starsavn_auth_details
+    import ultima_scraper_api.helpers.main_helper as main_helper
+    from ultima_scraper_api.apis.onlyfans.classes.extras import auth_details as onlyfans_auth_details
+    from ultima_scraper_api.apis.fansly.classes.extras import auth_details as fansly_auth_details
 
     config, _updated = main_helper.get_config(config_path)
     settings = config.settings
     profile_directories = settings.profile_directories
     profile_directory = profile_directories[0]
-    matches = ["OnlyFans", "Fansly", "StarsAVN"]
+    matches = ["OnlyFans", "Fansly"]
     for string_match in matches:
         profile_site_directory = profile_directory.joinpath(string_match)
         if os.path.exists(profile_site_directory):
@@ -64,8 +63,6 @@ def check_profiles():
                 case "Fansly":
                     new_item["auth"] = fansly_auth_details().export()
 
-                case "StarsAVN":
-                    new_item["auth"] = starsavn_auth_details().export()
                 case _:
                     continue
             main_helper.export_json(new_item, auth_filepath)
@@ -73,5 +70,3 @@ def check_profiles():
                 f"{auth_filepath} has been created. Fill in the relevant details and then press enter to continue.",
                 auth_filepath,
             )
-        print
-    print

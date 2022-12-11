@@ -2,7 +2,7 @@
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/DIGITALCRIMINAL/OnlyFans.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DIGITALCRIMINAL/OnlyFans/context:python)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Twitter](https://img.shields.io/twitter/url/https/twitter.com/0xHoarder.svg?style=social&label=Follow%200xhoarder)](https://twitter.com/0xHoarder)
-# ![app-token](docs/assets/img/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
+# ![app-token](ultima_scraper/docs/assets/img/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 
 # Mandatory Tutorial
 
@@ -38,12 +38,12 @@ You have to fill in the following:
 
 Go to www.onlyfans.com and login, open the network debugger, then check the image below on how to get said above auth values. Using Chrome for this process is recommended, as other browsers sometimes have issues producing values that will auth properly.
 
-![app-token](docs/assets/img/3.png)
-![app-token](docs/assets/img/4.png)
+![app-token](ultima_scraper/docs/assets/img/3.png)
+![app-token](ultima_scraper/docs/assets/img/4.png)
 
 Your auth config should look similar to this
 
-![app-token](docs/assets/img/5.png)
+![app-token](ultima_scraper/docs/assets/img/5.png)
 
 <!-- If you want to auth via browser, add your email and password. -->
 
@@ -199,7 +199,7 @@ Usage: You can automatically choose which site you want to scrape.
 
     Default = ""
 
-    Inputs: onlyfans, fansly, starsavn
+    Inputs: onlyfans, fansly
 
 ### auto_media_choice:
 Types: list|str|bool
@@ -354,7 +354,7 @@ Types: list|str|bool
 >>`docker build -t only-fans . && docker run -it --rm --name onlyfans -v ${PWD}/.settings:/usr/src/app/.settings -v ${PWD}/.profiles:/usr/src/app/.profiles -v ${PWD}/.sites:/usr/src/app/.sites only-fans`
 
 >## Running on Linux
->>[Running in Linux](/docs/Linux.md)
+>>[Running in Linux](/ultima_scraper/docs/Linux.md)
 
 >### OnlyFans
 >>[X34's Collection of Scrapers](https://forum.sexy-egirls.com/threads/onlyfans-downloading-a-complete-guide-for-pc-and-mobile.70618/page-9)

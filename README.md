@@ -12,16 +12,14 @@ Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a is
 From the project folder open Windows Powershell/Terminal and run the commands below:
 
 ### Installation commands:
->### Poetry Installation
+>### Poetry Installation Guide
 >`pip install poetry`
 >
 >`poetry install --no-dev`
 
 Start:
 
->`python start_ofd.py` | `python3 start_ofd.py` | `python3.10 start_ofd.py` | `poetry run python ./start_ofd.py` | double click `start_ofd.py`
->
-> If you're experimenting auth loops, stuck downloads, run the program with `python -v start_ofd.py` and you may see which errors you're getting.
+>`poetry run python start_us.py`
 ---
 
 Open and edit:
@@ -53,7 +51,7 @@ Note: If active is set to False, the script will ignore the profile.
 
 # USAGE
 
-`python start_ofd.py` | `python3 start_ofd.py` | `poetry run python ./start_ofd.py` | double click `start_ofd.py`
+`poetry run python start_us.py`
 
 Enter in inputs as prompted by console.
 

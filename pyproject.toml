@@ -30,7 +30,6 @@ lxml = { version = "^4.9.1", optional = true }
 textual = "^0.5.0"
 aiofiles = "^22.1.0"
 aiopath = "^0.6.11"
-requests-html = "^0.10.0"
 dill = "^0.3.6"
 websockets = "^10.4"
 ultima-scraper-api = "^0.0.1.3"

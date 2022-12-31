@@ -88,9 +88,8 @@ class StreamlinedDatascraper:
         print(f"Name: {username}")
         subscription_directory_manager = subscription.directory_manager
         if subscription_directory_manager:
-            await main_helper.format_directories(
-                subscription_directory_manager, subscription
-            )
+            await subscription.create_directory_manager(user=True)
+            await main_helper.format_directories(subscription)
             metadata_manager = MetadataManager(subscription)
             await metadata_manager.fix_archived_db()
             content_types, _media_types = await self.scrape_choice(
@@ -227,7 +226,7 @@ class StreamlinedDatascraper:
                     authed.subscriptions.append(subscription)
                 else:
                     author = subscription
-            author.create_directory_manager()
+            # await author.create_directory_manager(user=False)
             if paid_content.responseType:
                 api_type = paid_content.responseType.capitalize() + "s"
                 # Needs an Isinstance of Posts to avoid create_message conflict
@@ -241,10 +240,8 @@ class StreamlinedDatascraper:
         for subscription in authed.subscriptions:
             string = f"Scraping - {subscription.username} | {count+1} / {max_count}"
             print(string)
-            subscription_directory_manager = subscription.directory_manager
             count += 1
             await main_helper.format_directories(
-                subscription_directory_manager,
                 subscription,
             )
             for content_type, master_set in subscription.temp_scraped:
@@ -465,7 +462,7 @@ class StreamlinedDatascraper:
                     results.remove(result)
         results.sort(key=lambda x: x.is_me(), reverse=True)
         for result in results:
-            result.create_directory_manager()
+            # await result.create_directory_manager(user=True)
             subscribePrice = result.subscribePrice
             if ignore_type in ["paid"]:
                 if subscribePrice > 0:
@@ -488,18 +485,18 @@ class StreamlinedDatascraper:
         subscriptions: list[user_types] = []
         authed = await auth.login()
         if authed.active and authed.directory_manager and site_settings:
-            metadata_filepath = (
-                authed.directory_manager.profile.metadata_directory.joinpath(
-                    "Mass Messages.json"
-                )
-            )
-            if authed.isPerformer:
-                imported = main_helper.import_json(metadata_filepath)
-                if "auth" in imported:
-                    imported = imported["auth"]
-                mass_messages = await authed.get_mass_messages(resume=imported)
-                if mass_messages:
-                    main_helper.export_json(mass_messages, metadata_filepath)
+            # metadata_filepath = (
+            #     authed.directory_manager.profile.metadata_directory.joinpath(
+            #         "Mass Messages.json"
+            #     )
+            # )
+            # if authed.isPerformer:
+            #     imported = main_helper.import_json(metadata_filepath)
+            #     if "auth" in imported:
+            #         imported = imported["auth"]
+            #     mass_messages = await authed.get_mass_messages(resume=imported)
+            #     if mass_messages:
+            #         main_helper.export_json(mass_messages, metadata_filepath)
             if identifiers or site_settings.jobs.scrape.subscriptions:
                 subscriptions.extend(
                     await datascraper.manage_subscriptions(
@@ -554,7 +551,6 @@ class StreamlinedDatascraper:
                     if not subscription:
                         subscription = chat["withUser"]
                         authed.subscriptions.append(subscription)
-                        subscription.create_directory_manager()
                     await datascraper.start_datascraper(
                         authed, username, whitelist=["Messages"]
                     )

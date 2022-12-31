@@ -6,6 +6,7 @@ authors = ["DIGITALCRIMINALS <89371864+DIGITALCRIMINALS@users.noreply.github.com
 license = "GPL-3.0"
 readme = "README.md"
 packages = [{include = "ultima_scraper"}]
+include = ["ultima_scraper/py.typed"]
 
 [tool.poetry.dependencies]
 python = "~3.10.1"

@@ -1,5 +1,6 @@
 .git
 .logs
+.profiles
 .settings
 .sites
 __pycache__

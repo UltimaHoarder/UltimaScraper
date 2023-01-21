@@ -2,7 +2,6 @@
 import argparse
 import asyncio
 import sys
-from pathlib import Path
 from sys import exit
 from typing import Literal, get_args
 
@@ -22,21 +21,20 @@ except SyntaxError:
     string = f"You're executing the script with Python {version_info}. Execute the script with Python 3.10.1+"
     print(string)
     exit()
-main_test.version_check()
-main_test.check_config()
-main_test.check_profiles()
+main_test.check_start_up()
 
 if __name__ == "__main__":
     import ultima_scraper_api.apis.api_helper as api_helper
     import ultima_scraper_api.helpers.main_helper as main_helper
     from ultima_scraper_api.apis.dashboard_controller_api import \
         DashboardControllerAPI
+    from ultima_scraper_api.storage_managers.filesystem_manager import \
+        FilesystemManager
 
     import ultima_scraper.datascraper.main_datascraper as main_datascraper
-
     api_helper.parsed_args = parsed_args
-
-    config_path = Path(".settings", "config.json")
+    fsm = FilesystemManager()
+    config_path = fsm.settings_directory.joinpath("config.json")
     config, _updated = main_helper.get_config(config_path)
     global_settings = config.settings
     exit_on_completion = global_settings.exit_on_completion

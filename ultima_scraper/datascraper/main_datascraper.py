@@ -2,16 +2,18 @@ import asyncio
 import timeit
 from typing import Any
 
-import ultima_scraper.modules.fansly as m_fansly
-import ultima_scraper.modules.onlyfans as m_onlyfans
 import ultima_scraper_api
 import ultima_scraper_api.helpers.main_helper as main_helper
 from ultima_scraper_api.apis import api_helper
-from ultima_scraper_api.apis.dashboard_controller_api import DashboardControllerAPI
+from ultima_scraper_api.apis.dashboard_controller_api import \
+    DashboardControllerAPI
 from ultima_scraper_api.apis.fansly import fansly as Fansly
 from ultima_scraper_api.apis.onlyfans import onlyfans as OnlyFans
 from ultima_scraper_api.classes.make_settings import Config
 from ultima_scraper_api.helpers.main_helper import OptionsFormat
+
+import ultima_scraper.modules.fansly as m_fansly
+import ultima_scraper.modules.onlyfans as m_onlyfans
 
 auth_types = ultima_scraper_api.auth_types
 user_types = ultima_scraper_api.user_types

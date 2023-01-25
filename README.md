@@ -355,12 +355,6 @@ Types: list|str|bool
 >## Running on Linux
 >>[Running in Linux](/ultima_scraper/docs/Linux.md)
 
->### OnlyFans
->>[X34's Collection of Scrapers](https://forum.sexy-egirls.com/threads/onlyfans-downloading-a-complete-guide-for-pc-and-mobile.70618/page-9)
-
->### Fansly
->>[X34's Tutorial](https://forum.sexy-egirls.com/threads/fansly-downloading-a-work-in-progress.132433/)
-
 # FAQ:
 
 Before troubleshooting, make sure you're using Python 3.10.1 and the latest commit of the script.
@@ -388,16 +382,16 @@ Before troubleshooting, make sure you're using Python 3.10.1 and the latest comm
 
 > OnlyFans may know that you're using this script, but I try to keep it as anon as possible.
 
-> Generally, models will not know unless OnlyFans tells them but other than that there is identifiable information in the metadata folder which contains your IP address, so don't share it unless you're using a proxy/vpn or just don't care.
+> Generally, models will not know unless OnlyFans tells them but other than that there is identifiable information in the metadata folder which contains your IP address, so don't share it unless you're using a proxy/vpn or just don't care. 
 
 ## Do you collect session information?
 
 > No. The code is on Github which allows you to audit the codebase yourself. You can use wireshark or any other network analysis program to verify the outgoing connections are respective to the modules you chose.
 
-## Disclaimer (lmao):
+## Serious Disclaimer (lmao):
 
-> OnlyFans is a registered trademark of Fenix International Limited.
+> OnlyFans is a registered trademark of Fenix International Limited 🤓☝️.
 
-> The contributors of this script isn't in any way affiliated with, sponsored by, or endorsed by Fenix International Limited.
+> The contributors of this script isn't in any way affiliated with, sponsored by, or endorsed by Fenix International Limited 🤓☝️.
 
-> The contributors of this script are not responsible for the end users' actions... lmao.
+> The contributors of this script are not responsible for the end users' actions... 🤓☝️.

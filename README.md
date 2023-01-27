@@ -76,7 +76,7 @@ Where your account information is stored (auth.json).
 
 Where downloaded content is stored.
 
-    Default = [".sites"]
+    Default = ["__user_data__/sites"]
 
     If you're going to fill, please remember to use forward ("/") slashes only.
 
@@ -86,7 +86,7 @@ Where downloaded content is stored.
 
 Where metadata content is stored.
 
-    Default = [".sites"]
+    Default = ["__user_data__/sites"]
 
     If you're going to fill, please remember to use forward ("/") slashes only.
 
@@ -350,7 +350,7 @@ Types: list|str|bool
 >## Running the app via docker
 >>Build and run the image, mounting the appropriate directories:
 >
->>`docker build -t only-fans . && docker run -it --rm --name onlyfans -v ${PWD}/.settings:/usr/src/app/.settings -v ${PWD}/.profiles:/usr/src/app/.profiles -v ${PWD}/.sites:/usr/src/app/.sites only-fans`
+>>`docker build -t only-fans . && docker run -it --rm --name onlyfans -v ${PWD}/__settings__:/usr/src/app/__settings__ -v ${PWD}/__user_data__:/usr/src/app/__user_data__ only-fans`
 
 >## Running on Linux
 >>[Running in Linux](/ultima_scraper/docs/Linux.md)

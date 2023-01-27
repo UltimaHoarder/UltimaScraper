@@ -1,4 +1,4 @@
-# OnlyFans DataScraper (Python 3.10.1+)
+# UltimaScraper (Python 3.10.1+)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/DIGITALCRIMINAL/OnlyFans.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DIGITALCRIMINAL/OnlyFans/context:python)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Twitter](https://img.shields.io/twitter/url/https/twitter.com/0xHoarder.svg?style=social&label=Follow%200xhoarder)](https://twitter.com/0xHoarder)
@@ -400,7 +400,7 @@ Before troubleshooting, make sure you're using Python 3.10.1 and the latest comm
 ## Serious Disclaimer (lmao):
 
 > OnlyFans is a registered trademark of Fenix International Limited 🤓☝️.
-
+>
 > The contributors of this script isn't in any way affiliated with, sponsored by, or endorsed by Fenix International Limited 🤓☝️.
-
+> 
 > The contributors of this script are not responsible for the end users' actions... 🤓☝️.

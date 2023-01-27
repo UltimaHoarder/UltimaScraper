@@ -26,12 +26,13 @@ main_test.check_start_up()
 if __name__ == "__main__":
     import ultima_scraper_api.apis.api_helper as api_helper
     import ultima_scraper_api.helpers.main_helper as main_helper
-    from ultima_scraper_api.apis.dashboard_controller_api import \
-        DashboardControllerAPI
-    from ultima_scraper_api.storage_managers.filesystem_manager import \
-        FilesystemManager
+    from ultima_scraper_api.apis.dashboard_controller_api import DashboardControllerAPI
+    from ultima_scraper_api.managers.storage_managers.filesystem_manager import (
+        FilesystemManager,
+    )
 
     import ultima_scraper.datascraper.main_datascraper as main_datascraper
+
     api_helper.parsed_args = parsed_args
     fsm = FilesystemManager()
     config_path = fsm.settings_directory.joinpath("config.json")

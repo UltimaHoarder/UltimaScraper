@@ -17,6 +17,7 @@ from ultima_scraper_api.apis.onlyfans.onlyfans import start
 
 from ultima_scraper.modules.module_streamliner import StreamlinedDatascraper
 
+
 class OnlyFansDataScraper(StreamlinedDatascraper):
     def __init__(self, api: start) -> None:
         self.api = api
@@ -382,6 +383,17 @@ class OnlyFansDataScraper(StreamlinedDatascraper):
         return global_found
 
     async def get_all_stories(self, subscription: create_user):
+        """
+        get_all_stories(subscription: create_user)
+
+        This function returns a list of all stories and highlights from the given subscription.
+
+        Arguments:
+        subscription (create_user): An instance of the create_user class.
+
+        Returns:
+        list[create_highlight | create_story]: A list containing all stories and highlights from the subscription.
+        """
         master_set: list[create_highlight | create_story] = []
         master_set.extend(await subscription.get_stories())
         master_set.extend(await subscription.get_archived_stories())
@@ -399,6 +411,19 @@ class OnlyFansDataScraper(StreamlinedDatascraper):
         identifiers: list[int | str] = [],
         refresh: bool = True,
     ):
+        """
+        get_all_subscriptions(authed: create_auth, identifiers: list[int | str] = [], refresh: bool = True)
+
+        This function returns a list of all subscriptions from the given authenticated user.
+
+        Arguments:
+        authed (create_auth): An instance of the create_auth class.
+        identifiers (list[int | str], optional): A list of identifiers (username or id) for the subscriptions. Defaults to an empty list.
+        refresh (bool, optional): A flag indicating whether to refresh the list of subscriptions. Defaults to True.
+
+        Returns:
+        list[create_subscription]: A list of all subscriptions, sorted by expiredAt, from the authenticated user.
+        """
         results = await authed.get_subscriptions(
             identifiers=identifiers, refresh=refresh
         )

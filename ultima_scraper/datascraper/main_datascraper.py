@@ -5,8 +5,7 @@ from typing import Any
 import ultima_scraper_api
 import ultima_scraper_api.helpers.main_helper as main_helper
 from ultima_scraper_api.apis import api_helper
-from ultima_scraper_api.apis.dashboard_controller_api import \
-    DashboardControllerAPI
+from ultima_scraper_api.apis.dashboard_controller_api import DashboardControllerAPI
 from ultima_scraper_api.apis.fansly import fansly as Fansly
 from ultima_scraper_api.apis.onlyfans import onlyfans as OnlyFans
 from ultima_scraper_api.classes.make_settings import Config
@@ -101,12 +100,11 @@ async def start_datascraper(
             datascraper.api.dashboard_controller_api,
         ).formatter()
         datascraper.subscription_options = subscription_options
-        subscription_list = subscription_options.final_choices
+        job_user_list = subscription_options.final_choices
         if api.dashboard_controller_api:
-            intask = api.dashboard_controller_api.datatable_monitor(subscription_list)
+            intask = api.dashboard_controller_api.datatable_monitor(job_user_list)
             _task = asyncio.create_task(intask)
-        await datascraper.process_jobs(datascraper, subscription_list, site_settings)
-        await datascraper.process_downloads(api, datascraper, global_settings)
+        await datascraper.start_datascraper(job_user_list)
         if webhooks:
             await main_helper.process_webhooks(
                 api, "download_webhook", "succeeded", global_settings

@@ -3,8 +3,14 @@
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Twitter](https://img.shields.io/twitter/url/https/twitter.com/0xHoarder.svg?style=social&label=Follow%200xhoarder)](https://twitter.com/0xHoarder)
 # ![app-token](ultima_scraper/docs/assets/img/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
+# 27th January 2023 Migration
+    You can either start the script or create the __settings__ and __user_data__ folders manually.
+    ~~~~~~~~
+    Move config.json file into "__settings__"
+    RENAME ".profiles" folder to "profiles" and move it into "__user_data__"
 # List of things I know that are broken:
-    UI (Progress Bars)
+    Profile and header images aren't downloading
+    UI (Download Progress Bars to be exact)
 # Mandatory Tutorial
 
 Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a issue.
@@ -18,6 +24,9 @@ From the project folder open Windows Powershell/Terminal and run the commands be
 >
 >`poetry install --no-dev`
 
+Update:
+>`python updater.py`
+
 Start:
 
 >`poetry run python start_us.py`
@@ -25,7 +34,7 @@ Start:
 
 Open and edit:
 
-`.profiles/default/auth.json`
+`__user_data__/profiles/default/auth.json`
 
 [auth]
 
@@ -68,7 +77,7 @@ Open:
 
 Where your account information is stored (auth.json).
 
-    Default = [".profiles"]
+    Default = ["__user_data__/profiles"]
 
     If you're going to fill, please remember to use forward ("/") slashes only.
 

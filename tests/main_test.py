@@ -25,8 +25,9 @@ def version_check():
 
 
 def check_start_up():
-    from ultima_scraper_api.storage_managers.filesystem_manager import \
-        FilesystemManager
+    from ultima_scraper_api.managers.storage_managers.filesystem_manager import (
+        FilesystemManager,
+    )
 
     fsm = FilesystemManager()
     fsm.check()
@@ -46,10 +47,12 @@ def check_config(directory: Path):
 
 def check_profiles(settings_directory: Path, profiles_directory: Path):
     import ultima_scraper_api.helpers.main_helper as main_helper
-    from ultima_scraper_api.apis.fansly.classes.extras import \
-        auth_details as fansly_auth_details
-    from ultima_scraper_api.apis.onlyfans.classes.extras import \
-        auth_details as onlyfans_auth_details
+    from ultima_scraper_api.apis.fansly.classes.extras import (
+        auth_details as fansly_auth_details,
+    )
+    from ultima_scraper_api.apis.onlyfans.classes.extras import (
+        auth_details as onlyfans_auth_details,
+    )
 
     # config, _updated = main_helper.get_config(config_path)
     matches = ["OnlyFans", "Fansly"]

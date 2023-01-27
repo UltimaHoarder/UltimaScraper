@@ -1,5 +1,6 @@
 import io
 import os
+import subprocess
 import time
 from pathlib import Path
 from zipfile import ZipFile
@@ -46,5 +47,6 @@ with ZipFile(content, "r") as zipObject:
             parent_folder.mkdir(parents=True, exist_ok=True)
         q = filepath.replace(update_path)
     rm_tree(root_directory)
+    subprocess.run(["poetry", "update"])
     print(f"Script has been updated, exiting in 5 seconds")
     time.sleep(5)

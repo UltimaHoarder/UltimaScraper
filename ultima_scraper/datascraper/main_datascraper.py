@@ -82,8 +82,8 @@ async def start_datascraper(
                     )
                 auth_details: dict[str, Any] = {}
                 auth_details["auth"] = auth.auth_details.export()
-                profile_directory = api.base_directory_manager.profile.root_directory
-                user_auth_filepath = profile_directory.joinpath(
+                profiles_directory = api.filesystem_manager.profiles_directory
+                user_auth_filepath = profiles_directory.joinpath(
                     api.site_name, auth.auth_details.username, "auth.json"
                 )
                 main_helper.export_json(auth_details, user_auth_filepath)

@@ -9,7 +9,7 @@ packages = [{include = "ultima_scraper"}]
 include = ["ultima_scraper/py.typed"]
 
 [tool.poetry.dependencies]
-python = "~3.10.1"
+python = "^3.10.1 <3.12"
 requests = "^2.26.0"
 beautifulsoup4 = "^4.10.0"
 win32-setctime = "^1.0.4"
@@ -33,8 +33,9 @@ aiofiles = "^22.1.0"
 aiopath = "^0.6.11"
 dill = "^0.3.6"
 websockets = "^10.4"
-ultima-scraper-api = "^0.0.1.3"
-ultima-scraper-renamer = "^0.0.1"
+
+ultima-scraper-renamer = "^0.0.2"
+ultima-scraper-api = "^0.0.1.5"
 
 [tool.poetry.extras]
 performance = ["lxml"]

@@ -1,8 +1,8 @@
+import os
+import sys
+from os.path import dirname as up
 from pathlib import Path
 from sys import exit
-import sys
-import os
-from os.path import dirname as up
 from typing import Any
 
 if getattr(sys, "frozen", False):
@@ -24,27 +24,40 @@ def version_check():
 # Updating any outdated config values
 
 
-def check_config():
+def check_start_up():
+    from ultima_scraper_api.managers.storage_managers.filesystem_manager import (
+        FilesystemManager,
+    )
+
+    fsm = FilesystemManager()
+    fsm.check()
+
+    version_check()
+    check_config(fsm.settings_directory)
+    check_profiles(fsm.settings_directory, fsm.profiles_directory)
+
+
+def check_config(directory: Path):
     import ultima_scraper_api.helpers.main_helper as main_helper
 
-    config_path = Path(".settings", "config.json")
+    config_path = directory.joinpath("config.json")
     json_config, _updated = main_helper.get_config(config_path)
     return json_config
 
 
-def check_profiles():
-    config_path = Path(".settings", "config.json")
+def check_profiles(settings_directory: Path, profiles_directory: Path):
     import ultima_scraper_api.helpers.main_helper as main_helper
-    from ultima_scraper_api.apis.onlyfans.classes.extras import auth_details as onlyfans_auth_details
-    from ultima_scraper_api.apis.fansly.classes.extras import auth_details as fansly_auth_details
+    from ultima_scraper_api.apis.fansly.classes.extras import (
+        auth_details as fansly_auth_details,
+    )
+    from ultima_scraper_api.apis.onlyfans.classes.extras import (
+        auth_details as onlyfans_auth_details,
+    )
 
-    config, _updated = main_helper.get_config(config_path)
-    settings = config.settings
-    profile_directories = settings.profile_directories
-    profile_directory = profile_directories[0]
+    # config, _updated = main_helper.get_config(config_path)
     matches = ["OnlyFans", "Fansly"]
     for string_match in matches:
-        profile_site_directory = profile_directory.joinpath(string_match)
+        profile_site_directory = profiles_directory.joinpath(string_match)
         if os.path.exists(profile_site_directory):
             e = os.listdir(profile_site_directory)
             e = [os.path.join(profile_site_directory, x, "auth.json") for x in e]

@@ -29,7 +29,7 @@ is_exe = getattr(sys, "frozen", False)
 
 When running as an EXE, be mindful of directories.
 
-The path to the original EXE that was executed is in `sys.executable`, so all "user-facing" directories like `.sites`, `.settings`, etc, should be relative to `os.path.dirname(sys.executable)`.
+The path to the original EXE that was executed is in `sys.executable`, so all "user-facing" directories like `__user_data__`, `__settings__`, etc, should be relative to `os.path.dirname(sys.executable)`.
 
 The path to the temporary extracted Python files and other data files is in `sys._MEIPASS`, needed to load resources like database scripts and others.
 

@@ -1,10 +1,16 @@
-# OnlyFans DataScraper (Python 3.10.1+)
+# UltimaScraper (Python 3.10.1+)
 [![Language grade: Python](https://img.shields.io/lgtm/grade/python/g/DIGITALCRIMINAL/OnlyFans.svg?logo=lgtm&logoWidth=18)](https://lgtm.com/projects/g/DIGITALCRIMINAL/OnlyFans/context:python)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Twitter](https://img.shields.io/twitter/url/https/twitter.com/0xHoarder.svg?style=social&label=Follow%200xhoarder)](https://twitter.com/0xHoarder)
 # ![app-token](ultima_scraper/docs/assets/img/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
+# 27th January 2023 Migration
+    You can either start the script or create the __settings__ and __user_data__ folders manually.
+    ~~~~~~~~
+    Move config.json file into "__settings__"
+    RENAME ".profiles" folder to "profiles" and move it into "__user_data__"
 # List of things I know that are broken:
-    UI (Progress Bars)
+    Profile and header images aren't downloading
+    UI (Download Progress Bars to be exact)
 # Mandatory Tutorial
 
 Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a issue.
@@ -18,6 +24,9 @@ From the project folder open Windows Powershell/Terminal and run the commands be
 >
 >`poetry install --no-dev`
 
+Update:
+>`python updater.py`
+
 Start:
 
 >`poetry run python start_us.py`
@@ -25,7 +34,7 @@ Start:
 
 Open and edit:
 
-`.profiles/default/auth.json`
+`__user_data__/profiles/default/auth.json`
 
 [auth]
 
@@ -68,7 +77,7 @@ Open:
 
 Where your account information is stored (auth.json).
 
-    Default = [".profiles"]
+    Default = ["__user_data__/profiles"]
 
     If you're going to fill, please remember to use forward ("/") slashes only.
 
@@ -76,7 +85,7 @@ Where your account information is stored (auth.json).
 
 Where downloaded content is stored.
 
-    Default = [".sites"]
+    Default = ["__user_data__/sites"]
 
     If you're going to fill, please remember to use forward ("/") slashes only.
 
@@ -86,7 +95,7 @@ Where downloaded content is stored.
 
 Where metadata content is stored.
 
-    Default = [".sites"]
+    Default = ["__user_data__/sites"]
 
     If you're going to fill, please remember to use forward ("/") slashes only.
 
@@ -350,16 +359,10 @@ Types: list|str|bool
 >## Running the app via docker
 >>Build and run the image, mounting the appropriate directories:
 >
->>`docker build -t only-fans . && docker run -it --rm --name onlyfans -v ${PWD}/.settings:/usr/src/app/.settings -v ${PWD}/.profiles:/usr/src/app/.profiles -v ${PWD}/.sites:/usr/src/app/.sites only-fans`
+>>`docker build -t only-fans . && docker run -it --rm --name onlyfans -v ${PWD}/__settings__:/usr/src/app/__settings__ -v ${PWD}/__user_data__:/usr/src/app/__user_data__ only-fans`
 
 >## Running on Linux
 >>[Running in Linux](/ultima_scraper/docs/Linux.md)
-
->### OnlyFans
->>[X34's Collection of Scrapers](https://forum.sexy-egirls.com/threads/onlyfans-downloading-a-complete-guide-for-pc-and-mobile.70618/page-9)
-
->### Fansly
->>[X34's Tutorial](https://forum.sexy-egirls.com/threads/fansly-downloading-a-work-in-progress.132433/)
 
 # FAQ:
 
@@ -388,16 +391,16 @@ Before troubleshooting, make sure you're using Python 3.10.1 and the latest comm
 
 > OnlyFans may know that you're using this script, but I try to keep it as anon as possible.
 
-> Generally, models will not know unless OnlyFans tells them but other than that there is identifiable information in the metadata folder which contains your IP address, so don't share it unless you're using a proxy/vpn or just don't care.
+> Generally, models will not know unless OnlyFans tells them but other than that there is identifiable information in the metadata folder which contains your IP address, so don't share it unless you're using a proxy/vpn or just don't care. 
 
 ## Do you collect session information?
 
 > No. The code is on Github which allows you to audit the codebase yourself. You can use wireshark or any other network analysis program to verify the outgoing connections are respective to the modules you chose.
 
-## Disclaimer (lmao):
+## Serious Disclaimer (lmao):
 
-> OnlyFans is a registered trademark of Fenix International Limited.
-
-> The contributors of this script isn't in any way affiliated with, sponsored by, or endorsed by Fenix International Limited.
-
-> The contributors of this script are not responsible for the end users' actions... lmao.
+> OnlyFans is a registered trademark of Fenix International Limited 🤓☝️.
+>
+> The contributors of this script isn't in any way affiliated with, sponsored by, or endorsed by Fenix International Limited 🤓☝️.
+> 
+> The contributors of this script are not responsible for the end users' actions... 🤓☝️.

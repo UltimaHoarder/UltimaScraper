@@ -1,5 +1,7 @@
 from __future__ import annotations
 
+import asyncio
+import copy
 from itertools import product
 from pathlib import Path
 from typing import Any, Optional
@@ -15,7 +17,11 @@ from ultima_scraper_api.apis.onlyfans import onlyfans as OnlyFans
 from ultima_scraper_api.classes.make_settings import SiteSettings
 from ultima_scraper_api.database.db_manager import DBCollection, DBManager
 from ultima_scraper_api.helpers import db_helper, main_helper
-from ultima_scraper.metadata_manager.metadata_manager import MetadataManager
+from ultima_scraper_api.managers.job_manager.jobs.custom_job import CustomJob
+from ultima_scraper_api.managers.metadata_manager.metadata_manager import (
+    MetadataManager,
+)
+from ultima_scraper_renamer import renamer
 
 auth_types = ultima_scraper_api.auth_types
 user_types = ultima_scraper_api.user_types
@@ -64,52 +70,104 @@ class StreamlinedDatascraper:
         self.profile_options: Optional[main_helper.OptionsFormat] = None
         self.subscription_options: Optional[main_helper.OptionsFormat] = None
         self.content_options: Optional[main_helper.OptionsFormat] = None
-        self.media_types = self.datascraper.api.ContentTypes()
+        self.content_types = self.datascraper.api.ContentTypes()
         self.media_options: Optional[main_helper.OptionsFormat] = None
         self.media_types = self.datascraper.api.Locations()
         self.dashboard_controller_api = dashboard_controller_api
 
-    async def start_datascraper(
-        self, authed: auth_types, identifier: int | str, whitelist: list[str] = []
-    ):
-        api = authed.api
+    async def start_datascraper(self, job_user_list: list[user_types]):
+
+        api = self.datascraper.api
         site_settings = api.get_site_settings()
-        if not site_settings:
-            return
-        subscription = await authed.get_subscription(identifier=identifier)
-        if not subscription:
-            return [False, subscription]
-        print("Scrape Processing")
-        username = subscription.username
-        if self.dashboard_controller_api:
-            await self.dashboard_controller_api.change_title(
-                f"{self.datascraper.api.site_name} => {username}"
-            )
-        print(f"Name: {username}")
-        subscription_directory_manager = subscription.directory_manager
-        if subscription_directory_manager:
+        available_jobs = site_settings.jobs.scrape
+        if not available_jobs.subscriptions:
+            for authed in api.auths:
+                authed.subscriptions = []
+        if available_jobs.messages:
+            chat_users = await self.get_chat_users()
+            [x.scrape_whitelist.append("Messages") for x in chat_users]
+            job_user_list.extend(chat_users)
+        if available_jobs.paid_contents:
+            for authed in self.datascraper.api.auths:
+                paid_contents = await authed.get_paid_content()
+                if not isinstance(paid_contents, error_types):
+                    for paid_content in paid_contents:
+                        subscription = await authed.get_subscription(
+                            identifier=paid_content.fromUser.username,
+                            custom_list=job_user_list,
+                        )
+                        if not subscription:
+                            subscription = paid_content.fromUser
+                            subscription.job_whitelist.append("PaidContents")
+                            job_user_list.append(paid_content.fromUser)
+                        else:
+                            subscription.job_whitelist.append("PaidContents")
+                            subscription.scrape_whitelist.clear()
+
+        await self.assign_jobs(job_user_list)
+        await self.datascraper.api.job_manager.queue.join()
+        pass
+
+    async def assign_jobs(self, subscription_list: list[user_types]):
+        datascraper = self.datascraper
+        JBM = datascraper.api.job_manager
+        site_settings = datascraper.api.get_site_settings()
+        content_types = datascraper.api.ContentTypes()
+        content_types_keys = await content_types.get_keys()
+        media_types = datascraper.api.Locations()
+        media_types_keys = await media_types.get_keys()
+
+        for subscription in subscription_list:
+            if site_settings.auto_model_choice:
+                found = site_settings.check_if_user_in_auto(subscription.username)
+                if not found:
+                    continue
+            pass
             await subscription.create_directory_manager(user=True)
             await main_helper.format_directories(subscription)
             metadata_manager = MetadataManager(subscription)
             await metadata_manager.fix_archived_db()
-            content_types, _media_types = await self.scrape_choice(
-                authed, site_settings
+
+            local_jobs: list[CustomJob] = []
+            auto_api_choice = (
+                site_settings.auto_api_choice
+                if not subscription.scrape_whitelist
+                else subscription.scrape_whitelist
             )
-            scrape_job = subscription.get_job("scrape.subscriptions")
-            if scrape_job:
-                scrape_job.create_tasks(await content_types.get_keys())
-            await self.profile_scraper(subscription)
-            for content_type, _value in content_types:
-                if whitelist and content_type not in whitelist:
-                    continue
-                print(f"Type: {content_type}")
-                await self.prepare_scraper(subscription, content_type)
-                if scrape_job:
-                    task = scrape_job.get_current_task()
-                    if task:
-                        task.done = True
-            print("Scrape Completed" + "\n")
-            return True, subscription
+            content_options = await main_helper.OptionsFormat(
+                content_types_keys,
+                "contents",
+                auto_api_choice,
+                self.datascraper.api.dashboard_controller_api,
+            ).formatter()
+            jobs = JBM.create_jobs(
+                "Scrape",
+                content_options.final_choices,
+                self.prepare_scraper,
+                [subscription],
+            )
+            local_jobs.extend(jobs)
+            jobs = JBM.create_jobs(
+                "Download",
+                content_options.final_choices,
+                self.prepare_downloads,
+                [subscription],
+            )
+            local_jobs.extend(jobs)
+
+            subscription.jobs.extend(local_jobs)
+            media_options = await main_helper.OptionsFormat(
+                media_types_keys,
+                "medias",
+                site_settings.auto_media_choice,
+                self.datascraper.api.dashboard_controller_api,
+            ).formatter()
+            JBM.add_media_type_to_jobs(media_options.final_choices)
+
+            for local_job in local_jobs:
+                JBM.queue.put_nowait(local_job)
+            await asyncio.sleep(1)
+        pass
 
     # Allows the user to choose which api they want to scrape
     async def scrape_choice(self, authed: auth_types, site_settings: SiteSettings):
@@ -205,7 +263,6 @@ class StreamlinedDatascraper:
         if progress_bar:
             progress_bar.close()  # type: ignore
 
-    # Move this to StreamlinedDatascraper
     async def paid_content_scraper(self, authed: auth_types):
         site_settings = authed.api.get_site_settings()
         if not site_settings or not authed.active:
@@ -257,53 +314,60 @@ class StreamlinedDatascraper:
 
     # Prepares the API links to be scraped
 
-    async def prepare_scraper(self, subscription: user_types, content_type: str):
+    async def prepare_scraper(
+        self, subscription: user_types, content_type: str, master_set: list[Any] = []
+    ):
         authed = subscription.get_authed()
-        master_set: list[Any] = []
-        match content_type:
-            case "Stories":
-                master_set.extend(await self.datascraper.get_all_stories(subscription))
-            case "Posts":
-                master_set = await subscription.get_posts()
-                print(f"Type: Archived Posts")
-                if isinstance(subscription, fansly_classes.user_model.create_user):
-                    collections = await subscription.get_collections()
-                    for collection in collections:
-                        master_set.append(
-                            await subscription.get_collection_content(collection)
-                        )
-                else:
-                    master_set += await subscription.get_archived_posts()
-            case "Messages":
-                unrefined_set: list[
-                    message_types | Any
-                ] = await subscription.get_messages()
-                mass_messages = getattr(authed, "mass_messages")
-                if subscription.is_me() and mass_messages:
-                    mass_messages = getattr(authed, "mass_messages")
-                    # Need access to a creator's account to fix this
-                    unrefined_set2 = await self.datascraper.process_mass_messages(
-                        authed,
-                        mass_messages,
+        current_job = subscription.get_current_job()
+        temp_master_set: list[Any] = copy.copy(master_set)
+        if not temp_master_set:
+            match content_type:
+                case "Stories":
+                    temp_master_set.extend(
+                        await self.datascraper.get_all_stories(subscription)
                     )
-                    unrefined_set += unrefined_set2
-                master_set = unrefined_set
-            case "Archived":
-                pass
-            case "Chats":
-                pass
-            case "Highlights":
-                pass
-            case "MassMessages":
-                pass
-            case _:
-                raise Exception(f"{content_type} is an invalid choice")
-        await self.process_scraped_content(master_set, content_type, subscription)
+                case "Posts":
+                    temp_master_set = await subscription.get_posts()
+                    print(f"Type: Archived Posts")
+                    if isinstance(subscription, fansly_classes.user_model.create_user):
+                        collections = await subscription.get_collections()
+                        for collection in collections:
+                            temp_master_set.append(
+                                await subscription.get_collection_content(collection)
+                            )
+                    else:
+                        temp_master_set += await subscription.get_archived_posts()
+                case "Messages":
+                    unrefined_set: list[
+                        message_types | Any
+                    ] = await subscription.get_messages()
+                    mass_messages = getattr(authed, "mass_messages")
+                    if subscription.is_me() and mass_messages:
+                        mass_messages = getattr(authed, "mass_messages")
+                        # Need access to a creator's account to fix this
+                        unrefined_set2 = await self.datascraper.process_mass_messages(
+                            authed,
+                            mass_messages,
+                        )
+                        unrefined_set += unrefined_set2
+                    temp_master_set = unrefined_set
+                case "Archived":
+                    pass
+                case "Chats":
+                    pass
+                case "Highlights":
+                    pass
+                case "MassMessages":
+                    pass
+                case _:
+                    raise Exception(f"{content_type} is an invalid choice")
+        await self.process_scraped_content(temp_master_set, content_type, subscription)
+        current_job.done = True
 
     async def process_scraped_content(
         self,
         master_set: list[dict[str, Any]],
-        content_type: str,
+        api_type: str,
         subscription: user_types,
     ):
         if not master_set:
@@ -318,107 +382,107 @@ class StreamlinedDatascraper:
         )
         unrefined_set = []
         pool = authed.pool
-        print(f"Processing Scraped {content_type}")
+        print(f"Processing Scraped {api_type}")
         tasks = pool.starmap(
             self.datascraper.media_scraper,
             product(
                 master_set,
                 [subscription],
                 [subscription_directory_manager.root_download_directory],
-                [content_type],
+                [api_type],
             ),
         )
         settings = {"colour": "MAGENTA"}
         unrefined_set: list[dict[str, Any]] = await tqdm.gather(*tasks, **settings)
         new_metadata: dict[str, Any] = await main_helper.format_media_set(unrefined_set)
         metadata_path = formatted_metadata_directory.joinpath("user_data.db")
-        legacy_metadata_path = formatted_metadata_directory.joinpath(
-            content_type + ".db"
-        )
+        legacy_metadata_path = formatted_metadata_directory.joinpath(api_type + ".db")
         if new_metadata:
             new_metadata_content: list[dict[str, Any]] = new_metadata["content"]
             print("Processing metadata.")
             old_metadata, delete_metadatas = await process_legacy_metadata(
                 subscription,
-                content_type,
+                api_type,
                 metadata_path,
                 subscription_directory_manager,
             )
             new_metadata_content.extend(old_metadata)
-            subscription.set_scraped(content_type, new_metadata_content)
-            db_manager = DBManager(metadata_path, content_type)
+            subscription.set_scraped(api_type, new_metadata_content)
+            db_manager = DBManager(metadata_path, api_type)
             metadata_manager = MetadataManager(subscription, db_manager)
-            await metadata_manager.process_metadata(
+            result = await metadata_manager.process_metadata(
                 legacy_metadata_path,
                 new_metadata_content,
-                content_type,
+                api_type,
                 subscription,
                 delete_metadatas,
             )
-            pass
+            if result:
+                Session, api_type, _folder = result
+                if authed.api.config.settings.helpers.renamer:
+                    print("Renaming files.")
+                    _new_metadata_object = await renamer.start(
+                        subscription,
+                        api_type,
+                        Session,
+                    )
+                metadata_manager.delete_metadatas()
+                pass
         else:
-            print("No " + content_type + " Found.")
+            print(f"No {api_type} found.")
         return True
 
     # Downloads scraped content
 
-    async def prepare_downloads(self, subscription: user_types):
+    async def prepare_downloads(self, subscription: user_types, api_type: str):
         global_settings = subscription.get_api().get_global_settings()
         site_settings = subscription.get_api().get_site_settings()
         if not (global_settings and site_settings):
             return
         subscription_directory_manager = subscription.directory_manager
         directory = subscription_directory_manager.root_download_directory
-        download_job = subscription.get_job("download")
-        if download_job:
-            download_job.create_tasks(list(subscription.scraped.__dict__.keys()))
+        current_job = subscription.get_current_job()
 
-        for api_type, metadata_path in subscription.scraped.__dict__.items():
-            metadata_path = (
-                subscription_directory_manager.user.metadata_directory.joinpath(
-                    "user_data.db"
+        metadata_path = subscription_directory_manager.user.metadata_directory.joinpath(
+            "user_data.db"
+        )
+        db_manager = DBManager(metadata_path, api_type)
+        database_session, _engine = await db_manager.import_database()
+        db_collection = DBCollection()
+        database = db_collection.database_picker("user_data")
+        if database:
+            media_table = database.media_table
+            overwrite_files = site_settings.overwrite_files
+            if overwrite_files:
+                download_list: Any = (
+                    database_session.query(media_table)
+                    .filter(media_table.api_type == api_type)
+                    .all()
                 )
-            )
-            db_manager = DBManager(metadata_path, api_type)
-            database_session, _engine = await db_manager.import_database()
-            db_collection = DBCollection()
-            database = db_collection.database_picker("user_data")
-            if database:
-                media_table = database.media_table
-                overwrite_files = site_settings.overwrite_files
-                if overwrite_files:
-                    download_list: Any = (
-                        database_session.query(media_table)
-                        .filter(media_table.api_type == api_type)
-                        .all()
-                    )
-                    media_set_count = len(download_list)
-                else:
-                    download_list: Any = (
-                        database_session.query(media_table)
-                        .filter(media_table.downloaded == False)
-                        .filter(media_table.api_type == api_type)
-                    )
-                    media_set_count = db_helper.get_count(download_list)
-                location = ""
-                string = "Download Processing\n"
-                string += f"Name: {subscription.username} | Type: {api_type} | Count: {media_set_count}{location} | Directory: {directory}\n"
-                if media_set_count:
-                    print(string)
-                    await main_helper.async_downloads(
-                        download_list, subscription, global_settings
-                    )
-                while True:
-                    try:
-                        database_session.commit()
-                        break
-                    except OperationalError:
-                        database_session.rollback()
-                database_session.close()
-
-            task = download_job.get_current_task()
-            if task:
-                task.done = True
+                media_set_count = len(download_list)
+            else:
+                download_list: Any = (
+                    database_session.query(media_table)
+                    .filter(media_table.downloaded == False)
+                    .filter(media_table.api_type == api_type)
+                )
+                media_set_count = db_helper.get_count(download_list)
+            location = ""
+            string = "Download Processing\n"
+            string += f"Name: {subscription.username} | Type: {api_type} | Count: {media_set_count}{location} | Directory: {directory}\n"
+            if media_set_count:
+                print(string)
+                await main_helper.async_downloads(
+                    download_list, subscription, global_settings
+                )
+            while True:
+                try:
+                    database_session.commit()
+                    break
+                except OperationalError:
+                    database_session.rollback()
+            database_session.close()
+        current_job.done = True
 
     async def manage_subscriptions(
         self,
@@ -528,7 +592,7 @@ class StreamlinedDatascraper:
             for subscription in subscription_list:
                 # Extra Auth Support
                 authed = subscription.get_authed()
-                await datascraper.start_datascraper(authed, subscription.username)
+                await datascraper.start_datascraper([subscription])
                 scrape_job = subscription.get_job("scrape.subscriptions")
                 if scrape_job:
                     scrape_job.done = True
@@ -579,3 +643,15 @@ class StreamlinedDatascraper:
                         main_helper.delete_empty_directories(
                             subscription.directory_manager.user.download_directory
                         )
+
+    async def get_chat_users(self):
+        chat_users: list[user_types] = []
+        for authed in self.datascraper.api.auths:
+            chats = await authed.get_chats()
+            for chat in chats:
+                username: str = chat["withUser"].username
+                subscription = await authed.get_subscription(identifier=username)
+                if not subscription:
+                    subscription = chat["withUser"]
+                    chat_users.append(subscription)
+        return chat_users

@@ -3,4 +3,6 @@
 .profiles
 .settings
 .sites
+__settings__
+__user_data__
 __pycache__

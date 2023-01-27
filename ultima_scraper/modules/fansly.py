@@ -5,8 +5,7 @@ from typing import Any, Union
 from urllib.parse import urlparse
 
 from ultima_scraper_api.apis.fansly.classes.auth_model import create_auth
-from ultima_scraper_api.apis.fansly.classes.collection_model import \
-    create_collection
+from ultima_scraper_api.apis.fansly.classes.collection_model import create_collection
 from ultima_scraper_api.apis.fansly.classes.create_story import create_story
 from ultima_scraper_api.apis.fansly.classes.message_model import create_message
 from ultima_scraper_api.apis.fansly.classes.post_model import create_post
@@ -29,8 +28,7 @@ class FanslyDataScraper(StreamlinedDatascraper):
         formatted_directory: Path,
         api_type: str,
     ):
-        from ultima_scraper_api.classes.prepare_metadata import \
-            prepare_reformat
+        from ultima_scraper_api.classes.prepare_metadata import prepare_reformat
 
         authed = subscription.get_authed()
         api = authed.api
@@ -376,6 +374,17 @@ class FanslyDataScraper(StreamlinedDatascraper):
     #     return global_found
 
     async def get_all_stories(self, subscription: create_user):
+        """
+        get_all_stories(subscription: create_user)
+
+        This function returns a list of all stories and archived stories from the given subscription.
+
+        Arguments:
+        subscription (create_user): An instance of the create_user class.
+
+        Returns:
+        list[create_story]: A list containing all stories and archived stories from the subscription.
+        """
         master_set: list[create_story] = []
         master_set.extend(await subscription.get_stories())
         master_set.extend(await subscription.get_archived_stories())
@@ -387,6 +396,20 @@ class FanslyDataScraper(StreamlinedDatascraper):
         identifiers: list[int | str] = [],
         refresh: bool = True,
     ):
+        """
+        get_all_subscriptions(authed: create_auth, identifiers: list[int | str] = [], refresh: bool = True)
+
+        This function returns a list of all subscriptions, including both subscriptions and followings,
+        from the given authenticated user.
+
+        Arguments:
+        authed (create_auth): An instance of the create_auth class.
+        identifiers (list[int | str], optional): A list of identifiers (username or id) for the subscriptions. Defaults to an empty list.
+        refresh (bool, optional): A flag indicating whether to refresh the list of subscriptions. Defaults to True.
+
+        Returns:
+        list[create_subscription]: A list of all subscriptions, including both subscriptions and followings, from the authenticated user.
+        """
         results = await authed.get_followings(identifiers=identifiers)
         results2 = await authed.get_subscriptions(
             identifiers=identifiers, refresh=refresh

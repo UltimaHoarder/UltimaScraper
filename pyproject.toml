@@ -35,7 +35,7 @@ dill = "^0.3.6"
 websockets = "^10.4"
 
 ultima-scraper-renamer = "^0.0.3"
-ultima-scraper-api = "^0.0.1.5"
+ultima-scraper-api = "0.0.1.5"
 
 [tool.poetry.extras]
 performance = ["lxml"]

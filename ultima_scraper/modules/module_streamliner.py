@@ -328,13 +328,14 @@ class StreamlinedDatascraper:
                     )
                 case "Posts":
                     temp_master_set = await subscription.get_posts()
-                    print(f"Type: Archived Posts")
+                    # Archived Posts
                     if isinstance(subscription, fansly_classes.user_model.create_user):
                         collections = await subscription.get_collections()
                         for collection in collections:
                             temp_master_set.append(
                                 await subscription.get_collection_content(collection)
                             )
+                        pass
                     else:
                         temp_master_set += await subscription.get_archived_posts()
                 case "Messages":

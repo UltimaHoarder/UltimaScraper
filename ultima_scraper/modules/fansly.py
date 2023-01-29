@@ -45,6 +45,8 @@ class FanslyDataScraper(StreamlinedDatascraper):
             pass
         if api_type == "Messages":
             pass
+        post_result.media.extend(post_result.previews)
+
         download_path = formatted_directory
         model_username = subscription.username
         date_format = site_settings.date_format
@@ -70,7 +72,7 @@ class FanslyDataScraper(StreamlinedDatascraper):
                     continue
                 rawText = post_result.rawText
                 text = post_result.text
-                previews = post_result.preview
+                previews = post_result.previews
                 date = post_result.postedAt
                 price = post_result.price
                 new_post["archived"] = post_result.isArchived
@@ -122,7 +124,7 @@ class FanslyDataScraper(StreamlinedDatascraper):
             new_post["text"] = final_text
             new_post["postedAt"] = date_string
             new_post["paid"] = False
-            new_post["preview_media_ids"] = previews
+            new_post["preview_media_ids"] = [int(d["id"]) for d in post_result.previews]
             new_post["api_type"] = api_type
             new_post["price"] = 0
             if price is None:
@@ -156,6 +158,8 @@ class FanslyDataScraper(StreamlinedDatascraper):
                         "%d-%m-%Y %H:%M:%S"
                     )
                     new_media["created_at"] = date_string
+                if int(media_id) in new_post["preview_media_ids"]:
+                    new_media["preview"] = True
                 for xlink in link, preview_link:
                     if xlink:
                         new_media["links"].append(xlink)

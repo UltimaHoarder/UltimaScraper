@@ -85,22 +85,23 @@ class StreamlinedDatascraper:
                 authed.subscriptions = []
         if available_jobs.messages:
             chat_users = await self.get_chat_users()
-            [x.scrape_whitelist.append("Messages") for x in chat_users]
+            [user.scrape_whitelist.append("Messages") for user in chat_users]
             job_user_list.extend(chat_users)
+
         if available_jobs.paid_contents:
             for authed in self.datascraper.api.auths:
                 paid_contents = await authed.get_paid_content()
                 if not isinstance(paid_contents, error_types):
                     for paid_content in paid_contents:
-                        subscription = await authed.get_subscription(
-                            identifier=paid_content.fromUser.username,
-                            custom_list=job_user_list,
-                        )
-                        if not subscription:
-                            subscription = paid_content.fromUser
-                            subscription.job_whitelist.append("PaidContents")
-                            job_user_list.append(paid_content.fromUser)
-                        else:
+                        author = await paid_content.get_author()
+                        if author:
+                            subscription = await authed.get_subscription(
+                                identifier=author.id,
+                                custom_list=job_user_list,
+                            )
+                            if not subscription:
+                                subscription = author
+                                job_user_list.append(subscription)
                             subscription.job_whitelist.append("PaidContents")
                             subscription.scrape_whitelist.clear()
 

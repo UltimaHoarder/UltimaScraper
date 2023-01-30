@@ -118,12 +118,6 @@ class StreamlinedDatascraper:
         media_types_keys = await media_types.get_keys()
 
         for subscription in subscription_list:
-            print(subscription.username)
-            if site_settings.auto_model_choice:
-                found = site_settings.check_if_user_in_auto(subscription.username)
-                if not found:
-                    continue
-            pass
             await subscription.create_directory_manager(user=True)
             await main_helper.format_directories(subscription)
             metadata_manager = MetadataManager(subscription)

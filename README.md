@@ -373,16 +373,6 @@ Before troubleshooting, make sure you're using Python 3.10.1 and the latest comm
 > Quadrupal check that the cookies and user agent are correct.
 > Remove 2FA.
 
-## I can't see ".settings" folder'
-
-> Make sure you can see hidden files
->
-> [Windows Tutorial](https://support.microsoft.com/en-gb/help/4028316/windows-view-hidden-files-and-folders-in-windows-10)
->
-> [Mac Tutorial](https://setapp.com/how-to/show-hidden-files-on-mac)
->
-> [Linux](https://www.google.com)
-
 ## I'm getting authed into the wrong account
 
 > Enjoy the free content. | This has been patched lol.

@@ -37,7 +37,8 @@ async def start_datascraper(
     ):
         datascraper.dashboard_controller_api = dashboard_controller_api
         api = datascraper.api
-        api.base_directory_manager.create_directories()
+        if api.filesystem_manager.directory_manager:
+            api.filesystem_manager.directory_manager.create_directories()
         api.dashboard_controller_api = dashboard_controller_api
         global_settings = api.get_global_settings()
         site_settings = api.get_site_settings()
@@ -113,6 +114,7 @@ async def start_datascraper(
     archive_time = timeit.default_timer()
     if not api_:
         api_ = ultima_scraper_api.select_api(site_name, config)
+        api_.filesystem_manager.activate_directory_manager(api_)
 
     datascraper = None
     if type(api_) == OnlyFans.start:

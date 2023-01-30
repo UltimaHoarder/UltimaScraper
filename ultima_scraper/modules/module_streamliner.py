@@ -104,10 +104,15 @@ class StreamlinedDatascraper:
                                 job_user_list.append(subscription)
                             subscription.job_whitelist.append("PaidContents")
                             subscription.scrape_whitelist.clear()
+        job_user_list = [
+            job_user
+            for job_user in job_user_list
+            if job_user.username
+            not in [blacklist for authed in api.auths for blacklist in authed.blacklist]
+        ]
 
         await self.assign_jobs(job_user_list)
         await self.datascraper.api.job_manager.queue.join()
-        pass
 
     async def assign_jobs(self, subscription_list: list[user_types]):
         datascraper = self.datascraper
@@ -494,33 +499,7 @@ class StreamlinedDatascraper:
         site_settings = authed.api.get_site_settings()
         if not site_settings:
             return temp_subscriptions
-        blacklists = site_settings.blacklists
         ignore_type = site_settings.ignore_type
-        if blacklists:
-            remote_blacklists = await authed.get_lists()
-            if remote_blacklists:
-                for remote_blacklist in remote_blacklists:
-                    for blacklist in blacklists:
-                        if remote_blacklist["name"] == blacklist:
-                            list_users = remote_blacklist["users"]
-                            if remote_blacklist["usersCount"] > 2:
-                                list_id = remote_blacklist["id"]
-                                list_users = await authed.get_lists_users(list_id)
-                            if list_users:
-                                users = list_users
-                                bl_ids = [x["username"] for x in users]
-                                results2 = results.copy()
-                                for result in results2:
-                                    identifier = result.username
-                                    if identifier in bl_ids:
-                                        print(f"Blacklisted: {identifier}")
-                                        results.remove(result)
-            results2 = results.copy()
-            for result in results2:
-                identifier = result.username
-                if identifier in blacklists:
-                    print(f"Blacklisted: {identifier}")
-                    results.remove(result)
         results.sort(key=lambda x: x.is_me(), reverse=True)
         for result in results:
             # await result.create_directory_manager(user=True)
@@ -558,6 +537,9 @@ class StreamlinedDatascraper:
             #     mass_messages = await authed.get_mass_messages(resume=imported)
             #     if mass_messages:
             #         main_helper.export_json(mass_messages, metadata_filepath)
+            authed.blacklist = await authed.get_blacklist(
+                authed.api.get_site_settings().blacklists
+            )
             if identifiers or site_settings.jobs.scrape.subscriptions:
                 subscriptions.extend(
                     await datascraper.manage_subscriptions(

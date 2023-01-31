@@ -76,7 +76,6 @@ class StreamlinedDatascraper:
         self.dashboard_controller_api = dashboard_controller_api
 
     async def start_datascraper(self, job_user_list: list[user_types]):
-
         api = self.datascraper.api
         site_settings = api.get_site_settings()
         available_jobs = site_settings.jobs.scrape

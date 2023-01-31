@@ -15,8 +15,13 @@ async def example(time: int, dynamic_param: str, auth_id: int = 0):
     link = "https://onlyfans.com/api2/v2/init"
     signed_headers = authed.session_manager.create_signed_headers(link, time_=time)
     static_1, _, static_2, static_3 = signed_headers["sign"].split(":")
-    assert f"{static_1}:{dynamic_param}:{static_2}:{static_3}" == signed_headers["sign"]
+    middle_part = dynamic_param.split(":")[1]
+    assert f"{static_1}:{middle_part}:{static_2}:{static_3}" == signed_headers["sign"]
 
 
 if __name__ == "__main__":
-    asyncio.run(example(1640531264796, "5f31297d3b4d02e2e278a943bdce703389cf90a4"))
+    asyncio.run(
+        example(
+            1675150502748, "6820:148f109177631164a099641019e951d9f0c1edf7:7db:63d81407"
+        )
+    )

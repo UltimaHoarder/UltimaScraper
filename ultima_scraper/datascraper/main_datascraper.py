@@ -106,6 +106,12 @@ async def start_datascraper(
             intask = api.dashboard_controller_api.datatable_monitor(job_user_list)
             _task = asyncio.create_task(intask)
         await datascraper.start_datascraper(job_user_list)
+        # if global_settings.helpers.delete_empty_directories:
+        #     for job_user in job_user_list:
+        #         await main_helper.delete_empty_directories(
+        #             job_user.directory_manager.user.download_directory,
+        #             datascraper.api.filesystem_manager,
+        #         )
         if webhooks:
             await main_helper.process_webhooks(
                 api, "download_webhook", "succeeded", global_settings

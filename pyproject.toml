@@ -34,8 +34,8 @@ aiopath = "^0.6.11"
 dill = "^0.3.6"
 websockets = "^10.4"
 
-ultima-scraper-renamer = "^0.0.3"
-ultima-scraper-api = "0.0.1.9"
+ultima-scraper-renamer = "0.0.4"
+ultima-scraper-api = "0.0.2.0"
 
 [tool.poetry.extras]
 performance = ["lxml"]

@@ -1,15 +1,8 @@
 import os
 import sys
-from os.path import dirname as up
 from pathlib import Path
 from sys import exit
 from typing import Any
-
-if getattr(sys, "frozen", False):
-    path = up(sys.executable)
-else:
-    path = up(up(os.path.realpath(__file__)))
-os.chdir(path)
 
 
 def version_check():

@@ -4,7 +4,12 @@ from ultima_scraper_api.apis.onlyfans.onlyfans import start as OnlyFans_API
 from ultima_scraper_api.classes.make_settings import Config
 
 
-async def example(time: int, dynamic_param: str, auth_id: int = 0):
+async def example(
+    time: int,
+    dynamic_param: str,
+    link: str = "https://onlyfans.com/api2/v2/init",
+    auth_id: int = 0,
+):
     async def authenticate():
         onlyfans_api = OnlyFans_API(Config())
         auth = onlyfans_api.add_auth()
@@ -12,7 +17,6 @@ async def example(time: int, dynamic_param: str, auth_id: int = 0):
         return authed
 
     authed = await authenticate()
-    link = "https://onlyfans.com/api2/v2/init"
     signed_headers = authed.session_manager.create_signed_headers(link, time_=time)
     static_1, _, static_2, static_3 = signed_headers["sign"].split(":")
     middle_part = dynamic_param.split(":")[1]

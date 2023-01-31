@@ -448,42 +448,43 @@ class StreamlinedDatascraper:
             "user_data.db"
         )
         db_manager = DBManager(metadata_path, api_type)
-        database_session, _engine = await db_manager.import_database()
-        db_collection = DBCollection()
-        database = db_collection.database_picker("user_data")
-        if database:
-            media_table = database.media_table
-            overwrite_files = site_settings.overwrite_files
-            if overwrite_files:
-                download_list: Any = (
-                    database_session.query(media_table)
-                    .filter(media_table.api_type == api_type)
-                    .all()
-                )
-                media_set_count = len(download_list)
-            else:
-                download_list: Any = (
-                    database_session.query(media_table)
-                    .filter(media_table.downloaded == False)
-                    .filter(media_table.api_type == api_type)
-                )
-                media_set_count = db_helper.get_count(download_list)
-            location = ""
-            string = "Download Processing\n"
-            string += f"Name: {subscription.username} | Type: {api_type} | Count: {media_set_count}{location} | Directory: {directory}\n"
-            if media_set_count:
-                print(string)
-                await main_helper.async_downloads(
-                    download_list, subscription, global_settings
-                )
-            while True:
-                try:
-                    database_session.commit()
-                    break
-                except OperationalError:
-                    database_session.rollback()
-            database_session.close()
-        current_job.done = True
+        if db_manager.database_path.exists():
+            database_session, _engine = await db_manager.import_database()
+            db_collection = DBCollection()
+            database = db_collection.database_picker("user_data")
+            if database:
+                media_table = database.media_table
+                overwrite_files = site_settings.overwrite_files
+                if overwrite_files:
+                    download_list: Any = (
+                        database_session.query(media_table)
+                        .filter(media_table.api_type == api_type)
+                        .all()
+                    )
+                    media_set_count = len(download_list)
+                else:
+                    download_list: Any = (
+                        database_session.query(media_table)
+                        .filter(media_table.downloaded == False)
+                        .filter(media_table.api_type == api_type)
+                    )
+                    media_set_count = db_helper.get_count(download_list)
+                location = ""
+                string = "Download Processing\n"
+                string += f"Name: {subscription.username} | Type: {api_type} | Count: {media_set_count}{location} | Directory: {directory}\n"
+                if media_set_count:
+                    print(string)
+                    await main_helper.async_downloads(
+                        download_list, subscription, global_settings
+                    )
+                while True:
+                    try:
+                        database_session.commit()
+                        break
+                    except OperationalError:
+                        database_session.rollback()
+                database_session.close()
+            current_job.done = True
 
     async def manage_subscriptions(
         self,

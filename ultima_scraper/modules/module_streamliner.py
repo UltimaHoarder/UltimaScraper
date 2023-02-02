@@ -103,6 +103,11 @@ class StreamlinedDatascraper:
                                 job_user_list.append(subscription)
                             subscription.job_whitelist.append("PaidContents")
                             subscription.scrape_whitelist.clear()
+        # job_user_list = [
+        #     job_user
+        #     for job_user in job_user_list
+        #     if job_user.username in self.subscription_options.auto_choice
+        # ]
         job_user_list = [
             job_user
             for job_user in job_user_list

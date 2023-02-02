@@ -134,7 +134,7 @@ python-versions = "*"
 
 [[package]]
 name = "astroid"
-version = "2.14.0"
+version = "2.14.1"
 description = "An abstract syntax tree for Python with inference support."
 category = "main"
 optional = false
@@ -822,7 +822,7 @@ selenium = ">=3.4.0"
 
 [[package]]
 name = "setuptools"
-version = "67.0.0"
+version = "67.1.0"
 description = "Easily download, build, install, upgrade, and uninstall Python packages"
 category = "dev"
 optional = false
@@ -1124,7 +1124,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "ultima-scraper-api"
-version = "0.0.2.0"
+version = "0.0.2.3"
 description = ""
 category = "main"
 optional = false
@@ -1274,7 +1274,7 @@ performance = ["lxml"]
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10.1 <3.12"
-content-hash = "f0e8d644d4c3689821cc324b97004514a13d352dc6a0e3c3c93ad026e6a7164d"
+content-hash = "d8cb7f6423e70cc26dbaff30c3e42ad1eb4de237a460df47b9237f60cead95cc"
 
 [metadata.files]
 aiofile = [
@@ -1406,8 +1406,8 @@ appdirs = [
     {file = "appdirs-1.4.4.tar.gz", hash = "sha256:7d5d0167b2b1ba821647616af46a749d1c653740dd0d2415100fe26e27afdf41"},
 ]
 astroid = [
-    {file = "astroid-2.14.0-py3-none-any.whl", hash = "sha256:a924de70331cba0dd34f41877c7c43af7da35f496e1926cf95320c5a2200f645"},
-    {file = "astroid-2.14.0.tar.gz", hash = "sha256:708543bfd31c1b93f0db24624a3b19c73807294743cb5d0b02fe9341c1715075"},
+    {file = "astroid-2.14.1-py3-none-any.whl", hash = "sha256:23c718921acab5f08cbbbe9293967f1f8fec40c336d19cd75dc12a9ea31d2eb2"},
+    {file = "astroid-2.14.1.tar.gz", hash = "sha256:bd1aa4f9915c98e8aaebcd4e71930154d4e8c9aaf05d35ac0a63d1956091ae3f"},
 ]
 async-generator = [
     {file = "async_generator-1.10-py3-none-any.whl", hash = "sha256:01c7bf666359b4967d2cda0000cc2e4af16a0ae098cbffcb8472fb9e8ad6585b"},
@@ -2224,8 +2224,8 @@ selenium-wire = [
     {file = "selenium_wire-2.1.2-py3-none-any.whl", hash = "sha256:c5351072116c32220af4e84c096df52c84d4c94bdbd565958eb9d9c09eea0410"},
 ]
 setuptools = [
-    {file = "setuptools-67.0.0-py3-none-any.whl", hash = "sha256:9d790961ba6219e9ff7d9557622d2fe136816a264dd01d5997cfc057d804853d"},
-    {file = "setuptools-67.0.0.tar.gz", hash = "sha256:883131c5b6efa70b9101c7ef30b2b7b780a4283d5fc1616383cdf22c83cbefe6"},
+    {file = "setuptools-67.1.0-py3-none-any.whl", hash = "sha256:a7687c12b444eaac951ea87a9627c4f904ac757e7abdc5aac32833234af90378"},
+    {file = "setuptools-67.1.0.tar.gz", hash = "sha256:e261cdf010c11a41cb5cb5f1bf3338a7433832029f559a6a7614bd42a967c300"},
 ]
 six = [
     {file = "six-1.16.0-py2.py3-none-any.whl", hash = "sha256:8abb2f1d86890a2dfb989f9a77cfcfd3e47c2a354b01111771326f8aa26e0254"},
@@ -2351,8 +2351,8 @@ typing-extensions = [
     {file = "typing_extensions-4.4.0.tar.gz", hash = "sha256:1511434bb92bf8dd198c12b1cc812e800d4181cfcb867674e0f8279cc93087aa"},
 ]
 ultima-scraper-api = [
-    {file = "ultima_scraper_api-0.0.2.0-py3-none-any.whl", hash = "sha256:58a7e0be1f608395b4e758e99462df4d3f3e0d48c271dcecfdfc6a29d108c1b9"},
-    {file = "ultima_scraper_api-0.0.2.0.tar.gz", hash = "sha256:7b684b115da50a9f5632e10efc7603b3d016042c5fd6983784322a1bf3717bd3"},
+    {file = "ultima_scraper_api-0.0.2.3-py3-none-any.whl", hash = "sha256:fccc9e534c872ea3bf46be8d905dff7af30fb31ab3e2578e77c75154ac1de86a"},
+    {file = "ultima_scraper_api-0.0.2.3.tar.gz", hash = "sha256:f5774b653f0f08d8f0dc04a9e90d552736859328c1086b29b060e0758f4764c1"},
 ]
 ultima-scraper-renamer = [
     {file = "ultima_scraper_renamer-0.0.5-py3-none-any.whl", hash = "sha256:d04349a3a692999f5f094da096c90b538bd7aad14003b48408dd5520438c298b"},

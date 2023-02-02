@@ -21,7 +21,7 @@ From the project folder open Windows Powershell/Terminal and run the commands be
 >### Poetry Installation Guide
 >`pip install poetry`
 >
->`poetry install --no-dev`
+>`poetry install --only main`
 
 Update:
 >`python updater.py`

@@ -18,10 +18,8 @@ Read the [#FAQ](README.md#faq) at the bottom of this page before submitting a is
 From the project folder open Windows Powershell/Terminal and run the commands below:
 
 ### Installation commands:
->### Poetry Installation Guide
->`pip install poetry`
->
->`poetry install --only main`
+>### Install Poetry
+>https://python-poetry.org/docs/
 
 Update:
 >`python updater.py`

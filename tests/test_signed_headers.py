@@ -1,6 +1,6 @@
 import asyncio
 
-from ultima_scraper_api.apis.onlyfans.onlyfans import start as OnlyFans_API
+from ultima_scraper_api.apis.onlyfans.onlyfans import OnlyFansAPI
 from ultima_scraper_api.classes.make_settings import Config
 
 
@@ -11,7 +11,7 @@ async def example(
     auth_id: int = 0,
 ):
     async def authenticate():
-        onlyfans_api = OnlyFans_API(Config())
+        onlyfans_api = OnlyFansAPI(Config())
         auth = onlyfans_api.add_auth()
         authed = await auth.login(guest=True)
         return authed

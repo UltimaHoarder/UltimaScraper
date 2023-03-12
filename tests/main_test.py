@@ -18,9 +18,7 @@ def version_check():
 
 
 def check_start_up():
-    from ultima_scraper_api.managers.storage_managers.filesystem_manager import (
-        FilesystemManager,
-    )
+    from ultima_scraper_collection.managers.filesystem_manager import FilesystemManager
 
     fsm = FilesystemManager()
     fsm.check()

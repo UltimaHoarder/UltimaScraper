@@ -5,8 +5,6 @@ import sys
 from sys import exit
 from typing import Literal, get_args
 
-from ultima_scraper_api.helpers.main_helper import OptionsFormat
-
 parser = argparse.ArgumentParser()
 parser.add_argument(
     "-v", "--verbose", help="increase output verbosity", action="store_true"
@@ -27,11 +25,9 @@ if __name__ == "__main__":
     import ultima_scraper_api.apis.api_helper as api_helper
     import ultima_scraper_api.helpers.main_helper as main_helper
     from ultima_scraper_api.apis.dashboard_controller_api import DashboardControllerAPI
-    from ultima_scraper_api.managers.storage_managers.filesystem_manager import (
-        FilesystemManager,
-    )
+    from ultima_scraper_collection.managers.filesystem_manager import FilesystemManager
 
-    import ultima_scraper.datascraper.main_datascraper as main_datascraper
+    from ultima_scraper.ultima_scraper import UltimaScraper
 
     api_helper.parsed_args = parsed_args
     fsm = FilesystemManager()
@@ -47,20 +43,24 @@ if __name__ == "__main__":
     site_name_literals = Literal["OnlyFans", "Fansly"]
     site_names: list[site_name_literals] = list(get_args(site_name_literals))
     # logging.basicConfig(level=logging.DEBUG, format="%(message)s")
+    USR = UltimaScraper(global_settings)
+
     async def main():
         dashboard_controller_api = (
             DashboardControllerAPI(config) if config.settings.tui.active else None
         )
+        USR.ui_manager.dashboard_controller_api = dashboard_controller_api
         while True:
-            site_options = await OptionsFormat(
-                site_names, "sites", domain, dashboard_controller_api
-            ).formatter()
+            site_options = await USR.option_manager.create_option(
+                site_names, "sites", domain
+            )
             for site_name in site_options.final_choices:
-                api = await main_datascraper.start_datascraper(
-                    config, site_name, dashboard_controller_api=dashboard_controller_api
+                api = await USR.start(
+                    config,
+                    site_name,
                 )
                 if api:
-                    api.close_pools()
+                    await api.close_pools()
                     await asyncio.sleep(1)
             if exit_on_completion:
                 # We need to exit all threads, otherwise script can't close and just hangs

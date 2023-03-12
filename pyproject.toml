@@ -2,46 +2,23 @@
 name = "ultima-scraper"
 version = "8.0.0"
 description = ""
-authors = ["DIGITALCRIMINALS <89371864+DIGITALCRIMINALS@users.noreply.github.com>"]
+authors = [
+    "DIGITALCRIMINALS <89371864+digitalcriminals@users.noreply.github.com>",
+]
 license = "GPL-3.0"
 readme = "README.md"
-packages = [{include = "ultima_scraper"}]
+packages = [{ include = "ultima_scraper" }]
 include = ["ultima_scraper/py.typed"]
 
 [tool.poetry.dependencies]
 python = "^3.10.1 <3.12"
 requests = "^2.26.0"
-beautifulsoup4 = "^4.10.0"
-win32-setctime = "^1.0.4"
-python-socks = {extras = ["asyncio"], version = "^2.0.1"}
-python-dateutil = "^2.8.2"
-mergedeep = "^1.3.4"
-SQLAlchemy = {extras = ["asyncio"], version = "^1.4.43"}
-alembic = "^1.7.5"
-tqdm = "^4.62.3"
-selenium = "^4.1.0"
-selenium-wire = "2.1.2"
-user-agent = "^0.1.10"
-aiohttp = "^3.8.1"
-aiohttp-socks = "^0.7.1"
-rich = "^12.4.4"
-orjson = "^3.6.5"
-
-lxml = { version = "^4.9.1", optional = true }
-textual = "^0.5.0"
-aiofiles = "^22.1.0"
-aiopath = "^0.6.11"
-dill = "^0.3.6"
-websockets = "^10.4"
-
-ultima-scraper-renamer = "0.0.5"
-ultima-scraper-api = "0.0.2.3"
-
-[tool.poetry.extras]
-performance = ["lxml"]
+ultima-scraper-api = "0.0.2.4"
+ultima-scraper-renamer = "0.0.6"
+ultima-scraper-collection = "0.0.0.1"
 
 [tool.poetry.dev-dependencies]
-pyinstaller = {version = "^5.0.1", markers = "sys_platform == 'win32'"}
+pyinstaller = { version = "^5.0.1", markers = "sys_platform == 'win32'" }
 requests-html = "^0.10.0"
 black = "^22.6.0"
 

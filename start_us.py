@@ -24,7 +24,6 @@ main_test.check_start_up()
 if __name__ == "__main__":
     import ultima_scraper_api.apis.api_helper as api_helper
     import ultima_scraper_api.helpers.main_helper as main_helper
-    from ultima_scraper_api.apis.dashboard_controller_api import DashboardControllerAPI
     from ultima_scraper_collection.managers.filesystem_manager import FilesystemManager
 
     from ultima_scraper.ultima_scraper import UltimaScraper
@@ -46,10 +45,6 @@ if __name__ == "__main__":
     USR = UltimaScraper(global_settings)
 
     async def main():
-        dashboard_controller_api = (
-            DashboardControllerAPI(config) if config.settings.tui.active else None
-        )
-        USR.ui_manager.dashboard_controller_api = dashboard_controller_api
         while True:
             site_options = await USR.option_manager.create_option(
                 site_names, "sites", domain
@@ -72,11 +67,5 @@ if __name__ == "__main__":
             elif loop_timeout:
                 print(f"Pausing scraper for {loop_timeout} seconds.")
                 await asyncio.sleep(float(loop_timeout))
-        # if dashboard_controller_api:
-        #     if dashboard_controller_api.background_task.thread:
-        #         dashboard_controller_api.background_task.thread.join()
-        #         pass
-
-        #     pass
 
     asyncio.run(main())

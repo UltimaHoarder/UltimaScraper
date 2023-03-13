@@ -891,7 +891,7 @@ python-versions = ">=3.7"
 
 [[package]]
 name = "ultima-scraper-api"
-version = "0.0.2.4"
+version = "0.0.2.5"
 description = ""
 category = "main"
 optional = false
@@ -901,7 +901,6 @@ python-versions = ">=3.10,<4.0"
 aiofiles = ">=22.1.0,<23.0.0"
 aiohttp = ">=3.8.4,<4.0.0"
 aiohttp-socks = ">=0.7.1,<0.8.0"
-alembic = ">=1.8.1,<2.0.0"
 beautifulsoup4 = ">=4.11.1,<5.0.0"
 dill = ">=0.3.6,<0.4.0"
 lxml = ">=4.9.1,<5.0.0"
@@ -914,13 +913,11 @@ requests = {version = "2.28.2", extras = ["socks"]}
 Sphinx = ">=5.3.0,<6.0.0"
 sphinx-autoapi = ">=2.0.0,<3.0.0"
 sphinx-rtd-theme = ">=1.1.1,<2.0.0"
-SQLAlchemy = ">=2.0.0,<3.0.0"
 user-agent = ">=0.1.10,<0.2.0"
-websockets = ">=10.4,<11.0"
 
 [[package]]
 name = "ultima-scraper-collection"
-version = "0.0.0.1"
+version = "0.0.0.2"
 description = ""
 category = "main"
 optional = false
@@ -931,12 +928,12 @@ alembic = ">=1.9.2,<2.0.0"
 psycopg2 = ">=2.9.5,<3.0.0"
 sqlalchemy = ">=2.0.1,<3.0.0"
 tqdm = ">=4.65.0,<5.0.0"
-ultima-scraper-api = "0.0.2.4"
-ultima-scraper-renamer = "0.0.6"
+ultima-scraper-api = "0.0.2.5"
+ultima-scraper-renamer = "0.0.7"
 
 [[package]]
 name = "ultima-scraper-renamer"
-version = "0.0.6"
+version = "0.0.7"
 description = ""
 category = "main"
 optional = false
@@ -945,8 +942,8 @@ python-versions = ">=3.10,<4.0"
 [package.dependencies]
 orjson = ">=3.8.3,<4.0.0"
 tqdm = ">=4.64.1,<5.0.0"
-ultima-scraper-api = "0.0.2.4"
-ultima-scraper-collection = "0.0.0.1"
+ultima-scraper-api = "0.0.2.5"
+ultima-scraper-collection = "0.0.0.2"
 
 [[package]]
 name = "unidecode"
@@ -992,7 +989,7 @@ python-versions = ">=3.7"
 name = "websockets"
 version = "10.4"
 description = "An implementation of the WebSocket Protocol (RFC 6455 & 7692)"
-category = "main"
+category = "dev"
 optional = false
 python-versions = ">=3.7"
 
@@ -1031,7 +1028,7 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10.1 <3.12"
-content-hash = "1198a0c5858bf8a5f33287e2c205c15185f345929dbd56d73fa653e4114d9d50"
+content-hash = "96126db8690a976faf776d15b368b07e3924fdc2f9d327ca76e958ca4edb51b3"
 
 [metadata.files]
 aiofiles = [
@@ -2029,16 +2026,16 @@ typing-extensions = [
     {file = "typing_extensions-4.5.0.tar.gz", hash = "sha256:5cb5f4a79139d699607b3ef622a1dedafa84e115ab0024e0d9c044a9479ca7cb"},
 ]
 ultima-scraper-api = [
-    {file = "ultima_scraper_api-0.0.2.4-py3-none-any.whl", hash = "sha256:ed29c4bd6ca7b170a1982fd57ffb27bc902986101cef5639b15cdc9676f2e67a"},
-    {file = "ultima_scraper_api-0.0.2.4.tar.gz", hash = "sha256:af6286aaffeb1146f26981ac682aab01e37e37f9f7c43b3c56c237467adb8155"},
+    {file = "ultima_scraper_api-0.0.2.5-py3-none-any.whl", hash = "sha256:99125e76c5f0ab77cadcc2e744e7e41d7b390e543215cd9a8695c9a683383b42"},
+    {file = "ultima_scraper_api-0.0.2.5.tar.gz", hash = "sha256:c4662596a2b9f0df183f198b3cc930de2b563ecd6c9ea8656264296396bd131c"},
 ]
 ultima-scraper-collection = [
-    {file = "ultima_scraper_collection-0.0.0.1-py3-none-any.whl", hash = "sha256:5da2820cd7377707108d3760904dd29a9b6d37ec874ac06ada8615b4e4248883"},
-    {file = "ultima_scraper_collection-0.0.0.1.tar.gz", hash = "sha256:c71eb3081e6807b0ec035b8b6fdfec4ad0ed8b319227ccbb40d38f3d69ee9eb0"},
+    {file = "ultima_scraper_collection-0.0.0.2-py3-none-any.whl", hash = "sha256:b7ed8c07697252aa9914c8d790d6f7735dec826e7c04cfe43c2e2895fd6794b6"},
+    {file = "ultima_scraper_collection-0.0.0.2.tar.gz", hash = "sha256:4ed00a7226a24d3d3674ab3459fad820e0754b6ec24730e2002aa1d6c011b280"},
 ]
 ultima-scraper-renamer = [
-    {file = "ultima_scraper_renamer-0.0.6-py3-none-any.whl", hash = "sha256:388bc3d560ffd4db8012775e8ff8603a2190ac5267c4f98f6c36467a54c302bd"},
-    {file = "ultima_scraper_renamer-0.0.6.tar.gz", hash = "sha256:2e63b0ae762b2a519a3b310ced2246135e01d4e69b9721b84d8b51147ecdb338"},
+    {file = "ultima_scraper_renamer-0.0.7-py3-none-any.whl", hash = "sha256:126181619ff15e24b2f2934bbf432c8ccdd3144a1a513be0fe4afacf745285d6"},
+    {file = "ultima_scraper_renamer-0.0.7.tar.gz", hash = "sha256:ec2085e84a79b929dccd606ff0d7ae452ea3c1fb6fbcb003e59091460b8336ef"},
 ]
 unidecode = [
     {file = "Unidecode-1.3.6-py3-none-any.whl", hash = "sha256:547d7c479e4f377b430dd91ac1275d593308dce0fc464fb2ab7d41f82ec653be"},

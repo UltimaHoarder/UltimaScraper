@@ -64,8 +64,6 @@ class UltimaScraper:
         site_settings = api.get_site_settings()
         if not (global_settings and site_settings):
             return
-        if api.dashboard_controller_api:
-            await api.dashboard_controller_api.change_title(api.site_name)
         await self.process_profiles(api, global_settings)
         subscription_array: list[user_types] = []
         auth_count = 0
@@ -181,12 +179,6 @@ class UltimaScraper:
                 if not user.scrape_whitelist
                 else user.scrape_whitelist
             )
-            # content_options = await main_helper.OptionsFormat(
-            #     content_types_keys,
-            #     "contents",
-            #     auto_api_choice,
-            #     self.datascraper.api.dashboard_controller_api,
-            # ).formatter()
 
             content_options = await self.option_manager.create_option(
                 content_types_keys, "contents", auto_api_choice

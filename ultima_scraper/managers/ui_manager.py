@@ -1,7 +1,7 @@
 import asyncio
 from typing import Any
 
-from ultima_scraper_api.apis.dashboard_controller_api import DashboardControllerAPI
+from ultima_scraper.managers.dashboard_controller_api import DashboardControllerAPI
 
 
 class UiManager:

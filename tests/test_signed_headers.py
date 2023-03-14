@@ -17,10 +17,11 @@ async def example(
         return authed
 
     authed = await authenticate()
-    signed_headers = authed.session_manager.create_signed_headers(link, time_=time)
-    static_1, _, static_2, static_3 = signed_headers["sign"].split(":")
+    signed_headers = authed.session_manager.create_signed_headers(link, auth_id, time)
+    new_sign = signed_headers["sign"]
+    static_1, _, static_2, static_3 = new_sign.split(":")
     middle_part = dynamic_param.split(":")[1]
-    assert f"{static_1}:{middle_part}:{static_2}:{static_3}" == signed_headers["sign"]
+    assert f"{static_1}:{middle_part}:{static_2}:{static_3}" == new_sign
 
 
 if __name__ == "__main__":

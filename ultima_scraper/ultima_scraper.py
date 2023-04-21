@@ -49,7 +49,7 @@ class UltimaScraper:
             datascraper.filesystem_manager.activate_directory_manager(api_)
             await self.start_datascraper(datascraper)
         stop_time = str(int(timeit.default_timer() - archive_time) / 60)[:4]
-        print("Archive Completed in " + stop_time + " Minutes")
+        await self.ui_manager.display(f"Archive Completed in {stop_time} Minutes")
         return api_
 
     async def start_datascraper(
@@ -162,16 +162,17 @@ class UltimaScraper:
         JBM = datascraper.api.job_manager
         site_settings = datascraper.api.get_site_settings()
         content_types = datascraper.api.ContentTypes()
-        content_types_keys = await content_types.get_keys()
-        media_types = datascraper.api.Locations()
-        media_types_keys = await media_types.get_keys()
+        content_types_keys = content_types.get_keys()
+        media_types = datascraper.api.MediaTypes()
+        media_types_keys = media_types.get_keys()
 
         for user in user_list:
 
             await filesystem_manager.create_directory_manager(datascraper.api, user)
             await filesystem_manager.format_directories(user)
             metadata_manager = MetadataManager(user, filesystem_manager)
-            await metadata_manager.fix_archived_db()
+            await metadata_manager.process_legacy_metadata()
+            datascraper.metadata_manager_users[user.id] = metadata_manager
 
             local_jobs: list[CustomJob] = []
             auto_api_choice = (

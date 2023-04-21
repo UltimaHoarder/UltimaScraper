@@ -10,8 +10,9 @@ class UiManager:
         self.mode: str = "standard"
         self.dashboard_controller_api: DashboardControllerAPI | None = None
 
-    async def display(self, data: Any):
-        match self.mode:
+    async def display(self, data: Any, mode: str = ""):
+        mode = mode if mode else self.mode
+        match mode:
             case "standard":
                 print(data)
             case "dashboard":

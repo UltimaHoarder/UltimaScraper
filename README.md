@@ -1,6 +1,7 @@
 # UltimaScraper (Python 3.10.1+)
 [![Code style: black](https://img.shields.io/badge/code%20style-black-000000.svg)](https://github.com/psf/black)
 [![Twitter](https://img.shields.io/twitter/url/https/twitter.com/0xHoarder.svg?style=social&label=Follow%200xHoarder)](https://twitter.com/0xHoarder)
+[![](https://dcbadge.vercel.app/api/server/JNKx6QsZYE?style=flat)](https://discord.gg/JNKx6QsZYE)
 # ![app-token](ultima_scraper/docs/assets/img/64255399-96a86700-cf21-11e9-8c62-87a483f33701.png)
 # 27th January 2023 Migration
     You can either start the script or create the __settings__ and __user_data__ folders manually.

@@ -9,12 +9,12 @@ import requests
 
 # API request limit is around 30, so it fails
 # local_commit = "2ca95beec5dd526b9b825497dc6227aafbaf67ad"
-# response = requests.get("https://api.github.com/repos/digitalcriminal/onlyfans/branches/master")
+# response = requests.get("https://api.github.com/repos/digitalcriminal/UltimaScraper/branches/master")
 # response_json = response.json()
 # commit_id = response_json["commit"]["sha"]
-# downloaded = requests.get(f"https://github.com/DIGITALCRIMINAL/OnlyFans/archive/{commit_id}.zip")
+# downloaded = requests.get(f"https://github.com/DIGITALCRIMINAL/UltimaScraper/archive/{commit_id}.zip")
 downloaded = requests.get(
-    f"https://github.com/DIGITALCRIMINALS/OnlyFans/archive/refs/heads/master.zip"
+    f"https://github.com/DIGITALCRIMINALS/UltimaScraper/archive/refs/heads/master.zip"
 )
 content = io.BytesIO(downloaded.content)
 # Zip download for manual extraction

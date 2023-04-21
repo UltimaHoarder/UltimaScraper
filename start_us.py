@@ -41,14 +41,13 @@ if __name__ == "__main__":
                 site_names, "sites", domain
             )
             for site_name in site_options.final_choices:
-                api = await USR.start(
+                _api = await USR.start(
                     config,
                     site_name,
                 )
-                if api:
-                    await api.close_pools()
-                    await asyncio.sleep(1)
             if exit_on_completion:
+                for datascraper in USR.datascraper_manager.datascrapers:
+                    await datascraper.api.close_pools()
                 await USR.ui_manager.display("Now exiting")
                 break
             elif not infinite_loop:
@@ -56,7 +55,7 @@ if __name__ == "__main__":
                 input()
             elif loop_timeout:
                 await USR.ui_manager.display(
-                    "Pausing scraper for {loop_timeout} seconds"
+                    f"Pausing scraper for {loop_timeout} seconds"
                 )
                 await asyncio.sleep(float(loop_timeout))
 

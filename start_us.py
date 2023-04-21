@@ -1,8 +1,6 @@
 #!/usr/bin/env python3
 import argparse
 import asyncio
-import sys
-from sys import exit
 from typing import Literal, get_args
 
 parser = argparse.ArgumentParser()
@@ -10,15 +8,8 @@ parser.add_argument(
     "-v", "--verbose", help="increase output verbosity", action="store_true"
 )
 parsed_args = parser.parse_args()
-try:
-    from tests import main_test
-except SyntaxError:
-    version_info = (
-        f"{sys.version_info.major}.{sys.version_info.minor}.{sys.version_info.micro}"
-    )
-    string = f"You're executing the script with Python {version_info}. Execute the script with Python 3.10.1+"
-    print(string)
-    exit()
+from tests import main_test
+
 main_test.check_start_up()
 
 if __name__ == "__main__":
@@ -58,14 +49,15 @@ if __name__ == "__main__":
                     await api.close_pools()
                     await asyncio.sleep(1)
             if exit_on_completion:
-                # We need to exit all threads, otherwise script can't close and just hangs
-                print("Now exiting.")
+                await USR.ui_manager.display("Now exiting")
                 break
             elif not infinite_loop:
-                print("Input anything to continue")
+                await USR.ui_manager.display("Input anything to continue")
                 input()
             elif loop_timeout:
-                print(f"Pausing scraper for {loop_timeout} seconds.")
+                await USR.ui_manager.display(
+                    "Pausing scraper for {loop_timeout} seconds"
+                )
                 await asyncio.sleep(float(loop_timeout))
 
     asyncio.run(main())

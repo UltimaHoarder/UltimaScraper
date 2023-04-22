@@ -292,7 +292,7 @@ python-versions = ">=2.7, !=3.0.*, !=3.1.*, !=3.2.*, !=3.3.*"
 
 [[package]]
 name = "importlib-metadata"
-version = "6.5.0"
+version = "6.5.1"
 description = "Read metadata from Python packages"
 category = "dev"
 optional = false
@@ -918,7 +918,7 @@ win32-setctime = {version = ">=1.1.0,<2.0.0", markers = "sys_platform == \"win32
 
 [[package]]
 name = "ultima-scraper-collection"
-version = "1.0.2"
+version = "1.0.3"
 description = ""
 category = "main"
 optional = false
@@ -1040,7 +1040,7 @@ testing = ["big-O", "flake8 (<5)", "jaraco.functools", "jaraco.itertools", "more
 [metadata]
 lock-version = "1.1"
 python-versions = "^3.10 <3.12"
-content-hash = "e4ba3078e1248dcd347d119b743f942ecdae050665eefba05065640b5413630e"
+content-hash = "58912eac96fd8106681d1406fee189c03903fbbb7dcf9b6f77cdfc85820ccc4b"
 
 [metadata.files]
 aiofiles = [
@@ -1449,8 +1449,8 @@ imagesize = [
     {file = "imagesize-1.4.1.tar.gz", hash = "sha256:69150444affb9cb0d5cc5a92b3676f0b2fb7cd9ae39e947a5e11a36b4497cd4a"},
 ]
 importlib-metadata = [
-    {file = "importlib_metadata-6.5.0-py3-none-any.whl", hash = "sha256:03ba783c3a2c69d751b109fc0c94a62c51f581b3d6acf8ed1331b6d5729321ff"},
-    {file = "importlib_metadata-6.5.0.tar.gz", hash = "sha256:7a8bdf1bc3a726297f5cfbc999e6e7ff6b4fa41b26bba4afc580448624460045"},
+    {file = "importlib_metadata-6.5.1-py3-none-any.whl", hash = "sha256:cd4687a8df60d9aefd424ed9364a8f29def203a9482ec8eb8e8070ef06075f89"},
+    {file = "importlib_metadata-6.5.1.tar.gz", hash = "sha256:b986d197242e4e9960a12743a6ec5a9fc8b3d7054612d90489452170785c98a5"},
 ]
 jinja2 = [
     {file = "Jinja2-3.1.2-py3-none-any.whl", hash = "sha256:6088930bfe239f0e6710546ab9c19c9ef35e29792895fed6e6e31a023a182a61"},
@@ -2054,8 +2054,8 @@ ultima-scraper-api = [
     {file = "ultima_scraper_api-1.0.5.tar.gz", hash = "sha256:ddf63a450206d4622ff382b298d0f59dc2d0c5f46aca0e6a181351ca53840023"},
 ]
 ultima-scraper-collection = [
-    {file = "ultima_scraper_collection-1.0.2-py3-none-any.whl", hash = "sha256:a096b84130402da5c80a70e1fd2708162432a9385e24cbfd66ee233fc1410dde"},
-    {file = "ultima_scraper_collection-1.0.2.tar.gz", hash = "sha256:a92c619f7b279d63d4b2517285299cbeb2ef8022216925060377c8ce3b7b3c9b"},
+    {file = "ultima_scraper_collection-1.0.3-py3-none-any.whl", hash = "sha256:a9d9d0509b3b39a5e92310ee09b522dca506e6bc0d95cf35f08734a0b1912fc8"},
+    {file = "ultima_scraper_collection-1.0.3.tar.gz", hash = "sha256:4af5266ce0c235f5d59c04b72668cb4c3e38be760803071b02111993e6ecb0af"},
 ]
 ultima-scraper-renamer = [
     {file = "ultima_scraper_renamer-1.0.0-py3-none-any.whl", hash = "sha256:0baf27b10b9c9852cd3eb313d8c74bb2615b8ec495f0ce63869ed30ad73f8732"},

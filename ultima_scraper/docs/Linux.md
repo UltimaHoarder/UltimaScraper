@@ -95,7 +95,7 @@ We now are inside of our python3.10 virtual enviroment. This makes it so that ot
 
 	`pip install poetry`
 	
-	`poetry install --no-dev`
+	`poetry install --only main`
 
 6. Exit Virtual Enviroment
 

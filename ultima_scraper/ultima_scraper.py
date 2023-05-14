@@ -65,7 +65,7 @@ class UltimaScraper:
         if not (global_settings and site_settings):
             return
         await self.process_profiles(api, global_settings)
-        subscription_array: list[user_types] = []
+        scrapable_users: list[user_types] = []
         auth_count = 0
         profile_options = await self.option_manager.create_option(
             api.auths, "profiles", site_settings.auto_profile_choice
@@ -74,18 +74,18 @@ class UltimaScraper:
         # await dashboard_controller.update_main_table(api)
         identifiers = []
         if site_settings.auto_model_choice:
-            performer_options = await self.option_manager.create_option(
-                subscription_array, "subscriptions", site_settings.auto_model_choice
+            subscription_options = await self.option_manager.create_option(
+                scrapable_users, "subscriptions", site_settings.auto_model_choice
             )
-            if not performer_options.scrape_all():
-                identifiers = performer_options.return_auto_choice()
-            self.option_manager.performer_options = performer_options
+            if not subscription_options.scrape_all():
+                identifiers = subscription_options.return_auto_choice()
+            self.option_manager.performer_options = subscription_options
         for auth in api.auths:
             auth: auth_types = auth
             if not auth.auth_details:
                 continue
             setup = False
-            setup, subscriptions = await datascraper.account_setup(
+            setup, _subscriptions = await datascraper.account_setup(
                 auth, datascraper, site_settings, identifiers
             )
             if not setup:
@@ -102,13 +102,13 @@ class UltimaScraper:
                 main_helper.export_json(auth_details, user_auth_filepath)
                 continue
             auth_count += 1
-            subscription_array.extend(subscriptions)
+            scrapable_users.extend(await auth.get_scrapable_users())
             await main_helper.process_webhooks(
                 api, "auth_webhook", "succeeded", global_settings
             )
             # Do stuff with authed user
         subscription_options = await self.option_manager.create_option(
-            subscription_array, "subscriptions", site_settings.auto_model_choice
+            scrapable_users, "subscriptions", site_settings.auto_model_choice
         )
         self.option_manager.subscription_options = subscription_options
         final_job_user_list = await datascraper.configure_datascraper_jobs()

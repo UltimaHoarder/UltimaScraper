@@ -1,4 +1,5 @@
 import asyncio
+from datetime import datetime
 from typing import Any
 
 from ultima_scraper.managers.dashboard_controller_api import DashboardControllerAPI
@@ -14,7 +15,7 @@ class UiManager:
         mode = mode if mode else self.mode
         match mode:
             case "standard":
-                print(data)
+                print(f"[{datetime.now().replace(microsecond=0)}] {data}")
             case "dashboard":
                 if self.dashboard_controller_api:
                     intask = self.dashboard_controller_api.datatable_monitor(data)

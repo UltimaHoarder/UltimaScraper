@@ -19,6 +19,8 @@ from ultima_scraper_collection.managers.option_manager import OptionManager
 
 from ultima_scraper.managers.ui_manager import UiManager
 
+from ultima_scraper_api.apis.onlyfans.classes.only_drm import OnlyDRM
+
 api_types = ultima_scraper_api.api_types
 auth_types = ultima_scraper_api.auth_types
 user_types = ultima_scraper_api.user_types
@@ -107,6 +109,26 @@ class UltimaScraper:
                 api, "auth_webhook", "succeeded", global_settings
             )
             # Do stuff with authed user
+            if not auth.drm:
+                device_client_id_blob_path = (
+                    datascraper.filesystem_manager.devices_directory.joinpath(
+                        "device_client_id_blob"
+                    )
+                )
+                device_private_key_path = (
+                    datascraper.filesystem_manager.devices_directory.joinpath(
+                        "device_private_key"
+                    )
+                )
+                if (
+                    device_client_id_blob_path.exists()
+                    and device_private_key_path.exists()
+                ):
+                    auth.drm = OnlyDRM(
+                        device_client_id_blob_path,
+                        device_private_key_path,
+                        auth,
+                    )
         subscription_options = await self.option_manager.create_option(
             scrapable_users, "subscriptions", site_settings.auto_model_choice
         )

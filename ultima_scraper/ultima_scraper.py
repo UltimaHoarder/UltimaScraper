@@ -7,6 +7,7 @@ import ultima_scraper_api.classes.make_settings as make_settings
 import ultima_scraper_api.helpers.main_helper as main_helper
 import ultima_scraper_collection.managers.datascraper_manager.datascrapers.fansly as m_fansly
 import ultima_scraper_collection.managers.datascraper_manager.datascrapers.onlyfans as m_onlyfans
+from ultima_scraper_api.apis.onlyfans.classes.only_drm import OnlyDRM
 from ultima_scraper_api.classes.make_settings import Config, Settings
 from ultima_scraper_api.managers.job_manager.jobs.custom_job import CustomJob
 from ultima_scraper_collection.managers.datascraper_manager.datascraper_manager import (
@@ -18,8 +19,6 @@ from ultima_scraper_collection.managers.metadata_manager.metadata_manager import
 from ultima_scraper_collection.managers.option_manager import OptionManager
 
 from ultima_scraper.managers.ui_manager import UiManager
-
-from ultima_scraper_api.apis.onlyfans.classes.only_drm import OnlyDRM
 
 api_types = ultima_scraper_api.api_types
 auth_types = ultima_scraper_api.auth_types
@@ -39,7 +38,6 @@ class UltimaScraper:
         site_name: str,
         api_: api_types | None = None,
     ):
-
         archive_time = timeit.default_timer()
         if not api_:
             api_ = ultima_scraper_api.select_api(site_name, config)
@@ -101,7 +99,7 @@ class UltimaScraper:
                 user_auth_filepath = profiles_directory.joinpath(
                     api.site_name, auth.auth_details.username, "auth.json"
                 )
-                main_helper.export_json(auth_details, user_auth_filepath)
+                # main_helper.export_json(auth_details, user_auth_filepath)
                 continue
             auth_count += 1
             scrapable_users.extend(await auth.get_scrapable_users())
@@ -129,6 +127,7 @@ class UltimaScraper:
                         device_private_key_path,
                         auth,
                     )
+        await api.remove_invalid_auths()
         subscription_options = await self.option_manager.create_option(
             scrapable_users, "subscriptions", site_settings.auto_model_choice
         )
@@ -189,7 +188,6 @@ class UltimaScraper:
         media_types_keys = media_types.get_keys()
 
         for user in user_list:
-
             await filesystem_manager.create_directory_manager(datascraper.api, user)
             await filesystem_manager.format_directories(user)
             metadata_manager = MetadataManager(user, filesystem_manager)

@@ -134,7 +134,7 @@ class UltimaScraper:
         self.option_manager.subscription_options = subscription_options
         final_job_user_list = await datascraper.configure_datascraper_jobs()
         await self.assign_jobs(final_job_user_list)
-        await datascraper.datascraper.api.job_manager.start_queue()
+        await datascraper.datascraper.api.job_manager.process_jobs()
         # if global_settings.helpers.delete_empty_directories:
         #     for job_user in job_user_list:
         #         await main_helper.delete_empty_directories(
@@ -179,6 +179,7 @@ class UltimaScraper:
         datascraper = self.datascraper_manager.active_datascraper
         if not datascraper:
             return
+        await self.ui_manager.display("Assigning Jobs")
         filesystem_manager = datascraper.filesystem_manager
         JBM = datascraper.api.job_manager
         site_settings = datascraper.api.get_site_settings()
@@ -228,5 +229,5 @@ class UltimaScraper:
 
             for local_job in local_jobs:
                 JBM.queue.put_nowait(local_job)
-            await asyncio.sleep(1)
+            await asyncio.sleep(0)
         pass

@@ -134,7 +134,7 @@ class UltimaScraper:
         self.option_manager.subscription_options = subscription_options
         final_job_user_list = await datascraper.configure_datascraper_jobs()
         await self.assign_jobs(final_job_user_list)
-        await datascraper.datascraper.api.job_manager.queue.join()
+        await datascraper.datascraper.api.job_manager.start_queue()
         # if global_settings.helpers.delete_empty_directories:
         #     for job_user in job_user_list:
         #         await main_helper.delete_empty_directories(

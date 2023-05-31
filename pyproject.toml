@@ -13,8 +13,8 @@ include = ["ultima_scraper/py.typed"]
 [tool.poetry.dependencies]
 python = "^3.10 <3.12"
 requests = "^2.26.0"
-ultima-scraper-api = "1.1.2"
-ultima-scraper-collection = "1.1.1"
+ultima-scraper-api = "1.1.3"
+ultima-scraper-collection = "1.1.2"
 ultima-scraper-renamer = "1.1.0"
 [tool.poetry.dev-dependencies]
 pyinstaller = { version = "^5.0.1", markers = "sys_platform == 'win32'" }

@@ -12,8 +12,7 @@ async def example(
 ):
     async def authenticate():
         onlyfans_api = OnlyFansAPI(Config())
-        auth = onlyfans_api.add_auth()
-        authed = await auth.login(guest=True)
+        authed = await onlyfans_api.login(guest=True)
         return authed
 
     authed = await authenticate()

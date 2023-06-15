@@ -82,7 +82,7 @@ class UltimaScraper:
             self.option_manager.performer_options = subscription_options
         for auth in api.auths:
             auth: auth_types = auth
-            if not auth.auth_details:
+            if not auth.get_auth_details():
                 continue
             setup = False
             setup, _subscriptions = await datascraper.account_setup(
@@ -94,10 +94,10 @@ class UltimaScraper:
                         api, "auth_webhook", "failed", global_settings
                     )
                 auth_details: dict[str, Any] = {}
-                auth_details["auth"] = auth.auth_details.export()
+                auth_details["auth"] = auth.get_auth_details().export()
                 profiles_directory = datascraper.filesystem_manager.profiles_directory
-                user_auth_filepath = profiles_directory.joinpath(
-                    api.site_name, auth.auth_details.username, "auth.json"
+                _user_auth_filepath = profiles_directory.joinpath(
+                    api.site_name, auth.get_auth_details().username, "auth.json"
                 )
                 # main_helper.export_json(auth_details, user_auth_filepath)
                 continue
@@ -168,9 +168,9 @@ class UltimaScraper:
             if not json_auth.get("active", None):
                 continue
             json_auth["username"] = user_profile.name
-            auth = api.add_auth(json_auth)
-            auth.session_manager.proxies = global_settings.proxies
-            datas = {"auth": auth.auth_details.export()}
+            authed = await api.login(json_auth)
+            authed.session_manager.add_proxies(global_settings.proxies)
+            datas = {"auth": authed.get_auth_details().export()}
             if datas:
                 main_helper.export_json(datas, user_auth_filepath)
         return api

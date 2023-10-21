@@ -14,9 +14,11 @@ import requests
 # commit_id = response_json["commit"]["sha"]
 # downloaded = requests.get(f"https://github.com/DIGITALCRIMINAL/UltimaScraper/archive/{commit_id}.zip")
 downloaded = requests.get(
-    f"https://github.com/DIGITALCRIMINALS/UltimaScraper/archive/refs/heads/master.zip"
+    f"https://github.com/DIGITALCRIMINAL/UltimaScraper/archive/refs/heads/master.zip"
 )
 content = io.BytesIO(downloaded.content)
+
+
 # Zip download for manual extraction
 # download_path = "OnlyFans DataScraper.zip"
 # with open(download_path, "wb") as f:

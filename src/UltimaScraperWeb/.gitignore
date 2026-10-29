@@ -1,0 +1,2 @@
+# The built WebUI; scripts/release/build_webui_package.sh copies it here.
+ultima_webui_server/static/

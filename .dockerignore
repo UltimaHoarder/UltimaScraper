@@ -1,8 +1,96 @@
-.git
-.logs
-.profiles
-.settings
-.sites
-__settings__
-__user_data__
-__pycache__
+# Python
+__pycache__/
+*.py[cod]
+*$py.class
+*.so
+.Python
+*.egg-info/
+dist/
+build/
+*.egg
+
+# Virtual environments
+.venv/
+venv/
+ENV/
+env/
+node_modules/
+**/.venv/
+**/venv/
+**/node_modules/
+**/__pycache__/
+**/.pytest_cache/
+**/.ruff_cache/
+**/.mypy_cache/
+**/dist/
+**/build/
+**/*.egg-info/
+
+# IDE
+.vscode/
+.idea/
+*.swp
+*.swo
+*~
+
+# Git
+.git/
+.gitignore
+.gitattributes
+
+# Logs
+logs/
+*.log
+
+# User data
+__user_data__/
+plugins/.runtime/
+
+# Database
+*.db
+*.sqlite
+*.sqlite3
+
+# Config (may contain sensitive data)
+config.json
+*.env
+.env.*
+
+# Testing
+tests/
+src/UltimaScraperWeb/webui/tests/
+src/UltimaScraperWeb/webui/test-results/
+src/UltimaScraperWeb/webui/playwright-report/
+.pytest_cache/
+.coverage
+htmlcov/
+coverage.json
+.tox/
+
+# Documentation
+docs/
+*.md
+!README.md
+
+# Frontend sources are built by the dedicated WebUI image.
+src/UltimaScraperWeb/webui/
+
+# Temporary files
+*.tmp
+*.temp
+.DS_Store
+Thumbs.db
+
+# Backup files
+*.bak
+*.backup
+backups/
+
+# Docker
+Dockerfile
+docker-compose*.yml
+.dockerignore
+
+# CI/CD
+.github/
+.gitlab-ci.yml

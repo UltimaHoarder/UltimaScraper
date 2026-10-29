@@ -1,0 +1,116 @@
+.user-conflict-navigator {
+  align-items: center;
+  background: linear-gradient(90deg, rgba(88, 166, 255, 0.09), rgba(88, 166, 255, 0.025));
+  border: 1px solid rgba(88, 166, 255, 0.22);
+  border-radius: 10px;
+  display: flex;
+  gap: 18px;
+  justify-content: space-between;
+  padding: 11px 13px;
+}
+
+.user-conflict-navigator__copy {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  min-width: 0;
+}
+
+.user-conflict-navigator__kicker {
+  color: var(--color-accent-primary, #58a6ff);
+  font-size: 0.62rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.user-conflict-navigator__summary {
+  color: var(--color-text-secondary, #9da7b3);
+  font-size: 0.76rem;
+}
+
+.user-conflict-navigator__summary strong { color: var(--color-text-primary, #e6edf3); }
+
+.user-conflict-navigator__controls {
+  align-items: center;
+  display: flex;
+  flex: 0 0 auto;
+  gap: 7px;
+}
+
+.user-conflict-navigator button {
+  align-items: center;
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid rgba(255, 255, 255, 0.13);
+  border-radius: 7px;
+  color: var(--color-text-primary, #e6edf3);
+  cursor: pointer;
+  display: inline-flex;
+  font: inherit;
+  font-size: 0.68rem;
+  gap: 5px;
+  min-height: 34px;
+  padding: 7px 10px;
+}
+
+.user-conflict-navigator button:hover:not(:disabled) {
+  background: rgba(88, 166, 255, 0.12);
+  border-color: rgba(88, 166, 255, 0.42);
+}
+
+.user-conflict-navigator button:disabled { cursor: not-allowed; opacity: 0.42; }
+
+.user-conflict-navigator__position {
+  border-left: 1px solid rgba(255, 255, 255, 0.1);
+  border-right: 1px solid rgba(255, 255, 255, 0.1);
+  color: var(--color-text-tertiary, #8b949e);
+  font-size: 0.68rem;
+  min-width: 92px;
+  padding: 0 10px;
+  text-align: center;
+}
+
+.user-conflict-navigator__position strong { color: var(--color-text-primary, #e6edf3); }
+
+:root[data-theme='ultima-atlas'] .user-conflict-navigator {
+  background:
+    repeating-linear-gradient(to bottom, rgba(130, 214, 178, 0.02) 0, rgba(130, 214, 178, 0.02) 1px, transparent 2px, transparent 4px),
+    rgba(130, 214, 178, 0.035);
+  border-color: rgba(130, 214, 178, 0.24);
+  border-radius: 0;
+  box-shadow: inset 3px 0 0 #d9aa52;
+  font-family: var(--font-mono);
+}
+
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__kicker { color: #d9aa52; letter-spacing: 0.18em; }
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__summary strong { color: #bde7d2; }
+
+:root[data-theme='ultima-atlas'] .user-conflict-navigator button {
+  background: rgba(130, 214, 178, 0.04);
+  border-color: rgba(130, 214, 178, 0.2);
+  border-radius: 0;
+  color: #bde7d2;
+  font-family: var(--font-mono);
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .user-conflict-navigator button:hover:not(:disabled) {
+  background: rgba(130, 214, 178, 0.1);
+  border-color: rgba(130, 214, 178, 0.4);
+}
+
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__position {
+  border-color: rgba(217, 170, 82, 0.2);
+  color: #8b968f;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__position strong { color: #d9aa52; }
+
+@media (max-width: 700px) {
+  .user-conflict-navigator { align-items: stretch; flex-direction: column; gap: 10px; }
+  .user-conflict-navigator__controls { justify-content: space-between; }
+  .user-conflict-navigator button { flex: 1; justify-content: center; }
+}

@@ -1,0 +1,422 @@
+/* Shared view layouts are retained; Atlas owns their surfaces and control chrome. */
+:root[data-theme='ultima-atlas'] body * { letter-spacing: 0 !important; }
+:root[data-theme='ultima-atlas'] body :is(input, select, textarea) {
+  background-color: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  border-color: var(--atlas-line);
+  border-radius: 2px;
+  max-width: 100%;
+  accent-color: var(--color-accent-primary);
+}
+:root[data-theme='ultima-atlas'] body :is(input, select, textarea):focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 2px;
+  box-shadow: none;
+}
+:root[data-theme='ultima-atlas'] body :is(button, a):focus-visible {
+  outline: 2px solid var(--color-accent-primary);
+  outline-offset: 3px;
+}
+:root[data-theme='ultima-atlas'] body button { border-radius: 2px; }
+:root[data-theme='ultima-atlas'] body input[type='checkbox'] { flex-shrink: 0; }
+:root[data-theme='ultima-atlas'] body button:disabled { cursor: not-allowed; opacity: 0.5; }
+:root[data-theme='ultima-atlas'] body pre { white-space: pre-wrap; overflow-wrap: anywhere; }
+
+/* Consistent full-width workspaces, with no second layer of page framing. */
+:root[data-theme='ultima-atlas'] body .atlas-main :is(
+  .users-page, .subscriptions-page, .content-library-page, .auths-page, .proxies-page,
+  .orders-page, .settings-page, .system-page, .tools-page, .logs-page, .media-page,
+  .statistics-page, .plugins-page, .webhooks-page, .user-profile-page,
+  .jobs-page.operations-ledger-page, .ultimur-chats-v2
+) { padding: 0; max-width: none; width: 100%; min-width: 0; }
+
+:root[data-theme='ultima-atlas'] body .atlas-main :is(
+  .ultimur-topbar, .settings-topbar, .system-topbar, .statistics-header,
+  .jobs-ledger-header, .ultimur-v2-header, .tools-header, .plugins-create-header
+) {
+  background: transparent;
+  border: 0;
+  border-bottom: 1px solid var(--atlas-line);
+  border-radius: 0;
+  box-shadow: none;
+  padding: 0 0 20px;
+  gap: 16px;
+  align-items: center;
+}
+:root[data-theme='ultima-atlas'] body .atlas-main :is(
+  .ultimur-topbar, .settings-topbar, .system-topbar, .statistics-header, .ultimur-v2-header
+)::before { display: none; }
+:root[data-theme='ultima-atlas'] body .atlas-main :is(
+  .ultimur-topbar__title, .settings-topbar__title, .system-topbar__title,
+  .statistics-header h1, .ultimur-v2-header__title, .jobs-ledger-heading h1, .tools-header h1
+) { font-size: 28px; line-height: 1.2; text-transform: uppercase; overflow-wrap: anywhere; }
+:root[data-theme='ultima-atlas'] body .atlas-main :is(
+  .ultimur-topbar__kicker, .settings-topbar__kicker, .system-topbar__kicker,
+  .ultimur-v2-eyebrow, .jobs-ledger-heading > span
+) { color: var(--atlas-muted); font: 10px var(--font-mono); }
+:root[data-theme='ultima-atlas'] body .atlas-main :is(
+  .ultimur-topbar__actions, .settings-topbar__actions, .system-topbar__actions,
+  .ultimur-v2-header__actions
+) { flex-wrap: wrap; min-width: 0; }
+
+/* Flat technical bands and dossiers. Repeated records retain a thin boundary. */
+:root[data-theme='ultima-atlas'] body .atlas-main :is(
+  .ultimur-v2-dossier, .ultimur-v2-slab, .ultimur-v2-ledger,
+  .ultimur-v2-ledger__item, .ultimur-v2-badge, .ultimur-v2-state,
+  .ultimur-v2-warning, .settings-tabs, .settings-content, .settings-actions,
+  .system-section, .system-kpi, .backend-info-item, .worker-card, .drive-card,
+  .statistics-kpi, .statistics-panel, .statistics-state, .statistics-summary,
+  .jobs-ledger, .job-creator, .creator-section, .creator-header, .creator-footer,
+  .queue-task-card, .task-description-box, .template-preview,
+  .auths-stats, .auth-card, .no-auths, .manage-section, .auth-test-step,
+  .network-route-card, .network-pool-card, .network-inventory, .network-inventory__toolbar,
+  .network-inventory__meta, .network-telemetry, .network-bulk-actions, .network-bulk-toolbar,
+  .network-proxy, .network-proxy-group__header,
+  .direct-connection-card, .proxy-card, .proxies-toolbar, .proxies-stats, .no-proxies,
+  .route-lab, .route-lab-recommendation, .analyzer-result-card,
+  .tools-panel, .tools-stat-card, .tools-preview-card, .mention-preview-card,
+  .migration-report, .migration-scan, .migration-scan__hero,
+  .migration-report__job-meta, .migration-report__metrics article,
+  .migration-postgres-report, .migration-commit-report,
+  .recovery-ledger__drawer-header, .migration-source-review,
+  .plugins-create-panel, .plugins-table-wrap, .plugins-list-item,
+  .webhook-card, .webhook-message, .webhook-messages-header,
+  .watch-stats-bar, .watch-add-section, .watch-list-table,
+  .profile-card, .ultimur-profile-card__rail, .ultimur-profile-card__ledger-cell,
+  .ultimur-profile-stat, .overview-section, .overview-left, .overview-right,
+  .overview-version-nav, .stat-pill, .paid-content-summary-block,
+  .profile-subscription-card, .content-tab, .profile-subscriptions-tab,
+  .user-conflict-navigator, .user-identifier-panel, .user-identifier-card,
+  .user-identifier-card.is-recommended, .paid-content-preview-card,
+  .content-library-toolbar, .content-card, .user-card, .subscription-card,
+  .users-filters-bar, .filters-bar, .selection-bar, .filter-bar,
+  .chats-container, .chat-list-panel, .message-panel, .chat-search,
+  .message-input-container, .message-header, .orders-inspector, .orders-toolbar
+) {
+  background: var(--atlas-surface);
+  border-color: var(--atlas-line);
+  border-radius: 0;
+  box-shadow: none;
+  backdrop-filter: none;
+}
+:root[data-theme='ultima-atlas'] body .atlas-main :is(
+  .settings-shell, .jobs-ledger, .job-creator, .tools-panel, .overview-section,
+  .content-tab, .profile-subscriptions-tab, .user-identifier-panel, .migration-report
+) { background: transparent; border-width: 0; }
+:root[data-theme='ultima-atlas'] body .atlas-main :is(
+  .fleet-register-page, .fleet-register, .fleet-register-toolbar, .fleet-register-summary,
+  .fleet-register-hero, .fleet-register-guide, .overview-left, .overview-right
+) { background: transparent; }
+:root[data-theme='ultima-atlas'] body .atlas-main .fleet-register-hero h1 { font-size: 28px; text-transform: uppercase; }
+:root[data-theme='ultima-atlas'] body .atlas-main .ultimur-profile-card .profile-card-name { font-family: var(--font-sans); font-size: 32px; line-height: 1.2; overflow-wrap: anywhere; }
+:root[data-theme='ultima-atlas'] body .atlas-main .profile-card :is(.badge-status, .badge-site, .badge-performer, .badge-favorite) { border-radius: 2px; }
+:root[data-theme='ultima-atlas'] body .atlas-main .profile-card .ultimur-profile-card__ledger-cell { background: transparent; border-color: var(--atlas-line); }
+:root[data-theme='ultima-atlas'] body .atlas-main .setting-item { background: transparent; border-width: 0 0 1px; padding: 16px 0; }
+:root[data-theme='ultima-atlas'] body .atlas-main .setting-item.checkbox label { display: flex; align-items: center; gap: 10px; }
+:root[data-theme='ultima-atlas'] body .atlas-main .settings-topbar__pill { color: var(--color-text-secondary); background: transparent; border-color: var(--atlas-line); }
+
+/* Shared record markup also backs authentication and archive statistics. */
+:root[data-theme='ultima-atlas'] body .atlas-main .screen-pad { display: flex; flex-direction: column; height: 100%; color: var(--color-text-primary); }
+:root[data-theme='ultima-atlas'] body .atlas-main :is(.sweep-line, .crt::before, .crt::after) { display: none; }
+:root[data-theme='ultima-atlas'] body .atlas-main .screen-head { display: flex; justify-content: space-between; align-items: center; gap: 12px; }
+:root[data-theme='ultima-atlas'] body .atlas-main .screen-title { font-size: 16px; margin: 0; text-shadow: none; }
+:root[data-theme='ultima-atlas'] body .atlas-main .screen-chip { padding: 4px 8px; font: 10px var(--font-mono); color: var(--color-text-secondary); background: var(--color-bg-tertiary); border: 1px solid var(--atlas-line); }
+:root[data-theme='ultima-atlas'] body .atlas-main .screen-chip.failed { color: var(--color-error); }
+:root[data-theme='ultima-atlas'] body .atlas-main .screen-chip.building { color: var(--color-warning); }
+:root[data-theme='ultima-atlas'] body .atlas-main .auth-card .screen-chip.building { color: var(--color-success); }
+:root[data-theme='ultima-atlas'] body .atlas-main .alien-metric-grid { display: grid; gap: 16px; }
+:root[data-theme='ultima-atlas'] body .atlas-main .alien-metric-cell { display: flex; flex-direction: column; gap: 6px; min-width: 0; }
+:root[data-theme='ultima-atlas'] body .atlas-main .alien-metric-label { font: 10px var(--font-mono); text-transform: uppercase; color: var(--atlas-muted); }
+:root[data-theme='ultima-atlas'] body .atlas-main .alien-metric-value { font-family: var(--font-mono); color: var(--color-text-primary); overflow-wrap: anywhere; text-shadow: none; }
+:root[data-theme='ultima-atlas'] body .atlas-main .auth-card .statistics-refresh-button { color: var(--color-text-primary) !important; background: var(--color-bg-tertiary) !important; border-color: var(--atlas-line) !important; }
+:root[data-theme='ultima-atlas'] body .atlas-main :is(
+  .settings-content, .creator-section, .ultimur-v2-slab, .ultimur-v2-dossier,
+  .statistics-panel, .system-section, .tools-panel, .overview-section
+) { border-top: 1px solid var(--atlas-line); }
+:root[data-theme='ultima-atlas'] body .atlas-main :is(
+  .network-route-card, .user-identifier-panel, .system-kpi, .ultimur-v2-header,
+  .ultimur-v2-slab, .ultimur-v2-warning, .ultimur-v2-state, .ultimur-v2-ledger__item
+)::after { display: none; }
+:root[data-theme='ultima-atlas'] body .atlas-main .proxies-page {
+  --network-panel: var(--atlas-surface);
+  --network-panel-soft: var(--color-bg-tertiary);
+  --network-line: var(--atlas-line);
+  --network-line-strong: #485557;
+  --network-accent-soft: var(--color-info-soft);
+}
+:root[data-theme='ultima-atlas'] body .atlas-main :is(.ultimur-v2-header__runtime-value, .network-inventory > .network-section-head) { background: var(--atlas-surface); box-shadow: none; border-color: var(--atlas-line); }
+:root[data-theme='ultima-atlas'] body .atlas-main :is(.ultimur-topbar__kicker, .network-kicker, .ultimur-v2-slab__eyebrow) { font-size: 10px; }
+:root[data-theme='ultima-atlas'] body .atlas-main .ultimur-v2-slab { padding: 0; background: transparent; border-width: 0; }
+:root[data-theme='ultima-atlas'] body .atlas-main .ultimur-v2-slab__header { padding: 16px 0; border-bottom: 1px solid var(--atlas-line); margin-bottom: 16px; }
+:root[data-theme='ultima-atlas'] body .atlas-main .ultimur-v2-slab__body { padding: 0; }
+:root[data-theme='ultima-atlas'] body .atlas-main .ultimur-v2-header__runtime { min-width: 0; }
+:root[data-theme='ultima-atlas'] body .atlas-main .jobs-page .job-creator { background: transparent; max-height: none; overflow: visible; }
+:root[data-theme='ultima-atlas'] body .atlas-main .jobs-page .creator-body { overflow: visible; padding: 24px; }
+:root[data-theme='ultima-atlas'] body .atlas-main .creator-section { background: transparent; border-width: 1px 0 0; border-radius: 0; padding: 20px 0; }
+:root[data-theme='ultima-atlas'] body .atlas-main .creator-header { padding: 16px 24px; background: transparent; }
+:root[data-theme='ultima-atlas'] body .atlas-main .jobs-ledger {
+  --ledger-panel: var(--color-bg-primary);
+  --ledger-panel-raised: var(--atlas-surface);
+  --ledger-line: var(--atlas-line);
+  --ledger-line-strong: #485557;
+}
+:root[data-theme='ultima-atlas'] body .atlas-main .jobs-ledger-header { padding: 0 0 20px; }
+:root[data-theme='ultima-atlas'] body .atlas-main :is(
+  .ultimur-v2-slab__title, .ultimur-v2-dossier__title, .section-title,
+  .settings-section h2, .statistics-panel h2
+) { color: var(--color-text-primary); font-size: 16px; }
+
+/* Controls keep their technical labels and existing event handlers. */
+:root[data-theme='ultima-atlas'] body :is(
+  .btn, .btn-secondary, .btn-reset, .btn-cancel, .btn-action, .view-btn, .filter-tab,
+  .tools-btn-secondary, .ultimur-topbar__btn, .network-button, .plugin-action-btn,
+  .plugins-cancel-btn, .plugins-list-add-btn, .plugins-create-toggle,
+  .auth-picker-option, .identity-preset-btn, .mode-btn, .filter-pill,
+  .content-library-tab, .content-library-filter-btn, .content-library-order-btn,
+  .content-library-search-input, .content-library-select, .network-search,
+  .jdm-panel-close, .analyzer-action-btn, .analyzer-nav-btn, .ops-action,
+  .filter-bar__button, .filter-bar__filters-btn, .filter-bar__loadouts-btn,
+  .filter-bar__order-btn, .btn-manage, .btn-test, .selection-bar button,
+  .selection-bar-floating button
+) {
+  background: var(--color-bg-tertiary);
+  color: var(--color-text-secondary);
+  border: 1px solid var(--atlas-line);
+  border-radius: 2px;
+  box-shadow: none;
+}
+:root[data-theme='ultima-atlas'] body :is(
+  .btn-primary, .btn-save, .btn-add, .btn-confirm, .btn-scrape, .btn-scrape-multiple,
+  .btn-action.btn-scrape, .btn-action.btn-view, .tools-btn-primary, .add-btn,
+  .network-button--primary, .ops-action-primary, .plugins-submit-btn, .plugin-action-btn--enable,
+  .plugin-action-btn--approve, .profile-subscription-card__scrape,
+  .profile-subscriptions-load-more, .send-button, .confirm-buy, .analyzer-action-btn.start
+) {
+  background: var(--color-accent-primary);
+  color: #101b1d;
+  border: 1px solid var(--color-accent-primary);
+  border-radius: 2px;
+  box-shadow: none;
+}
+:root[data-theme='ultima-atlas'] body :is(
+  .btn-primary, .btn-save, .btn-add, .btn-confirm, .btn-scrape, .tools-btn-primary,
+  .network-button--primary, .plugins-submit-btn, .send-button, .confirm-buy
+):hover:not(:disabled) { background: var(--color-accent-hover); color: #101b1d; }
+:root[data-theme='ultima-atlas'] body :is(
+  .btn-danger, .btn-delete, .plugin-action-btn--purge, .analyzer-action-btn.stop
+) { background: var(--color-error-soft); color: var(--color-error); border-color: var(--color-error); }
+:root[data-theme='ultima-atlas'] body :is(.btn-disable, .network-button--warning) { color: var(--color-warning); border-color: var(--color-warning); background: var(--color-warning-soft); }
+:root[data-theme='ultima-atlas'] body input::placeholder { color: var(--atlas-muted); opacity: 1; }
+:root[data-theme='ultima-atlas'] body :is(.form-hint, .field-hint, .form-group label) { color: var(--color-text-secondary); }
+:root[data-theme='ultima-atlas'] body :is(
+  .tab.active, .profile-tab.active, .filter-tab.active, .filter-pill.active,
+  .content-library-tab.active, .view-btn.active, .mode-btn--active,
+  .network-proxy-group__toggle.is-active, .settings-tab.active
+) { color: var(--color-accent-primary); background: var(--color-info-soft); border-color: var(--color-accent-primary); }
+:root[data-theme='ultima-atlas'] body .atlas-main .tools-tab.active { color: var(--color-accent-primary); border-color: var(--color-accent-primary); background: var(--color-info-soft); }
+:root[data-theme='ultima-atlas'] body .atlas-main .network-button--primary,
+:root[data-theme='ultima-atlas'] body .atlas-main .network-button--primary:hover:not(:disabled) { background: var(--color-accent-primary); color: #101b1d; border-color: var(--color-accent-primary); }
+:root[data-theme='ultima-atlas'] body .atlas-main .network-button--danger { color: var(--color-error); background: var(--color-error-soft); border-color: var(--color-error); }
+:root[data-theme='ultima-atlas'] body .atlas-main .ultimur-profile-stats { display: grid; grid-template-columns: repeat(7, minmax(0, 1fr)); gap: 0.65rem; }
+:root[data-theme='ultima-atlas'] body .atlas-main .ultimur-profile-stat { min-width: 0; padding: 14px 8px 12px; }
+:root[data-theme='ultima-atlas'] body .atlas-main .ultimur-profile-stat :is(.stat-pill-value, .stat-pill-label, .stat-pill-meta) { overflow-wrap: anywhere; max-width: 100%; }
+:root[data-theme='ultima-atlas'] body :is(.setup-page, .admin-token-gate) { background: transparent; }
+:root[data-theme='ultima-atlas'] body :is(.setup-card, .setup-card-header, .setup-card-footer, .admin-token-card, .sqlite-migration, .sqlite-migration__identity-card, .sqlite-migration__stat) { background: var(--atlas-surface); border-color: var(--atlas-line); border-radius: 2px; box-shadow: none; }
+:root[data-theme='ultima-atlas'] body .setup-logo { background: var(--color-accent-primary); color: #101b1d; box-shadow: none; border-radius: 2px; }
+:root[data-theme='ultima-atlas'] body .admin-token-card button { background: var(--color-accent-primary); color: #101b1d; }
+
+/* Status colors remain semantic, including older hard-coded badges. */
+:root[data-theme='ultima-atlas'] body :is(
+  .task-status-running, .task-status-completed, .plugin-status--enabled,
+  .plugin-health--healthy, .plugin-health--starting, .status-badge.active,
+  .badge-status.active, .jdm-task-msg-ok
+) { color: var(--color-success); background: var(--color-success-soft); }
+:root[data-theme='ultima-atlas'] body :is(
+  .task-status-failed, .plugin-status--invalid, .plugin-health--invalid,
+  .error-message, .jdm-task-err-msg
+) { color: var(--color-error); }
+:root[data-theme='ultima-atlas'] body :is(
+  .task-status-pending, .plugin-health--incompatible, .plugin-capability-warning,
+  .warmup-info-banner, .jdm-task-msg-warn
+) { color: var(--color-warning); }
+:root[data-theme='ultima-atlas'] body :is(
+  .badge, .status-badge, .disabled-badge, .proxy-badge, .plugin-status,
+  .ultimur-topbar__status, .settings-topbar__status, .settings-topbar__pill,
+  .balance-badge, .alias-pill, .social-pill, .task-type-badge
+) { border-radius: 2px; }
+:root[data-theme='ultima-atlas'] body .atlas-main :is(table th, .data-table th) {
+  background: var(--color-bg-tertiary);
+  color: var(--atlas-muted);
+  font-size: 11px;
+}
+:root[data-theme='ultima-atlas'] body .atlas-main :is(table td, table th) { border-color: var(--atlas-line); }
+:root[data-theme='ultima-atlas'] body .atlas-main .orders-page :is(.orders-row, .items-table tbody tr) { background: var(--atlas-surface); border-color: var(--atlas-line); border-radius: 2px; }
+:root[data-theme='ultima-atlas'] body .atlas-main .orders-page .orders-row.expanded { background: var(--color-info-soft); }
+:root[data-theme='ultima-atlas'] body .atlas-main .orders-page :is(.status-pill, .spender-type-badge, .spender-tag, .unassigned-tag) { border-radius: 2px; }
+:root[data-theme='ultima-atlas'] body .atlas-main .orders-page :is(.status-running, .status-completed, .header-chip.accent) { color: var(--color-success); background: var(--color-success-soft); }
+:root[data-theme='ultima-atlas'] body .atlas-main .orders-page :is(.status-pending, .status-incomplete, .unassigned-tag) { color: var(--color-warning); background: var(--color-warning-soft); }
+:root[data-theme='ultima-atlas'] body .atlas-main .orders-page .status-failed { color: var(--color-error); background: var(--color-error-soft); }
+:root[data-theme='ultima-atlas'] body .atlas-main .orders-page :is(.spender-tag, .type-all, .type-free, .type-paid) { color: var(--color-text-secondary); background: var(--color-bg-tertiary); }
+:root[data-theme='ultima-atlas'] body .atlas-main .orders-page :is(.btn-buy, .btn-buy:hover:not(:disabled)) { color: #101b1d; background: var(--color-accent-primary); }
+:root[data-theme='ultima-atlas'] body .atlas-main .orders-page :is(.btn-danger-outline, .btn-danger-outline:hover:not(:disabled)) { color: var(--color-error); border-color: var(--color-error); background: var(--color-error-soft); }
+:root[data-theme='ultima-atlas'] body .atlas-main :is(table tbody tr:hover, .auth-picker-option:hover) { background: var(--color-bg-hover); }
+
+/* Chats are a bounded workspace; only its list and transcript scroll. */
+:root[data-theme='ultima-atlas'] body .atlas-main .chats-page { height: calc(100dvh - 150px); min-height: 520px; }
+:root[data-theme='ultima-atlas'] body .atlas-main .chats-container { min-height: 0; }
+:root[data-theme='ultima-atlas'] body .atlas-main .message-bubble {
+  background: var(--color-bg-tertiary); border: 1px solid var(--atlas-line); border-radius: 3px;
+}
+:root[data-theme='ultima-atlas'] body .atlas-main .message.sent .message-bubble {
+  background: var(--color-info-soft); border-color: #287486;
+}
+:root[data-theme='ultima-atlas'] body .atlas-main .profile-card-banner-empty {
+  background-color: var(--color-bg-tertiary);
+  background-image: linear-gradient(var(--atlas-line) 1px, transparent 1px), linear-gradient(90deg, var(--atlas-line) 1px, transparent 1px);
+  background-size: 44px 44px;
+}
+:root[data-theme='ultima-atlas'] body .toast { background: var(--atlas-surface); border-radius: 2px; border-color: var(--atlas-line); max-width: min(440px, calc(100vw - 24px)); min-width: 0; }
+:root[data-theme='ultima-atlas'] body :is(.toast-success, .toast.success) { border-left: 3px solid var(--color-success); }
+:root[data-theme='ultima-atlas'] body :is(.toast-error, .toast.error) { border-left: 3px solid var(--color-error); }
+:root[data-theme='ultima-atlas'] body :is(.toast-warning, .toast.warning) { border-left: 3px solid var(--color-warning); }
+:root[data-theme='ultima-atlas'] body :is(.toast-info, .toast.info) { border-left: 3px solid var(--color-info); }
+:root[data-theme='ultima-atlas'] body .toast-title { font-family: var(--font-mono, monospace); font-size: 11px; text-transform: uppercase; letter-spacing: 0.04em; color: var(--color-text-primary); }
+:root[data-theme='ultima-atlas'] body .toast-message { font-size: 12px; color: var(--color-text-secondary); }
+
+@media (max-width: 760px) {
+  :root[data-theme='ultima-atlas'] body .atlas-main :is(.ultimur-topbar, .settings-topbar, .system-topbar, .ultimur-v2-header, .statistics-header) { flex-direction: column; align-items: stretch; }
+  :root[data-theme='ultima-atlas'] body .atlas-main :is(.ultimur-topbar__title, .settings-topbar__title, .system-topbar__title, .ultimur-v2-header__title, .statistics-header h1) { font-size: 24px; }
+  :root[data-theme='ultima-atlas'] body .atlas-main :is(.ultimur-topbar__actions, .settings-topbar__actions, .chats-filters, .ultimur-chats-v2__selectors) { flex-wrap: wrap; }
+  :root[data-theme='ultima-atlas'] body .atlas-main .proxies-list { grid-template-columns: minmax(0, 1fr); }
+  :root[data-theme='ultima-atlas'] body .atlas-main .chats-page { height: calc(100dvh - 135px); min-height: 440px; }
+  :root[data-theme='ultima-atlas'] body .atlas-main .ultimur-profile-stats { grid-template-columns: repeat(auto-fit, minmax(110px, 1fr)); gap: 0.5rem; }
+  :root[data-theme='ultima-atlas'] body .toast { left: 12px; right: 12px; }
+}
+:root[data-theme='ultima-atlas'] body .atlas-main .tools-step { color: var(--color-accent-primary); background: var(--color-info-soft); border-color: var(--color-accent-primary); border-radius: 2px; }
+:root[data-theme='ultima-atlas'] body .atlas-main .tools-alert { border-radius: 2px; border-left-width: 3px; overflow-wrap: anywhere; }
+:root[data-theme='ultima-atlas'] body .atlas-main .tools-alert.success { color: var(--color-success); background: var(--color-success-soft); border-color: var(--color-success); }
+:root[data-theme='ultima-atlas'] body .atlas-main .tools-alert.warning { color: var(--color-warning); background: var(--color-warning-soft); border-color: var(--color-warning); }
+:root[data-theme='ultima-atlas'] body .atlas-main .tools-alert.error { color: var(--color-error); background: var(--color-error-soft); border-color: var(--color-error); }
+
+:root[data-theme='ultima-atlas'] body .atlas-main .selection-bar {
+  padding: 10px 16px;
+  min-height: 44px;
+  box-sizing: border-box;
+  flex-wrap: wrap;
+  gap: 12px;
+  min-width: 0;
+  max-width: 100%;
+}
+:root[data-theme='ultima-atlas'] body .atlas-main .selection-bar :is(.selection-info, .selection-bar-actions) {
+  flex-wrap: wrap;
+  gap: 8px;
+  min-width: 0;
+}
+:root[data-theme='ultima-atlas'] body .atlas-main .selection-shortcuts {
+  color: var(--atlas-muted);
+}
+:root[data-theme='ultima-atlas'] body .atlas-main .selection-count {
+  color: var(--color-accent-primary);
+}
+:root[data-theme='ultima-atlas'] body .atlas-main :is(.selection-bar button, .selection-bar-floating button) {
+  white-space: nowrap;
+}
+
+:root[data-theme='ultima-atlas'] body .selection-bar-floating {
+  background: rgba(32, 37, 38, 0.94);
+  border: 1px solid var(--atlas-line);
+  border-radius: var(--radius-sm, 2px);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+:root[data-theme='ultima-atlas'] body .selection-bar-floating::-webkit-scrollbar {
+  display: none;
+}
+
+:root[data-theme='ultima-atlas'] body .selection-bar-floating :is(.selection-info, .selection-bar-actions) {
+  display: flex;
+  align-items: center;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  gap: 8px;
+}
+
+:root[data-theme='ultima-atlas'] body .selection-bar-floating__divider {
+  background: var(--atlas-line);
+}
+
+:root[data-theme='ultima-atlas'] body .selection-bar-floating .selection-count {
+  color: var(--color-accent-primary);
+}
+
+/* Card grids: responsive column counts that divide 100 evenly: 1, 2, 4, 5, or 10 */
+:root[data-theme='ultima-atlas'] body .atlas-main :is(.users-page, .subscriptions-page, .favourites-page, .user-card-grid-container) {
+  container-type: inline-size;
+}
+
+:root[data-theme='ultima-atlas'] body .atlas-main :is(.user-card-grid, .users-grid, .subscriptions-grid, .favourites-users-grid) {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 16px;
+}
+
+@container (min-width: 656px) {
+  :root[data-theme='ultima-atlas'] body .atlas-main :is(.user-card-grid, .users-grid, .subscriptions-grid, .favourites-users-grid) {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 1328px) {
+  :root[data-theme='ultima-atlas'] body .atlas-main :is(.user-card-grid, .users-grid, .subscriptions-grid, .favourites-users-grid) {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 1664px) {
+  :root[data-theme='ultima-atlas'] body .atlas-main :is(.user-card-grid, .users-grid, .subscriptions-grid, .favourites-users-grid) {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 3344px) {
+  :root[data-theme='ultima-atlas'] body .atlas-main :is(.user-card-grid, .users-grid, .subscriptions-grid, .favourites-users-grid) {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+}
+
+:root[data-theme='ultima-atlas'] body .atlas-main .favourites-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+@container (min-width: 612px) {
+  :root[data-theme='ultima-atlas'] body .atlas-main .favourites-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 1234px) {
+  :root[data-theme='ultima-atlas'] body .atlas-main .favourites-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 1545px) {
+  :root[data-theme='ultima-atlas'] body .atlas-main .favourites-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 3101px) {
+  :root[data-theme='ultima-atlas'] body .atlas-main .favourites-grid {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+}
+
+

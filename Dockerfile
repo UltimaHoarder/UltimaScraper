@@ -1,17 +1,191 @@
-FROM python:3.10-slim
+# Layers are ordered so a release rebuilds as little as possible: the system
+# packages and the third-party dependencies only change with the base image or
+# docker/requirements.lock, and a build's own code (first-party wheels and
+# main.py) lands in a small layer of its own. Version arguments are declared
+# after the heavy steps, because a build argument used by a RUN step makes
+# that step miss the cache whenever its value changes.
 
-RUN apt-get update && apt-get install -y \
-  curl \
-  && rm -rf /var/lib/apt/lists/*
+FROM python:3.14.7-slim-trixie@sha256:83ff1d245a3d57d04152252d3ef9cb361494d0b3395abd65a5ebe91c401c8e83 AS deps-builder
 
-WORKDIR /usr/src/app
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DEBIAN_FRONTEND=noninteractive
 
-ENV POETRY_HOME=/usr/local/share/pypoetry
-ENV POETRY_VIRTUALENVS_CREATE=false
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential git \
+    && rm -rf /var/lib/apt/lists/*
 
-RUN ["/bin/bash", "-c", "set -o pipefail && curl -sSL https://install.python-poetry.org | python3 -"]
+# Third-party dependencies only: reused until the lock file changes.
+COPY docker/requirements.lock /requirements.lock
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install setuptools==84.0.0 wheel==0.48.0 \
+    && /opt/venv/bin/pip install --requirement /requirements.lock
 
-COPY . .
-RUN /usr/local/share/pypoetry/bin/poetry install --no-dev
+# The same steps on the build host's own platform. --platform only takes effect
+# on an image, not on a stage name, so the stage is repeated; when the target
+# is the build platform the steps are identical and BuildKit runs them once.
+FROM --platform=$BUILDPLATFORM python:3.14.7-slim-trixie@sha256:83ff1d245a3d57d04152252d3ef9cb361494d0b3395abd65a5ebe91c401c8e83 AS deps-builder-native
 
-CMD [ "/usr/local/share/pypoetry/bin/poetry", "run", "python", "./start_us.py" ]
+ENV PIP_DISABLE_PIP_VERSION_CHECK=1 \
+    PIP_NO_CACHE_DIR=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    DEBIAN_FRONTEND=noninteractive
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends build-essential git \
+    && rm -rf /var/lib/apt/lists/*
+
+# Third-party dependencies only: reused until the lock file changes.
+COPY docker/requirements.lock /requirements.lock
+RUN python -m venv /opt/venv \
+    && /opt/venv/bin/pip install setuptools==84.0.0 wheel==0.48.0 \
+    && /opt/venv/bin/pip install --requirement /requirements.lock
+
+# The first-party packages are pure Python, so they are installed once on the
+# build host's own platform and copied into every image: an arm64 build no
+# longer runs this step under emulation. The site-packages path and the
+# /opt/venv/bin/python shebang are the same on every platform.
+FROM deps-builder-native AS app-builder
+
+ARG USR_REQUIRE_WHEELHOUSE=0
+
+WORKDIR /build
+
+# A maintainer may prebuild first-party wheels from the release-day source
+# checkouts. End users never need those sibling repositories: only wheel
+# artifacts are consumed, and published distributions remain a valid fallback.
+COPY docker/wheelhouse /wheelhouse
+COPY pyproject.toml README.md ./
+COPY main.py ./main.py
+
+# The first-party packages go into /opt/overlay, laid out as they belong in
+# /opt/venv, so the runtime copies them over the dependencies as one small layer.
+RUN site="$(/opt/venv/bin/python -c 'import sysconfig; print(sysconfig.get_paths()["purelib"])')" \
+    && overlay="/opt/overlay$site" \
+    && wheel_count="$(find /wheelhouse -maxdepth 1 -type f -name '*.whl' | wc -l)" \
+    && if [ "$wheel_count" -gt 0 ]; then \
+        test "$wheel_count" -eq 5; \
+        /opt/venv/bin/pip install --no-deps --target "$overlay" /wheelhouse/*.whl .; \
+    else \
+        test "$USR_REQUIRE_WHEELHOUSE" = 0; \
+        /opt/venv/bin/pip install --target "$overlay" .; \
+    fi \
+    && mkdir -p /opt/overlay/opt/venv \
+    && mv "$overlay/bin" /opt/overlay/opt/venv/bin \
+    && PYTHONPATH="$overlay" /opt/venv/bin/pip check
+
+FROM deps-builder AS deps
+
+# The runtime venv carries no installer, as before.
+RUN /opt/venv/bin/pip uninstall --yes pip setuptools wheel
+
+# Bento4's mp4decrypt and mp4dump, which DRM downloads need. Debian packages
+# neither, and Bento4 publishes x86-only binaries, so they are built from a
+# pinned release for each target platform (arm64 included).
+FROM python:3.14.7-slim-trixie@sha256:83ff1d245a3d57d04152252d3ef9cb361494d0b3395abd65a5ebe91c401c8e83 AS bento4-builder
+
+ARG BENTO4_VERSION=1.6.0-641
+ARG BENTO4_SHA256=e6575877708526e399cff752b4ee23cb1e2ac32fb251e2ca0a1e8d691fd172a7
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends ca-certificates cmake curl g++ make \
+    && curl -fsSL -o /tmp/bento4.tar.gz \
+        "https://github.com/axiomatic-systems/Bento4/archive/refs/tags/v${BENTO4_VERSION}.tar.gz" \
+    && echo "${BENTO4_SHA256}  /tmp/bento4.tar.gz" | sha256sum -c - \
+    && mkdir /tmp/bento4 \
+    && tar -xzf /tmp/bento4.tar.gz -C /tmp/bento4 --strip-components=1 \
+    && cmake -S /tmp/bento4 -B /tmp/bento4/build -DCMAKE_BUILD_TYPE=Release \
+    && cmake --build /tmp/bento4/build --target mp4decrypt mp4dump -j"$(nproc)" \
+    && install -D -m 0755 /tmp/bento4/build/mp4decrypt /opt/bento4/mp4decrypt \
+    && install -D -m 0755 /tmp/bento4/build/mp4dump /opt/bento4/mp4dump
+
+FROM python:3.14.7-slim-trixie@sha256:83ff1d245a3d57d04152252d3ef9cb361494d0b3395abd65a5ebe91c401c8e83 AS runtime-base
+
+# Bento4 first: pymp4 installs an unrelated mp4dump into /opt/venv/bin, and
+# OnlyDRM finds its tools on PATH.
+ENV PATH="/opt/bento4/bin:/opt/venv/bin:$PATH" \
+    PYTHONUNBUFFERED=1 \
+    PYTHONDONTWRITEBYTECODE=1 \
+    USR_LOG_DIR=/app/logs \
+    USR_PLUGINS_DIR=/app/__user_data__/plugins
+
+RUN apt-get update \
+    && apt-get install -y --no-install-recommends \
+        ca-certificates curl ffmpeg libpq5 libssl3t64 openssl openssl-provider-legacy \
+    && python -m pip uninstall --yes pip \
+    && rm -rf /var/lib/apt/lists/* \
+    && useradd --create-home --uid 1000 --shell /usr/sbin/nologin ultimascraper \
+    && mkdir -p /app/logs /app/__user_data__/plugins /home/ultimascraper/.config/ultima_scraper_verse \
+    && chown -R ultimascraper:ultimascraper /app /home/ultimascraper
+
+COPY --from=bento4-builder /opt/bento4/ /opt/bento4/bin/
+COPY --from=deps /opt/venv /opt/venv
+
+WORKDIR /app
+COPY docker/backend-entrypoint.sh /usr/local/bin/usr-container-entrypoint
+COPY docker/worker-healthcheck.py /usr/local/bin/usr-worker-healthcheck
+
+RUN chmod 0755 \
+        /usr/local/bin/usr-container-entrypoint \
+        /usr/local/bin/usr-worker-healthcheck
+
+# This build's own code, over the dependencies.
+COPY --from=app-builder /opt/overlay/ /
+
+ARG USR_VERSION=dev
+ARG USR_REVISION=unknown
+ARG USR_BACKEND_REVISION=unknown
+ARG USR_API_REVISION=unknown
+ARG USDB_REVISION=unknown
+ARG USDB_ARCHIVE_REVISION=unknown
+ARG USR_CORE_REVISION=unknown
+
+# The release this image is, as the backend and workers report it (e.g. 0.1.0-edge.0123abcd4567).
+ENV USR_IMAGE_VERSION="${USR_VERSION}"
+
+LABEL org.opencontainers.image.title="UltimaScraper runtime" \
+    org.opencontainers.image.description="Python 3.14 runtime base for UltimaScraper" \
+    org.opencontainers.image.version="${USR_VERSION}" \
+    org.opencontainers.image.revision="${USR_REVISION}" \
+    org.opencontainers.image.source="https://github.com/UltimaHoarder/UltimaScraper" \
+    org.ultimascraper.backend.revision="${USR_BACKEND_REVISION}" \
+    org.ultimascraper.api.revision="${USR_API_REVISION}" \
+    org.ultimascraper.usdb.revision="${USDB_REVISION}" \
+    org.ultimascraper.usdb-archive.revision="${USDB_ARCHIVE_REVISION}" \
+    org.ultimascraper.core.revision="${USR_CORE_REVISION}" \
+    org.opencontainers.image.licenses="MIT"
+
+USER ultimascraper
+
+ENTRYPOINT ["usr-container-entrypoint"]
+CMD ["ultimascraper"]
+
+FROM runtime-base AS runtime
+
+LABEL org.opencontainers.image.title="UltimaScraper backend" \
+    org.opencontainers.image.description="Python 3.14 API-only runtime for UltimaScraper"
+
+ENV RUN_MODE=api \
+    USR_CONTAINER_ROLE=api \
+    USR_EXPECTED_DATABASE=ultima_archive \
+    CONTROL_HOST=0.0.0.0 \
+    CONTROL_PORT=21121 \
+    USR_ALLOW_REMOTE_BIND=true
+
+EXPOSE 21121
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
+    CMD curl --fail --silent --show-error http://127.0.0.1:21121/api/v1/admin/health >/dev/null || exit 1
+
+FROM runtime-base AS worker-runtime
+
+ENV RUN_MODE=worker \
+    USR_CONTAINER_ROLE=worker \
+    USR_WORKER_READINESS_FILE=/dev/shm/usr-worker-readiness.json
+
+LABEL org.opencontainers.image.title="UltimaScraper worker" \
+    org.opencontainers.image.description="Python 3.14 scrape-worker runtime for UltimaScraper"
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=5 \
+    CMD ["python", "/usr/local/bin/usr-worker-healthcheck"]

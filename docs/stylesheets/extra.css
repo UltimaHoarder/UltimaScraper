@@ -1,0 +1,55 @@
+/* Custom styles for UltimaScraper documentation */
+
+/* Code blocks with enhanced styling */
+.highlight {
+    border-radius: 6px;
+}
+
+/* Admonition customization */
+.admonition {
+    border-radius: 6px;
+}
+
+/* Table styling */
+table {
+    width: 100%;
+    border-collapse: collapse;
+}
+
+/* Mermaid diagrams */
+.mermaid {
+    text-align: center;
+    margin: 2em 0;
+}
+
+/* Better spacing for lists */
+.md-typeset ul, .md-typeset ol {
+    margin-bottom: 1em;
+}
+
+/* Code inline */
+.md-typeset code {
+    padding: 0.1em 0.3em;
+    border-radius: 4px;
+}
+
+/* Keyboard shortcuts */
+kbd {
+    background-color: #f4f4f4;
+    border: 1px solid #ccc;
+    border-radius: 3px;
+    box-shadow: 0 1px 0 rgba(0, 0, 0, 0.2);
+    color: #333;
+    display: inline-block;
+    font-family: monospace;
+    font-size: 0.85em;
+    line-height: 1.4;
+    padding: 0.1em 0.5em;
+    white-space: nowrap;
+}
+
+[data-md-color-scheme="slate"] kbd {
+    background-color: #2a2a2a;
+    border-color: #555;
+    color: #eee;
+}

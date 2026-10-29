@@ -1,0 +1,50 @@
+.plugin-contribution, .plugin-page { min-width: 0; padding: 1rem; border: 1px solid var(--color-border-primary, #30363d); border-radius: 8px; }
+.plugin-contribution { display: grid; gap: .6rem; background: var(--color-bg-secondary, #161b22); }
+.plugin-contribution p { margin: 0; overflow-wrap: anywhere; }
+.plugin-contribution pre { max-height: 18rem; overflow: auto; white-space: pre-wrap; overflow-wrap: anywhere; }
+.plugin-contribution button { justify-self: start; padding: .5rem .8rem; }
+.plugin-contribution-badge { display: inline-block; padding: .2rem .5rem; border: 1px solid var(--color-border-primary, #30363d); border-radius: 1rem; font-size: .75rem; }
+.plugin-navigation { margin-block: 1rem; }
+.plugin-navigation .nav-item { display: block; margin-block: .3rem; }
+.plugins-page details { max-width: 22rem; font-size: .8rem; }
+.plugins-page details label { display: grid; gap: .5rem; }
+.plugins-page details textarea { box-sizing: border-box; width: 100%; min-width: 12rem; max-width: 100%; resize: vertical; background: var(--color-bg-primary, #0d1117); color: inherit; }
+@media (max-width: 760px) { .plugins-table-wrap { overflow-x: auto; } .plugins-field-row { grid-template-columns: 1fr; } }
+
+.plugin-settings-panel { margin-block: 1rem; padding: clamp(1rem, 3vw, 1.5rem); border: 1px solid var(--color-border-primary, #30363d); border-radius: 10px; background: var(--color-bg-secondary, #161b22); color: var(--color-text-primary, #e6edf3); min-width: 0; }
+.plugin-settings-heading, .plugin-settings-actions { display: flex; flex-wrap: wrap; gap: .75rem; align-items: center; }
+.plugin-settings-heading { justify-content: space-between; margin-bottom: 1rem; }
+.plugin-settings-heading h2 { margin: 0; font-size: 1.15rem; }
+.plugin-settings-panel form { display: grid; gap: 1rem; }
+.plugin-settings-field { display: grid; gap: .4rem; max-width: 48rem; min-width: 0; }
+.plugin-settings-field label { font-weight: 600; }
+.plugin-settings-field input:not([type=checkbox]), .plugin-settings-field select, .plugin-settings-field textarea { box-sizing: border-box; width: 100%; min-width: 0; padding: .65rem .75rem; border: 1px solid var(--color-border-primary, #30363d); border-radius: 6px; background: var(--color-bg-primary, #0d1117); color: inherit; }
+.plugin-settings-field input[type=checkbox] { width: 1.1rem; height: 1.1rem; }
+.plugin-settings-field fieldset { display: grid; gap: 1rem; border: 1px solid var(--color-border-primary, #30363d); border-radius: 6px; }
+.plugin-settings-field small, .plugin-settings-hint { color: var(--color-text-secondary, #8b949e); overflow-wrap: anywhere; }
+.plugin-settings-panel button, .plugin-settings-open { padding: .5rem .8rem; border: 1px solid var(--color-border-primary, #30363d); border-radius: 6px; background: var(--color-bg-primary, #0d1117); color: inherit; cursor: pointer; }
+.plugin-settings-panel button:disabled { opacity: .5; cursor: default; }
+.plugin-settings-open { margin-top: .5rem; }
+.plugin-settings-panel [role=alert] { color: var(--color-danger, #f85149); }
+.plugin-settings-panel [role=status] { overflow-wrap: anywhere; }
+.plugin-setup-backdrop {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgb(0 0 0 / 65%);
+  display: grid;
+  place-items: center;
+  padding: 1rem;
+}
+.plugin-setup-modal {
+  width: min(36rem, 100%);
+  max-height: calc(100dvh - 2rem);
+  overflow-y: auto;
+  padding: 1.5rem;
+  border: 1px solid var(--border-color, #394351);
+  border-radius: 0.75rem;
+  background: var(--bg-secondary, #161b22);
+  color: var(--text-primary, #e6edf3);
+  box-shadow: 0 1rem 4rem rgb(0 0 0 / 40%);
+}
+.plugin-setup-modal fieldset { border: 0; padding: 0; margin: 0; }

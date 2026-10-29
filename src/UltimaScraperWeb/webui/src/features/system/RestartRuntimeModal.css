@@ -1,0 +1,180 @@
+/* Ultima Atlas Restart Runtime Modal */
+.restart-runtime-modal {
+  width: 100%;
+  max-width: 620px !important;
+  max-height: calc(100dvh - 40px);
+  display: flex;
+  flex-direction: column;
+  overflow: hidden;
+  padding: 24px 28px !important;
+}
+
+.restart-runtime-presets {
+  display: flex;
+  align-items: center;
+  flex-wrap: wrap;
+  gap: 8px;
+  margin: 14px 0 16px;
+  padding-bottom: 12px;
+  border-bottom: 1px solid var(--atlas-line, #343a3b);
+}
+
+.restart-preset-label {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #94a3a4);
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  margin-right: 4px;
+}
+
+.restart-preset-btn {
+  padding: 4px 10px;
+  background: var(--color-bg-secondary, #202526);
+  border: 1px solid var(--atlas-line, #343a3b);
+  border-radius: var(--radius-sm, 2px);
+  color: var(--color-text-secondary, #bec8c9);
+  font-family: var(--font-sans, inherit);
+  font-size: 0.75rem;
+  font-weight: 500;
+  cursor: pointer;
+  transition: all 0.15s ease;
+}
+
+.restart-preset-btn:hover:not(:disabled) {
+  background: var(--color-bg-hover, #303839);
+  color: var(--color-text-primary, #f4f4f2);
+  border-color: var(--color-text-tertiary, #9caeaf);
+}
+
+.restart-preset-btn.is-active {
+  background: var(--color-bg-active, rgba(36, 170, 195, 0.15));
+  color: var(--color-accent-primary, #24aac3);
+  border-color: var(--color-accent-primary, #24aac3);
+}
+
+.restart-preset-btn--clear {
+  color: var(--color-text-muted, #94a3a4);
+  margin-left: auto;
+}
+
+.restart-services-list {
+  display: flex;
+  flex-direction: column;
+  gap: 8px;
+  margin-bottom: 16px;
+  overflow-y: auto;
+  max-height: 380px;
+  padding-right: 4px;
+}
+
+.restart-service-card {
+  display: flex;
+  align-items: flex-start;
+  gap: 12px;
+  padding: 10px 14px;
+  background: var(--color-bg-primary, #1a1f20);
+  border: 1px solid var(--atlas-line, #343a3b);
+  border-left: 3px solid transparent;
+  border-radius: var(--radius-sm, 2px);
+  cursor: pointer;
+  transition: all 0.15s ease;
+  user-select: none;
+}
+
+.restart-service-card:hover {
+  background: var(--color-bg-hover, #23292a);
+  border-color: #485557;
+}
+
+.restart-service-card.is-selected {
+  background: #1d2324;
+  border-color: #425254;
+  border-left-color: var(--color-accent-primary, #24aac3);
+}
+
+.restart-service-checkbox {
+  margin-top: 3px;
+  width: 16px;
+  height: 16px;
+  accent-color: var(--color-accent-primary, #24aac3);
+  cursor: pointer;
+  flex-shrink: 0;
+}
+
+.restart-service-info {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  flex: 1;
+  min-width: 0;
+}
+
+.restart-service-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 8px;
+}
+
+.restart-service-title {
+  font-family: var(--font-sans, inherit);
+  font-size: 0.875rem;
+  font-weight: 600;
+  color: var(--color-text-primary, #f4f4f2);
+}
+
+.restart-service-card.is-selected .restart-service-title {
+  color: #fff;
+}
+
+.restart-service-tag {
+  font-family: var(--font-mono, monospace);
+  font-size: 0.6875rem;
+  letter-spacing: 0.05em;
+  padding: 1px 6px;
+  border-radius: var(--radius-sm, 2px);
+  background: var(--color-bg-secondary, #202526);
+  border: 1px solid var(--atlas-line, #343a3b);
+  color: var(--color-accent-primary, #24aac3);
+}
+
+.restart-service-description {
+  font-size: 0.8125rem;
+  color: var(--color-text-secondary, #bec8c9);
+  line-height: 1.35;
+}
+
+.restart-service-impact {
+  font-size: 0.75rem;
+  color: var(--color-text-muted, #94a3a4);
+  font-style: italic;
+  margin-top: 2px;
+}
+
+.restart-mode-banner {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm, 2px);
+  font-size: 0.8125rem;
+  line-height: 1.4;
+  margin-bottom: 8px;
+  border: 1px solid;
+}
+
+.restart-mode-banner.is-full {
+  background: rgba(255, 0, 55, 0.08);
+  border-color: rgba(255, 0, 55, 0.25);
+  color: var(--color-text-primary, #f4f4f2);
+}
+
+.restart-mode-banner.is-targeted {
+  background: rgba(36, 170, 195, 0.08);
+  border-color: rgba(36, 170, 195, 0.25);
+  color: var(--color-text-primary, #f4f4f2);
+}
+
+.restart-mode-banner.is-empty {
+  background: var(--color-bg-primary, #1a1f20);
+  border-color: var(--color-warning, #ffaa00);
+  color: var(--color-warning, #ffaa00);
+}

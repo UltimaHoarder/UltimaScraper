@@ -1,0 +1,106 @@
+.path-field {
+  display: flex;
+  flex: 1;
+  gap: var(--space-2);
+  min-width: 0;
+}
+
+.path-field .setup-form-input {
+  flex: 1;
+  min-width: 0;
+}
+
+.path-field-browse {
+  flex-shrink: 0;
+}
+
+.path-picker {
+  max-width: 560px;
+}
+
+.path-picker-location {
+  display: flex;
+  gap: var(--space-2);
+  margin-bottom: var(--space-3);
+}
+
+.path-picker-location input {
+  flex: 1;
+  min-width: 0;
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono, monospace);
+}
+
+.path-picker-location button {
+  padding: var(--space-2) var(--space-3);
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+  background: var(--color-bg-tertiary, var(--color-bg-primary));
+  color: var(--color-text-primary);
+  cursor: pointer;
+}
+
+.path-picker-location button:disabled {
+  cursor: default;
+  opacity: 0.5;
+}
+
+.path-picker-list {
+  max-height: 45vh;
+  margin: 0;
+  padding: 0;
+  overflow-y: auto;
+  list-style: none;
+  border: 1px solid var(--color-border-primary);
+  border-radius: var(--radius-md);
+}
+
+.path-picker-list button {
+  display: flex;
+  align-items: center;
+  justify-content: flex-start;
+  gap: var(--space-2);
+  width: 100%;
+  padding: var(--space-2) var(--space-3);
+  border: none;
+  border-bottom: 1px solid var(--color-border-primary);
+  background: none;
+  color: var(--color-text-primary);
+  text-align: left;
+  cursor: pointer;
+}
+
+.path-picker-list li:last-child button {
+  border-bottom: none;
+}
+
+.path-picker-list button:hover {
+  background: var(--color-bg-hover);
+}
+
+.path-picker-list button.is-file {
+  color: var(--color-text-secondary);
+}
+
+.path-picker-empty {
+  padding: var(--space-3);
+  color: var(--color-text-tertiary);
+}
+
+.path-picker-error,
+.path-picker-warning {
+  margin: var(--space-2) 0;
+  font-size: var(--font-size-sm);
+}
+
+.path-picker-error {
+  color: var(--color-error);
+}
+
+.path-picker-warning {
+  color: var(--color-warning, #f5b14c);
+}

@@ -1,0 +1,345 @@
+name: ultimascraper
+
+# Every component is optional. COMPOSE_PROFILES in .env picks what runs on this
+# host: webui, backend, worker, postgres, redis. Without the postgres or redis
+# profile, point ULTIMA_ARCHIVE_DATABASE_URL or REDIS_HOST at existing servers.
+services:
+  backend:
+    image: ${USR_BACKEND_IMAGE:-ghcr.io/ultimahoarder/ultimascraper/backend}:${USR_VERSION:-latest}
+    profiles: [backend]
+    init: true
+    restart: unless-stopped
+    depends_on:
+      # Optional: present only when the postgres/redis profiles bundle them.
+      postgres:
+        condition: service_healthy
+        required: false
+      redis:
+        condition: service_healthy
+        required: false
+    environment:
+      RUN_MODE: api
+      CONTROL_HOST: 0.0.0.0
+      CONTROL_PORT: 21121
+      USR_ALLOW_REMOTE_BIND: "true"
+      # Settings are stored per backend id. The fixed default keeps them across
+      # container recreation; the container hostname changes every time.
+      BACKEND_ID: ${BACKEND_ID:-usr-docker}
+      # This machine's address on its network; a container cannot see it.
+      USR_ADVERTISE_HOST: ${USR_ADVERTISE_HOST:-}
+      # Empty admin token and secret key are generated on first start and kept
+      # in the config volume (secrets/ under the config directory).
+      USR_ADMIN_TOKEN: ${USR_ADMIN_TOKEN:-}
+      USR_ADMIN_TOKEN_FILE: ${USR_ADMIN_TOKEN_FILE:-}
+      USR_ENCRYPT_SECRETS: ${USR_ENCRYPT_SECRETS:-true}
+      USR_SECRET_KEY: ${USR_SECRET_KEY:-}
+      USR_SECRET_KEY_FILE: ${USR_SECRET_KEY_FILE:-}
+      USR_SECRET_KEY_PREVIOUS: ${USR_SECRET_KEY_PREVIOUS:-}
+      USR_SECRET_KEY_PREVIOUS_FILE: ${USR_SECRET_KEY_PREVIOUS_FILE:-}
+      USR_PLUGINS_DIR: ${USR_PLUGINS_DIR:-/app/__user_data__/plugins}
+      USR_ALLOWED_HOSTS: ${USR_ALLOWED_HOSTS:-}
+      USR_ALLOWED_ORIGINS: ${USR_ALLOWED_ORIGINS:-}
+      USR_WS_ALLOWED_ORIGINS: ${USR_WS_ALLOWED_ORIGINS:-}
+      USR_MEDIA_PROXY_CACHE_MAX_BYTES: ${USR_MEDIA_PROXY_CACHE_MAX_BYTES:-134217728}
+      USR_MEDIA_PROXY_CACHE_MAX_ENTRY_BYTES: ${USR_MEDIA_PROXY_CACHE_MAX_ENTRY_BYTES:-2097152}
+      USR_MEDIA_PROXY_CACHE_MAX_ENTRIES: ${USR_MEDIA_PROXY_CACHE_MAX_ENTRIES:-500}
+      USR_MEDIA_PROXY_CACHE_TTL_SECONDS: ${USR_MEDIA_PROXY_CACHE_TTL_SECONDS:-900}
+      USR_REMOTE_THUMBNAIL_JOB_LIMIT: ${USR_REMOTE_THUMBNAIL_JOB_LIMIT:-100}
+      USR_REMOTE_THUMBNAIL_FAILURE_CACHE_MAX_ENTRIES: ${USR_REMOTE_THUMBNAIL_FAILURE_CACHE_MAX_ENTRIES:-1000}
+      ULTIMA_DATABASE_WRITER_CONCURRENCY: ${ULTIMA_DATABASE_WRITER_CONCURRENCY:-4}
+      ULTIMA_DATABASE_WRITER_BATCH_SIZE: ${ULTIMA_DATABASE_WRITER_BATCH_SIZE:-100}
+      ULTIMA_DATABASE_WRITER_REFILL_MIN_COMMANDS: ${ULTIMA_DATABASE_WRITER_REFILL_MIN_COMMANDS:-}
+      ULTIMA_DATABASE_WRITER_MAX_ATTEMPTS: ${ULTIMA_DATABASE_WRITER_MAX_ATTEMPTS:-8}
+      ULTIMA_DATABASE_WRITER_RECLAIM_IDLE_MS: ${ULTIMA_DATABASE_WRITER_RECLAIM_IDLE_MS:-30000}
+      ULTIMA_DATABASE_WRITER_RETRY_DELAY_SECONDS: ${ULTIMA_DATABASE_WRITER_RETRY_DELAY_SECONDS:-5}
+      ULTIMA_DATABASE_WRITER_DEAD_LETTER_MAXLEN: ${ULTIMA_DATABASE_WRITER_DEAD_LETTER_MAXLEN:-10000}
+      ULTIMA_DATABASE_WRITE_TIMEOUT_SECONDS: ${ULTIMA_DATABASE_WRITE_TIMEOUT_SECONDS:-900}
+      ULTIMA_DATABASE_WRITE_MAX_COMMAND_BYTES: ${ULTIMA_DATABASE_WRITE_MAX_COMMAND_BYTES:-}
+      ULTIMA_DATABASE_WRITE_QUEUE_MAX_BYTES: ${ULTIMA_DATABASE_WRITE_QUEUE_MAX_BYTES:-}
+      ULTIMA_DATABASE_WRITE_QUEUE_MAX_COMMANDS: ${ULTIMA_DATABASE_WRITE_QUEUE_MAX_COMMANDS:-}
+      ULTIMA_DATABASE_WRITE_ENQUEUE_TIMEOUT_SECONDS: ${ULTIMA_DATABASE_WRITE_ENQUEUE_TIMEOUT_SECONDS:-}
+      ULTIMA_DATABASE_WRITER_BATCH_MAX_BYTES: ${ULTIMA_DATABASE_WRITER_BATCH_MAX_BYTES:-}
+      ULTIMA_DATABASE_WRITE_RESULT_CACHE_MAX_ENTRIES: ${ULTIMA_DATABASE_WRITE_RESULT_CACHE_MAX_ENTRIES:-}
+      ULTIMA_DATABASE_WRITE_RESULT_CACHE_MAX_BYTES: ${ULTIMA_DATABASE_WRITE_RESULT_CACHE_MAX_BYTES:-}
+      ULTIMA_DATABASE_WRITER_DEAD_LETTER_MAX_BYTES: ${ULTIMA_DATABASE_WRITER_DEAD_LETTER_MAX_BYTES:-}
+      ULTIMA_JOB_WINDOW_MAX_TASKS: ${ULTIMA_JOB_WINDOW_MAX_TASKS:-}
+      ULTIMA_JOB_WINDOW_MAX_BYTES: ${ULTIMA_JOB_WINDOW_MAX_BYTES:-}
+      ULTIMA_JOB_GLOBAL_WINDOW_MAX_TASKS: ${ULTIMA_JOB_GLOBAL_WINDOW_MAX_TASKS:-}
+      ULTIMA_JOB_GLOBAL_WINDOW_MAX_BYTES: ${ULTIMA_JOB_GLOBAL_WINDOW_MAX_BYTES:-}
+      ULTIMA_MPS_RECOVERY_BATCH_SIZE: ${ULTIMA_MPS_RECOVERY_BATCH_SIZE:-}
+      ULTIMA_MPS_TASK_PAGE_SCAN_MAX_TASKS: ${ULTIMA_MPS_TASK_PAGE_SCAN_MAX_TASKS:-}
+      ULTIMA_CONTENT_BATCH_SIZE: ${ULTIMA_CONTENT_BATCH_SIZE:-}
+      ULTIMA_MEDIA_WRITE_BATCH_SIZE: ${ULTIMA_MEDIA_WRITE_BATCH_SIZE:-}
+      ULTIMA_DOWNLOAD_BATCH_SIZE: ${ULTIMA_DOWNLOAD_BATCH_SIZE:-}
+      ULTIMA_MEDIA_PAGE_MAX_BYTES: ${ULTIMA_MEDIA_PAGE_MAX_BYTES:-}
+      ULTIMA_TASK_RESULT_PREVIEW_MAX_ENTRIES: ${ULTIMA_TASK_RESULT_PREVIEW_MAX_ENTRIES:-}
+      ULTIMA_TASK_RESULT_PREVIEW_MAX_BYTES: ${ULTIMA_TASK_RESULT_PREVIEW_MAX_BYTES:-}
+      ULTIMA_LOG_QUEUE_MAX_ENTRIES: ${ULTIMA_LOG_QUEUE_MAX_ENTRIES:-}
+      ULTIMA_LOG_QUEUE_MAX_BYTES: ${ULTIMA_LOG_QUEUE_MAX_BYTES:-}
+      ULTIMA_SUBSCRIPTION_HYDRATION_CONCURRENCY: ${ULTIMA_SUBSCRIPTION_HYDRATION_CONCURRENCY:-}
+      ULTIMA_SUBSCRIPTION_BATCH_SIZE: ${ULTIMA_SUBSCRIPTION_BATCH_SIZE:-}
+      ULTIMA_DOWNLOAD_TARGET_BATCH_SIZE: ${ULTIMA_DOWNLOAD_TARGET_BATCH_SIZE:-}
+      ULTIMA_STATS_BATCH_SIZE: ${ULTIMA_STATS_BATCH_SIZE:-}
+      ULTIMA_RECOVERY_SCAN_COUNT: ${ULTIMA_RECOVERY_SCAN_COUNT:-}
+      ULTIMA_TASK_PAGE_SCAN_ENTRIES: ${ULTIMA_TASK_PAGE_SCAN_ENTRIES:-}
+      ULTIMA_INTERACTIVE_DB_CONCURRENCY: ${ULTIMA_INTERACTIVE_DB_CONCURRENCY:-}
+      ULTIMA_MEDIA_PROCESS_CONCURRENCY: ${ULTIMA_MEDIA_PROCESS_CONCURRENCY:-}
+      ULTIMA_MEDIA_PROCESS_QUEUE_ENTRIES: ${ULTIMA_MEDIA_PROCESS_QUEUE_ENTRIES:-}
+      ULTIMA_MEDIA_PROCESS_OUTPUT_BYTES: ${ULTIMA_MEDIA_PROCESS_OUTPUT_BYTES:-}
+      ULTIMA_DATABASE_WRITER_LEADER_TTL_SECONDS: ${ULTIMA_DATABASE_WRITER_LEADER_TTL_SECONDS:-30}
+      ULTIMA_DATABASE_WRITER_LEADER_RENEW_SECONDS: ${ULTIMA_DATABASE_WRITER_LEADER_RENEW_SECONDS:-5}
+      ULTIMA_ARCHIVE_DATABASE_URL: ${ULTIMA_ARCHIVE_DATABASE_URL:-}
+      ULTIMA_ARCHIVE_DATABASE_URL_FILE: ${ULTIMA_ARCHIVE_DATABASE_URL_FILE:-}
+      # Deprecated alias; the entrypoint maps it onto ULTIMA_ARCHIVE_DATABASE_URL.
+      DATABASE_URL: ${DATABASE_URL:-}
+      DATABASE_URL_FILE: ${DATABASE_URL_FILE:-}
+      # Used only while ULTIMA_ARCHIVE_DATABASE_URL is empty, e.g. for the
+      # bundled postgres service.
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-ultimascraper}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-ultima_archive}
+      ULTIMA_USE_PGBOUNCER: ${ULTIMA_USE_PGBOUNCER:-false}
+      ULTIMA_PGBOUNCER_GLOBAL_POOL_MODE: ${ULTIMA_PGBOUNCER_GLOBAL_POOL_MODE:-unknown}
+      ULTIMA_PGBOUNCER_GLOBAL_POOL_SIZE: ${ULTIMA_PGBOUNCER_GLOBAL_POOL_SIZE:-2}
+      USR_EXPECTED_DATABASE: ${USR_EXPECTED_DATABASE:-ultima_archive}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_PASSWORD_FILE: ${REDIS_PASSWORD_FILE:-}
+      ULTIMA_REDIS_APPLICATION_MAX_CONNECTIONS: ${ULTIMA_REDIS_APPLICATION_MAX_CONNECTIONS:-256}
+      ULTIMA_REDIS_WORKER_MAX_CONNECTIONS: ${ULTIMA_REDIS_WORKER_MAX_CONNECTIONS:-32}
+      ULTIMA_REDIS_WRITER_MAX_CONNECTIONS: ${ULTIMA_REDIS_WRITER_MAX_CONNECTIONS:-8}
+      ULTIMA_REDIS_POOL_WAIT_TIMEOUT_SECONDS: ${ULTIMA_REDIS_POOL_WAIT_TIMEOUT_SECONDS:-30}
+      USR_WEBSOCKET_MESSAGE_HISTORY_LIMIT: ${USR_WEBSOCKET_MESSAGE_HISTORY_LIMIT:-1000}
+      USR_WEBSOCKET_EVENT_HISTORY_LIMIT: ${USR_WEBSOCKET_EVENT_HISTORY_LIMIT:-1000}
+    expose:
+      - "21121"
+    volumes:
+      - config_data:/home/ultimascraper/.config/ultima_scraper_verse
+      - user_data:/app/__user_data__
+      - logs_data:/app/logs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "curl", "--fail", "--silent", "--show-error", "http://127.0.0.1:21121/api/v1/admin/health"]
+      interval: 30s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    networks:
+      - usr
+
+  worker:
+    image: ${USR_WORKER_IMAGE:-ghcr.io/ultimahoarder/ultimascraper/worker}:${USR_VERSION:-latest}
+    profiles: [worker]
+    init: true
+    restart: unless-stopped
+    depends_on:
+      # Optional: present only when the postgres/redis profiles bundle them.
+      postgres:
+        condition: service_healthy
+        required: false
+      redis:
+        condition: service_healthy
+        required: false
+      backend:
+        condition: service_healthy
+        required: false
+    environment:
+      RUN_MODE: worker
+      USR_CONTAINER_ROLE: worker
+      BACKEND_ID: ${BACKEND_ID:-usr-docker}
+      # This machine's address on its network; a container cannot see it.
+      USR_ADVERTISE_HOST: ${USR_ADVERTISE_HOST:-}
+      USR_ENCRYPT_SECRETS: ${USR_ENCRYPT_SECRETS:-true}
+      USR_SECRET_KEY: ${USR_SECRET_KEY:-}
+      USR_SECRET_KEY_FILE: ${USR_SECRET_KEY_FILE:-}
+      USR_SECRET_KEY_PREVIOUS: ${USR_SECRET_KEY_PREVIOUS:-}
+      USR_SECRET_KEY_PREVIOUS_FILE: ${USR_SECRET_KEY_PREVIOUS_FILE:-}
+      ULTIMA_DATABASE_WRITER_CONCURRENCY: ${ULTIMA_DATABASE_WRITER_CONCURRENCY:-4}
+      ULTIMA_DATABASE_WRITER_BATCH_SIZE: ${ULTIMA_DATABASE_WRITER_BATCH_SIZE:-100}
+      ULTIMA_DATABASE_WRITER_REFILL_MIN_COMMANDS: ${ULTIMA_DATABASE_WRITER_REFILL_MIN_COMMANDS:-}
+      ULTIMA_DATABASE_WRITER_MAX_ATTEMPTS: ${ULTIMA_DATABASE_WRITER_MAX_ATTEMPTS:-8}
+      ULTIMA_DATABASE_WRITER_RECLAIM_IDLE_MS: ${ULTIMA_DATABASE_WRITER_RECLAIM_IDLE_MS:-30000}
+      ULTIMA_DATABASE_WRITER_RETRY_DELAY_SECONDS: ${ULTIMA_DATABASE_WRITER_RETRY_DELAY_SECONDS:-5}
+      ULTIMA_DATABASE_WRITER_DEAD_LETTER_MAXLEN: ${ULTIMA_DATABASE_WRITER_DEAD_LETTER_MAXLEN:-10000}
+      ULTIMA_DATABASE_WRITE_TIMEOUT_SECONDS: ${ULTIMA_DATABASE_WRITE_TIMEOUT_SECONDS:-900}
+      ULTIMA_DATABASE_WRITE_MAX_COMMAND_BYTES: ${ULTIMA_DATABASE_WRITE_MAX_COMMAND_BYTES:-}
+      ULTIMA_DATABASE_WRITE_QUEUE_MAX_BYTES: ${ULTIMA_DATABASE_WRITE_QUEUE_MAX_BYTES:-}
+      ULTIMA_DATABASE_WRITE_QUEUE_MAX_COMMANDS: ${ULTIMA_DATABASE_WRITE_QUEUE_MAX_COMMANDS:-}
+      ULTIMA_DATABASE_WRITE_ENQUEUE_TIMEOUT_SECONDS: ${ULTIMA_DATABASE_WRITE_ENQUEUE_TIMEOUT_SECONDS:-}
+      ULTIMA_DATABASE_WRITER_BATCH_MAX_BYTES: ${ULTIMA_DATABASE_WRITER_BATCH_MAX_BYTES:-}
+      ULTIMA_DATABASE_WRITE_RESULT_CACHE_MAX_ENTRIES: ${ULTIMA_DATABASE_WRITE_RESULT_CACHE_MAX_ENTRIES:-}
+      ULTIMA_DATABASE_WRITE_RESULT_CACHE_MAX_BYTES: ${ULTIMA_DATABASE_WRITE_RESULT_CACHE_MAX_BYTES:-}
+      ULTIMA_DATABASE_WRITER_DEAD_LETTER_MAX_BYTES: ${ULTIMA_DATABASE_WRITER_DEAD_LETTER_MAX_BYTES:-}
+      ULTIMA_JOB_WINDOW_MAX_TASKS: ${ULTIMA_JOB_WINDOW_MAX_TASKS:-}
+      ULTIMA_JOB_WINDOW_MAX_BYTES: ${ULTIMA_JOB_WINDOW_MAX_BYTES:-}
+      ULTIMA_JOB_GLOBAL_WINDOW_MAX_TASKS: ${ULTIMA_JOB_GLOBAL_WINDOW_MAX_TASKS:-}
+      ULTIMA_JOB_GLOBAL_WINDOW_MAX_BYTES: ${ULTIMA_JOB_GLOBAL_WINDOW_MAX_BYTES:-}
+      ULTIMA_MPS_RECOVERY_BATCH_SIZE: ${ULTIMA_MPS_RECOVERY_BATCH_SIZE:-}
+      ULTIMA_MPS_TASK_PAGE_SCAN_MAX_TASKS: ${ULTIMA_MPS_TASK_PAGE_SCAN_MAX_TASKS:-}
+      ULTIMA_CONTENT_BATCH_SIZE: ${ULTIMA_CONTENT_BATCH_SIZE:-}
+      ULTIMA_MEDIA_WRITE_BATCH_SIZE: ${ULTIMA_MEDIA_WRITE_BATCH_SIZE:-}
+      ULTIMA_DOWNLOAD_BATCH_SIZE: ${ULTIMA_DOWNLOAD_BATCH_SIZE:-}
+      ULTIMA_MEDIA_PAGE_MAX_BYTES: ${ULTIMA_MEDIA_PAGE_MAX_BYTES:-}
+      ULTIMA_TASK_RESULT_PREVIEW_MAX_ENTRIES: ${ULTIMA_TASK_RESULT_PREVIEW_MAX_ENTRIES:-}
+      ULTIMA_TASK_RESULT_PREVIEW_MAX_BYTES: ${ULTIMA_TASK_RESULT_PREVIEW_MAX_BYTES:-}
+      ULTIMA_LOG_QUEUE_MAX_ENTRIES: ${ULTIMA_LOG_QUEUE_MAX_ENTRIES:-}
+      ULTIMA_LOG_QUEUE_MAX_BYTES: ${ULTIMA_LOG_QUEUE_MAX_BYTES:-}
+      ULTIMA_SUBSCRIPTION_HYDRATION_CONCURRENCY: ${ULTIMA_SUBSCRIPTION_HYDRATION_CONCURRENCY:-}
+      ULTIMA_SUBSCRIPTION_BATCH_SIZE: ${ULTIMA_SUBSCRIPTION_BATCH_SIZE:-}
+      ULTIMA_DOWNLOAD_TARGET_BATCH_SIZE: ${ULTIMA_DOWNLOAD_TARGET_BATCH_SIZE:-}
+      ULTIMA_STATS_BATCH_SIZE: ${ULTIMA_STATS_BATCH_SIZE:-}
+      ULTIMA_RECOVERY_SCAN_COUNT: ${ULTIMA_RECOVERY_SCAN_COUNT:-}
+      ULTIMA_TASK_PAGE_SCAN_ENTRIES: ${ULTIMA_TASK_PAGE_SCAN_ENTRIES:-}
+      ULTIMA_INTERACTIVE_DB_CONCURRENCY: ${ULTIMA_INTERACTIVE_DB_CONCURRENCY:-}
+      ULTIMA_MEDIA_PROCESS_CONCURRENCY: ${ULTIMA_MEDIA_PROCESS_CONCURRENCY:-}
+      ULTIMA_MEDIA_PROCESS_QUEUE_ENTRIES: ${ULTIMA_MEDIA_PROCESS_QUEUE_ENTRIES:-}
+      ULTIMA_MEDIA_PROCESS_OUTPUT_BYTES: ${ULTIMA_MEDIA_PROCESS_OUTPUT_BYTES:-}
+      ULTIMA_DATABASE_WRITER_LEADER_TTL_SECONDS: ${ULTIMA_DATABASE_WRITER_LEADER_TTL_SECONDS:-30}
+      ULTIMA_DATABASE_WRITER_LEADER_RENEW_SECONDS: ${ULTIMA_DATABASE_WRITER_LEADER_RENEW_SECONDS:-5}
+      ULTIMA_ARCHIVE_DATABASE_URL: ${ULTIMA_ARCHIVE_DATABASE_URL:-}
+      ULTIMA_ARCHIVE_DATABASE_URL_FILE: ${ULTIMA_ARCHIVE_DATABASE_URL_FILE:-}
+      # Deprecated alias; the entrypoint maps it onto ULTIMA_ARCHIVE_DATABASE_URL.
+      DATABASE_URL: ${DATABASE_URL:-}
+      DATABASE_URL_FILE: ${DATABASE_URL_FILE:-}
+      # Used only while ULTIMA_ARCHIVE_DATABASE_URL is empty, e.g. for the
+      # bundled postgres service.
+      POSTGRES_HOST: ${POSTGRES_HOST:-postgres}
+      POSTGRES_PORT: ${POSTGRES_PORT:-5432}
+      POSTGRES_USER: ${POSTGRES_USER:-ultimascraper}
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-ultima_archive}
+      ULTIMA_USE_PGBOUNCER: ${ULTIMA_USE_PGBOUNCER:-false}
+      ULTIMA_PGBOUNCER_GLOBAL_POOL_MODE: ${ULTIMA_PGBOUNCER_GLOBAL_POOL_MODE:-unknown}
+      ULTIMA_PGBOUNCER_GLOBAL_POOL_SIZE: ${ULTIMA_PGBOUNCER_GLOBAL_POOL_SIZE:-2}
+      REDIS_HOST: ${REDIS_HOST:-redis}
+      REDIS_PORT: ${REDIS_PORT:-6379}
+      REDIS_DB: ${REDIS_DB:-0}
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_PASSWORD_FILE: ${REDIS_PASSWORD_FILE:-}
+      ULTIMA_REDIS_APPLICATION_MAX_CONNECTIONS: ${ULTIMA_REDIS_APPLICATION_MAX_CONNECTIONS:-256}
+      ULTIMA_REDIS_WORKER_MAX_CONNECTIONS: ${ULTIMA_REDIS_WORKER_MAX_CONNECTIONS:-32}
+      ULTIMA_REDIS_WRITER_MAX_CONNECTIONS: ${ULTIMA_REDIS_WRITER_MAX_CONNECTIONS:-8}
+      ULTIMA_REDIS_POOL_WAIT_TIMEOUT_SECONDS: ${ULTIMA_REDIS_POOL_WAIT_TIMEOUT_SECONDS:-30}
+      USR_WEBSOCKET_MESSAGE_HISTORY_LIMIT: ${USR_WEBSOCKET_MESSAGE_HISTORY_LIMIT:-1000}
+      USR_WEBSOCKET_EVENT_HISTORY_LIMIT: ${USR_WEBSOCKET_EVENT_HISTORY_LIMIT:-1000}
+    volumes:
+      - config_data:/home/ultimascraper/.config/ultima_scraper_verse
+      - user_data:/app/__user_data__
+      - logs_data:/app/logs
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    healthcheck:
+      test: ["CMD", "python", "/usr/local/bin/usr-worker-healthcheck"]
+      interval: 15s
+      timeout: 5s
+      start_period: 60s
+      retries: 5
+    networks:
+      - usr
+
+  webui:
+    image: ${USR_WEBUI_IMAGE:-ghcr.io/ultimahoarder/ultimascraper/webui}:${USR_VERSION:-latest}
+    profiles: [webui]
+    init: true
+    restart: unless-stopped
+    depends_on:
+      backend:
+        condition: service_healthy
+        required: false
+    environment:
+      # The connection the WebUI's /api and /ws reach. Empty: no default backend;
+      # add backend connections from the WebUI instead.
+      USR_WEBUI_DEFAULT_BACKEND_URL: ${USR_WEBUI_DEFAULT_BACKEND_URL-http://backend:21121}
+      # The backend's admin token: the one it generated into its config volume,
+      # or USR_ADMIN_TOKEN when that is set.
+      USR_WEBUI_DEFAULT_BACKEND_TOKEN_FILE: /backend-config/secrets/USR_ADMIN_TOKEN
+      USR_WEBUI_DEFAULT_BACKEND_TOKEN: ${USR_ADMIN_TOKEN:-}
+      USR_WEBUI_SECRET_KEY: ${USR_WEBUI_SECRET_KEY:-}
+      USR_WEBUI_SECRET_KEY_FILE: ${USR_WEBUI_SECRET_KEY_FILE:-}
+      # HTTPS: "self-signed" creates a certificate in webui_data, or name your
+      # own certificate and key (mounted into the container) instead.
+      USR_WEBUI_TLS: ${USR_WEBUI_TLS:-}
+      USR_WEBUI_TLS_CERT_FILE: ${USR_WEBUI_TLS_CERT_FILE:-}
+      USR_WEBUI_TLS_KEY_FILE: ${USR_WEBUI_TLS_KEY_FILE:-}
+      USR_WEBUI_TLS_HOSTNAMES: ${USR_WEBUI_TLS_HOSTNAMES:-}
+      # Public names the WebUI answers to, e.g. behind a reverse proxy; see
+      # docs/operations/webui-server.md#host-names-and-reverse-proxies.
+      USR_WEBUI_ALLOWED_HOSTS: ${USR_WEBUI_ALLOWED_HOSTS:-}
+      USR_WEBUI_TRUSTED_PROXIES: ${USR_WEBUI_TRUSTED_PROXIES:-}
+    volumes:
+      - webui_data:/data
+      - config_data:/backend-config:ro
+    # Lets the WebUI's installer reach the machine it runs on over SSH.
+    extra_hosts:
+      - "host.docker.internal:host-gateway"
+    ports:
+      - "${USR_WEB_PORT:-21120}:21120"
+    healthcheck:
+      # HTTP or HTTPS, as configured.
+      test: ["CMD", "python", "-m", "ultima_webui_server.healthcheck"]
+      interval: 30s
+      timeout: 5s
+      start_period: 10s
+      retries: 5
+    networks:
+      - usr
+
+  postgres:
+    # PostgreSQL 16 with pgvector; UltimaScraper needs the vector extension.
+    image: pgvector/pgvector:pg16@sha256:7b822b0aac60967beb1ea5e576b8602c94c300a157d187f385ae3e0da199b90a
+    profiles: [postgres]
+    restart: unless-stopped
+    environment:
+      POSTGRES_USER: ${POSTGRES_USER:-ultimascraper}
+      # The image refuses to start without a password.
+      POSTGRES_PASSWORD: ${POSTGRES_PASSWORD:-}
+      POSTGRES_DB: ${POSTGRES_DB:-ultima_archive}
+    volumes:
+      - postgres_data:/var/lib/postgresql/data
+    healthcheck:
+      test: ["CMD-SHELL", "pg_isready -U \"$${POSTGRES_USER}\" -d \"$${POSTGRES_DB}\""]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - usr
+
+  redis:
+    image: redis:7-alpine@sha256:57e4255cc971b1c8d6f8a6ca283ac01bc3ecdd914273ef6bfaede87aaecd6541
+    profiles: [redis]
+    restart: unless-stopped
+    environment:
+      REDIS_PASSWORD: ${REDIS_PASSWORD:-}
+      REDIS_MAXMEMORY: ${REDIS_MAXMEMORY:-4gb}
+    command:
+      - /bin/sh
+      - -ec
+      - |
+        test -n "$${REDIS_PASSWORD}" || { echo "Set REDIS_PASSWORD for the bundled Redis." >&2; exit 1; }
+        exec redis-server --requirepass "$${REDIS_PASSWORD}" --appendonly yes --maxmemory "$${REDIS_MAXMEMORY}" --maxmemory-policy noeviction
+    volumes:
+      - redis_data:/data
+    healthcheck:
+      test: ["CMD-SHELL", "redis-cli --no-auth-warning -a \"$${REDIS_PASSWORD}\" ping | grep PONG"]
+      interval: 10s
+      timeout: 5s
+      retries: 10
+    networks:
+      - usr
+
+volumes:
+  config_data:
+  user_data:
+  logs_data:
+  webui_data:
+  postgres_data:
+  redis_data:
+
+networks:
+  usr:
+    driver: bridge

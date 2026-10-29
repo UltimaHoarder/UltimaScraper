@@ -1,0 +1,47 @@
+/* Room for every WebUI side by side; the modal fills the screen and never scrolls. */
+:root body .modal-content.modal-content--wide.architecture-modal {
+  --atlas-dialog-width: 1600px;
+  display: flex;
+  flex-direction: column;
+  width: min(96vw, 1600px);
+  max-width: min(96vw, 1600px);
+  height: min(92dvh, 1100px);
+  overflow: hidden;
+}
+
+:root body .modal-content.modal-content--wide.architecture-modal .modal-body {
+  display: flex;
+  flex: 1;
+  flex-direction: column;
+  min-height: 0;
+  max-height: none;
+  overflow: hidden;
+}
+
+/* The canvas takes whatever height is left; the footer sits under it while a flow plays. */
+.architecture-modal .arch {
+  flex: 1;
+  min-height: 0;
+  margin: 0;
+  display: flex;
+  flex-direction: column;
+}
+
+.architecture-modal .arch-viewport {
+  flex: 1;
+  min-height: 12rem;
+  height: auto;
+}
+
+.architecture-modal .arch-footer,
+.architecture-modal .arch-toolbar,
+.architecture-modal .arch figcaption {
+  flex: none;
+}
+
+/* On a phone the canvas needs every pixel; the gestures speak for themselves. */
+@media (max-width: 600px) {
+  .architecture-modal .arch figcaption {
+    display: none;
+  }
+}

@@ -1,0 +1,381 @@
+/* ================================================
+   Startup Sequence — Ultimur V1 Boot Screen
+   ================================================ */
+
+.startup-container {
+    display: flex;
+    justify-content: center;
+    align-items: center;
+    min-height: 100vh;
+    background: #090a08;
+    color: rgba(255, 255, 255, 0.72);
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    padding: 2rem;
+    position: relative;
+    overflow: hidden;
+}
+
+.startup-container::before {
+    content: '';
+    position: absolute;
+    inset: 0;
+    background: repeating-linear-gradient(
+        0deg,
+        transparent,
+        transparent 2px,
+        rgba(130, 214, 178, 0.015) 2px,
+        rgba(130, 214, 178, 0.015) 4px
+    );
+    pointer-events: none;
+    z-index: 1;
+}
+
+.startup-inner {
+    display: flex;
+    flex-direction: column;
+    align-items: center;
+    max-width: 680px;
+    width: 100%;
+    position: relative;
+    z-index: 2;
+}
+
+/* Ambient background glow */
+.startup-glow {
+    position: absolute;
+    top: 35%;
+    left: 50%;
+    transform: translate(-50%, -50%);
+    width: 500px;
+    height: 300px;
+    background: radial-gradient(ellipse at center,
+            rgba(130, 214, 178, 0.04) 0%,
+            rgba(130, 214, 178, 0.01) 50%,
+            transparent 70%);
+    pointer-events: none;
+    z-index: 0;
+}
+
+/* ---- Status Bar ---- */
+
+.startup-status-bar {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    margin-bottom: 2rem;
+    padding: 0.5rem 1.2rem;
+    background: rgba(130, 214, 178, 0.04);
+    border: 1px solid rgba(130, 214, 178, 0.1);
+    border-radius: 0;
+}
+
+.startup-pulse {
+    width: 8px;
+    height: 8px;
+    border-radius: 0;
+    background: #82d6b2;
+    animation: pulse-glow 1.5s ease-in-out infinite;
+}
+
+@keyframes pulse-glow {
+    0%, 100% {
+        box-shadow: 0 0 0 0 rgba(130, 214, 178, 0.4);
+        opacity: 1;
+    }
+    50% {
+        box-shadow: 0 0 0 6px rgba(130, 214, 178, 0);
+        opacity: 0.5;
+    }
+}
+
+.startup-check {
+    color: #82d6b2;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.startup-x {
+    color: #d9aa52;
+    font-size: 0.85rem;
+    font-weight: 700;
+}
+
+.startup-status-text {
+    font-size: 0.72rem;
+    font-weight: 500;
+    color: rgba(255, 255, 255, 0.45);
+    letter-spacing: 0.06em;
+    text-transform: uppercase;
+}
+
+.startup-connection-meta {
+    display: flex;
+    justify-content: center;
+    gap: 1rem;
+    margin: -1rem 0 1.25rem;
+    color: rgba(255, 255, 255, 0.32);
+    font-size: 0.64rem;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.startup-notice {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    width: 100%;
+    margin-bottom: 1rem;
+    padding: 0.8rem 1rem;
+    border: 1px solid rgba(255, 255, 255, 0.1);
+    background: rgba(255, 255, 255, 0.035);
+    color: rgba(255, 255, 255, 0.58);
+    font-size: 0.7rem;
+    line-height: 1.5;
+}
+
+.startup-notice strong {
+    color: rgba(255, 255, 255, 0.78);
+    white-space: nowrap;
+}
+
+.startup-notice span {
+    min-width: 0;
+    flex: 1;
+}
+
+.startup-notice .startup-btn {
+    flex: none;
+    white-space: nowrap;
+}
+
+.startup-notice-warning {
+    border-color: rgba(217, 170, 82, 0.25);
+    background: rgba(217, 170, 82, 0.07);
+}
+
+.startup-notice-error {
+    border-color: rgba(224, 112, 112, 0.3);
+    background: rgba(224, 112, 112, 0.07);
+    color: rgba(255, 205, 205, 0.72);
+}
+
+/* ---- Terminal Window ---- */
+
+.startup-terminal {
+    width: 100%;
+    border-radius: 0;
+    border: 1px solid rgba(130, 214, 178, 0.1);
+    background: #0e100d;
+    box-shadow: 0 4px 24px rgba(0, 0, 0, 0.5);
+    overflow: hidden;
+    max-height: 320px;
+    display: flex;
+    flex-direction: column;
+}
+
+.startup-review-panel {
+    width: 100%;
+    margin-top: 1rem;
+    border-radius: 0;
+    border: 1px solid rgba(130, 214, 178, 0.1);
+    background: rgba(14, 16, 13, 0.95);
+    box-shadow: 0 8px 24px rgba(0, 0, 0, 0.4);
+    overflow: hidden;
+}
+
+.startup-review-intro {
+    display: flex;
+    flex-direction: column;
+    gap: 0.3rem;
+    padding: 0.85rem 1rem;
+    border-bottom: 1px solid rgba(130, 214, 178, 0.08);
+    background: rgba(130, 214, 178, 0.035);
+    font-size: 0.72rem;
+    line-height: 1.5;
+}
+
+.startup-review-intro strong {
+    color: #82d6b2;
+    letter-spacing: 0.05em;
+    text-transform: uppercase;
+}
+
+.startup-review-intro span {
+    color: rgba(255, 255, 255, 0.48);
+}
+
+.startup-review-meta {
+    display: flex;
+    justify-content: space-between;
+    gap: 1rem;
+    padding: 0.65rem 1rem;
+    font-size: 0.7rem;
+    color: rgba(130, 214, 178, 0.6);
+    border-bottom: 1px solid rgba(130, 214, 178, 0.08);
+    flex-wrap: wrap;
+    letter-spacing: 0.04em;
+    text-transform: uppercase;
+}
+
+.startup-review-actions {
+    display: flex;
+    gap: 0.5rem;
+    padding: 0.65rem 1rem;
+    border-bottom: 1px solid rgba(130, 214, 178, 0.08);
+}
+
+.startup-btn {
+    border: 1px solid transparent;
+    border-radius: 0;
+    padding: 0.4rem 0.8rem;
+    font-size: 0.7rem;
+    font-weight: 600;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    text-transform: uppercase;
+    letter-spacing: 0.06em;
+    cursor: pointer;
+    transition: all 0.16s ease;
+}
+
+.startup-btn:disabled {
+    opacity: 0.4;
+    cursor: not-allowed;
+}
+
+.startup-btn-primary {
+    background: rgba(130, 214, 178, 0.14);
+    border-color: rgba(130, 214, 178, 0.3);
+    color: #82d6b2;
+}
+
+.startup-btn-primary:hover:not(:disabled) {
+    background: rgba(130, 214, 178, 0.22);
+}
+
+.startup-btn-secondary {
+    background: rgba(255, 255, 255, 0.05);
+    border-color: rgba(255, 255, 255, 0.12);
+    color: rgba(255, 255, 255, 0.6);
+}
+
+.startup-btn-secondary:hover:not(:disabled) {
+    background: rgba(255, 255, 255, 0.1);
+}
+
+.startup-btn-danger {
+    background: rgba(217, 170, 82, 0.12);
+    border-color: rgba(217, 170, 82, 0.35);
+    color: #d9aa52;
+}
+
+.startup-btn-danger:hover:not(:disabled) {
+    background: rgba(217, 170, 82, 0.2);
+}
+
+.startup-diff {
+    margin: 0;
+    padding: 1rem;
+    max-height: 260px;
+    overflow: auto;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.68rem;
+    line-height: 1.55;
+    color: rgba(130, 214, 178, 0.7);
+    background: rgba(9, 10, 8, 0.95);
+    white-space: pre-wrap;
+    word-break: break-word;
+}
+
+.terminal-header {
+    display: flex;
+    align-items: center;
+    gap: 0.75rem;
+    padding: 0.55rem 1rem;
+    background: rgba(130, 214, 178, 0.03);
+    border-bottom: 1px solid rgba(130, 214, 178, 0.06);
+}
+
+/* Remove macOS dots — use a simple indicator instead */
+.terminal-dot {
+    display: none;
+}
+
+.terminal-title {
+    font-size: 0.62rem;
+    color: rgba(130, 214, 178, 0.4);
+    text-transform: uppercase;
+    letter-spacing: 0.14em;
+    font-weight: 600;
+}
+
+.terminal-body {
+    padding: 1rem;
+    overflow-y: auto;
+    flex: 1;
+    font-family: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+    font-size: 0.72rem;
+    line-height: 1.7;
+}
+
+.terminal-line {
+    color: rgba(255, 255, 255, 0.35);
+    display: flex;
+    gap: 0.5rem;
+    align-items: baseline;
+}
+
+.terminal-line.line-success {
+    color: #82d6b2;
+}
+
+.terminal-line.line-error {
+    color: #d9aa52;
+}
+
+.terminal-prompt {
+    color: rgba(130, 214, 178, 0.6);
+    font-weight: 600;
+    flex-shrink: 0;
+}
+
+/* Scrollbar */
+.terminal-body::-webkit-scrollbar {
+    width: 4px;
+}
+
+.terminal-body::-webkit-scrollbar-track {
+    background: transparent;
+}
+
+.terminal-body::-webkit-scrollbar-thumb {
+    background: rgba(130, 214, 178, 0.1);
+    border-radius: 0;
+}
+
+.terminal-body::-webkit-scrollbar-thumb:hover {
+    background: rgba(130, 214, 178, 0.2);
+}
+
+@media (max-width: 760px) {
+    .startup-container {
+        padding: 1rem;
+    }
+
+    .startup-review-actions {
+        flex-wrap: wrap;
+    }
+
+    .startup-notice {
+        align-items: flex-start;
+        flex-direction: column;
+    }
+
+    .startup-notice strong {
+        white-space: normal;
+    }
+
+    .startup-btn {
+        flex: 1;
+        min-width: 120px;
+    }
+}

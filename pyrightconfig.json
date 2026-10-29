@@ -1,0 +1,29 @@
+{
+  "typeCheckingMode": "strict",
+  "venvPath": ".",
+  "venv": ".venv",
+  "pythonVersion": "3.14",
+  "include": [
+    "main.py",
+    "../UltimaBackends/UltimaScraperBackend"
+  ],
+  "exclude": [
+    ".venv",
+    "**/__pycache__",
+    "**/.pytest_cache",
+    "**/build",
+    "**/dist",
+    "**/node_modules"
+  ],
+  "extraPaths": [
+    ".",
+    "src/UltimaScraperWeb",
+    "src",
+    "../UltimaBackends/UltimaScraperBackend",
+    "../UltimaScraperAPI",
+    "../UltimaScraperCore",
+    "../UltimaDatabases/UltimaScraperDB",
+    "../UltimaDatabases/UltimaScraperDBArchive"
+  ],
+  "reportMissingTypeStubs": "none"
+}

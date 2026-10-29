@@ -1,0 +1,765 @@
+@import './UserProfileBase.css';
+@import '../content/ContentLibraryBase.css';
+
+/* User-profile media should open as a clean lightbox, not as a second card
+ * inside the profile layout. ContentLibraryBase owns the shared card styles,
+ * so keep its lightbox markup but flatten the Ultimur presentation here. */
+.ultimur-user-profile-page ~ .cc-lightbox-overlay,
+.cc-lightbox-overlay:has(.cc-lightbox-content) {
+  background: rgba(0, 0, 0, 0.94);
+}
+
+.cc-lightbox-overlay:has(.cc-lightbox-content) .cc-lightbox-content {
+  width: 100vw;
+  height: 100vh;
+  min-height: 0;
+  padding: 0;
+  background: transparent;
+  border: 0;
+  border-radius: 0;
+  box-shadow: none;
+}
+
+.cc-lightbox-overlay:has(.cc-lightbox-content) .cc-lightbox-media {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+  border-radius: 0;
+}
+
+.cc-lightbox-overlay:has(.cc-lightbox-content) .cc-lightbox-media .vjs-lightbox,
+.cc-lightbox-overlay:has(.cc-lightbox-content) .cc-lightbox-media .vjs-lightbox > div,
+.cc-lightbox-overlay:has(.cc-lightbox-content) .cc-lightbox-media .vjs-lightbox .video-js {
+  width: 100%;
+  height: 100%;
+  min-height: 0;
+}
+
+.cc-lightbox-overlay:has(.cc-lightbox-content) .cc-lightbox-close {
+  top: 8px;
+  right: 8px;
+  border-radius: 8px;
+  background: rgba(30, 30, 30, 0.82);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page {
+  gap: 1.2rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-dossier {
+  display: grid;
+  gap: 1rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-body {
+  padding: 1.3rem 1.45rem 1.35rem;
+  padding-bottom: 1.35rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-avatar-area {
+  margin-top: -54px;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__body {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) minmax(260px, 0.38fr);
+  gap: 1rem;
+  margin-bottom: 0.8rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__identity {
+  display: grid;
+  gap: 0.8rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-banner {
+  height: 170px;
+  background-position: center 34%;
+  border-bottom: 1px solid rgb(var(--color-success-rgb) / 0.12);
+  position: relative;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-banner::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgb(255 255 255 / 0.03) 0,
+      rgb(255 255 255 / 0.03) 1px,
+      transparent 2px,
+      transparent 5px
+    );
+  opacity: 0.22;
+  pointer-events: none;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-banner-empty {
+  height: 140px;
+  background:
+    linear-gradient(180deg, rgb(0 0 0 / 0.1), rgb(0 0 0 / 0.4)),
+    radial-gradient(circle at 75% 18%, rgb(var(--color-success-rgb) / 0.12), transparent 24%),
+    linear-gradient(120deg, #182019 0%, #2f3428 34%, #20251e 58%, #121710 100%);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-avatar {
+  width: 96px;
+  height: 96px;
+  border-color: #0a0f0a;
+  border-radius: 0;
+  box-shadow:
+    0 0 0 1px rgb(var(--color-warning-rgb) / 0.18),
+    0 14px 30px rgb(0 0 0 / 0.28);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-avatar-placeholder {
+  font-size: 1.9rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__kickerline {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.4rem 0.85rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__kicker,
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__flag {
+  font-size: 0.62rem;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__kicker {
+  color: var(--color-warning);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__flag {
+  color: var(--color-text-tertiary);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__kicker-actions {
+  align-items: center;
+  display: inline-flex;
+  flex-wrap: wrap;
+  gap: 0.55rem 0.8rem;
+  justify-content: flex-end;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__back {
+  background: transparent;
+  border: 1px solid rgb(var(--color-accent-rgb) / 0.42);
+  color: #f4ded6;
+  cursor: pointer;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  padding: 0.32rem 0.5rem;
+  text-transform: uppercase;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__back:hover {
+  background: rgb(var(--color-accent-rgb) / 0.16);
+  border-color: rgb(var(--color-accent-rgb) / 0.7);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__site-link {
+  border: 1px solid rgb(var(--color-success-rgb) / 0.22);
+  color: #bde7d2;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.12em;
+  padding: 0.32rem 0.5rem;
+  text-decoration: none;
+  text-transform: uppercase;
+  transition: background 140ms ease, border-color 140ms ease;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__site-link:hover {
+  background: rgb(var(--color-success-rgb) / 0.1);
+  border-color: rgb(var(--color-success-rgb) / 0.42);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-name {
+  font-family: Georgia, 'Times New Roman', serif;
+  font-size: clamp(2rem, 4vw, 3.2rem);
+  line-height: 0.95;
+  letter-spacing: 0.04em;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-username,
+:root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-user-id {
+  font-family: var(--font-mono);
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__identity-line {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: baseline;
+  gap: 0.7rem 0.9rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__rail {
+  padding: 1rem;
+  border-radius: 20px 10px 16px 10px;
+  border: 1px solid rgb(var(--color-warning-rgb) / 0.18);
+  background:
+    linear-gradient(180deg, rgb(var(--color-warning-rgb) / 0.08), transparent 100%),
+    #10130f;
+  display: grid;
+  gap: 0.85rem;
+  align-content: start;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__rail-kicker,
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__rail-row label {
+  font-size: 0.62rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__rail-kicker {
+  color: var(--color-warning);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__rail-list {
+  display: grid;
+  gap: 0.8rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__rail-row {
+  display: grid;
+  gap: 0.2rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__rail-row label {
+  color: var(--color-text-tertiary);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__rail-row span {
+  font-family: var(--font-mono);
+  color: var(--color-text-primary);
+  line-height: 1.45;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__actions {
+  padding-top: 0.2rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__ledger {
+  display: grid;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+  gap: 0.75rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__ledger-cell {
+  display: grid;
+  gap: 0.3rem;
+  padding: 0.8rem 0.9rem;
+  border-radius: 16px 8px 14px 8px;
+  border: 1px solid rgb(var(--color-success-rgb) / 0.14);
+  background:
+    linear-gradient(180deg, rgb(var(--color-success-rgb) / 0.05), transparent 100%),
+    #0d120d;
+  min-height: 100%;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__ledger-cell label,
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__ledger-cell small {
+  font-size: 0.63rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__ledger-cell label {
+  color: var(--color-text-tertiary);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__ledger-cell span {
+  font-family: var(--font-mono);
+  font-size: 1.05rem;
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-card__ledger-cell small {
+  color: var(--color-warning);
+  line-height: 1.45;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-stats {
+  display: grid;
+  grid-template-columns: repeat(7, minmax(0, 1fr));
+  gap: 0.65rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-stat {
+  min-width: 0;
+  padding: 14px 8px 12px;
+  background:
+    linear-gradient(180deg, rgb(var(--color-success-rgb) / 0.03), rgb(0 0 0 / 0.04)),
+    linear-gradient(180deg, #0d120d, #070905);
+  border: 1px solid rgb(var(--color-success-rgb) / 0.05);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-stat__icon {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.2em;
+  color: var(--color-warning);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-stat .stat-pill-label {
+  white-space: nowrap;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-stat :is(.stat-pill-value, .stat-pill-label, .stat-pill-meta) {
+  overflow-wrap: anywhere;
+  max-width: 100%;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-stat--button {
+  align-items: center;
+  font: inherit;
+  color: inherit;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-tabs {
+  display: flex;
+  gap: 0.8rem;
+  flex-wrap: wrap;
+  padding: 0 2px;
+  margin-top: 0.25rem;
+  border: 0;
+  background: transparent;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-tabs .profile-tab {
+  min-height: 36px;
+  padding: 0.85rem 1rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-size: 0.68rem;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  box-shadow: none;
+  transition: color 140ms ease, box-shadow 140ms ease;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-tabs .profile-tab:hover {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-profile-tabs .profile-tab.active {
+  background: transparent;
+  border-color: transparent;
+  color: var(--color-success);
+  box-shadow: inset 0 -1px 0 rgb(var(--color-success-rgb) / 0.18);
+  text-shadow: 0 0 7px rgb(var(--color-success-rgb) / 0.24), 0 0 15px rgb(var(--color-success-rgb) / 0.08);
+}
+
+:root[data-theme='ultima-atlas'] .overview-section,
+:root[data-theme='ultima-atlas'] .overview-left,
+:root[data-theme='ultima-atlas'] .overview-right,
+:root[data-theme='ultima-atlas'] .content-tab {
+  border-radius: 22px 10px 18px 10px;
+}
+
+/* ── Content tab – paper-panel + CRT dossier language ──────────── */
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-tab {
+  display: grid;
+  gap: 1.1rem;
+  padding: 1.15rem 1.25rem;
+  border-radius: 0;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgb(255 255 255 / 0.02) 0,
+      rgb(255 255 255 / 0.02) 1px,
+      transparent 2px,
+      transparent 5px
+    ),
+    radial-gradient(circle at top right, rgb(var(--color-success-rgb) / 0.06), transparent 24%),
+    linear-gradient(180deg, #0d140f, #060906);
+  border: 1px solid rgb(var(--color-success-rgb) / 0.05);
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.03);
+  position: relative;
+  overflow: hidden;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-tab::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(var(--color-success-rgb) / 0.05);
+  pointer-events: none;
+}
+
+/* ── Toolbar ─────────────────────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-toolbar {
+  gap: 0.9rem;
+  padding: 1rem 1.1rem;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.02), transparent 14%),
+    linear-gradient(180deg, #0e130d, #090c08);
+  border: 1px solid rgb(var(--color-success-rgb) / 0.05);
+  border-radius: 0;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-filters {
+  display: grid;
+  gap: 0.75rem;
+}
+
+/* ── Content-type tabs (slim terminal buttons) ────────────────── */
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-tabs {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.55rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-tab {
+  min-height: 34px;
+  padding: 0.6rem 0.85rem;
+  border: 0;
+  border-radius: 0;
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 400;
+  letter-spacing: 0.2em;
+  text-transform: uppercase;
+  transition: color 140ms ease, box-shadow 140ms ease;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-tab:hover {
+  color: var(--color-text-primary);
+  background: transparent;
+  border-color: transparent;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-tab.active {
+  color: #c2edd9;
+  background: transparent;
+  border-color: transparent;
+  box-shadow: inset 0 -1px 0 rgb(var(--color-success-rgb) / 0.18);
+  text-shadow: 0 0 7px rgb(var(--color-success-rgb) / 0.24), 0 0 15px rgb(var(--color-success-rgb) / 0.08);
+}
+
+/* ── Controls (search + sort) ─────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-controls {
+  display: grid;
+  grid-template-columns: minmax(0, 1fr) auto;
+  gap: 0.75rem;
+  align-items: end;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-search,
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-sort {
+  min-width: 0;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-search-icon {
+  color: #8db59e;
+  font-size: 0.8rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-search-input,
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-select,
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-order-btn,
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-filter-btn {
+  min-height: 34px;
+  border-radius: 0;
+  background:
+    linear-gradient(180deg, rgb(255 255 255 / 0.02), transparent 14%),
+    linear-gradient(180deg, #0e130d, #090c08);
+  border: 1px solid rgb(var(--color-success-rgb) / 0.08);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  box-shadow: inset 0 1px 0 rgb(255 255 255 / 0.02);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-search-input::placeholder {
+  color: #8db59e;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-filter-btn {
+  color: #c2edd9;
+  border-color: rgb(var(--color-success-rgb) / 0.14);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-filter-btn:hover {
+  background: rgb(var(--color-success-rgb) / 0.06);
+  border-color: rgb(var(--color-success-rgb) / 0.24);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-sort {
+  display: flex;
+  align-items: end;
+  gap: 0.45rem;
+  flex-wrap: wrap;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-sort-label {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #8db59e;
+  text-shadow: 0 0 7px rgb(var(--color-success-rgb) / 0.24), 0 0 15px rgb(var(--color-success-rgb) / 0.08);
+}
+
+/* ── Stats line ──────────────────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-stats {
+  padding: 0;
+  color: #9fd8b8;
+  font-family: var(--font-mono);
+  font-size: 0.74rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  text-shadow: 0 0 7px rgb(var(--color-success-rgb) / 0.24), 0 0 15px rgb(var(--color-success-rgb) / 0.08);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-loading-text {
+  color: #c2edd9;
+}
+
+/* ── Content card grid ───────────────────────────────────────────── */
+/* Cards inherit base styles from ContentLibraryBase.css for consistency */
+
+/* ── Paid content banner ────────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .paid-content-banner {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  margin: 0;
+  padding: 0.72rem 1rem;
+  border-radius: 0;
+  border: 1px solid rgb(var(--color-warning-rgb) / 0.22);
+  border-left: 3px solid rgb(var(--color-warning-rgb) / 0.38);
+  background: rgb(var(--color-warning-rgb) / 0.06);
+  color: #ecd59c;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .paid-content-banner-icon {
+  font-size: 0.85rem;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .paid-content-banner-text {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+/* ── Empty / error states ──────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-empty,
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-error {
+  border: 1px solid rgb(var(--color-success-rgb) / 0.08);
+  border-radius: 0;
+  background:
+    radial-gradient(circle at 50% 20%, rgb(var(--color-success-rgb) / 0.06), transparent 30%),
+    linear-gradient(180deg, #071009, #020503);
+  color: #c2edd9;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  text-shadow: 0 0 7px rgb(var(--color-success-rgb) / 0.24), 0 0 15px rgb(var(--color-success-rgb) / 0.08);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-empty-icon {
+  filter: brightness(0.9) hue-rotate(10deg);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-empty-hint {
+  color: #8db59e;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-end {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+  color: #8db59e;
+  text-shadow: 0 0 7px rgb(var(--color-success-rgb) / 0.24), 0 0 15px rgb(var(--color-success-rgb) / 0.08);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-spinner {
+  color: #c2edd9;
+  font-family: var(--font-mono);
+  text-transform: uppercase;
+  letter-spacing: 0.1em;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-spinner-ring {
+  border-color: rgb(var(--color-success-rgb) / 0.12);
+  border-top-color: #c2edd9;
+}
+
+/* ── Skeleton cards ──────────────────────────────────────────────── */
+/* Inherit base skeleton styles from ContentLibraryBase.css */
+
+/* ── Filter modal ──────────────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-filter-modal {
+  border-radius: 0;
+  background:
+    repeating-linear-gradient(
+      to bottom,
+      rgb(255 255 255 / 0.02) 0,
+      rgb(255 255 255 / 0.02) 1px,
+      transparent 2px,
+      transparent 5px
+    ),
+    linear-gradient(180deg, #0e130d, #060906);
+  border: 1px solid rgb(var(--color-success-rgb) / 0.12);
+  box-shadow: 0 26px 70px rgb(0 0 0 / 0.45);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-filter-modal-header {
+  border-bottom: 1px solid rgb(var(--color-success-rgb) / 0.1);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-filter-modal-header h3 {
+  font-family: var(--font-mono);
+  letter-spacing: 0.18em;
+  text-transform: uppercase;
+  color: #c2edd9;
+  text-shadow: 0 0 7px rgb(var(--color-success-rgb) / 0.24), 0 0 15px rgb(var(--color-success-rgb) / 0.08);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-filter-help {
+  color: #8db59e;
+  font-family: var(--font-mono);
+  font-size: 0.76rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-filter-row {
+  border-radius: 0;
+  border-bottom: 1px solid rgb(var(--color-success-rgb) / 0.08);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-filter-name {
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  color: #c2edd9;
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-filter-state-btn {
+  border-radius: 0;
+  border: 1px solid rgb(var(--color-success-rgb) / 0.12);
+  background: transparent;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-filter-state-btn.active {
+  background: rgb(var(--color-success-rgb) / 0.12);
+  border-color: rgb(var(--color-success-rgb) / 0.3);
+  color: #c2edd9;
+  text-shadow: 0 0 7px rgb(var(--color-success-rgb) / 0.24);
+}
+
+:root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-filter-close {
+  color: #c2edd9;
+}
+
+/* ── Shared typography overrides ─────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .overview-section-title,
+:root[data-theme='ultima-atlas'] .content-library-filter-name,
+:root[data-theme='ultima-atlas'] .section-title {
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .overview-bio,
+:root[data-theme='ultima-atlas'] .profile-card-bio {
+  color: var(--color-text-secondary);
+}
+
+/* ── Responsive breakpoints ──────────────────────────────────────── */
+
+@media (max-width: 1023px) {
+  :root[data-theme='ultima-atlas'] .ultimur-profile-card__body {
+    grid-template-columns: 1fr;
+  }
+
+  :root[data-theme='ultima-atlas'] .ultimur-profile-card__ledger {
+    grid-template-columns: 1fr;
+  }
+
+  :root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-controls {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 767px) {
+  :root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-body {
+    margin-top: -40px;
+    padding: 1rem 1rem 1.1rem;
+  }
+
+  :root[data-theme='ultima-atlas'] .ultimur-profile-card__actions {
+    gap: 0.6rem;
+  }
+
+  :root[data-theme='ultima-atlas'] .ultimur-profile-stats {
+    grid-template-columns: repeat(auto-fit, minmax(110px, 1fr));
+    gap: 0.5rem;
+  }
+
+  :root[data-theme='ultima-atlas'] .ultimur-profile-stat {
+    min-width: 0;
+  }
+
+  :root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-banner {
+    height: 106px;
+  }
+
+  :root[data-theme='ultima-atlas'] .ultimur-profile-tabs {
+    flex-wrap: wrap;
+  }
+
+  :root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-tab {
+    padding: 0.85rem;
+  }
+
+  :root[data-theme='ultima-atlas'] .ultimur-user-profile-page .content-library-toolbar {
+    padding: 0.85rem;
+  }
+
+  :root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-avatar {
+    width: 64px;
+    height: 64px;
+  }
+
+  :root[data-theme='ultima-atlas'] .ultimur-profile-card .profile-card-avatar-area {
+    margin-top: -30px;
+  }
+}

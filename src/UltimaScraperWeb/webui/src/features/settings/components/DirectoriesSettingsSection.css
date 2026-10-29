@@ -1,0 +1,92 @@
+.site-directory-aliases-list {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.site-directory-alias-row {
+  display: grid;
+  gap: 0.65rem;
+  padding: 0.85rem;
+  border: 1px solid var(--color-border-primary, rgba(148, 163, 184, 0.28));
+  background: var(--color-bg-tertiary, rgba(8, 14, 21, 0.25));
+}
+
+.site-directory-alias-heading {
+  display: flex;
+  align-items: baseline;
+  gap: 0.65rem;
+  flex-wrap: wrap;
+}
+
+.site-directory-alias-heading strong {
+  color: var(--color-text-primary, #edf2f7);
+}
+
+.site-directory-alias-heading code {
+  font-family: var(--font-mono, monospace);
+}
+
+.site-directory-alias-values,
+.site-directory-alias-add {
+  display: grid;
+  gap: 0.5rem;
+}
+
+.site-directory-alias-value,
+.site-directory-alias-add {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+}
+
+.site-directory-alias-value input,
+.site-directory-alias-add input {
+  min-width: 0;
+  flex: 1;
+  box-sizing: border-box;
+  padding: 0.55rem 0.65rem;
+  border: 1px solid var(--color-border-primary, rgba(148, 163, 184, 0.28));
+  background: var(--color-bg-primary, #0f1720);
+  color: var(--color-text-primary, #edf2f7);
+  font: inherit;
+}
+
+.site-directory-alias-value input:focus,
+.site-directory-alias-add input:focus {
+  outline: none;
+  border-color: var(--color-accent-primary, #2fd4c2);
+  box-shadow: 0 0 0 2px var(--color-accent-soft, rgba(47, 212, 194, 0.15));
+}
+
+.site-directory-alias-value button,
+.site-directory-alias-add button {
+  flex-shrink: 0;
+  padding: 0.55rem 0.75rem;
+  border: 1px solid var(--color-border-primary, rgba(148, 163, 184, 0.28));
+  background: var(--color-bg-secondary, #1d2733);
+  color: var(--color-text-primary, #edf2f7);
+  cursor: pointer;
+}
+
+.site-directory-alias-value button:hover,
+.site-directory-alias-add button:hover {
+  border-color: var(--color-accent-primary, #2fd4c2);
+}
+
+.site-directory-alias-empty {
+  color: var(--color-text-tertiary, #a2b0bf);
+  font-size: var(--font-size-sm, 0.85rem);
+}
+
+@media (max-width: 560px) {
+  .site-directory-alias-value,
+  .site-directory-alias-add {
+    align-items: stretch;
+    flex-direction: column;
+  }
+
+  .site-directory-alias-value button,
+  .site-directory-alias-add button {
+    width: 100%;
+  }
+}

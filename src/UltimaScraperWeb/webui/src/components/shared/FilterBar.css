@@ -1,0 +1,251 @@
+/*
+ * FilterBar — shared filter/search toolbar component
+ * Used by SubscriptionsPage, UsersPage, and similar list pages.
+ */
+
+.filter-bar {
+  display: flex;
+  flex-direction: column;
+  gap: 10px;
+  margin-bottom: 24px;
+  background: #161b22;
+  border: 1px solid #30363d;
+  border-radius: 10px;
+  padding: 14px 16px;
+}
+
+/* ── Rows ─────────────────────────────────────────────────────────────── */
+
+.filter-bar__row {
+  display: flex;
+  align-items: flex-end;
+  gap: 12px;
+  flex-wrap: wrap;
+}
+
+.filter-bar__row--secondary {
+  border-top: 1px solid #21262d;
+  padding-top: 10px;
+}
+
+/* ── Search ───────────────────────────────────────────────────────────── */
+
+.filter-bar__search-wrap {
+  flex: 1;
+  min-width: 200px;
+  position: relative;
+  display: flex;
+  align-items: center;
+}
+
+.filter-bar__search-icon {
+  position: absolute;
+  left: 10px;
+  width: 16px;
+  height: 16px;
+  pointer-events: none;
+  flex-shrink: 0;
+}
+
+.filter-bar__search-input {
+  width: 100%;
+  padding: 9px 32px 9px 34px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #e6edf3;
+  font-size: 14px;
+  transition: border-color 150ms ease, box-shadow 150ms ease;
+}
+
+.filter-bar__search-input:focus {
+  outline: none;
+  border-color: #388bfd;
+  box-shadow: 0 0 0 3px rgba(56, 139, 253, 0.15);
+}
+
+.filter-bar__search-input::placeholder {
+  color: #484f58;
+}
+
+.filter-bar__search-clear {
+  position: absolute;
+  right: 8px;
+  background: none;
+  border: none;
+  color: #666;
+  font-size: 18px;
+  cursor: pointer;
+  line-height: 1;
+  padding: 0 2px;
+}
+
+.filter-bar__search-clear:hover {
+  color: #ccc;
+}
+
+/* ── Labelled group (site / auth selects, etc.) ───────────────────────── */
+
+.filter-bar__group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-bar__label {
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: #6e7681;
+  font-weight: 600;
+}
+
+.filter-bar__select {
+  padding: 8px 12px;
+  background: #0d1117;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  color: #e6edf3;
+  font-size: 13px;
+  min-width: 130px;
+  transition: border-color 150ms ease;
+}
+
+.filter-bar__select:focus {
+  outline: none;
+  border-color: #388bfd;
+}
+
+/* ── Sort field + direction arrow ─────────────────────────────────────── */
+
+.filter-bar__sort-group {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.filter-bar__sort-controls {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.filter-bar__order-btn {
+  width: 34px;
+  height: 34px;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  background: #0d1117;
+  color: #e6edf3;
+  cursor: pointer;
+  font-size: 16px;
+  font-weight: 700;
+  flex-shrink: 0;
+  transition: border-color 150ms ease, color 150ms ease;
+}
+
+.filter-bar__order-btn:hover {
+  border-color: #388bfd;
+  color: #388bfd;
+}
+
+/* ── Toggle switch ────────────────────────────────────────────────────── */
+
+.filter-bar__toggle {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  cursor: pointer;
+  user-select: none;
+  padding-bottom: 1px;
+}
+
+.filter-bar__toggle-track {
+  position: relative;
+  display: inline-block;
+  width: 36px;
+  height: 20px;
+  flex-shrink: 0;
+}
+
+.filter-bar__toggle-track input {
+  opacity: 0;
+  width: 0;
+  height: 0;
+  position: absolute;
+}
+
+.filter-bar__toggle-thumb {
+  position: absolute;
+  inset: 0;
+  background: #30363d;
+  border-radius: 20px;
+  transition: background 150ms ease;
+}
+
+.filter-bar__toggle-thumb::after {
+  content: '';
+  position: absolute;
+  left: 3px;
+  top: 3px;
+  width: 14px;
+  height: 14px;
+  background: #8b949e;
+  border-radius: 50%;
+  transition: transform 150ms ease, background 150ms ease;
+}
+
+.filter-bar__toggle-track input:checked + .filter-bar__toggle-thumb {
+  background: #1f6feb;
+}
+
+.filter-bar__toggle-track input:checked + .filter-bar__toggle-thumb::after {
+  transform: translateX(16px);
+  background: #fff;
+}
+
+.filter-bar__toggle-label {
+  font-size: 13px;
+  color: #c9d1d9;
+}
+
+/* ── Advanced-filters button (optional, slotted via secondaryExtras) ──── */
+
+.filter-bar__filters-btn {
+  height: 34px;
+  padding: 0 12px;
+  border: 1px solid #30363d;
+  border-radius: 6px;
+  background: #0d1117;
+  color: #e6edf3;
+  cursor: pointer;
+  font-size: 13px;
+  font-weight: 500;
+  transition: border-color 150ms ease, color 150ms ease;
+  align-self: flex-end;
+}
+
+.filter-bar__filters-btn:hover {
+  border-color: #388bfd;
+  color: #388bfd;
+}
+
+/* ── Responsive ───────────────────────────────────────────────────────── */
+
+@media (max-width: 600px) {
+  .filter-bar__row {
+    flex-direction: column;
+    align-items: stretch;
+  }
+
+  .filter-bar__search-wrap {
+    min-width: unset;
+  }
+
+  .filter-bar__sort-controls {
+    flex-wrap: nowrap;
+  }
+}

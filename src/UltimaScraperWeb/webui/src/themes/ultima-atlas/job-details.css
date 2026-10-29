@@ -1,0 +1,155 @@
+/* The job runbook defines a local palette; Atlas owns that palette in this theme. */
+@media screen {
+  :root[data-theme='ultima-atlas'] body .jdm-modal.jdm-runbook-modal {
+    --jdm-runbook-accent: #24aac3;
+    --jdm-runbook-accent-soft: rgb(36 170 195 / 0.1);
+    --jdm-runbook-blue: #24aac3;
+    --jdm-runbook-success: #24aac3;
+    --jdm-runbook-danger: #ff0037;
+    --jdm-runbook-warning: #ffd303;
+    --color-bg-primary: #1a1f20;
+    --color-bg-secondary: #202526;
+    --color-bg-tertiary: #272d2e;
+    --color-bg-hover: #303839;
+    --color-text-primary: #f4f4f2;
+    --color-text-secondary: #bec8c9;
+    --color-text-tertiary: #9caeaf;
+    --color-border-primary: #343a3b;
+    --color-border-accent: #24aac3;
+    --color-accent: #24aac3;
+    --color-success: #24aac3;
+    --color-warning: #ffd303;
+    --color-error: #ff0037;
+    font-family: var(--font-sans);
+    width: min(1180px, calc(100vw - 40px)) !important;
+    max-width: calc(100vw - 40px) !important;
+  }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-runbook-header { background: var(--atlas-surface); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-tab.active { color: var(--color-accent-primary); border-bottom-color: var(--color-accent-primary); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-status-errors { color: var(--color-error); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-status::before { border-radius: 0; box-shadow: none; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-runbook-overall-progress { background: conic-gradient(var(--color-accent-primary) var(--jdm-runbook-progress), var(--atlas-line) 0); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-runbook-overall-progress::before { background: var(--atlas-surface); }
+
+  /* Recovery uses three flat work areas, with borders reserved for evidence records. */
+  :root[data-theme='ultima-atlas'] body .jdm-modal :is(.jdm-recovery-heading, .jdm-recovery-layout) { background: transparent; border-radius: 0; box-shadow: none; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-heading { border-width: 0 0 1px; padding: 0 0 16px; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-layout { background: var(--atlas-surface); border-color: var(--atlas-line); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal :is(.jdm-recovery-causes, .jdm-recovery-plan, .jdm-recovery-detail) { background: transparent; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-cause:is(:hover, .is-selected) { background: var(--color-info-soft); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-cause.is-selected { box-shadow: inset 2px 0 var(--color-accent-primary); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal :is(.jdm-recovery-cause > i, .jdm-recovery-section-label > b, .jdm-evidence-open-hint > span, .jdm-recovery-plan li > i) { border-radius: 0; box-shadow: none; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-section-label > b { background: var(--color-bg-tertiary); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-diagnosis > span { color: var(--atlas-muted); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-impact-grid { border-width: 1px 0; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-impact-grid section { background: transparent; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal :is(.jdm-recovery-evidence > .jdm-error-item, .jdm-evidence-fields > div, .jdm-evidence-raw pre) { background: var(--color-bg-primary); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-evidence > .jdm-error-item { border-radius: 2px; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-evidence > .jdm-error-item.is-selected { border-color: var(--color-accent-primary); box-shadow: none; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal :is(.jdm-evidence-select:hover, .jdm-evidence-inspector, .jdm-error-item-url, .jdm-recovery-commit) { background: var(--atlas-surface); box-shadow: none; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-evidence-inspector { border-color: var(--color-accent-primary); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-evidence-source-action { background: var(--color-info-soft); color: var(--color-accent-primary); border-color: var(--color-accent-primary); border-radius: 2px; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-evidence-failures { background: var(--color-error-soft); border-color: var(--color-error); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal :is(.jdm-error-badge, .jdm-recovery-auth, .jdm-recovery-tone.is-critical) { background: var(--color-error-soft); border-color: var(--color-error); color: var(--color-error); border-radius: 2px; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal :is(.jdm-recovery-tone.is-warning, .jdm-recovery-filter-notice) { color: var(--color-warning); background: var(--color-warning-soft); border-color: var(--color-warning); border-radius: 2px; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-tone.is-review { color: var(--color-accent-primary); background: var(--color-info-soft); border-color: var(--color-accent-primary); border-radius: 2px; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-posture { width: 100%; height: auto; min-height: 64px; margin: 8px 0 16px; padding: 12px; background: var(--color-info-soft); border-color: var(--color-accent-primary); border-radius: 0; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-posture:is(.is-critical, .is-warning) { background: var(--color-bg-primary); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-posture.is-critical { border-color: var(--color-error); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-posture.is-warning { border-color: var(--color-warning); }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-posture :is(strong, small) { max-width: none; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal :is(.jdm-recovery-heading h3, .jdm-recovery-diagnosis h4) { font-size: 16px; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal :is(.jdm-recovery-heading p, .jdm-recovery-diagnosis p, .jdm-recovery-impact-grid p, .jdm-recovery-plan li small, .jdm-evidence-inspector-header p, .jdm-evidence-failures p) { font-size: 11px; line-height: 1.5; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal :is(.jdm-recovery-section-label > span, .jdm-recovery-heading > div > span, .jdm-recovery-diagnosis > span, .jdm-recovery-impact-grid span, .jdm-recovery-evidence-heading > span, .jdm-recovery-vitals small, .jdm-recovery-cause small, .jdm-recovery-posture small, .jdm-recovery-tone, .jdm-evidence-fields dt, .jdm-evidence-open-hint, .jdm-recovery-action-note) { font-size: 10px; line-height: 1.4; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal :is(.jdm-recovery-cause strong, .jdm-recovery-plan li b, .jdm-error-item-id, .jdm-recovery-posture strong) { font-size: 12px; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal :is(.jdm-recovery-copy, .jdm-evidence-inspector-close, .jdm-recovery-load-more) { font-size: 11px; background: var(--color-bg-tertiary); border: 1px solid var(--atlas-line); border-radius: 2px; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal :is(.jdm-evidence-fields dd, .jdm-evidence-raw summary, .jdm-evidence-raw pre, .jdm-recovery-plan dt, .jdm-recovery-plan dd, .jdm-recovery-cause-header > span, .jdm-recovery-cause-header code) { font-size: 11px; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-cause-header { flex-wrap: wrap; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-plan li > i { width: 20px; height: 20px; font-size: 10px; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-action { background: var(--color-accent-primary); color: #101b1d; border-color: var(--color-accent-primary); }
+
+  /* Chart colors are tokens, shared by SVG traces, legends, and hover readouts. */
+  :root[data-theme='ultima-atlas'] body .jdr-container {
+    --jdr-chart-primary: #24aac3;
+    --jdr-chart-secondary: #f4f4f2;
+    --jdr-chart-latency: #24aac3;
+    --jdr-chart-tail: #f4f4f2;
+    --jdr-chart-success: #24aac3;
+    --jdr-chart-warning: #ffd303;
+    --jdr-chart-error: #ff0037;
+    --jdr-chart-not-found: #bec8c9;
+    --jdr-chart-timeout: #ffd303;
+    --jdr-chart-capacity: #f4f4f2;
+    --jdr-chart-axis: #9caeaf;
+    --jdr-chart-grid: #343a3b;
+    --jdr-chart-bg: #1a1f20;
+    gap: 20px;
+    padding: 0;
+    max-height: none;
+    overflow: visible;
+    min-width: 0;
+  }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-final-summary-card, .jdr-http-container, .jdr-table-container:not(.jdr-collapsible-section), .jdr-regression-card, .jdr-refill-trace:not(.jdr-collapsible-section)) { background: transparent; border-width: 1px 0 0; border-color: var(--atlas-line); border-radius: 0; box-shadow: none; padding: 16px 0; min-width: 0; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-kpi-card, .jdr-chart-card, .jdr-bottleneck-card, .jdr-verdict-banner) { background: var(--color-bg-primary); border-color: var(--atlas-line); border-radius: 2px; box-shadow: none; min-width: 0; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-audit-box, .jdr-http-legend-card) { background: transparent; border-width: 0 0 1px; border-color: var(--atlas-line); border-radius: 0; min-width: 0; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-perf-card, .jdr-duration-breakdown-card, .jdr-telemetry-detail-item) { background: var(--color-bg-primary); border-color: var(--atlas-line); border-radius: 2px; box-shadow: none; min-width: 0; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-bullet-track, .jdr-util-track, .jdr-segmented-bar, .jdr-failure-track, .jdr-duration-stacked-bar) { background: var(--color-bg-tertiary); border: 1px solid var(--atlas-line); border-radius: 2px; }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-recommendations-box { background: transparent; border-width: 1px 0 0; border-color: var(--atlas-line); border-radius: 0; padding: 16px 0 0; }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-recommendations-title { color: var(--color-accent-primary); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-top-actions-bar { border-color: var(--atlas-line); padding-bottom: 16px; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-action-btn, .jdr-copy-button, .jdr-view-btn) { min-height: 32px; padding: 6px 10px; border-radius: 2px; background: var(--color-bg-tertiary); border: 1px solid var(--atlas-line); box-shadow: none; color: var(--color-text-secondary); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-view-switcher { background: transparent; border: 0; padding: 0; gap: 4px; flex-wrap: wrap; }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-legacy-icon { display: none; }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-atlas-icon { display: inline-block; width: 15px; height: 15px; flex: 0 0 15px; vertical-align: -3px; }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-view-btn.active { color: var(--color-accent-primary); background: var(--color-info-soft); border-color: var(--color-accent-primary); }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-action-btn, .jdr-copy-button):hover { color: var(--color-text-primary); background: var(--color-bg-hover); border-color: var(--color-accent-primary); }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-kpi-meta, .jdr-chart-header, .jdr-section-title, .jdr-regression-header, .jdr-regression-title-row, .jdr-table-header-row, .jdr-export-actions) { flex-wrap: wrap; gap: 8px; min-width: 0; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-pill, .jdr-http-bar-wrapper, .jdr-capacity-meter, .jdr-capacity-meter-fill, .jdr-count-badge) { border-radius: 2px; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-legend-dot, .jdr-tooltip-dot, .jdr-bottleneck-indicator) { border-radius: 0; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-chart-tooltip, .jdr-proxy-search-input, .jdr-baseline-select) { background: var(--color-bg-primary); border-color: var(--atlas-line); border-radius: 2px; box-shadow: none; backdrop-filter: none; }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-grid-line { stroke: var(--atlas-line); stroke-dasharray: none; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-kpi-card.is-success, .jdr-verdict-banner.is-completed) { border-left-color: var(--color-success); }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-kpi-card.is-warning, .jdr-verdict-banner.is-cancelled) { border-left-color: var(--color-warning); }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-kpi-card.is-danger, .jdr-verdict-banner.is-failed) { border-left-color: var(--color-error); }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-pill.is-success, .jdr-pill.is-info) { color: var(--color-success); background: var(--color-success-soft); border-color: var(--color-success); }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-pill.is-warning, .jdr-diagnostic-notice) { color: var(--color-warning); background: var(--color-warning-soft); border-color: var(--color-warning); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-pill.is-danger { color: var(--color-error); background: var(--color-error-soft); border-color: var(--color-error); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-pill.is-neutral { color: var(--color-text-secondary); background: var(--color-bg-tertiary); border-color: var(--atlas-line); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-comparison-status.is-regression { color: var(--color-error); background: var(--color-error-soft); border-color: var(--color-error); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-comparison-status.is-improvement { color: var(--color-success); background: var(--color-success-soft); border-color: var(--color-success); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-comparison-status.is-parity { color: var(--color-accent-primary); background: var(--color-info-soft); border-color: var(--color-accent-primary); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-comparison-status.is-partial { color: var(--color-warning); background: var(--color-warning-soft); border-color: var(--color-warning); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-comparison-status { border-radius: 2px; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-capacity-meter-fill.is-optimal, .jdr-http-segment.is-200) { background: var(--color-success); }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-capacity-meter-fill.is-high, .jdr-http-segment.is-429, .jdr-http-segment.is-timeout) { background: var(--color-warning); }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-capacity-meter-fill.is-saturated, .jdr-http-segment.is-403, .jdr-http-segment.is-5xx) { background: var(--color-error); }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-http-segment.is-404, .jdr-http-segment.is-other) { background: var(--color-text-secondary); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-bottleneck-card { border-left-color: var(--color-success); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-bottleneck-card.is-proxy_saturated { border-left-color: var(--color-error); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-bottleneck-card:is(.is-worker_constrained, .is-claim_refill, .is-routing_stall, .is-queue_starved) { border-left-color: var(--color-warning); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-bottleneck-card.is-insufficient_data { border-left-color: var(--atlas-muted); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-bottleneck-indicator { background: var(--color-success); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-bottleneck-indicator.is-proxy_saturated { background: var(--color-error); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-bottleneck-indicator:is(.is-worker_constrained, .is-claim_refill, .is-routing_stall, .is-queue_starved) { background: var(--color-warning); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-bottleneck-indicator.is-insufficient_data { background: var(--atlas-muted); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-issue-badge { color: var(--color-warning); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-issue-badge.is-critical { color: var(--color-error); }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-filter-pill, .jdr-sort-select, .jdr-sort-order-btn, .jdr-expand-table-btn) { color: var(--color-text-secondary); background: var(--color-bg-tertiary); border: 1px solid var(--atlas-line); border-radius: 2px; min-height: 32px; }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-filter-pill.active { color: var(--color-accent-primary); background: var(--color-info-soft); border-color: var(--color-accent-primary); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-filter-pill.is-danger.active { color: var(--color-error); background: var(--color-error-soft); border-color: var(--color-error); }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-filter-pill:is(.is-warning, .is-info).active { color: var(--color-warning); background: var(--color-warning-soft); border-color: var(--color-warning); }
+  :root[data-theme='ultima-atlas'] body .jdr-container table :is(th, td) { border-color: var(--atlas-line); }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-kpi-eyebrow, .jdr-section-title) { font-size: 11px; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-kpi-value-row, .jdr-verdict-title) { flex-wrap: wrap; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-chart-title-area p, .jdr-audit-desc, .jdr-verdict-sub) { line-height: 1.5; overflow-wrap: anywhere; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-collapsible-section, .jdr-info-popover) { border-color: var(--atlas-line); border-radius: 2px; }
+  :root[data-theme='ultima-atlas'] body .jdr-container .jdr-info-icon-btn { border-color: var(--atlas-line); background: var(--color-bg-tertiary); border-radius: 2px; }
+}
+
+@media screen and (max-width: 760px) {
+  :root[data-theme='ultima-atlas'] body .jdm-modal.jdm-runbook-modal { width: calc(100vw - 20px) !important; max-width: calc(100vw - 20px) !important; }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-kpi-grid, .jdr-audit-grid, .jdr-perf-grid, .jdr-graphs-grid) { grid-template-columns: minmax(0, 1fr); }
+  :root[data-theme='ultima-atlas'] body .jdr-container :is(.jdr-regression-select-wrapper, .jdr-baseline-select, .jdr-proxy-search-box) { min-width: 0; max-width: 100%; width: 100%; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-layout { height: auto; min-height: 0; }
+  :root[data-theme='ultima-atlas'] body .jdm-modal .jdm-recovery-cause { min-width: 160px; }
+}

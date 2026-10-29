@@ -1,0 +1,64 @@
+.video-page {
+  min-height: calc(100vh - 3rem);
+  padding: clamp(1rem, 3vw, 2.5rem);
+  color: var(--color-text-primary, #f3f4f6);
+}
+
+.video-page-header {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  max-width: 1100px;
+  margin: 0 auto 1.25rem;
+}
+
+.video-page-header h1 {
+  margin: 0;
+  font-size: clamp(1.25rem, 2vw, 1.75rem);
+}
+
+.video-page-header p {
+  margin: 0.25rem 0 0;
+  color: var(--color-text-secondary, #9ca3af);
+  font-size: 0.85rem;
+}
+
+.video-page-back,
+.video-page-message button {
+  border: 1px solid var(--color-border-primary, #374151);
+  border-radius: 0.5rem;
+  padding: 0.55rem 0.8rem;
+  background: var(--color-bg-secondary, #1f2937);
+  color: inherit;
+  cursor: pointer;
+}
+
+.video-page-player {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: min(70vh, 720px);
+  max-width: 1100px;
+  margin: 0 auto;
+  padding: clamp(0.75rem, 2vw, 1.5rem);
+  border: 1px solid var(--color-border-primary, #374151);
+  border-radius: 0.75rem;
+  background: #050505;
+}
+
+.video-page-video {
+  width: 100%;
+  height: min(70vh, 680px);
+  min-height: 320px;
+}
+
+.video-page-message {
+  padding: 2rem;
+  text-align: center;
+  color: var(--color-text-secondary, #9ca3af);
+}
+
+.video-page-message h2 {
+  margin-top: 0;
+  color: var(--color-text-primary, #f3f4f6);
+}

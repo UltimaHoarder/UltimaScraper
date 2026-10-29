@@ -1,0 +1,34 @@
+.plugin-dialog-backdrop { position: fixed; inset: 0; z-index: 1200; background: rgb(0 0 0 / .7); display: grid; place-items: center; padding: 16px; }
+.plugin-dialog { width: min(620px, 100%); max-height: calc(100dvh - 32px); overflow-y: auto; padding: 24px; border: 1px solid var(--color-border-primary); background: var(--color-bg-secondary); color: var(--color-text-primary); font: 12px/1.6 var(--font-sans); }
+.plugin-dialog h2 { margin: 0 0 20px; font-size: 20px; }
+.plugin-dialog h3 { font-size: 11px; text-transform: uppercase; margin: 18px 0 10px; }
+.plugin-dialog :is(button, input, select) { font: inherit; border-radius: 0; }
+.plugin-dialog button { cursor: pointer; padding: 9px 14px; border: 1px solid var(--color-border-primary); background: var(--color-bg-tertiary); color: var(--color-text-primary); }
+.plugin-dialog button:disabled { cursor: default; opacity: .45; }
+.plugin-dialog :is(button, input, select):focus-visible { outline: 2px solid var(--color-accent-primary); outline-offset: 2px; }
+.plugin-dialog form { display: grid; gap: 16px; }
+.plugin-dialog label:not(.plugin-dialog-check) { display: grid; gap: 7px; }
+.plugin-dialog input:not([type=checkbox]), .plugin-dialog select { width: 100%; min-width: 0; padding: 10px; border: 1px solid var(--color-border-primary); background: var(--color-bg-primary); color: var(--color-text-primary); }
+.plugin-dialog-check { display: flex; gap: 10px; align-items: center; }
+.plugin-dialog small { color: var(--color-text-secondary); }
+.plugin-dialog code { font: 10px var(--font-mono); overflow-wrap: anywhere; }
+.plugin-dialog dl { margin: 14px 0; }
+.plugin-dialog dl > div { display: flex; justify-content: space-between; gap: 16px; padding: 10px 0; border-bottom: 1px solid var(--color-border-primary); }
+.plugin-dialog dd { margin: 0; text-align: right; min-width: 0; }
+.plugin-dialog dt { color: var(--color-text-secondary); }
+.plugin-dialog [role=alert] { color: var(--color-error); overflow-wrap: anywhere; }
+.plugin-dialog-actions { display: flex; flex-wrap: wrap; gap: 10px; margin-top: 18px; }
+.plugin-dialog-actions .plugin-dialog-primary { color: var(--color-accent-primary); border-color: var(--color-accent-primary); background: var(--color-bg-active); }
+.plugin-dialog-actions .plugin-dialog-danger { color: var(--color-error); border-color: var(--color-error); }
+.plugin-install-sources { display: flex; gap: 8px; margin-bottom: 18px; }
+.plugin-install-sources [aria-pressed=true] { border-color: var(--color-accent-primary); color: var(--color-accent-primary); }
+.plugin-dialog-permissions { padding-left: 18px; }
+.plugin-dialog-permissions li { padding: 3px 0; overflow-wrap: anywhere; }
+:root[data-theme='ultima-atlas'] .plugin-setup-modal { border-radius: 0; background: var(--color-bg-secondary); border-color: var(--color-border-primary); color: var(--color-text-primary); font: 12px/1.6 var(--font-sans); }
+:root[data-theme='ultima-atlas'] .plugin-setup-modal :is(button, input, select, fieldset) { border-radius: 0; }
+:root[data-theme='ultima-atlas'] .plugin-setup-modal h2 { margin: 0 0 20px; font-size: 20px; }
+:root[data-theme='ultima-atlas'] .plugin-setup-modal h3 { margin: 18px 0 10px; font-size: 11px; text-transform: uppercase; }
+:root[data-theme='ultima-atlas'] .plugin-setup-modal button { font: inherit; padding: 9px 14px; border: 1px solid var(--color-border-primary); background: var(--color-bg-tertiary); color: var(--color-text-primary); cursor: pointer; }
+:root[data-theme='ultima-atlas'] .plugin-setup-modal button[type=submit] { color: var(--color-accent-primary); border-color: var(--color-accent-primary); background: var(--color-bg-active); }
+:root[data-theme='ultima-atlas'] .plugin-setup-modal button:disabled { opacity: .45; cursor: default; }
+:root[data-theme='ultima-atlas'] .plugin-setup-modal :is(button, input, select):focus-visible { outline: 2px solid var(--color-accent-primary); outline-offset: 2px; }

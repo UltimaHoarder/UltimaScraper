@@ -1,0 +1,69 @@
+# Example Webhook Relay Plugin
+#
+# This plugin demonstrates all manifest sections.  It subscribes to job
+# lifecycle events and relays them to an external webhook URL.
+
+plugin_id: example-webhook-relay
+plugin_version: "0.1.0"
+display_name: "Example Webhook Relay"
+description: >
+  Relays USR job lifecycle events to an external HTTP endpoint.
+  Useful as a starting template for building your own plugins.
+usr_compatibility: ">=0.1.0"
+configuration_schema:
+  type: object
+  title: Webhook relay settings
+  properties:
+    webhook_url:
+      type: string
+      title: Webhook URL
+      description: Destination for subscribed job and worker events. Delivery requests are signed with the managed outbound secret.
+      format: uri
+      pattern: '^https://'
+      default: https://example.com/webhooks/usr-events
+  required: [webhook_url]
+  additionalProperties: false
+
+capabilities:
+  - events.read
+  - webhooks.register
+  - workers.status.read
+
+job_types: []
+
+event_subscriptions:
+  - event_family: job.lifecycle
+    event_types:
+      - job.created
+      - job.completed
+      - job.failed
+    delivery_target: main-webhook
+
+  - event_family: worker.health
+    event_types:
+      - worker.offline
+    delivery_target: main-webhook
+
+callbacks:
+  - handler_id: inbound-status-check
+    description: "Accepts inbound health check pings from the relay target."
+    auth_method: hmac
+    payload_fields:
+      - name: ping_id
+        field_type: string
+        required: true
+
+outbound_deliveries:
+  - target_name: main-webhook
+    url_setting: webhook_url
+    url: "https://example.com/webhooks/usr-events"
+    description: "Primary relay target for all subscribed events."
+
+operational_policy:
+  retry_policy:
+    max_retries: 5
+    initial_backoff_seconds: 10
+    max_backoff_seconds: 600
+    backoff_multiplier: 2.0
+  state_quota_bytes: 16384
+  replay_on_enable: true

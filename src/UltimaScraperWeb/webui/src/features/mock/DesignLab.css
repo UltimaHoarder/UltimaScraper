@@ -1,0 +1,15 @@
+.mock-heading { display: flex; gap: 12px; align-items: center; justify-content: space-between; margin-bottom: 16px; padding-bottom: 16px; border-bottom: 1px solid var(--color-border-primary); }
+.mock-heading h1 { font: 700 28px/1.2 var(--font-sans); margin: 0; text-transform: uppercase; color: var(--color-text-primary); }
+.mock-heading > span { font: 10px var(--font-mono); text-transform: uppercase; color: var(--color-text-tertiary); }
+.mock-categories { display: flex; flex-wrap: wrap; gap: 8px; align-items: center; margin-bottom: 16px; }
+.mock-categories button { display: flex; gap: 8px; align-items: center; padding: 8px 12px; border: 1px solid var(--color-border-primary); border-radius: var(--radius-sm, 2px); background: var(--color-bg-tertiary); color: var(--color-text-secondary); cursor: pointer; font: inherit; font-size: 12px; }
+.mock-categories button[aria-pressed='true'] { border-color: var(--color-accent-primary); color: var(--color-text-primary); background: var(--color-bg-active); }
+.mock-categories button span { color: var(--color-text-tertiary); font-size: 10px; }
+.mock-categories a { margin-left: auto; color: var(--color-text-secondary); font-size: 12px; padding: 8px 0; }
+.mock-categories a:hover { color: var(--color-accent-primary); }
+.mock-categories button:focus-visible, .mock-categories a:focus-visible { outline: 2px solid var(--color-accent-primary); outline-offset: 3px; }
+@media (max-width: 620px) { .mock-heading > span { display: none; } .mock-categories { gap: 6px; } .mock-categories a { font-size: 11px; } }
+.mock-preview-root { max-width: 1500px; margin: auto; padding: 32px 44px; }
+@media (max-width: 1023px) { .mock-preview-root { padding: 24px 28px; } }
+@media (max-width: 600px) { .mock-preview-root { padding: 20px 16px; } }
+

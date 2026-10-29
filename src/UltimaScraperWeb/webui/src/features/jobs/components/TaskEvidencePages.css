@@ -1,0 +1,19 @@
+.jdm-runbook-evidence summary {
+  cursor: pointer;
+  padding-block: 0.4rem;
+}
+
+.jdm-runbook-evidence ol {
+  padding-left: 1.5rem;
+  margin-block: 0.75rem;
+}
+
+.jdm-runbook-evidence li {
+  padding-block: 0.4rem;
+}
+
+.jdm-runbook-evidence pre {
+  max-height: 24rem;
+  overflow: auto;
+  margin-block: 0.5rem;
+}

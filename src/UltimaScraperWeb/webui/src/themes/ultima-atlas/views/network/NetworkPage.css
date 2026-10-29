@@ -1,0 +1,890 @@
+/* Ultimur v1 network view: dossier surfaces, amber routing signals, and compact telemetry. */
+
+:root[data-theme='ultima-atlas'] .proxies-page {
+  --network-panel: linear-gradient(180deg, #171914, #10110d);
+  --network-panel-soft: rgba(130, 214, 178, 0.055);
+  --network-line: rgba(255, 255, 255, 0.08);
+  --network-line-strong: rgba(130, 214, 178, 0.22);
+  --network-text: var(--color-text-primary);
+  --network-muted: var(--color-text-tertiary);
+  --network-accent: var(--color-accent-primary);
+  --network-accent-soft: rgba(217, 170, 82, 0.12);
+  --network-good: var(--color-success);
+  --network-warn: var(--color-warning);
+  --network-danger: var(--color-error);
+  display: flex;
+  flex-direction: column;
+  gap: 1.2rem;
+  max-width: none;
+  padding: 0;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .ultimur-topbar {
+  margin-bottom: 0;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .ultimur-topbar__status {
+  border: 1px solid rgb(var(--color-success-rgb) / 0.18);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .ultimur-topbar__btn--secondary {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.1);
+  color: var(--color-text-secondary);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-kicker {
+  color: var(--color-accent-primary);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.18em;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-section-head {
+  align-items: flex-start;
+  margin-bottom: 0.8rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-section-head h2,
+:root[data-theme='ultima-atlas'] .proxies-page .network-pool-card h3,
+:root[data-theme='ultima-atlas'] .proxies-page .network-route-card h3 {
+  color: var(--color-text-primary);
+  letter-spacing: 0.045em;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-section-head h2 {
+  font-size: 1.16rem;
+  margin-top: 0.25rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-section-head p,
+:root[data-theme='ultima-atlas'] .proxies-page .network-pool-card p,
+:root[data-theme='ultima-atlas'] .proxies-page .network-route-card p {
+  color: var(--color-text-tertiary);
+  font-size: 0.78rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-command {
+  margin: 0;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-route-order {
+  background: rgba(130, 214, 178, 0.055);
+  border-color: rgba(130, 214, 178, 0.2);
+  border-radius: 0;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  padding: 0.55rem 0.7rem;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-route-order b {
+  color: var(--color-success);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-command__grid {
+  gap: 0.8rem;
+  grid-template-columns: minmax(0, 1.35fr) minmax(270px, 0.65fr);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-route-card,
+:root[data-theme='ultima-atlas'] .proxies-page .network-pool-card,
+:root[data-theme='ultima-atlas'] .proxies-page .network-inventory {
+  background: var(--network-panel);
+  border-color: var(--network-line);
+  border-radius: 0;
+  box-shadow: inset 0 1px 0 rgba(255, 255, 255, 0.035), var(--shadow-sm);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-route-card {
+  border-left: 2px solid var(--color-success);
+  grid-template-columns: auto minmax(0, 1fr) auto auto;
+  min-height: 142px;
+  padding: 1.2rem 1.25rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-route-card::after {
+  background: linear-gradient(90deg, rgba(130, 214, 178, 0.06), transparent 72%);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-route-card__signal {
+  background: rgba(130, 214, 178, 0.08);
+  border-color: rgba(130, 214, 178, 0.28);
+  border-radius: 0;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-route-card__signal span {
+  background: var(--color-success);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-route-card__eyebrow {
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.15em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-route-card__body h3 {
+  font-size: 1.12rem;
+  margin-top: 0.2rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-route-card__status,
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__state {
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.65rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-pool-card {
+  min-height: 142px;
+  padding: 1.1rem 1.2rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-pool-card__metrics {
+  margin: 0.85rem 0 0.25rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-pool-card__metrics > div {
+  border-left-color: rgba(130, 214, 178, 0.13);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-pool-card__metrics strong {
+  font-family: var(--font-mono);
+  font-size: 1.3rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-pool-card__metrics span {
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.1em;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-button,
+:root[data-theme='ultima-atlas'] .proxies-page .network-icon-button {
+  background: rgba(255, 255, 255, 0.035);
+  border-color: rgba(255, 255, 255, 0.14);
+  border-radius: 0;
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  min-height: 32px;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-button:hover:not(:disabled),
+:root[data-theme='ultima-atlas'] .proxies-page .network-icon-button:hover:not(:disabled) {
+  background: rgba(130, 214, 178, 0.09);
+  border-color: rgba(130, 214, 178, 0.42);
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-button--primary {
+  background: linear-gradient(180deg, rgba(217, 170, 82, 0.2), rgba(217, 170, 82, 0.06)), #1d100b;
+  border-color: rgba(217, 170, 82, 0.44);
+  color: #f1dfd9;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-button--primary:hover:not(:disabled) {
+  background: linear-gradient(180deg, rgba(217, 170, 82, 0.3), rgba(217, 170, 82, 0.12)), #24110b;
+  border-color: rgba(217, 170, 82, 0.66);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-button--warning {
+  background: rgba(217, 170, 82, 0.08);
+  border-color: rgba(217, 170, 82, 0.3);
+  color: var(--color-warning);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-button--danger {
+  background: rgba(181, 72, 52, 0.1);
+  border-color: rgba(181, 72, 52, 0.34);
+  color: #db8876;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-inventory {
+  overflow: hidden;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-inventory > .network-section-head {
+  padding: 1.15rem 1.25rem 1rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-search {
+  background: linear-gradient(180deg, rgba(130, 214, 178, 0.05), transparent), #091009;
+  border-color: rgba(255, 255, 255, 0.1);
+  border-radius: 0;
+  min-width: min(350px, 100%);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-search > span {
+  color: var(--color-success);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-search input {
+  font-family: var(--font-mono);
+  font-size: 0.67rem;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-search input::placeholder {
+  color: var(--color-text-muted);
+}
+
+/* The telemetry cells were introduced with the proxy workflow but had no v1 rules. */
+:root[data-theme='ultima-atlas'] .proxies-page .network-telemetry-array {
+  background: rgba(255, 255, 255, 0.08);
+  border-bottom: 1px solid var(--network-line);
+  border-top: 1px solid var(--network-line);
+  display: grid;
+  gap: 1px;
+  grid-template-columns: repeat(5, minmax(0, 1fr));
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-telemetry-cell {
+  background: rgba(9, 10, 8, 0.76);
+  display: flex;
+  flex-direction: column;
+  gap: 0.22rem;
+  min-width: 0;
+  padding: 0.7rem 0.9rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-telemetry-cell__value {
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 1.18rem;
+  font-weight: 700;
+  line-height: 1.1;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-telemetry-cell__value--cyan {
+  color: var(--color-success);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-telemetry-cell__value--yellow,
+:root[data-theme='ultima-atlas'] .proxies-page .network-telemetry-cell.is-warning .network-telemetry-cell__value {
+  color: var(--color-warning);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-telemetry-cell.is-alert .network-telemetry-cell__value {
+  color: #db8876;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-telemetry-cell__label,
+:root[data-theme='ultima-atlas'] .proxies-page .network-telemetry-cell__kicker {
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.56rem;
+  letter-spacing: 0.1em;
+  line-height: 1.35;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-telemetry-cell__kicker {
+  color: var(--color-text-muted);
+  font-size: 0.54rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-inventory__toolbar,
+:root[data-theme='ultima-atlas'] .proxies-page .network-selection-bar {
+  align-items: center;
+  background: rgba(9, 10, 8, 0.62);
+  border-bottom: 1px solid var(--network-line);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.65rem;
+  justify-content: space-between;
+  padding: 0.55rem 0.9rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-inventory__group-tabs,
+:root[data-theme='ultima-atlas'] .proxies-page .network-selection-bar__actions,
+:root[data-theme='ultima-atlas'] .proxies-page .network-selection-bar__group-form {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.45rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-filter-tab {
+  align-items: center;
+  background: transparent;
+  border: 1px solid transparent;
+  border-radius: 0;
+  color: var(--color-text-tertiary);
+  cursor: pointer;
+  display: inline-flex;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  gap: 0.35rem;
+  letter-spacing: 0.08em;
+  padding: 0.35rem 0.55rem;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-filter-tab:hover {
+  border-color: rgba(130, 214, 178, 0.2);
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-filter-tab.is-active {
+  background: rgba(130, 214, 178, 0.08);
+  border-color: rgba(130, 214, 178, 0.32);
+  box-shadow: inset 0 -2px 0 var(--color-success);
+  color: var(--color-success);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-filter-tab__count {
+  background: rgba(217, 170, 82, 0.12);
+  color: var(--color-warning);
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  padding: 0.1rem 0.3rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-group-analyze-btn {
+  color: var(--color-success);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-selection-bar {
+  border-left: 2px solid var(--color-warning);
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+  justify-content: space-between;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-selection-bar__actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.5rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-selection-bar__buttons {
+  align-items: center;
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.35rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-selection-bar__buttons .network-button {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  padding: 0.32rem 0.55rem;
+  white-space: nowrap;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-selection-bar__left {
+  align-items: center;
+  color: var(--color-text-secondary);
+  display: flex;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  gap: 0.55rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-selection-bar__count strong {
+  color: var(--color-warning);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-selection-bar__input {
+  background: #091009;
+  border-color: rgba(255, 255, 255, 0.12);
+  border-radius: 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  width: 170px;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .selection-bar-floating {
+  background: rgba(18, 22, 20, 0.94);
+  border: 1px solid var(--network-line, rgba(255, 255, 255, 0.12));
+  border-radius: var(--radius-sm, 2px);
+  box-shadow: 0 14px 44px rgba(0, 0, 0, 0.7), 0 0 0 1px rgba(255, 255, 255, 0.05);
+  width: max-content;
+  max-width: calc(100vw - 32px);
+  box-sizing: border-box;
+  overflow-x: auto;
+  scrollbar-width: none;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .selection-bar-floating::-webkit-scrollbar {
+  display: none;
+}
+
+@media (min-width: 1024px) {
+  :root[data-theme='ultima-atlas'] .proxies-page .selection-bar-floating {
+    max-width: calc(100vw - var(--sidebar-width, 0px) - 32px);
+  }
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .selection-bar-floating__divider {
+  background: var(--network-line, rgba(255, 255, 255, 0.14));
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .selection-bar-floating .selection-info {
+  align-items: center;
+  display: flex;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  gap: 0.65rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .selection-bar-floating .selection-bar-actions {
+  align-items: center;
+  display: flex;
+  flex-wrap: nowrap;
+  flex-shrink: 0;
+  gap: 0.45rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .selection-bar-floating .selection-count {
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .selection-bar-floating .selection-count strong {
+  color: var(--color-warning);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .selection-bar-floating .network-button {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.04em;
+  padding: 0.32rem 0.55rem;
+  white-space: nowrap;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-inventory__meta {
+  background: rgba(9, 10, 8, 0.5);
+  border-bottom-color: var(--network-line);
+  border-top: 0;
+  color: var(--color-text-tertiary);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  gap: 1.2rem;
+  letter-spacing: 0.07em;
+  padding: 0.55rem 1.25rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-inventory__meta strong {
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-inventory__meta .is-warning strong {
+  color: var(--color-warning);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy-list {
+  overflow-x: auto;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy {
+  background: rgba(16, 17, 13, 0.72);
+  border-bottom-color: var(--network-line);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy-group {
+  border-top: 1px solid var(--network-line);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy-group:first-child {
+  border-top: 0;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy-group__header {
+  align-items: center;
+  background: linear-gradient(90deg, rgba(217, 170, 82, 0.08), rgba(130, 214, 178, 0.025));
+  border-bottom: 1px solid rgba(217, 170, 82, 0.16);
+  display: flex;
+  justify-content: space-between;
+  gap: 1rem;
+  padding: 0.65rem 1.25rem;
+  cursor: pointer;
+  user-select: none;
+  transition: background 140ms ease;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy-group__header:hover {
+  background: linear-gradient(90deg, rgba(217, 170, 82, 0.14), rgba(130, 214, 178, 0.05));
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy-group__header-left {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+  min-width: 0;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy-group__header-left > div {
+  align-items: baseline;
+  display: flex;
+  gap: 0.8rem;
+  min-width: 0;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy-group__checkbox {
+  accent-color: var(--color-success);
+  cursor: pointer;
+  flex-shrink: 0;
+  height: 14px;
+  width: 14px;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy-group__header strong {
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy-group__header-meta {
+  align-items: center;
+  display: flex;
+  gap: 0.75rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy-group__header-meta > span {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  white-space: nowrap;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy-group__chevron {
+  color: var(--color-warning);
+  font-size: 0.65rem;
+  transition: transform 140ms ease;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy-group__rows {
+  display: flex;
+  flex-direction: column;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__main {
+  gap: 0.75rem;
+  grid-template-columns: minmax(160px, 1.5fr) minmax(110px, 0.9fr) minmax(95px, 0.7fr) auto max-content;
+  min-height: 82px;
+  padding: 0.8rem 1.1rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__main:has(.network-proxy__select) {
+  grid-template-columns: auto minmax(160px, 1.5fr) minmax(110px, 0.9fr) minmax(95px, 0.7fr) auto max-content;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__main:hover,
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy.is-selected .network-proxy__main {
+  background: rgba(130, 214, 178, 0.045);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__select input[type='checkbox'],
+:root[data-theme='ultima-atlas'] .proxies-page .network-selection-bar__left input[type='checkbox'] {
+  accent-color: var(--color-success);
+  height: 14px;
+  width: 14px;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__flag {
+  background: rgba(130, 214, 178, 0.055);
+  border-color: rgba(130, 214, 178, 0.18);
+  border-radius: 0;
+  color: var(--color-success);
+  font-family: var(--font-mono);
+  font-size: 0.68rem;
+  font-weight: 700;
+  height: 34px;
+  letter-spacing: 0.05em;
+  width: 34px;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__identity {
+  min-width: 0;
+  overflow: hidden;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__identity-body {
+  display: flex;
+  flex-direction: column;
+  gap: 2px;
+  min-width: 0;
+  overflow: hidden;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__url,
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__metric strong {
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__url {
+  font-size: 0.7rem;
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__url code {
+  font-family: inherit;
+  font-size: inherit;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__subline,
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__metric small {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.04em;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__subline {
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  flex-wrap: wrap;
+  min-width: 0;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__group-badge,
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__quick-test-tag {
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  letter-spacing: 0.04em;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__group-badge {
+  background: rgba(217, 170, 82, 0.09);
+  border-color: rgba(217, 170, 82, 0.26);
+  color: var(--color-warning);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__metric > span {
+  color: var(--color-text-muted);
+  font-family: var(--font-mono);
+  font-size: 0.54rem;
+  letter-spacing: 0.12em;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__metric strong {
+  font-size: 0.68rem;
+  font-weight: 600;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__actions {
+  align-items: center;
+  display: flex;
+  flex-shrink: 0;
+  gap: 0.35rem;
+  min-width: max-content;
+  white-space: nowrap;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__actions .network-button {
+  font-size: 0.625rem;
+  letter-spacing: 0.04em;
+  min-width: 0;
+  padding: 0.32rem 0.55rem;
+  white-space: nowrap;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__actions .network-icon-button {
+  align-items: center;
+  background: transparent;
+  border: 1px solid rgba(255, 255, 255, 0.12);
+  color: var(--color-text-secondary);
+  cursor: pointer;
+  display: inline-flex;
+  flex-shrink: 0;
+  font-size: 0.62rem;
+  height: 26px;
+  justify-content: center;
+  min-width: 26px;
+  padding: 0;
+  width: 26px;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-status-dot {
+  border-radius: 0;
+  height: 6px;
+  width: 6px;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-status-dot--ready {
+  box-shadow: 0 0 8px rgba(130, 214, 178, 0.45);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-status-dot--idle {
+  box-shadow: 0 0 8px rgba(217, 170, 82, 0.32);
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__drawer {
+  background: rgba(9, 10, 8, 0.64);
+  border-top-color: var(--network-line);
+  padding: 1rem 1.25rem 1.15rem 4.5rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-proxy__drawer-head h4 {
+  color: var(--color-text-primary);
+  font-size: 0.78rem;
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-assignment {
+  background: rgba(130, 214, 178, 0.035);
+  border-color: var(--network-line);
+  border-radius: 0;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-assignment strong {
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.67rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-assignment button {
+  color: #db8876;
+  font-family: var(--font-mono);
+  font-size: 0.58rem;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+}
+
+/* Keep the analyzer in the same dossier language as the page that opens it. */
+:root[data-theme='ultima-atlas'] .proxies-page ~ .route-lab,
+:root[data-theme='ultima-atlas'] .route-lab {
+  background: linear-gradient(180deg, #171914, #0d120d);
+  border-color: rgba(130, 214, 178, 0.2);
+  border-radius: 0;
+}
+
+:root[data-theme='ultima-atlas'] .route-lab-tabs button.is-active {
+  border-bottom-color: var(--color-success);
+  color: var(--color-success);
+}
+
+:root[data-theme='ultima-atlas'] .route-lab-recommendation {
+  background: linear-gradient(115deg, rgba(217, 170, 82, 0.13), rgba(19, 29, 20, 0.4));
+  border-color: rgba(217, 170, 82, 0.28);
+}
+
+@media (max-width: 1150px) {
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__main {
+    gap: 0.55rem;
+    grid-template-columns: minmax(130px, 1.3fr) minmax(95px, 0.85fr) minmax(80px, 0.7fr) auto max-content;
+    padding: 0.75rem 0.85rem;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__main:has(.network-proxy__select) {
+    gap: 0.55rem;
+    grid-template-columns: auto minmax(130px, 1.3fr) minmax(95px, 0.85fr) minmax(80px, 0.7fr) auto max-content;
+    padding: 0.75rem 0.85rem;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__actions {
+    gap: 0.25rem;
+    justify-content: flex-end;
+    justify-self: auto;
+    width: auto;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__actions .network-button {
+    font-size: 0.56rem;
+    padding: 0.25rem 0.42rem;
+  }
+}
+
+@media (max-width: 760px) {
+  :root[data-theme='ultima-atlas'] .proxies-page .network-command__grid {
+    grid-template-columns: 1fr;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-route-card {
+    grid-template-columns: auto 1fr;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-route-card__status {
+    grid-column: 2;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-route-card .network-button {
+    grid-column: 1 / -1;
+    width: 100%;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-telemetry-array {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-telemetry-cell:last-child {
+    grid-column: 1 / -1;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__main {
+    align-items: start;
+    grid-template-columns: auto minmax(0, 1fr);
+    padding: 0.9rem 1rem;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__main:has(.network-proxy__select) {
+    grid-template-columns: auto minmax(0, 1fr);
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__identity,
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__metric,
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__actions {
+    grid-column: 1 / -1;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__metric {
+    display: block !important;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__state {
+    display: none;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__actions {
+    justify-content: flex-end;
+    justify-self: end;
+    width: 100%;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__actions .network-button {
+    flex: 0 0 auto;
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-proxy__drawer {
+    padding: 1rem;
+  }
+}

@@ -1,0 +1,104 @@
+/* Startup is outside the application shell but uses the same Atlas identity. */
+:root[data-theme='ultima-atlas'] body :is(.startup-container, .route-loading) {
+  min-height: 100dvh;
+  padding: 40px 24px;
+  background: transparent;
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  overflow: visible;
+}
+:root[data-theme='ultima-atlas'] .startup-container::before,
+:root[data-theme='ultima-atlas'] .startup-glow { display: none; }
+:root[data-theme='ultima-atlas'] .startup-inner { max-width: 760px; align-items: stretch; gap: 0; }
+:root[data-theme='ultima-atlas'] .startup-brand { display: flex; align-items: center; gap: 24px; text-align: left; margin-bottom: 36px; width: 100%; }
+:root[data-theme='ultima-atlas'] .startup-atlas-mark { display: block; width: 80px; height: 60px; flex-shrink: 0; color: var(--color-text-primary); }
+:root[data-theme='ultima-atlas'] .startup-logo-text { justify-content: flex-start; flex-wrap: wrap; }
+:root[data-theme='ultima-atlas'] :is(.logo-main, .logo-sub) { font: 800 40px/1.1 var(--font-sans); color: var(--color-text-primary); letter-spacing: 0; }
+:root[data-theme='ultima-atlas'] .startup-subtitle { display: block; margin-top: 10px; font: 10px/1.5 var(--font-mono); color: var(--color-text-tertiary); }
+:root[data-theme='ultima-atlas'] .startup-status-bar {
+  --startup-status: var(--color-accent-primary);
+  width: 100%;
+  min-height: 52px;
+  padding: 16px 0;
+  margin-bottom: 16px;
+  border: 1px solid var(--color-border-primary);
+  border-width: 1px 0;
+  background: transparent;
+  box-shadow: none;
+  color: var(--startup-status);
+}
+:root[data-theme='ultima-atlas'] .startup-container:is([data-state='review'], [data-state='slow']) .startup-status-bar { --startup-status: var(--color-warning); }
+:root[data-theme='ultima-atlas'] .startup-container[data-state='error'] .startup-status-bar { --startup-status: var(--color-error); }
+:root[data-theme='ultima-atlas'] .startup-status-text { font: 600 12px/1.5 var(--font-mono); letter-spacing: 0; color: inherit; }
+:root[data-theme='ultima-atlas'] :is(.startup-check, .startup-x) { color: inherit; }
+:root[data-theme='ultima-atlas'] .startup-connection-meta { justify-content: space-between; flex-wrap: wrap; gap: 8px; margin: 0 0 24px; font-size: 10px; letter-spacing: 0; color: var(--color-text-tertiary); }
+:root[data-theme='ultima-atlas'] .startup-notice { background: var(--color-bg-secondary); border-color: var(--color-border-primary); border-left-width: 3px; color: var(--color-text-secondary); font: 12px/1.6 var(--font-sans); overflow-wrap: anywhere; }
+:root[data-theme='ultima-atlas'] .startup-notice strong { color: var(--color-text-primary); white-space: normal; }
+:root[data-theme='ultima-atlas'] .startup-notice-warning { border-left-color: var(--color-warning); }
+:root[data-theme='ultima-atlas'] .startup-notice-error { border-left-color: var(--color-error); }
+:root[data-theme='ultima-atlas'] :is(.startup-terminal, .startup-review-panel) { background: var(--color-bg-secondary); border-color: var(--color-border-primary); border-radius: 0; box-shadow: none; }
+:root[data-theme='ultima-atlas'] :is(.terminal-header, .startup-review-intro, .startup-review-meta, .startup-review-actions) { background: transparent; border-color: var(--color-border-primary); }
+:root[data-theme='ultima-atlas'] .terminal-title { color: var(--color-text-tertiary); font-size: 10px; letter-spacing: 0; }
+:root[data-theme='ultima-atlas'] .terminal-body { font: 12px/1.8 var(--font-mono); }
+:root[data-theme='ultima-atlas'] .terminal-line { color: var(--color-text-secondary); overflow-wrap: anywhere; min-width: 0; }
+:root[data-theme='ultima-atlas'] :is(.terminal-prompt, .terminal-line.line-success, .startup-review-meta) { color: var(--color-accent-primary); }
+:root[data-theme='ultima-atlas'] .terminal-line.line-error { color: var(--color-error); }
+:root[data-theme='ultima-atlas'] .startup-review-intro { font: 12px/1.6 var(--font-sans); }
+:root[data-theme='ultima-atlas'] .startup-review-intro strong { color: var(--color-warning); letter-spacing: 0; }
+:root[data-theme='ultima-atlas'] .startup-review-intro span { color: var(--color-text-secondary); }
+:root[data-theme='ultima-atlas'] .startup-review-meta { font-size: 11px; letter-spacing: 0; overflow-wrap: anywhere; }
+:root[data-theme='ultima-atlas'] .startup-btn { border-radius: 2px; font: 600 11px/1.5 var(--font-sans); min-height: 36px; letter-spacing: 0; transition: background-color 150ms ease; }
+:root[data-theme='ultima-atlas'] .startup-btn-primary { background: var(--color-accent-primary); color: var(--text-on-accent); border-color: var(--color-accent-primary); }
+:root[data-theme='ultima-atlas'] .startup-btn-primary:hover:not(:disabled) { background: var(--color-accent-hover); }
+:root[data-theme='ultima-atlas'] .startup-btn-secondary { background: transparent; color: var(--color-text-primary); border-color: var(--color-border-primary); }
+:root[data-theme='ultima-atlas'] .startup-btn-secondary:hover:not(:disabled) { background: var(--color-bg-hover); }
+:root[data-theme='ultima-atlas'] .startup-btn-danger { background: transparent; color: var(--color-warning); border-color: var(--color-warning); }
+:root[data-theme='ultima-atlas'] .startup-btn-danger:hover:not(:disabled) { background: var(--color-warning-soft); }
+:root[data-theme='ultima-atlas'] .startup-diff { background: var(--color-bg-primary); color: var(--color-text-secondary); font: 12px/1.7 var(--font-mono); }
+:root[data-theme='ultima-atlas'] .route-loading__inner { max-width: 760px; align-items: stretch; }
+:root[data-theme='ultima-atlas'] .route-loading__identity { display: block; }
+:root[data-theme='ultima-atlas'] .route-loading__label { padding-top: 20px; border-top: 1px solid var(--color-border-primary); font: 12px/1.6 var(--font-mono); text-transform: uppercase; color: var(--color-text-secondary); }
+:root[data-theme='ultima-atlas'] .route-loading__pulse { width: 100%; background: var(--color-border-primary); }
+:root[data-theme='ultima-atlas'] .route-loading__pulse::after { width: 40%; background: var(--color-accent-primary); animation: atlas-loading-rail 1.4s ease-in-out infinite; }
+
+/* Reuse one restrained indeterminate rail across legacy inline loader classes. */
+:root[data-theme='ultima-atlas'] body :is(.startup-pulse, .loading-spinner, .spinner, .content-library-spinner-ring, .ops-state-spinner, .geo-fetch-spinner, .directory-lookup-spinner, .btn-spinner, .media-loading-spinner) {
+  display: inline-block;
+  position: relative;
+  width: 28px;
+  height: 4px;
+  flex: 0 0 28px;
+  margin: 0;
+  overflow: hidden;
+  border: 0;
+  border-radius: 0;
+  background: var(--color-border-primary);
+  box-shadow: none;
+  transform: none;
+  animation: none;
+}
+:root[data-theme='ultima-atlas'] body :is(.startup-pulse, .loading-spinner, .spinner, .content-library-spinner-ring, .ops-state-spinner, .geo-fetch-spinner, .directory-lookup-spinner, .btn-spinner, .media-loading-spinner)::after {
+  content: '';
+  position: absolute;
+  inset: 0 auto 0 0;
+  width: 40%;
+  background: var(--startup-status, var(--color-accent-primary));
+  animation: atlas-loading-rail 1.4s ease-in-out infinite;
+}
+:root[data-theme='ultima-atlas'] .startup-container[data-state='review'] .startup-pulse::after { animation: none; width: 100%; }
+:root[data-theme='ultima-atlas'] body .skeleton { background: var(--color-bg-tertiary); border-radius: 0; animation: atlas-skeleton-pulse 1.8s ease-in-out infinite; }
+:root[data-theme='ultima-atlas'] body .content-card-skeleton { background: var(--color-bg-secondary); border-color: var(--color-border-primary); border-radius: 0; box-shadow: none; }
+:root[data-theme='ultima-atlas'] .loading-dots { gap: 4px; }
+:root[data-theme='ultima-atlas'] .loading-dots span { width: 8px; height: 4px; border-radius: 0; background: var(--color-accent-primary); animation: atlas-skeleton-pulse 1.8s ease-in-out infinite; }
+@keyframes atlas-loading-rail { from { transform: translateX(-100%); } to { transform: translateX(250%); } }
+@keyframes atlas-skeleton-pulse { 0%, 100% { opacity: 0.55; } 50% { opacity: 1; } }
+@media (max-width: 600px) {
+  :root[data-theme='ultima-atlas'] body :is(.startup-container, .route-loading) { padding: 32px 16px; }
+  :root[data-theme='ultima-atlas'] .startup-brand { flex-direction: column; align-items: flex-start; gap: 20px; }
+  :root[data-theme='ultima-atlas'] :is(.logo-main, .logo-sub) { font-size: 30px; }
+}
+@media (prefers-reduced-motion: reduce) {
+  :root[data-theme='ultima-atlas'] .route-loading__pulse::after,
+  :root[data-theme='ultima-atlas'] .startup-pulse::after { transform: none; opacity: 1; }
+  :root[data-theme='ultima-atlas'] body .skeleton { opacity: 1; }
+}

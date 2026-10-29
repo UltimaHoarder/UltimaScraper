@@ -1,0 +1,12 @@
+# Written by the WebUI installer when "Let other machines use this backend" is
+# on. The backend also serves HTTPS, with a self-signed certificate kept in its
+# config volume, on this port of every interface. Other machines trust it by
+# the certificate's fingerprint, which cluster invites carry.
+services:
+  backend:
+    environment:
+      USR_BACKEND_TLS: self-signed
+      CONTROL_TLS_PORT: 8443
+      USR_ADVERTISE_PORT: ${USR_BACKEND_TLS_PORT:-8443}
+    ports:
+      - "${USR_BACKEND_TLS_PORT:-8443}:8443"

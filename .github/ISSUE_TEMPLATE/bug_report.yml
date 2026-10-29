@@ -1,0 +1,61 @@
+name: 🐛 Bug report
+description: Something doesn't work as it should.
+labels: [bug]
+body:
+  - type: markdown
+    attributes:
+      value: |
+        Thanks for the report! **Never paste cookies, tokens, passwords, admin tokens or private content.**
+        Replace them with `REDACTED` in anything you share. Security problems go through
+        [private reporting](https://github.com/UltimaHoarder/UltimaScraper/security/advisories/new) instead.
+  - type: textarea
+    id: what-happened
+    attributes:
+      label: What happened?
+      description: What you did, what you expected, and what happened instead.
+    validations:
+      required: true
+  - type: textarea
+    id: steps
+    attributes:
+      label: Steps to reproduce
+      placeholder: |
+        1. Open Jobs
+        2. Queue a timeline scrape for one creator
+        3. ...
+    validations:
+      required: true
+  - type: input
+    id: version
+    attributes:
+      label: Version
+      description: Shown at the bottom of the sidebar, e.g. `v0.1.0`, or the image tag you run.
+    validations:
+      required: true
+  - type: dropdown
+    id: install
+    attributes:
+      label: How do you run UltimaScraper?
+      options:
+        - Docker Compose
+        - Installed by the setup wizard
+        - From source (native)
+        - Other
+    validations:
+      required: true
+  - type: dropdown
+    id: site
+    attributes:
+      label: Which site, if any?
+      multiple: true
+      options:
+        - OnlyFans
+        - Fansly
+        - LoyalFans
+        - Not site-specific
+  - type: textarea
+    id: logs
+    attributes:
+      label: Logs
+      description: The relevant lines from `docker compose logs`, with secrets removed.
+      render: text

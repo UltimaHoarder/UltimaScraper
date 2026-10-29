@@ -1,0 +1,199 @@
+/* UsersHeader.css — Unified workspace card container matching Design Lab mock */
+.users-workspace-stage {
+  border: 1px solid var(--color-border-primary, #343a3b);
+  border-radius: var(--radius-sm, 2px);
+  background: var(--color-bg-primary, #1a1f20);
+  margin-bottom: 20px;
+  overflow: hidden;
+}
+
+/* ── Tier 1: Workspace Header ── */
+.users-workspace-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 20px;
+  padding: 18px 24px;
+  background: var(--color-bg-secondary, #202526);
+  border-bottom: 1px solid var(--color-border-primary, #343a3b);
+}
+
+.users-workspace-title {
+  display: flex;
+  align-items: center;
+  gap: 14px;
+}
+
+.users-workspace-symbol {
+  display: grid;
+  place-items: center;
+  width: 42px;
+  height: 42px;
+  border: 1px solid var(--color-accent-primary, #24aac3);
+  font-size: 20px;
+  background: rgba(36, 170, 195, 0.12);
+  border-radius: var(--radius-sm, 2px);
+  flex-shrink: 0;
+}
+
+.users-workspace-heading {
+  margin: 0;
+  font-size: 22px;
+  font-weight: 800;
+  text-transform: uppercase;
+  line-height: 1.2;
+  letter-spacing: 0.5px;
+  color: var(--color-text-primary, #f4f4f2);
+}
+
+.users-workspace-subtitle {
+  margin: 2px 0 0;
+  font-size: 11px;
+  color: var(--color-text-secondary, #bec8c9);
+}
+
+.users-workspace-meta {
+  display: flex;
+  align-items: center;
+  gap: 16px;
+}
+
+.users-header-status {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font: 11px var(--font-mono, monospace);
+  color: var(--color-text-secondary, #bec8c9);
+}
+
+.users-dot {
+  display: inline-block;
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+  flex-shrink: 0;
+}
+
+.users-dot--live {
+  background: var(--color-accent-primary, #24aac3);
+  box-shadow: 0 0 8px rgba(36, 170, 195, 0.5);
+}
+
+.users-header-divider {
+  width: 1px;
+  height: 12px;
+  background: var(--color-border-primary, #343a3b);
+  margin: 0 4px;
+}
+
+/* ── Tier 2: 4-Tile Global Metrics Strip ── */
+.users-metrics {
+  display: grid;
+  grid-template-columns: repeat(4, minmax(0, 1fr));
+  border-bottom: 1px solid var(--color-border-primary, #343a3b);
+  background: var(--color-bg-secondary, #202526);
+}
+
+.users-metric-tile {
+  display: grid;
+  grid-template-columns: 1fr auto;
+  align-items: center;
+  gap: 3px 10px;
+  padding: 14px 24px;
+  border-right: 1px solid var(--color-border-primary, #343a3b);
+}
+
+.users-metric-tile:last-child {
+  border-right: 0;
+}
+
+.users-metric-tile span {
+  color: var(--color-text-secondary, #bec8c9);
+  font-size: 10px;
+  text-transform: uppercase;
+  letter-spacing: 0.5px;
+}
+
+.users-metric-tile strong {
+  grid-row: span 2;
+  font: 500 24px/1 var(--font-mono, monospace);
+  color: var(--color-text-primary, #f4f4f2);
+  text-align: right;
+}
+
+.users-metric-tile small {
+  font-size: 10px;
+  color: var(--color-text-tertiary, #9caeaf);
+}
+
+.users-metric-accent {
+  color: var(--color-accent-primary, #24aac3) !important;
+}
+
+.users-metric-warn {
+  color: var(--color-warning, #ffd303) !important;
+}
+
+/* ── Tier 3: Toolbar integration inside stage card ── */
+.users-workspace-stage .users-toolbar {
+  border: 0;
+  border-radius: 0;
+  border-bottom: 1px solid var(--color-border-primary, #343a3b);
+  background: var(--color-bg-secondary, #202526);
+  padding: 14px 24px;
+}
+
+/* ── Workspace Body (together inside the stage) ── */
+.users-workspace-body {
+  padding: 20px 24px;
+  background: var(--color-bg-primary, #1a1f20);
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+}
+
+@media (max-width: 900px) {
+  .users-workspace-header {
+    flex-direction: column;
+    align-items: flex-start;
+    gap: 12px;
+  }
+
+  .users-workspace-meta {
+    width: 100%;
+    justify-content: space-between;
+  }
+
+  .users-metrics {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+
+  .users-metric-tile:nth-child(2) {
+    border-right: 0;
+  }
+
+  .users-metric-tile:nth-child(1),
+  .users-metric-tile:nth-child(2) {
+    border-bottom: 1px solid var(--color-border-primary, #343a3b);
+  }
+}
+
+@media (max-width: 600px) {
+  .users-metrics {
+    grid-template-columns: 1fr;
+  }
+
+  .users-metric-tile {
+    border-right: 0;
+    border-bottom: 1px solid var(--color-border-primary, #343a3b);
+  }
+
+  .users-metric-tile:last-child {
+    border-bottom: 0;
+  }
+
+  .users-workspace-body {
+    padding: 14px 16px;
+  }
+}

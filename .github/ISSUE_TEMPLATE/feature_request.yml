@@ -1,0 +1,20 @@
+name: ✨ Feature request
+description: Suggest an idea or an improvement.
+labels: [enhancement]
+body:
+  - type: textarea
+    id: problem
+    attributes:
+      label: What would you like to do?
+      description: The problem or need behind the idea, in your own words.
+    validations:
+      required: true
+  - type: textarea
+    id: solution
+    attributes:
+      label: How could UltimaScraper help?
+      description: What you'd like to see. Sketches and screenshots are welcome.
+  - type: textarea
+    id: alternatives
+    attributes:
+      label: What do you do today instead?

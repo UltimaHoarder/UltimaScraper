@@ -1,0 +1,8 @@
+blank_issues_enabled: false
+contact_links:
+  - name: 🔐 Report a security problem
+    url: https://github.com/UltimaHoarder/UltimaScraper/security/advisories/new
+    about: Report vulnerabilities privately, never in a public issue.
+  - name: 📚 Documentation
+    url: https://github.com/UltimaHoarder/UltimaScraper/tree/main/docs
+    about: Setup, guides and troubleshooting.

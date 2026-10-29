@@ -1,0 +1,614 @@
+/* The system as a flowchart: WebUIs on top, each cluster framed below. */
+.arch {
+  --arch-accent: var(--color-accent-primary, #24aac3);
+  --arch-accent-rgb: var(--color-accent-rgb, 36, 170, 195);
+  --arch-line: var(--color-border-primary, #3a4048);
+  --arch-muted: var(--color-text-secondary, #94a3b8);
+  --arch-surface: var(--color-bg-secondary, #1b1f24);
+  margin: 0 0 var(--space-4, 1rem);
+  display: grid;
+  gap: 0.75rem;
+}
+
+.arch figcaption {
+  font-size: 0.75rem;
+  color: var(--arch-muted);
+}
+
+.arch .mono {
+  font-family: var(--font-mono, ui-monospace, SFMono-Regular, Menlo, monospace);
+}
+
+.arch-muted {
+  color: var(--arch-muted);
+  font-size: 0.75rem;
+}
+
+.arch-hint {
+  margin: 0;
+  font-size: 0.85rem;
+  color: var(--arch-muted);
+}
+
+/* ---------------------------------------------------------------- toolbar */
+
+.arch-toolbar {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 1rem;
+}
+
+.arch-player {
+  display: flex;
+  flex-wrap: wrap;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.arch-segmented {
+  display: inline-flex;
+  border: 1px solid var(--arch-line);
+  border-radius: 8px;
+  overflow: hidden;
+}
+
+.arch-segmented button {
+  padding: 0.35rem 0.8rem;
+  border: 0;
+  border-right: 1px solid var(--arch-line);
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.arch-segmented button:last-child {
+  border-right: 0;
+}
+
+.arch-segmented button.is-selected {
+  background: rgba(var(--arch-accent-rgb), 0.18);
+  color: var(--arch-accent);
+}
+
+.arch-transport {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+}
+
+.arch-tool {
+  min-width: 2rem;
+  padding: 0.3rem 0.6rem;
+  border: 1px solid var(--arch-line);
+  border-radius: 8px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.8rem;
+  cursor: pointer;
+}
+
+.arch-tool:disabled {
+  opacity: 0.35;
+  cursor: default;
+}
+
+.arch-tool--primary {
+  border-color: var(--arch-accent);
+  color: var(--arch-accent);
+}
+
+.arch-zoom {
+  display: flex;
+  gap: 0.25rem;
+  margin-left: auto;
+}
+
+/* ------------------------------------------------------------- layout */
+
+/* A fixed window onto the canvas: drag to pan, wheel or pinch to zoom. */
+.arch-viewport {
+  position: relative;
+  height: 34rem;
+  overflow: hidden;
+  border: 1px solid var(--arch-line);
+  border-radius: 10px;
+  background:
+    radial-gradient(circle, rgba(148, 163, 184, 0.12) 1px, transparent 1px) 0 0 / 18px 18px;
+  cursor: grab;
+  touch-action: none;
+  user-select: none;
+}
+
+.arch-viewport:active {
+  cursor: grabbing;
+}
+
+/* Laid out at a desktop width on every screen, then scaled: the shape never reflows. */
+.arch-canvas {
+  position: absolute;
+  top: 0;
+  left: 0;
+  width: max(100%, 60rem);
+  display: grid;
+  gap: 2.25rem;
+  padding: 1.25rem;
+  transform-origin: 0 0;
+  /* No will-change: the browser then re-renders text at each zoom instead of stretching a snapshot. */
+}
+
+.arch-row,
+.arch-cluster {
+  position: relative;
+  z-index: 1;
+}
+
+.arch-row {
+  display: grid;
+  justify-items: center;
+  gap: 0.4rem;
+}
+
+.arch-row-label {
+  font-size: 0.68rem;
+  text-transform: uppercase;
+  letter-spacing: 0.06em;
+  color: var(--arch-muted);
+}
+
+.arch-row-nodes {
+  display: flex;
+  flex-wrap: wrap;
+  justify-content: center;
+  align-items: flex-start;
+  gap: 1rem 2.5rem;
+}
+
+.arch-cluster {
+  display: grid;
+  gap: 2.25rem;
+  padding: 0.75rem 1rem 1.25rem;
+  border: 1px dashed var(--arch-line);
+  border-radius: 14px;
+}
+
+.arch-cluster-header {
+  display: flex;
+  align-items: baseline;
+  gap: 0.5rem;
+  margin-bottom: -1.25rem;
+}
+
+/* --------------------------------------------------------------- nodes */
+
+.arch-node {
+  display: grid;
+  justify-items: start;
+  gap: 0.1rem;
+  min-width: 10rem;
+  max-width: 15rem;
+  padding: 0.5rem 0.7rem;
+  border: 1px solid var(--arch-line);
+  border-left: 3px solid var(--arch-role, var(--arch-line));
+  border-radius: 8px;
+  background: var(--arch-surface);
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity 0.25s, border-color 0.25s, box-shadow 0.25s;
+}
+
+.arch-node:hover,
+.arch-node:focus-visible,
+.arch-mount:hover,
+.arch-mount:focus-visible {
+  border-color: var(--arch-accent);
+}
+
+.arch-node--storage {
+  cursor: default;
+}
+
+.arch-node--storage:hover {
+  border-color: var(--arch-line);
+}
+
+.arch-node--webui { --arch-role: #8b5cf6; }
+.arch-node--backend { --arch-role: #24aac3; }
+.arch-node--workers { --arch-role: #f59e0b; }
+.arch-node--postgres { --arch-role: #3b82f6; }
+.arch-node--redis { --arch-role: #ef4444; }
+.arch-node--storage { --arch-role: #22c55e; }
+
+.arch-node-role {
+  display: flex;
+  align-items: center;
+  gap: 0.35rem;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--arch-muted);
+}
+
+.arch-node-name {
+  font-size: 0.95rem;
+  overflow-wrap: anywhere;
+}
+
+.arch-node-sub {
+  font-size: 0.72rem;
+  color: var(--arch-muted);
+  overflow-wrap: anywhere;
+}
+
+.arch-node.is-self {
+  box-shadow: inset 0 0 0 1px rgba(var(--arch-accent-rgb), 0.5);
+}
+
+.arch-node.is-new {
+  border-color: var(--arch-accent);
+  box-shadow: 0 0 0 1px var(--arch-accent);
+}
+
+
+.arch-state {
+  width: 0.45rem;
+  height: 0.45rem;
+  border-radius: 50%;
+  background: var(--arch-muted);
+}
+
+.arch-state--healthy { background: var(--color-success, #22c55e); }
+.arch-state--warning { background: var(--color-warning, #f59e0b); }
+.arch-state--offline { background: var(--color-error, #ef4444); }
+
+.arch-badge {
+  padding: 0 0.4rem;
+  border: 1px solid var(--arch-accent);
+  border-radius: 999px;
+  color: var(--arch-accent);
+  text-transform: none;
+  letter-spacing: 0;
+}
+
+/* Storage: one node per backend, its mounts in use as rows. */
+.arch-node--storage {
+  min-width: 20rem;
+  max-width: 30rem;
+}
+
+.arch-mount-list {
+  display: grid;
+  gap: 0.15rem;
+  width: 100%;
+  margin: 0.35rem 0 0;
+  padding: 0;
+  list-style: none;
+}
+
+.arch-mount {
+  display: grid;
+  grid-template-columns: 4.2rem minmax(0, 1fr) 6rem;
+  align-items: center;
+  gap: 0.5rem;
+  width: 100%;
+  padding: 0.25rem 0.4rem;
+  border: 1px solid transparent;
+  border-radius: 6px;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  font-size: 0.78rem;
+  text-align: left;
+  cursor: pointer;
+  transition: opacity 0.25s, border-color 0.25s, box-shadow 0.25s;
+}
+
+.arch-mount-tag {
+  justify-self: start;
+  padding: 0 0.35rem;
+  border-radius: 4px;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.04em;
+  background: rgba(148, 163, 184, 0.15);
+}
+
+.arch-mount--ram-staging .arch-mount-tag,
+.arch-mount--staging .arch-mount-tag {
+  background: rgba(var(--arch-accent-rgb), 0.2);
+  color: var(--arch-accent);
+}
+
+.arch-mount-path {
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.arch-mount-usage {
+  display: flex;
+  align-items: center;
+  justify-content: flex-end;
+  gap: 0.35rem;
+  font-size: 0.7rem;
+  color: var(--arch-muted);
+}
+
+.arch-mount-bar {
+  flex: 1;
+  height: 0.3rem;
+  border-radius: 999px;
+  background: rgba(148, 163, 184, 0.2);
+  overflow: hidden;
+}
+
+.arch-mount-bar > span {
+  display: block;
+  height: 100%;
+  background: var(--color-success, #22c55e);
+}
+
+.arch-mount-bar > span.is-full {
+  background: var(--color-error, #ef4444);
+}
+
+/* ------------------------------------------------ playing a download flow */
+
+.flow-off {
+  opacity: 0.3;
+}
+
+.flow-done {
+  border-color: var(--color-success, #22c55e);
+}
+
+.arch-node.flow-active,
+.arch-mount.flow-active {
+  opacity: 1;
+  border-color: var(--arch-accent);
+  box-shadow: 0 0 0 3px rgba(var(--arch-accent-rgb), 0.4);
+}
+
+/* --------------------------------------------------------------- arrows */
+
+.arch-edges {
+  position: absolute;
+  inset: 0;
+  width: 100%;
+  height: 100%;
+  overflow: visible;
+  pointer-events: none;
+  z-index: 0;
+}
+
+.arch-edges marker path {
+  fill: var(--arch-muted);
+}
+
+.arch-edge path {
+  fill: none;
+  stroke: var(--arch-muted);
+  stroke-width: 1.4;
+  opacity: 0.6;
+}
+
+.arch-edge.is-quiet path {
+  stroke-dasharray: 3 4;
+  opacity: 0.4;
+}
+
+.arch-edge.is-off {
+  opacity: 0.25;
+}
+
+.arch-edge.is-active path {
+  stroke: var(--arch-accent);
+  stroke-width: 2.5;
+  opacity: 1;
+  stroke-dasharray: 7 5;
+  animation: arch-edge-flow 0.7s linear infinite;
+}
+
+.arch-edge text {
+  font-size: 11px;
+  font-weight: 600;
+  fill: var(--arch-accent);
+  paint-order: stroke;
+  stroke: var(--color-bg-primary, #111);
+  stroke-width: 4px;
+}
+
+@keyframes arch-edge-flow {
+  to {
+    stroke-dashoffset: -24;
+  }
+}
+
+/* ------------------------------------------------- details card */
+
+.arch-popover {
+  position: absolute;
+  z-index: 10;
+  width: 18rem;
+  max-width: calc(100% - 16px);
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.65rem 0.75rem;
+  border: 1px solid var(--arch-accent);
+  border-radius: 10px;
+  background: var(--color-bg-primary, #111);
+  box-shadow: 0 10px 30px rgba(0, 0, 0, 0.45);
+  cursor: auto;
+}
+
+.arch-popover header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 0.5rem;
+}
+
+.arch-popover dl {
+  display: grid;
+  gap: 0.35rem;
+  margin: 0;
+}
+
+.arch-popover dt {
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--arch-muted);
+}
+
+.arch-popover dd {
+  margin: 0;
+  font-size: 0.8rem;
+  overflow-wrap: anywhere;
+  user-select: text;
+}
+
+/* ------------------------------------------- the flow being played */
+
+.arch-footer {
+  position: relative;
+  display: grid;
+  gap: 0.5rem;
+  padding: 0.75rem;
+  border: 1px solid var(--arch-accent);
+  border-radius: 12px;
+  background: var(--color-bg-primary, #111);
+  box-shadow: 0 -8px 24px rgba(0, 0, 0, 0.35);
+}
+
+.arch-footer-bar {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem 0.75rem;
+}
+
+.arch-caption-step {
+  min-width: 0;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+  font-size: 0.7rem;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+  color: var(--arch-accent);
+}
+
+.arch-footer-stop {
+  margin-left: auto;
+}
+
+.arch-footer-caption {
+  margin: 0;
+  font-size: 0.95rem;
+}
+
+/* The route through the flowchart: one line that scrolls sideways. */
+.arch-trail {
+  position: relative;
+  display: flex;
+  align-items: center;
+  gap: 0;
+  margin: 0;
+  padding: 0.25rem 0 0.4rem;
+  list-style: none;
+  overflow-x: auto;
+  scroll-snap-type: x proximity;
+}
+
+.arch-trail-item {
+  display: flex;
+  flex: 0 0 auto;
+  align-items: center;
+  scroll-snap-align: center;
+  transition: opacity 0.25s;
+}
+
+.arch-trail-item + .arch-trail-item::before {
+  content: '';
+  width: 1.5rem;
+  height: 1px;
+  margin: 0 0.15rem;
+  background: var(--arch-muted);
+}
+
+.arch-trail-box {
+  display: grid;
+  gap: 0.05rem;
+  padding: 0.35rem 0.6rem;
+  border: 1px solid var(--arch-line);
+  border-radius: 8px;
+  background: var(--arch-surface);
+  font-size: 0.8rem;
+  white-space: nowrap;
+}
+
+.arch-trail-box small {
+  font-size: 0.68rem;
+  color: var(--arch-muted);
+}
+
+/* Decisions read as questions: a dashed pill with the answer taken. */
+.arch-trail-item.is-decision .arch-trail-box {
+  border-style: dashed;
+  border-radius: 999px;
+}
+
+.arch-trail-answer {
+  margin-left: 0.3rem;
+  padding: 0 0.35rem;
+  border-radius: 4px;
+  font-size: 0.66rem;
+  text-transform: uppercase;
+  background: rgba(148, 163, 184, 0.18);
+}
+
+.arch-trail-item.is-ahead {
+  opacity: 0.4;
+}
+
+.arch-trail-item.is-done .arch-trail-box {
+  border-color: var(--color-success, #22c55e);
+}
+
+.arch-trail-item.is-active .arch-trail-box {
+  border-color: var(--arch-accent);
+  box-shadow: 0 0 0 3px rgba(var(--arch-accent-rgb), 0.35);
+}
+
+.arch-trail-item.is-active .arch-trail-answer,
+.arch-trail-item.is-done .arch-trail-answer {
+  background: rgba(var(--arch-accent-rgb), 0.2);
+  color: var(--arch-accent);
+}
+
+@media (max-width: 600px) {
+  .arch-footer {
+    border-radius: 12px 12px 0 0;
+  }
+
+  .arch-footer-caption {
+    font-size: 0.85rem;
+  }
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .arch-node,
+  .arch-mount,
+  .arch-trail-item {
+    transition: none;
+  }
+
+  .arch-edge.is-active path {
+    animation: none;
+  }
+}

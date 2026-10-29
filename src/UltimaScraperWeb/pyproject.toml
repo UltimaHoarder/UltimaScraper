@@ -1,0 +1,35 @@
+[project]
+name = "ultima-scraper-webui-server"
+version = "0.1.0"
+description = "Serves the UltimaScraper WebUI and connects it to one or more backends."
+readme = "README.md"
+requires-python = ">=3.14,<3.15"
+authors = [
+    { name = "UltimaHoarder", email = "1285176+UltimaHoarder@users.noreply.github.com" },
+]
+# Deliberately independent of the backend and database packages: this server
+# reaches backends over HTTP (directly or through an SSH tunnel) and installs
+# them over SSH.
+dependencies = [
+    "ultima-scraper-core>=0.1,<1",
+    "fastapi>=0.135,<1",
+    "uvicorn>=0.41,<1",
+    "httpx>=0.28,<1",
+    "websockets>=15,<16",
+    "cryptography>=46",
+    # Installs UltimaScraper on other hosts, and tunnels to their backends.
+    "asyncssh>=2.24,<3",
+]
+
+[project.scripts]
+ultimascraper-webui = "ultima_webui_server.__main__:main"
+
+[build-system]
+requires = ["hatchling"]
+build-backend = "hatchling.build"
+
+[tool.hatch.build.targets.wheel]
+packages = ["ultima_webui_server"]
+# The built WebUI, copied in by scripts/release/build_webui_package.sh. It is
+# git-ignored, so it is listed here to be packaged anyway.
+artifacts = ["ultima_webui_server/static/**"]

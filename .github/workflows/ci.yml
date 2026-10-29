@@ -1,0 +1,81 @@
+name: CI
+
+# The checks of scripts/release/check.sh, without the Docker acceptance run.
+# Images are built and pushed by .forgejo/workflows/release.yml.
+on:
+  push:
+    branches: [main]
+  pull_request:
+  workflow_dispatch:
+
+permissions:
+  contents: read
+
+concurrency:
+  group: ci-${{ github.ref }}
+  cancel-in-progress: true
+
+jobs:
+  python:
+    name: Python tests
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14"
+          enable-cache: true
+      - name: Check the lock file
+        run: uv lock --check --python 3.14
+      - name: Install
+        run: uv sync --frozen --python 3.14 --group dev
+      - name: Test
+        run: uv run --frozen pytest -q
+
+  webui:
+    name: WebUI
+    runs-on: ubuntu-latest
+    timeout-minutes: 30
+    defaults:
+      run:
+        working-directory: src/UltimaScraperWeb/webui
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/UltimaScraperWeb/webui/package-lock.json
+      - run: npm ci
+      - name: Audit runtime dependencies
+        run: npm audit --omit=dev --audit-level=high
+      - run: npm run lint
+      - run: npm run typecheck:tests
+      - run: npm run test:unit
+      - run: npm run build:production
+      - name: Install the smoke-test browser
+        run: npx playwright install --with-deps chromium
+      - run: npm run test:smoke
+      - name: Keep smoke-test results
+        if: failure()
+        uses: actions/upload-artifact@v4
+        with:
+          name: playwright-results
+          path: src/UltimaScraperWeb/webui/test-results
+          retention-days: 7
+
+  docs:
+    name: Docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 15
+    steps:
+      - uses: actions/checkout@v4
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14"
+          enable-cache: true
+      - name: Install
+        run: uv sync --frozen --python 3.14 --only-group docs
+      - name: Build
+        run: uv run --frozen --no-sync zensical build --strict

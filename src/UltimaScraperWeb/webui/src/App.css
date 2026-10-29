@@ -1,0 +1,39 @@
+/* App.css - Legacy styles cleaned up, main styles now in styles/ directory */
+
+.route-loading {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  background: #090a08;
+}
+
+.route-loading__pulse {
+  width: 120px;
+  height: 2px;
+  background: rgba(130, 214, 178, 0.18);
+  position: relative;
+  overflow: hidden;
+}
+
+.route-loading__inner { display: flex; flex-direction: column; align-items: center; gap: 16px; width: 100%; }
+.route-loading__identity { display: none; }
+.route-loading__label { color: var(--color-text-secondary); font: 12px var(--font-mono); }
+
+@media (prefers-reduced-motion: reduce) {
+  .route-loading__pulse::after { animation: none; }
+}
+
+.route-loading__pulse::after {
+  content: '';
+  position: absolute;
+  inset: 0;
+  background: #82d6b2;
+  animation: route-pulse 1.2s ease-in-out infinite;
+  transform-origin: left;
+}
+
+@keyframes route-pulse {
+  0% { transform: scaleX(0); opacity: 0.4; }
+  50% { transform: scaleX(1); opacity: 1; }
+  100% { transform: scaleX(0); opacity: 0.4; transform-origin: right; }
+}

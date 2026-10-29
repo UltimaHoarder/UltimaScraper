@@ -1,0 +1,649 @@
+.fleet-register-page { width: min(100%, var(--content-max-width, 1400px)); margin: 0 auto; padding-bottom: 48px; }
+.fleet-register-page .ops-notice { margin-bottom: 12px; }
+.fleet-register { border-top: 3px solid var(--color-success, var(--color-accent-primary)); }
+.fleet-register-header { display: flex; justify-content: space-between; align-items: center; gap: 24px; padding: 24px 0 18px; }
+.fleet-register-header h2 { margin-top: 5px; font-size: clamp(24px, 3vw, 38px); letter-spacing: -0.03em; }
+.fleet-register-header p { margin-top: 8px; color: var(--color-text-secondary); }
+.fleet-register-kicker { display: block; color: var(--color-text-tertiary); font: 10px/1.5 var(--font-mono); letter-spacing: 0.15em; text-transform: uppercase; }
+.fleet-register-stamp { display: flex; align-items: center; gap: 12px; flex-shrink: 0; }
+.fleet-register-stamp strong { color: var(--color-success, var(--color-accent-primary)); font: 400 42px/1 var(--font-mono); }
+.fleet-register-stamp span { color: var(--color-text-tertiary); font: 9px/1.7 var(--font-mono); letter-spacing: 0.08em; }
+.fleet-register-summary { display: flex; flex-wrap: wrap; align-items: center; gap: 18px; padding: 14px 0; border-block: 1px solid var(--color-border-primary); color: var(--color-text-secondary); font-size: 12px; }
+.fleet-register-summary small { margin-left: 6px; color: var(--color-text-tertiary); }
+.fleet-register-summary-note { margin-left: auto; color: var(--color-text-tertiary); font: 10px var(--font-mono); }
+.fleet-register-toolbar { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 18px 0 12px; }
+.fleet-register-toolbar-actions { display: flex; align-items: center; gap: 8px; flex-wrap: wrap; justify-content: flex-end; }
+.fleet-register-tabs { display: flex; gap: 4px; flex-wrap: wrap; }
+.fleet-register-tabs button, .fleet-register-button { border: 1px solid var(--color-border-primary); background: var(--color-bg-secondary); color: var(--color-text-secondary); border-radius: var(--radius-sm); padding: 9px 12px; text-transform: capitalize; }
+.fleet-register-tabs button span { margin-left: 10px; color: var(--color-text-tertiary); font: 10px var(--font-mono); }
+.fleet-register-tabs button[aria-pressed='true'] { color: var(--color-text-primary); border-color: var(--color-success, var(--color-accent-primary)); background: var(--color-bg-active); }
+.fleet-register-button:disabled { cursor: not-allowed; opacity: 0.45; }
+.fleet-register-button:not(:disabled):hover, .fleet-register-tabs button:hover { border-color: var(--color-accent-primary); color: var(--color-text-primary); }
+.fleet-register-search { display: flex; align-items: center; gap: 10px; padding: 10px 12px; border: 1px solid var(--color-border-primary); background: var(--color-bg-secondary); }
+.fleet-register-search > span:first-child { color: var(--color-text-tertiary); font-size: 20px; line-height: 1; }
+.fleet-register-search input { flex: 1; min-width: 140px; border: 0; padding: 4px 0; background: transparent; box-shadow: none; }
+.fleet-register-search input:focus { box-shadow: none; }
+.fleet-register-search select { width: auto; min-width: 160px; }
+.fleet-register-record-count { color: var(--color-text-tertiary); font: 10px var(--font-mono); white-space: nowrap; }
+.fleet-register-table-frame { margin-top: 12px; border: 1px solid var(--color-border-primary); }
+.fleet-register-table-scroll { overflow-x: auto; }
+.fleet-register-table { width: 100%; min-width: 820px; border-collapse: collapse; color: var(--color-text-secondary); font-size: 12px; }
+.fleet-register-table th, .fleet-register-table td { border-bottom: 1px solid var(--color-border-secondary, var(--color-border-primary)); padding: 12px 11px; text-align: left; vertical-align: middle; }
+.fleet-register-table thead th { color: var(--color-text-tertiary); background: var(--color-bg-secondary); font: 10px var(--font-mono); letter-spacing: 0.04em; text-transform: uppercase; white-space: nowrap; }
+.fleet-register-table thead button { padding: 0; border: 0; background: transparent; color: inherit; font: inherit; text-transform: inherit; letter-spacing: inherit; }
+.fleet-register-table thead button:hover { color: var(--color-text-primary); }
+.fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row):hover, .fleet-register-table tbody tr.is-selected { background: var(--color-bg-hover); }
+.fleet-register-table tbody tr:last-child td, .fleet-register-table tbody tr:last-child th { border-bottom: 0; }
+.fleet-register-table tbody th { color: var(--color-text-primary); font-weight: 500; }
+.fleet-register-table tbody th small { display: block; margin-top: 3px; color: var(--color-text-tertiary); font: 10px var(--font-mono); font-weight: 400; }
+.fleet-register-table code { color: var(--color-text-primary); font: 11px var(--font-mono); overflow-wrap: anywhere; }
+.fleet-register-table input[type='checkbox'] { width: 15px; height: 15px; accent-color: var(--color-accent-primary); }
+.fleet-register-name { display: flex; align-items: center; gap: 10px; width: 100%; padding: 0; border: 0; background: transparent; color: inherit; text-align: left; }
+.fleet-register-name > span:first-child { width: 14px; color: var(--color-success, var(--color-accent-primary)); font: 16px var(--font-mono); }
+.fleet-register-name strong { display: block; color: var(--color-text-primary); font-weight: 600; }
+.fleet-register-name small { display: block; margin-top: 3px; color: var(--color-text-tertiary); font: 10px var(--font-mono); }
+.fleet-register-name:hover strong { color: var(--color-accent-hover, var(--color-accent-primary)); }
+.fleet-register-state { display: inline-flex; align-items: center; gap: 6px; color: var(--color-text-secondary); white-space: nowrap; }
+.fleet-register-state i { width: 7px; height: 7px; flex: 0 0 7px; border-radius: 50%; background: var(--color-text-tertiary); }
+.fleet-register-state--healthy i, .fleet-register-state--idle i { background: var(--color-success); }
+.fleet-register-state--running i { background: var(--color-info, var(--color-accent-primary)); box-shadow: 0 0 0 3px var(--color-info-bg, transparent); }
+.fleet-register-state--warning i { background: var(--color-warning); }
+.fleet-register-state--offline i { background: var(--color-error); }
+.fleet-register-load { display: grid; gap: 6px; min-width: 100px; }
+.fleet-register-load strong { color: var(--color-text-primary); font: 12px var(--font-mono); }
+.fleet-register-load strong small { color: var(--color-text-tertiary); font-size: 10px; }
+.fleet-register-meter { height: 4px; overflow: hidden; background: var(--color-border-primary); border-radius: 99px; }
+.fleet-register-meter i { display: block; height: 100%; background: var(--color-info, var(--color-accent-primary)); border-radius: inherit; }
+.fleet-register-text-offline { color: var(--color-error); }
+.fleet-register-link, .fleet-register-icon-button { padding: 0; border: 0; background: transparent; color: var(--color-info, var(--color-accent-primary)); font-size: 12px; }
+.fleet-register-link:hover, .fleet-register-icon-button:hover { color: var(--color-accent-hover, var(--color-text-primary)); text-decoration: underline; }
+.fleet-register-icon-button { width: 28px; height: 28px; border: 1px solid transparent; text-decoration: none; }
+.fleet-register-icon-button:hover { border-color: var(--color-border-primary); text-decoration: none; }
+.fleet-register-expansion td { padding: 0; background: var(--color-bg-secondary); }
+.fleet-register-expanded-grid { display: grid; grid-template-columns: minmax(0, 1.15fr) minmax(260px, 0.85fr); gap: 24px; padding: 20px 38px 20px 48px; border-top: 1px solid var(--color-border-primary); }
+.fleet-register-expanded-grid h3 { font-size: 14px; }
+.fleet-register-row { display: flex; align-items: center; justify-content: space-between; gap: 12px; }
+.fleet-register-row--start { align-items: flex-start; }
+.fleet-register-worker-cells { display: flex; flex-wrap: wrap; gap: 5px; margin: 14px 0; }
+.fleet-register-worker-cell { display: inline-flex; width: 28px; height: 25px; align-items: center; justify-content: center; border: 1px solid var(--color-info, var(--color-accent-primary)); background: var(--color-info-bg, transparent); color: var(--color-info, var(--color-accent-primary)); font: 10px var(--font-mono); }
+.fleet-register-worker-cell--idle { border-color: var(--color-border-primary); background: transparent; color: var(--color-text-tertiary); }
+.fleet-register-worker-cell--offline { border-color: var(--color-error); background: var(--color-error-bg); color: var(--color-error); }
+.fleet-register-worker-cell--warning { border-color: var(--color-warning); background: var(--color-warning-bg); color: var(--color-warning); }
+.fleet-register-mini-ledger { display: grid; gap: 7px; margin: 14px 0; padding-top: 12px; border-top: 1px solid var(--color-border-primary); }
+.fleet-register-mini-ledger .fleet-register-row { font-size: 11px; }
+.fleet-register-mini-ledger .fleet-register-row code:last-child { max-width: 180px; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fleet-register-mount-stack { display: grid; gap: 8px; margin-top: 12px; }
+.fleet-register-mount-summary { padding: 11px; border: 1px solid var(--color-border-primary); background: var(--color-bg-primary); }
+.fleet-register-mount-summary strong { overflow-wrap: anywhere; color: var(--color-text-primary); font-size: 12px; }
+.fleet-register-mount-summary small { display: block; margin-top: 6px; color: var(--color-text-tertiary); font: 10px var(--font-mono); }
+.fleet-register-muted { color: var(--color-text-tertiary); font-size: 11px; }
+.fleet-register-panel { margin-top: 12px; border: 1px solid var(--color-border-primary); background: var(--color-bg-secondary); }
+.fleet-register-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 14px 16px; border-bottom: 1px solid var(--color-border-primary); }
+.fleet-register-panel-header h2 { margin-top: 3px; font-size: 16px; }
+.fleet-register-panel-meta { color: var(--color-text-tertiary); font: 10px var(--font-mono); }
+.fleet-register-comparison-table { min-width: 620px; }
+.fleet-register-comparison-table th:first-child { width: 180px; }
+.fleet-register-comparison-table tbody th { color: var(--color-text-secondary); font: 11px var(--font-mono); }
+.fleet-register-empty { padding: 32px 16px; color: var(--color-text-tertiary); text-align: center; }
+.fleet-register-footer { display: flex; justify-content: space-between; gap: 20px; padding: 13px 0; color: var(--color-text-tertiary); font: 10px var(--font-mono); }
+.fleet-register-notes { display: grid; grid-template-columns: repeat(3, 1fr); gap: 18px; padding-top: 14px; border-top: 1px solid var(--color-border-primary); }
+.fleet-register-notes strong { color: var(--color-text-primary); font-size: 12px; }
+.fleet-register-notes p { margin-top: 6px; color: var(--color-text-tertiary); font-size: 11px; line-height: 1.6; }
+.fleet-register-sr-only { position: absolute; width: 1px; height: 1px; padding: 0; margin: -1px; overflow: hidden; clip: rect(0, 0, 0, 0); white-space: nowrap; border: 0; }
+
+/* Mounts Assigned/Unassigned Section Dividers */
+.fleet-register-table tbody tr.fleet-register-divider-row td {
+  padding: 8px 12px;
+  background: var(--color-bg-primary, #151515);
+  border-top: 1px solid var(--color-border-primary, #333);
+  border-bottom: 1px solid var(--color-border-primary, #333);
+}
+
+.fleet-register-table tbody tr.fleet-register-divider-row:first-child td {
+  border-top: none;
+}
+
+.fleet-register-divider-btn {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  width: 100%;
+  padding: 0;
+  border: 0;
+  background: transparent;
+  color: inherit;
+  font: inherit;
+  text-align: left;
+  cursor: pointer;
+  gap: 12px;
+}
+
+.fleet-register-divider-start {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.fleet-register-divider-symbol {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 14px;
+  height: 14px;
+  color: var(--color-accent-primary, #3b82f6);
+  font: 14px var(--font-mono);
+  user-select: none;
+}
+
+.fleet-register-divider-badge {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+  padding: 2px 8px;
+  border-radius: var(--radius-sm, 4px);
+  font: 700 10px var(--font-mono);
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+}
+
+.fleet-register-divider-badge--assigned {
+  background: rgba(34, 197, 94, 0.12);
+  color: var(--color-success, #22c55e);
+  border: 1px solid rgba(34, 197, 94, 0.3);
+}
+
+.fleet-register-divider-badge--unassigned {
+  background: rgba(148, 163, 184, 0.12);
+  color: var(--color-text-tertiary, #94a3b8);
+  border: 1px solid rgba(148, 163, 184, 0.25);
+}
+
+.fleet-register-divider-desc {
+  color: var(--color-text-secondary, #888);
+  font: 11px var(--font-mono);
+  letter-spacing: 0.02em;
+}
+
+.fleet-register-divider-count {
+  color: var(--color-text-tertiary, #888);
+  font: 11px var(--font-mono);
+  white-space: nowrap;
+}
+
+.fleet-register-divider-btn:hover .fleet-register-divider-symbol,
+.fleet-register-divider-btn:hover .fleet-register-divider-desc {
+  color: var(--color-text-primary, #f0f0f0);
+}
+
+.fleet-register-divider-empty-cell {
+  display: flex;
+  align-items: center;
+  gap: 10px;
+  padding: 8px 12px;
+  color: var(--color-text-tertiary);
+  font: 11px var(--font-mono);
+  font-style: italic;
+}
+
+/* Shared modal treatment: the old theme-specific SystemPage styles no longer own these dialogs. */
+.fleet-register-page .modal-overlay { padding: 24px; }
+.fleet-register-page .modal-content { width: min(100%, 640px); max-height: min(90vh, 860px); display: flex; flex-direction: column; overflow: hidden; background: var(--color-bg-secondary, #1e1e1e); border: 1px solid var(--color-border-primary, #333); border-radius: var(--radius-lg, 10px); box-shadow: 0 24px 70px rgba(0, 0, 0, 0.55); color: var(--color-text-primary, #f0f0f0); }
+:root[data-theme="ultima-atlas"] body .modal-content.drive-modal-cockpit,
+.fleet-register-page .modal-content.drive-modal-cockpit {
+  --atlas-dialog-width: 1120px;
+  width: min(100%, 1120px) !important;
+  max-width: min(1120px, calc(100vw - 40px)) !important;
+  max-height: min(92vh, 920px);
+}
+.fleet-register-page .remote-config-modal { width: min(100%, 720px); }
+.fleet-register-page .modal-header { display: flex; align-items: center; justify-content: space-between; gap: 16px; padding: 16px 20px; border-bottom: 1px solid var(--color-border-primary, #333); }
+.fleet-register-page .modal-header h3, .fleet-register-page .modal-header-info h3 { margin: 0; color: var(--color-text-primary, #f0f0f0); font-size: 16px; }
+.fleet-register-page .modal-header-info { min-width: 0; }
+.fleet-register-page .modal-header-device { display: block; margin-top: 5px; color: var(--color-text-tertiary, #888); font: 11px/1.4 var(--font-mono, monospace); overflow-wrap: anywhere; }
+.fleet-register-page .modal-close { flex: 0 0 auto; padding: 4px 8px; border: 0; background: transparent; color: var(--color-text-tertiary, #888); font-size: 24px; line-height: 1; cursor: pointer; }
+.fleet-register-page .modal-close:hover { color: var(--color-text-primary, #f0f0f0); }
+.fleet-register-page .drive-stats-bar { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 1px; padding: 12px 20px; background: var(--color-border-primary, #333); border-bottom: 1px solid var(--color-border-primary, #333); }
+.fleet-register-page .drive-stats-item { display: flex; min-width: 0; flex-direction: column; align-items: center; gap: 4px; padding: 8px 10px; background: var(--color-bg-secondary, #1e1e1e); text-align: center; }
+.fleet-register-page .stats-label { color: var(--color-text-tertiary, #888); font-size: 10px; letter-spacing: 0.08em; text-transform: uppercase; }
+.fleet-register-page .stats-value { color: var(--color-text-primary, #f0f0f0); font: 13px var(--font-mono, monospace); white-space: nowrap; }
+.fleet-register-page .stats-value.warning { color: var(--color-warning, #f59e0b); }
+.fleet-register-page .stats-value.critical { color: var(--color-error, #ef4444); }
+.fleet-register-page .modal-body { min-height: 0; padding: 16px 20px 20px; overflow-y: auto; cursor: default; }
+.fleet-register-page .drive-modal-redesign .modal-body { display: flex; flex-direction: column; gap: 16px; }
+.fleet-register-page .tab-description { margin: 0; color: var(--color-text-secondary, #aaa); font-size: 12px; line-height: 1.5; }
+.fleet-register-page .modal-message, .fleet-register-page .message, .fleet-register-page .error { margin: 0 20px; padding: 10px 12px; border: 1px solid var(--color-border-primary, #333); border-radius: var(--radius-sm, 6px); font-size: 12px; }
+.fleet-register-page .modal-message.success, .fleet-register-page .message.success { border-color: var(--color-success, #22c55e); color: var(--color-success, #22c55e); }
+.fleet-register-page .modal-message.error, .fleet-register-page .message.error, .fleet-register-page .error { border-color: var(--color-error, #ef4444); color: var(--color-error, #ef4444); }
+.fleet-register-page .modal-tabs { display: flex; gap: 4px; padding: 0 20px; border-bottom: 1px solid var(--color-border-primary, #333); }
+.fleet-register-page .tab-btn { padding: 10px 12px; border: 0; border-bottom: 2px solid transparent; background: transparent; color: var(--color-text-tertiary, #888); font-size: 12px; cursor: pointer; }
+.fleet-register-page .tab-btn:hover, .fleet-register-page .tab-btn.active { color: var(--color-text-primary, #f0f0f0); border-bottom-color: var(--color-accent-primary, #3b82f6); }
+.fleet-register-page .modal-section, .fleet-register-page .form-section { padding: 16px; border: 1px solid var(--color-border-primary, #333); border-radius: var(--radius-md, 8px); background: var(--color-bg-primary, #151515); }
+.fleet-register-page .modal-section .section-header, .fleet-register-page .form-section .section-header { display: flex; align-items: center; justify-content: space-between; gap: 12px; margin-bottom: 12px; }
+.fleet-register-page .modal-section h4, .fleet-register-page .form-section h4 { margin: 0; color: var(--color-text-primary, #f0f0f0); font-size: 14px; }
+.fleet-register-page .empty-state { padding: 18px 8px; color: var(--color-text-secondary, #aaa); text-align: center; }
+.fleet-register-page .empty-state p { margin: 0 0 6px; }
+.fleet-register-page .empty-hint, .fleet-register-page .form-hint { color: var(--color-text-tertiary, #888); font-size: 11px; }
+.fleet-register-page .directory-cards { display: grid; gap: 8px; }
+.fleet-register-page .directory-card { display: flex; align-items: center; justify-content: space-between; gap: 12px; padding: 11px 12px; border: 1px solid var(--color-border-primary, #333); border-radius: var(--radius-sm, 6px); background: var(--color-bg-secondary, #1e1e1e); }
+.fleet-register-page .dir-card-main { min-width: 0; flex: 1; }
+.fleet-register-page .dir-card-path, .fleet-register-page .edit-path { color: var(--color-text-primary, #f0f0f0); font: 11px var(--font-mono, monospace); overflow-wrap: anywhere; }
+.fleet-register-page .dir-card-badges { display: flex; gap: 6px; flex-wrap: wrap; margin-top: 6px; }
+.fleet-register-page .dir-type-badge { display: inline-flex; padding: 3px 7px; border-radius: 99px; background: var(--color-bg-active, #263548); color: var(--color-info, #60a5fa); font-size: 10px; }
+.fleet-register-page .dir-type-badge.metadata { color: var(--color-warning, #f59e0b); }
+.fleet-register-page .dir-card-actions, .fleet-register-page .form-actions, .fleet-register-page .form-actions-bottom, .fleet-register-page .modal-footer { display: flex; align-items: center; justify-content: flex-end; gap: 8px; }
+.fleet-register-page .form-actions-bottom, .fleet-register-page .modal-footer { padding-top: 12px; }
+.fleet-register-page .btn-add, .fleet-register-page .btn-primary, .fleet-register-page .btn-secondary, .fleet-register-page .btn-edit, .fleet-register-page .btn-danger, .fleet-register-page .btn-back { border-radius: var(--radius-sm, 6px); font-size: 12px; cursor: pointer; }
+.fleet-register-page .btn-add, .fleet-register-page .btn-primary { padding: 8px 12px; border: 1px solid var(--color-accent-primary, #3b82f6); background: var(--color-accent-primary, #3b82f6); color: #fff; }
+.fleet-register-page .btn-secondary, .fleet-register-page .btn-edit, .fleet-register-page .btn-back { padding: 7px 11px; border: 1px solid var(--color-border-primary, #444); background: transparent; color: var(--color-text-secondary, #bbb); }
+.fleet-register-page .btn-danger { padding: 7px 11px; border: 1px solid var(--color-error, #ef4444); background: transparent; color: var(--color-error, #ef4444); }
+.fleet-register-page .btn-add:hover, .fleet-register-page .btn-primary:hover { filter: brightness(1.1); }
+.fleet-register-page .form-card { display: grid; gap: 12px; }
+.fleet-register-page .form-group { display: grid; gap: 6px; margin: 0 0 12px; }
+.fleet-register-page .form-group:last-child { margin-bottom: 0; }
+.fleet-register-page .form-group label, .fleet-register-page .checkbox-label { color: var(--color-text-secondary, #bbb); font-size: 12px; }
+.fleet-register-page .form-input, .fleet-register-page .form-group input, .fleet-register-page .form-group select { width: 100%; min-width: 0; box-sizing: border-box; padding: 8px 10px; border: 1px solid var(--color-border-primary, #444); border-radius: var(--radius-sm, 6px); background: var(--color-bg-secondary, #1e1e1e); color: var(--color-text-primary, #f0f0f0); font-size: 12px; }
+.fleet-register-page .form-input:focus, .fleet-register-page .form-group input:focus, .fleet-register-page .form-group select:focus { outline: 2px solid color-mix(in srgb, var(--color-accent-primary, #3b82f6) 35%, transparent); border-color: var(--color-accent-primary, #3b82f6); }
+.fleet-register-page .checkbox-group, .fleet-register-page .checkbox-label { display: flex; align-items: center; gap: 8px; }
+.fleet-register-page .checkbox-group { flex-wrap: wrap; }
+.fleet-register-page .remote-config-modal .modal-body { max-height: 60vh; }
+.fleet-register-page .remote-config-modal .config-form { display: grid; gap: 16px; }
+.fleet-register-page .remote-config-modal .config-tabs { display: grid; grid-template-columns: repeat(3, minmax(0, 1fr)); gap: 4px; padding: 4px; border: 1px solid var(--color-border-primary, #333); border-radius: var(--radius-sm, 6px); background: var(--color-bg-primary, #151515); }
+.fleet-register-page .remote-config-modal .config-tab { padding: 9px 8px; border: 0; border-radius: 4px; background: transparent; color: var(--color-text-tertiary, #888); font-size: 11px; cursor: pointer; }
+.fleet-register-page .remote-config-modal .config-tab.active, .fleet-register-page .remote-config-modal .config-tab:hover { background: var(--color-accent-primary, #3b82f6); color: #fff; }
+.fleet-register-page .fleet-register-inspect-modal { width: min(100%, 760px); }
+.fleet-register-page .fleet-register-inspection-body { display: grid; gap: 16px; }
+.fleet-register-page .fleet-register-inspection-status { display: flex; align-items: center; justify-content: space-between; gap: 12px; color: var(--color-text-secondary, #bbb); font-size: 12px; }
+.fleet-register-page .fleet-register-inspection-status code { color: var(--color-text-tertiary, #888); font: 11px var(--font-mono, monospace); overflow-wrap: anywhere; }
+.fleet-register-page .fleet-register-inspection-metrics { display: grid; grid-template-columns: repeat(4, minmax(0, 1fr)); gap: 8px; }
+.fleet-register-page .fleet-register-inspection-metric { min-width: 0; padding: 12px; border: 1px solid var(--color-border-primary, #333); background: var(--color-bg-primary, #151515); }
+.fleet-register-page .fleet-register-inspection-metric span { display: block; color: var(--color-text-tertiary, #888); font: 10px var(--font-mono, monospace); letter-spacing: 0.04em; text-transform: uppercase; }
+.fleet-register-page .fleet-register-inspection-metric strong { display: block; margin-top: 7px; color: var(--color-text-primary, #f0f0f0); font-size: 13px; overflow-wrap: anywhere; }
+.fleet-register-page .fleet-register-inspection-section { display: grid; gap: 10px; padding: 14px; border: 1px solid var(--color-border-primary, #333); background: var(--color-bg-primary, #151515); }
+.fleet-register-page .fleet-register-inspection-section h4 { margin: 0; color: var(--color-text-primary, #f0f0f0); font-size: 13px; }
+.fleet-register-page .fleet-register-inspection-list { display: grid; gap: 6px; }
+.fleet-register-page .fleet-register-inspection-list-item { display: flex; align-items: center; justify-content: space-between; gap: 12px; width: 100%; padding: 10px; border: 1px solid var(--color-border-primary, #333); background: var(--color-bg-secondary, #1e1e1e); color: var(--color-text-secondary, #bbb); text-align: left; }
+.fleet-register-page button.fleet-register-inspection-list-item { cursor: pointer; }
+.fleet-register-page button.fleet-register-inspection-list-item:hover { border-color: var(--color-accent-primary, #3b82f6); background: var(--color-bg-hover, #252525); }
+.fleet-register-page .fleet-register-inspection-list-item > span:first-child { min-width: 0; }
+.fleet-register-page .fleet-register-inspection-list-item code, .fleet-register-page .fleet-register-inspection-list-item strong { display: block; color: var(--color-text-primary, #f0f0f0); font: 11px var(--font-mono, monospace); overflow-wrap: anywhere; }
+.fleet-register-page .fleet-register-inspection-list-item small { display: block; max-width: 360px; margin-top: 4px; color: var(--color-text-tertiary, #888); overflow: hidden; text-overflow: ellipsis; white-space: nowrap; }
+.fleet-register-page .fleet-register-inspection-list-item--static { cursor: default; }
+.fleet-register-page .fleet-register-inspection-arrow { flex: 0 0 auto; color: var(--color-info, var(--color-accent-primary)); font-size: 11px; }
+.fleet-register-page .fleet-register-inspection-copy { margin: 0; color: var(--color-text-secondary, #bbb); font-size: 12px; line-height: 1.5; overflow-wrap: anywhere; }
+.fleet-register-page .fleet-register-ticket-box { display: flex; gap: 8px; align-items: center; margin-top: 6px; }
+.fleet-register-page .fleet-register-ticket-input { flex: 1; min-width: 0; font-family: var(--font-mono, monospace); font-size: 11px; padding: 8px 10px; background: var(--color-bg-secondary, #1e1e1e); border: 1px solid var(--color-border-primary, #333); border-radius: var(--radius-sm, 4px); color: var(--color-text-primary, #f0f0f0); }
+
+@media (max-width: 900px) {
+  .fleet-register-header { align-items: flex-start; }
+  .fleet-register-summary-note { width: 100%; margin-left: 0; }
+  .fleet-register-expanded-grid { grid-template-columns: 1fr; }
+  .fleet-register-notes { grid-template-columns: 1fr; }
+  .fleet-register-toolbar-actions { width: 100%; justify-content: flex-start; }
+}
+
+@media (max-width: 719px) {
+  .fleet-register-page { padding-bottom: 24px; }
+  .fleet-register-header { padding-top: 16px; }
+  .fleet-register-stamp { display: none; }
+  .fleet-register-toolbar { align-items: stretch; flex-direction: column; }
+  .fleet-register-tabs { width: 100%; }
+  .fleet-register-tabs button { flex: 1; }
+  .fleet-register-button { width: 100%; }
+  .fleet-register-toolbar-actions { width: 100%; flex-direction: column; }
+  .fleet-register-toolbar-actions .fleet-register-button { width: 100%; }
+  .fleet-register-search { align-items: stretch; flex-wrap: wrap; }
+  .fleet-register-search input { min-width: calc(100% - 32px); }
+  .fleet-register-search select, .fleet-register-record-count { width: 100%; }
+  .fleet-register-search select { min-width: 0; }
+  .fleet-register-table-frame { border: 0; overflow: visible; }
+  .fleet-register-table-frame .fleet-register-table { display: block; min-width: 0; }
+  .fleet-register-table-frame .fleet-register-table thead { display: none; }
+  .fleet-register-table-frame .fleet-register-table tbody { display: grid; gap: 10px; }
+  .fleet-register-table-frame .fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row) { display: grid; gap: 0; padding: 10px 12px; border: 1px solid var(--color-border-primary); background: var(--color-bg-secondary); }
+  .fleet-register-table-frame .fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row) td, .fleet-register-table-frame .fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row) th { display: flex; align-items: center; justify-content: space-between; gap: 14px; min-width: 0; padding: 9px 0; border-bottom: 1px solid var(--color-border-secondary, var(--color-border-primary)); text-align: right; }
+  .fleet-register-table-frame .fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row) > :last-child { border-bottom: 0; }
+  .fleet-register-table-frame .fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row) [data-label]::before { content: attr(data-label); flex: 0 0 auto; color: var(--color-text-tertiary); font: 10px var(--font-mono); text-align: left; text-transform: uppercase; }
+  .fleet-register-table-frame .fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row) th[data-label='Backend / host'], .fleet-register-table-frame .fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row) th[data-label='Worker ID'], .fleet-register-table-frame .fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row) th[data-label='Mount / device'] { align-items: flex-start; text-align: left; }
+  .fleet-register-table-frame .fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row) th[data-label='Backend / host']::before, .fleet-register-table-frame .fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row) th[data-label='Worker ID']::before, .fleet-register-table-frame .fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row) th[data-label='Mount / device']::before { display: none; }
+  .fleet-register-table-frame .fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row) td:first-child { justify-content: flex-end; }
+  .fleet-register-table-frame .fleet-register-table tbody tr:not(.fleet-register-expansion):not(.fleet-register-divider-row) td:first-child::before { display: none; }
+  .fleet-register-table-frame .fleet-register-table tbody tr.fleet-register-divider-row { display: block; padding: 0; border: 0; background: transparent; }
+  .fleet-register-table-frame .fleet-register-table tbody tr.fleet-register-divider-row td { display: block; padding: 8px 12px; border: 1px solid var(--color-border-primary); background: var(--color-bg-primary); text-align: left; }
+  .fleet-register-table-frame .fleet-register-table tbody tr.fleet-register-divider-row td::before { display: none; }
+  .fleet-register-expansion { display: block; }
+  .fleet-register-expansion > td { display: block; padding: 0; border: 1px solid var(--color-border-primary); }
+  .fleet-register-expanded-grid { padding: 16px; }
+  .fleet-register-expanded-grid .fleet-register-row { align-items: flex-start; flex-wrap: wrap; }
+  .fleet-register-mini-ledger .fleet-register-row { align-items: center; }
+  .fleet-register-footer { flex-direction: column; gap: 7px; }
+  .fleet-register-page .modal-overlay { align-items: flex-start; padding: 12px; }
+  .fleet-register-page .modal-content { max-height: calc(100vh - 24px); }
+  .fleet-register-page .drive-stats-bar { grid-template-columns: repeat(2, minmax(0, 1fr)); padding: 8px 12px; }
+  .fleet-register-page .modal-header, .fleet-register-page .modal-body { padding-inline: 14px; }
+  .fleet-register-page .modal-tabs { padding-inline: 14px; overflow-x: auto; }
+  .fleet-register-page .tab-btn { white-space: nowrap; }
+  .fleet-register-page .directory-card { align-items: flex-start; flex-direction: column; }
+  .fleet-register-page .dir-card-actions { width: 100%; justify-content: flex-end; }
+  .fleet-register-page .remote-config-modal .config-tabs { grid-template-columns: 1fr; }
+  .fleet-register-page .fleet-register-inspection-metrics { grid-template-columns: repeat(2, minmax(0, 1fr)); }
+  .fleet-register-page .fleet-register-inspection-list-item { align-items: flex-start; flex-wrap: wrap; }
+  .fleet-register-page .fleet-register-inspection-list-item .fleet-register-inspection-arrow { margin-left: auto; }
+}
+
+/* Cockpit Console styles for DriveConfigModal */
+.fleet-register-page .cockpit-strip { display: flex; flex-direction: column; gap: 8px; margin: 0 20px; padding: 12px 14px; background: var(--color-bg-primary, #151515); border: 1px solid var(--color-border-primary, #333); border-radius: var(--radius-sm, 6px); }
+.fleet-register-page .cockpit-strip-header { display: flex; flex-wrap: wrap; justify-content: space-between; align-items: center; gap: 8px; font-size: 11px; }
+.fleet-register-page .cockpit-strip-title { font-weight: 600; color: var(--color-text-secondary, #bbb); }
+.fleet-register-page .cockpit-strip-legend { display: flex; flex-wrap: wrap; gap: 10px; font-size: 10px; }
+.fleet-register-page .cockpit-legend-pill { display: flex; align-items: center; gap: 4px; color: var(--color-text-tertiary, #888); }
+.fleet-register-page .cockpit-legend-pill::before { content: ''; display: inline-block; width: 8px; height: 8px; border-radius: 1px; }
+.fleet-register-page .cockpit-legend-pill.dl::before { background: #3b82f6; }
+.fleet-register-page .cockpit-legend-pill.meta::before { background: #f59e0b; }
+.fleet-register-page .cockpit-legend-pill.sys::before { background: #555; }
+.fleet-register-page .cockpit-legend-pill.free::before { background: #22c55e; }
+.fleet-register-page .cockpit-partition-bar { display: flex; height: 12px; background: #000; border-radius: 2px; overflow: hidden; }
+.fleet-register-page .cockpit-bar-seg { height: 100%; transition: width 0.3s ease; }
+.fleet-register-page .cockpit-bar-seg.dl { background: #3b82f6; }
+.fleet-register-page .cockpit-bar-seg.meta { background: #f59e0b; }
+.fleet-register-page .cockpit-bar-seg.sys { background: #555; }
+.fleet-register-page .cockpit-bar-seg.free { background: #22c55e; }
+.fleet-register-page .cockpit-bar-seg.offline { background: #333; color: #888; font-size: 10px; display: flex; align-items: center; justify-content: center; }
+.fleet-register-page .cockpit-quick-presets { display: flex; flex-wrap: wrap; gap: 4px; align-items: center; margin-top: 6px; }
+.fleet-register-page .cockpit-preset-label { font-size: 10px; color: var(--color-text-tertiary, #888); margin-right: 2px; }
+.fleet-register-page .cockpit-preset-btn { padding: 3px 8px; border: 1px solid var(--color-border-primary, #444); background: var(--color-bg-secondary, #1e1e1e); color: var(--color-text-secondary, #bbb); font-size: 10px; border-radius: 3px; cursor: pointer; transition: all 0.15s ease; }
+.fleet-register-page .cockpit-preset-btn:hover, .fleet-register-page .cockpit-preset-btn.is-active { border-color: var(--color-accent-primary, #3b82f6); color: #fff; background: var(--color-accent-primary, #3b82f6); }
+.fleet-register-page .cockpit-pill-status { display: inline-flex; align-items: center; gap: 4px; padding: 2px 6px; border-radius: 2px; font-size: 9px; font-weight: 700; text-transform: uppercase; }
+.fleet-register-page .cockpit-pill-status.active { background: rgba(59, 130, 246, 0.15); color: #60a5fa; }
+.fleet-register-page .cockpit-pill-status.overflow { background: rgba(245, 158, 11, 0.15); color: #f59e0b; }
+.fleet-register-page .cockpit-pill-status.muted { background: rgba(100, 100, 100, 0.15); color: #888; }
+.fleet-register-page .cockpit-worker-strip { display: flex; align-items: center; gap: 8px; padding: 8px 12px; margin: 0 20px; background: var(--color-bg-primary, #151515); border: 1px solid var(--color-border-primary, #333); border-radius: var(--radius-sm, 6px); font-size: 11px; }
+
+@media (prefers-reduced-motion: reduce) {
+  .fleet-register-page *, .fleet-register-page *::before, .fleet-register-page *::after { transition: none !important; animation: none !important; }
+}
+
+/* Database Section Styles */
+.fleet-register-page .database-dead-warning {
+  color: var(--color-warning, #f59e0b);
+  font-weight: 600;
+}
+
+.fleet-register-page .database-vacuum-modal {
+  max-width: 580px;
+}
+
+.fleet-register-page .database-vacuum-target-card {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  padding: 10px 14px;
+  background: var(--color-bg-primary, #151515);
+  border: 1px solid var(--color-border-primary, #333);
+  border-radius: var(--radius-sm, 6px);
+  margin-bottom: 16px;
+  font-size: 13px;
+}
+
+.fleet-register-page .database-vacuum-target-label {
+  color: var(--color-text-tertiary, #888);
+  font-size: 11px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fleet-register-page .database-vacuum-target-scope {
+  color: var(--color-text-tertiary, #888);
+  font-size: 12px;
+  margin-left: 4px;
+}
+
+.fleet-register-page .database-vacuum-fieldset {
+  border: 1px solid var(--color-border-primary, #333);
+  border-radius: var(--radius-sm, 6px);
+  padding: 14px;
+  margin: 0 0 16px;
+  display: flex;
+  flex-direction: column;
+  gap: 12px;
+}
+
+.fleet-register-page .database-vacuum-legend {
+  font-size: 11px;
+  font-weight: 600;
+  color: var(--color-text-secondary, #bbb);
+  padding: 0 6px;
+  text-transform: uppercase;
+  letter-spacing: 0.05em;
+}
+
+.fleet-register-page .database-vacuum-option {
+  display: flex;
+  align-items: flex-start;
+  gap: 10px;
+  cursor: pointer;
+}
+
+.fleet-register-page .database-vacuum-option input[type='radio'] {
+  margin-top: 3px;
+  accent-color: var(--color-accent-primary, #3b82f6);
+}
+
+.fleet-register-page .database-vacuum-option-text {
+  display: flex;
+  flex-direction: column;
+  gap: 4px;
+}
+
+.fleet-register-page .database-vacuum-option-text strong {
+  font-size: 13px;
+  color: var(--color-text-primary, #fff);
+}
+
+.fleet-register-page .database-vacuum-option-text p {
+  margin: 0;
+  font-size: 11px;
+  line-height: 1.4;
+  color: var(--color-text-tertiary, #888);
+}
+
+.fleet-register-page .database-vacuum-warning {
+  display: block;
+  margin-top: 4px;
+  color: var(--color-warning, #f59e0b);
+  font-weight: 500;
+}
+
+.fleet-register-page .database-vacuum-freeze-option {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  font-size: 11px;
+  color: var(--color-text-secondary, #bbb);
+  margin-bottom: 20px;
+  cursor: pointer;
+}
+
+.fleet-register-page .database-vacuum-actions {
+  display: flex;
+  justify-content: flex-end;
+  gap: 10px;
+  padding-top: 12px;
+  border-top: 1px solid var(--color-border-primary, #333);
+}
+
+.fleet-register-page .database-vacuum-actions .btn-confirm {
+  background: var(--color-accent-primary, #3b82f6);
+  color: #fff;
+  border-color: var(--color-accent-primary, #3b82f6);
+}
+
+.fleet-register-page .database-vacuum-actions .btn-confirm:hover:not(:disabled) {
+  background: var(--color-accent-hover, #2563eb);
+}
+
+.fleet-register-page .database-inspection-modal {
+  max-width: 900px;
+}
+
+.fleet-register-page .database-tables-filter {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  gap: 12px;
+  margin: 12px 0 8px;
+}
+
+.fleet-register-page .database-tables-filter input {
+  flex: 1;
+  max-width: 320px;
+  padding: 6px 10px;
+  font-size: 12px;
+  border: 1px solid var(--color-border-primary, #333);
+  background: var(--color-bg-primary, #151515);
+  color: var(--color-text-primary, #fff);
+  border-radius: var(--radius-sm, 4px);
+}
+
+.fleet-register-page .database-tables-table {
+  font-size: 11px;
+}
+
+.fleet-register-page .database-table-actions {
+  display: inline-flex;
+  align-items: center;
+  gap: 6px;
+}
+
+.fleet-register-page .database-action-separator {
+  color: var(--color-text-tertiary, #666);
+}
+
+.fleet-register-page .database-op-spinner {
+  display: inline-block;
+  width: 11px;
+  height: 11px;
+  border: 2px solid currentColor;
+  border-right-color: transparent;
+  border-radius: 50%;
+  animation: db-op-spin 0.7s linear infinite;
+  vertical-align: middle;
+  margin-right: 4px;
+}
+
+@keyframes db-op-spin {
+  to {
+    transform: rotate(360deg);
+  }
+}
+
+.fleet-register-page .database-progress-banner {
+  display: flex;
+  align-items: center;
+  gap: 8px;
+  flex-wrap: wrap;
+}
+
+.fleet-register-page .database-progress-pct {
+  display: inline-block;
+  padding: 1px 7px;
+  background: rgba(59, 130, 246, 0.22);
+  border: 1px solid rgba(59, 130, 246, 0.4);
+  border-radius: 4px;
+  font-weight: 600;
+  font-size: 11px;
+  color: var(--color-info, #60a5fa);
+}
+
+.fleet-register-page .database-modal-notice {
+  padding: 10px 14px;
+  border-radius: var(--radius-sm, 6px);
+  font-size: 12px;
+  line-height: 1.4;
+  margin-bottom: 12px;
+}
+
+.fleet-register-page .database-modal-notice--info {
+  background: rgba(59, 130, 246, 0.12);
+  border: 1px solid rgba(59, 130, 246, 0.35);
+  color: var(--color-info, #60a5fa);
+}
+
+.fleet-register-page .database-modal-notice--warning {
+  background: rgba(245, 158, 11, 0.12);
+  border: 1px solid rgba(245, 158, 11, 0.35);
+  color: var(--color-warning, #f59e0b);
+}
+
+.fleet-register-page .database-modal-notice--danger {
+  background: rgba(239, 68, 68, 0.12);
+  border: 1px solid rgba(239, 68, 68, 0.35);
+  color: var(--color-error, #ef4444);
+}
+
+.fleet-register-page .fleet-register-button.is-busy {
+  opacity: 0.85;
+  cursor: wait;
+}
+
+.fleet-register-page .fleet-register-link:disabled,
+.fleet-register-page .fleet-register-link[aria-disabled="true"] {
+  opacity: 0.45;
+  cursor: not-allowed;
+  pointer-events: none;
+  text-decoration: none;
+}
+
+/* Connected Clients Section */
+.fleet-client-name {
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+}
+
+.fleet-client-name strong {
+  color: var(--color-text-primary);
+  font-weight: 600;
+  font-size: 13px;
+}
+
+.fleet-client-name small {
+  color: var(--color-text-tertiary);
+  font: 10px var(--font-mono);
+  max-width: 380px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.fleet-current-pill {
+  display: inline-block;
+  margin-left: 8px;
+  padding: 1px 6px;
+  border-radius: 99px;
+  background: rgba(34, 197, 94, 0.15);
+  border: 1px solid rgba(34, 197, 94, 0.4);
+  color: var(--color-success, #22c55e);
+  font: 600 9px/1.4 var(--font-mono);
+  letter-spacing: 0.05em;
+  text-transform: uppercase;
+}
+
+.fleet-register-inline-badge {
+  display: inline-block;
+  margin-left: 6px;
+  padding: 1px 5px;
+  border-radius: var(--radius-xs, 3px);
+  background: var(--color-bg-secondary);
+  border: 1px solid var(--color-border-primary);
+  color: var(--color-text-tertiary);
+  font: 600 9px/1.4 var(--font-mono);
+  letter-spacing: 0.05em;
+}
+
+.fleet-register-button--compact {
+  padding: 4px 8px;
+  font-size: 11px;
+}
+
+
+

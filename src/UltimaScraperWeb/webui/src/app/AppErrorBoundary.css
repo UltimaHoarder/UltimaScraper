@@ -1,0 +1,48 @@
+.app-incident {
+  min-height: 100dvh;
+  padding: 32px;
+  color: var(--color-text-primary);
+  font-family: var(--font-sans);
+  background-color: var(--color-bg-primary);
+}
+.app-incident__identity {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  flex-wrap: wrap;
+  gap: 12px;
+  padding-bottom: 20px;
+  border-bottom: 1px solid var(--color-border-primary);
+}
+.app-incident__identity strong { font-size: 18px; }
+.app-incident__identity span { color: var(--color-text-tertiary); font: 10px var(--font-mono); }
+.app-incident__report { max-width: 720px; margin: 56px auto; min-width: 0; }
+.app-incident__status { color: var(--color-error); font: 11px var(--font-mono); }
+.app-incident h1 { margin: 12px 0 24px; font-size: 28px; line-height: 1.3; overflow-wrap: anywhere; }
+.app-incident pre {
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+  font: 12px/1.6 var(--font-mono);
+  color: var(--color-text-secondary);
+  margin: 0;
+}
+.app-incident__message { padding: 16px 0 16px 16px; border-left: 2px solid var(--color-error); }
+.app-incident button {
+  margin: 24px 0;
+  padding: 10px 16px;
+  min-height: 40px;
+  color: var(--text-on-accent, var(--color-bg-primary));
+  background: var(--color-accent-primary);
+  border: 1px solid var(--color-accent-primary);
+  border-radius: var(--radius-sm);
+  font: 600 12px var(--font-sans);
+}
+.app-incident button:hover { background: var(--color-accent-hover); }
+.app-incident__details { padding-top: 16px; border-top: 1px solid var(--color-border-primary); }
+.app-incident__details summary { cursor: pointer; color: var(--color-text-secondary); font-size: 12px; }
+.app-incident__details pre { margin-top: 16px; }
+@media (max-width: 600px) {
+  .app-incident { padding: 24px 16px; }
+  .app-incident__report { margin: 32px 0; }
+  .app-incident h1 { font-size: 24px; }
+}

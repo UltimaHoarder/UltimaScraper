@@ -1,0 +1,18 @@
+# A disposable Arch Linux host without Docker, for the installer's Docker setup.
+# sshd and a sudo-capable deploy user; no init system.
+FROM archlinux:base@sha256:52dfbd5afb23a220d5ee92dafcb4c788d96c026ed04179890c23adef4c897fa0
+
+ARG DEPLOY_PASSWORD
+
+RUN pacman -Sy --noconfirm --needed openssh sudo iproute2 \
+    && pacman -Scc --noconfirm \
+    && ssh-keygen -A \
+    && printf 'AllowTcpForwarding yes\nPasswordAuthentication yes\n' | cat - /etc/ssh/sshd_config > /tmp/sshd_config \
+    && mv /tmp/sshd_config /etc/ssh/sshd_config \
+    && useradd --create-home --shell /bin/bash deploy \
+    && echo "deploy:${DEPLOY_PASSWORD:?Set DEPLOY_PASSWORD}" | chpasswd \
+    && echo 'deploy ALL=(ALL) ALL' > /etc/sudoers.d/deploy \
+    && chmod 0440 /etc/sudoers.d/deploy
+
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D", "-e"]

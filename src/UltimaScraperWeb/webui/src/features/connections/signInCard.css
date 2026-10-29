@@ -1,0 +1,95 @@
+.admin-token-gate {
+  min-height: 100vh;
+  display: grid;
+  place-items: center;
+  padding: 1.5rem;
+  background: var(--color-background, #0c1018);
+  color: var(--color-text, #f4f7fb);
+}
+
+.admin-token-card {
+  width: min(100%, 28rem);
+  padding: 2rem;
+  border: 1px solid var(--color-border, #2a3446);
+  border-radius: 1rem;
+  background: var(--color-surface, #151b27);
+  box-shadow: 0 1.25rem 4rem rgb(0 0 0 / 35%);
+}
+
+.admin-token-card h1 {
+  margin: 0.25rem 0 0.75rem;
+}
+
+.admin-token-eyebrow {
+  margin: 0;
+  color: var(--color-primary, #76a9ff);
+  font-size: 0.75rem;
+  font-weight: 700;
+  letter-spacing: 0.12em;
+  text-transform: uppercase;
+}
+
+.admin-token-copy {
+  margin: 0 0 1.5rem;
+  color: var(--color-text-muted, #aeb9ca);
+}
+
+.admin-token-copy p {
+  margin: 0 0 0.5rem;
+}
+
+.admin-token-command {
+  margin: 0;
+  padding: 0.625rem 0.75rem;
+  border: 1px solid var(--color-border, #2a3446);
+  border-radius: 0.5rem;
+  background: var(--color-input-background, #0e1420);
+  color: var(--color-text, #f4f7fb);
+  font-size: 0.8125rem;
+  white-space: pre-wrap;
+  overflow-wrap: anywhere;
+}
+
+.admin-token-card form {
+  display: grid;
+  gap: 0.75rem;
+}
+
+.admin-token-card input[type='password'] {
+  width: 100%;
+  box-sizing: border-box;
+  padding: 0.75rem 0.875rem;
+  border: 1px solid var(--color-border, #39465d);
+  border-radius: 0.5rem;
+  background: var(--color-input-background, #0e1420);
+  color: inherit;
+}
+
+.admin-token-remember {
+  display: flex;
+  align-items: center;
+  gap: 0.5rem;
+  color: var(--color-text-muted, #aeb9ca);
+}
+
+.admin-token-message {
+  margin: 0;
+  color: var(--color-danger, #ff7f8d);
+}
+
+.admin-token-card button {
+  margin-top: 0.25rem;
+  padding: 0.75rem 1rem;
+  border: 0;
+  border-radius: 0.5rem;
+  background: var(--color-primary, #4d8dff);
+  color: #fff;
+  font: inherit;
+  font-weight: 700;
+  cursor: pointer;
+}
+
+.admin-token-card button:disabled {
+  cursor: wait;
+  opacity: 0.7;
+}

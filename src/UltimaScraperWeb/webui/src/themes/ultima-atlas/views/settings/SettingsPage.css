@@ -1,0 +1,714 @@
+/* ── Settings — Base layout ─────────────────────────────────────── */
+
+.settings-page {
+  width: 100%;
+  max-width: 1320px;
+  margin: 0 auto;
+  padding: 1.25rem;
+  color: var(--color-text-primary);
+}
+
+/* ── Ultimur V1 overrides ───────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .ultimur-settings {
+  max-width: none;
+  padding: 1.1rem 0;
+  display: flex;
+  flex-direction: column;
+  gap: 1.25rem;
+}
+
+/* ── Compact topbar ─────────────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .settings-topbar {
+  display: flex;
+  justify-content: space-between;
+  align-items: flex-end;
+  gap: 1rem;
+  padding: 1.1rem 1.25rem;
+  border: 1px solid rgb(255 255 255 / 0.08);
+  background:
+    radial-gradient(circle at 18% 0%, rgb(255 255 255 / 0.06), transparent 28%),
+    linear-gradient(180deg, #0e100d, #0b0c0a);
+  position: relative;
+  overflow: hidden;
+}
+
+:root[data-theme='ultima-atlas'] .settings-topbar::before {
+  content: '';
+  position: absolute;
+  inset: 0;
+  border: 1px solid rgb(255 255 255 / 0.035);
+  pointer-events: none;
+}
+
+:root[data-theme='ultima-atlas'] .settings-topbar__copy {
+  display: grid;
+  gap: 0.45rem;
+  min-width: 0;
+}
+
+:root[data-theme='ultima-atlas'] .settings-topbar__kicker {
+  font-size: 0.62rem;
+  letter-spacing: 0.26em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+:root[data-theme='ultima-atlas'] .settings-topbar__title {
+  margin: 0;
+  font-size: clamp(1.6rem, 3vw, 2.4rem);
+  font-weight: 700;
+  line-height: 1;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='ultima-atlas'] .settings-topbar__actions {
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  flex-shrink: 0;
+}
+
+:root[data-theme='ultima-atlas'] .settings-topbar__status {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.4rem;
+  padding: 0.28rem 0.6rem;
+  border-radius: 999px;
+  font-size: 0.66rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .settings-topbar__status--ok {
+  background: rgb(var(--color-success-rgb) / 0.14);
+  color: var(--color-success);
+}
+
+:root[data-theme='ultima-atlas'] .settings-topbar__status--off {
+  background: rgb(var(--color-error-rgb) / 0.14);
+  color: var(--color-error);
+}
+
+:root[data-theme='ultima-atlas'] .settings-topbar__dot {
+  width: 6px;
+  height: 6px;
+  border-radius: 50%;
+  background: currentColor;
+}
+
+:root[data-theme='ultima-atlas'] .settings-topbar__pill {
+  padding: 0.28rem 0.6rem;
+  border: 1px solid rgb(var(--color-warning-rgb) / 0.32);
+  background: rgb(var(--color-warning-rgb) / 0.1);
+  color: var(--color-warning);
+  font-size: 0.66rem;
+  font-weight: var(--font-weight-semibold);
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+/* ── Shell grid (tabs + content) ────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .settings-shell {
+  display: grid;
+  grid-template-columns: 260px minmax(0, 1fr);
+  gap: 1.25rem;
+  margin-top: 0;
+}
+
+/* ── Sidebar tabs ───────────────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .settings-tabs {
+  display: flex;
+  flex-direction: column;
+  gap: 0.35rem;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgb(255 255 255 / 0.012) 3px, rgb(255 255 255 / 0.012) 4px),
+    linear-gradient(180deg, #0e100d, #0b0c0a);
+  border: 1px solid var(--ultimur-panel-border);
+  border-radius: 0;
+  padding: 0.75rem;
+  height: fit-content;
+  position: sticky;
+  top: 1rem;
+  min-width: 0;
+  max-height: calc(100vh - 3rem);
+  overflow-x: hidden;
+  overflow-y: auto;
+}
+
+:root[data-theme='ultima-atlas'] .settings-page .settings-tabs .tab {
+  display: flex;
+  flex-direction: column;
+  align-items: flex-start;
+  gap: 0.12rem;
+  border: 1px solid transparent;
+  background: transparent;
+  color: var(--color-text-secondary);
+  border-radius: 0;
+  text-align: left;
+  padding: 0.65rem 0.75rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+  width: 100%;
+  min-width: 0;
+  overflow: hidden;
+}
+
+:root[data-theme='ultima-atlas'] .settings-tabs .tab:hover {
+  background: rgb(255 255 255 / 0.04);
+  border-color: rgb(255 255 255 / 0.08);
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='ultima-atlas'] .settings-tabs .tab.active {
+  border-color: rgb(var(--color-success-rgb) / 0.32);
+  background: rgb(var(--color-success-rgb) / 0.08);
+  color: var(--color-success);
+  box-shadow: inset 0 0 0 1px rgb(var(--color-success-rgb) / 0.08);
+}
+
+:root[data-theme='ultima-atlas'] .settings-page .settings-nav-title,
+:root[data-theme='ultima-atlas'] .settings-page .tab-title {
+  display: block;
+  width: 100%;
+  font-family: var(--font-mono);
+  font-size: 0.82rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  text-transform: uppercase;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+}
+
+:root[data-theme='ultima-atlas'] .settings-page .settings-nav-description,
+:root[data-theme='ultima-atlas'] .settings-page .tab-description {
+  display: block;
+  width: 100%;
+  margin-top: 0.2rem;
+  font-size: 0.68rem;
+  line-height: 1.2;
+  opacity: 0.72;
+  white-space: normal;
+  overflow-wrap: anywhere;
+  word-break: break-word;
+  color: var(--color-text-tertiary);
+}
+
+/* ── Content panel ──────────────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .settings-content {
+  min-width: 0;
+  background:
+    repeating-linear-gradient(0deg, transparent, transparent 3px, rgb(255 255 255 / 0.015) 3px, rgb(255 255 255 / 0.015) 4px),
+    linear-gradient(180deg, #0e100d, #0b0c0a);
+  border: 1px solid var(--ultimur-panel-border);
+  border-radius: 0;
+  padding: 1.2rem;
+}
+
+/* ── Section headings ───────────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .settings-section {
+  display: flex;
+  flex-direction: column;
+  gap: 0.9rem;
+}
+
+:root[data-theme='ultima-atlas'] .settings-section h2 {
+  margin: 0;
+  padding: 0 0 0.55rem;
+  border-bottom: 1px solid var(--ultimur-panel-border);
+  font-family: var(--font-mono);
+  font-size: 0.92rem;
+  font-weight: 700;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='ultima-atlas'] .settings-section h3 {
+  margin: 0.6rem 0 0;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  font-weight: 700;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+:root[data-theme='ultima-atlas'] .section-description {
+  margin: -0.3rem 0 0.3rem;
+  color: var(--color-text-secondary);
+  font-size: 0.8rem;
+}
+
+/* ── Setting items / form controls ──────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .setting-item {
+  display: grid;
+  gap: 0.4rem;
+  padding: 0.75rem;
+  border: 1px solid var(--ultimur-panel-border);
+  border-radius: 0;
+  background: rgb(255 255 255 / 0.02);
+}
+
+:root[data-theme='ultima-atlas'] .setting-item label {
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.04em;
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='ultima-atlas'] .setting-item input[type='text'],
+:root[data-theme='ultima-atlas'] .setting-item input[type='number'],
+:root[data-theme='ultima-atlas'] .setting-item input[type='password'],
+:root[data-theme='ultima-atlas'] .setting-item select,
+:root[data-theme='ultima-atlas'] .setting-item textarea {
+  width: 100%;
+  box-sizing: border-box;
+  border: 1px solid var(--ultimur-panel-border);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  border-radius: 0;
+  padding: 0.6rem 0.65rem;
+  font-size: 0.85rem;
+}
+
+:root[data-theme='ultima-atlas'] .setting-item textarea {
+  resize: vertical;
+  min-height: 110px;
+}
+
+:root[data-theme='ultima-atlas'] .setting-item input:focus,
+:root[data-theme='ultima-atlas'] .setting-item select:focus,
+:root[data-theme='ultima-atlas'] .setting-item textarea:focus {
+  outline: none;
+  border-color: var(--color-success);
+  box-shadow: 0 0 0 2px rgb(var(--color-success-rgb) / 0.12);
+}
+
+:root[data-theme='ultima-atlas'] .setting-item input[type='checkbox'] {
+  accent-color: var(--color-success);
+  width: 16px;
+  height: 16px;
+}
+
+:root[data-theme='ultima-atlas'] .setting-description {
+  font-size: 0.72rem;
+  color: var(--color-text-tertiary);
+}
+
+/* ── Drive/directory listings ───────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .drives-list {
+  display: grid;
+  gap: 0.55rem;
+}
+
+:root[data-theme='ultima-atlas'] .drive-item {
+  display: grid;
+  gap: 0.35rem;
+  border-radius: 0;
+  padding: 0.7rem;
+  border: 1px solid var(--ultimur-panel-border);
+  background: rgb(255 255 255 / 0.02);
+}
+
+:root[data-theme='ultima-atlas'] .drive-directories {
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+  color: var(--color-success);
+  word-break: break-word;
+}
+
+:root[data-theme='ultima-atlas'] .drive-info {
+  font-size: 0.72rem;
+  color: var(--color-text-tertiary);
+}
+
+/* ── Redis test result ──────────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .test-result {
+  border-radius: 0;
+  padding: 0.7rem;
+  font-size: 0.82rem;
+  font-family: var(--font-mono);
+}
+
+:root[data-theme='ultima-atlas'] .test-result.success {
+  border: 1px solid rgb(var(--color-success-rgb) / 0.32);
+  color: var(--color-success);
+  background: rgb(var(--color-success-rgb) / 0.08);
+}
+
+:root[data-theme='ultima-atlas'] .test-result.error {
+  border: 1px solid rgb(var(--color-error-rgb) / 0.32);
+  color: var(--color-error);
+  background: rgb(var(--color-error-rgb) / 0.08);
+}
+
+/* ── Sticky actions bar ─────────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .settings-actions {
+  position: sticky;
+  bottom: 0.75rem;
+  margin-top: 0;
+  display: flex;
+  align-items: center;
+  gap: 0.65rem;
+  border: 1px solid var(--ultimur-panel-border);
+  background: rgba(9, 10, 8, 0.92);
+  backdrop-filter: blur(8px);
+  padding: 0.7rem;
+  border-radius: 0;
+}
+
+:root[data-theme='ultima-atlas'] .changes-indicator {
+  margin-right: auto;
+  font-family: var(--font-mono);
+  font-size: 0.72rem;
+  letter-spacing: 0.06em;
+  color: var(--color-text-tertiary);
+}
+
+:root[data-theme='ultima-atlas'] .changes-indicator.dirty {
+  color: var(--color-warning);
+}
+
+:root[data-theme='ultima-atlas'] .btn-save,
+:root[data-theme='ultima-atlas'] .btn-reset {
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  padding: 0.58rem 0.95rem;
+  cursor: pointer;
+  transition: var(--transition-fast);
+}
+
+:root[data-theme='ultima-atlas'] .btn-save {
+  background: rgb(var(--color-success-rgb) / 0.18);
+  color: var(--color-success);
+  border: 1px solid rgb(var(--color-success-rgb) / 0.32);
+}
+
+:root[data-theme='ultima-atlas'] .btn-save:hover:not(:disabled) {
+  background: rgb(var(--color-success-rgb) / 0.26);
+  filter: none;
+}
+
+:root[data-theme='ultima-atlas'] .btn-reset {
+  background: rgb(255 255 255 / 0.04);
+  border: 1px solid var(--ultimur-panel-border);
+  color: var(--color-text-secondary);
+}
+
+:root[data-theme='ultima-atlas'] .btn-reset:hover:not(:disabled) {
+  background: rgb(255 255 255 / 0.08);
+}
+
+:root[data-theme='ultima-atlas'] .btn-save:disabled,
+:root[data-theme='ultima-atlas'] .btn-reset:disabled {
+  opacity: 0.35;
+  cursor: not-allowed;
+}
+
+:root[data-theme='ultima-atlas'] .btn-delete {
+  border: 1px solid rgb(var(--color-error-rgb) / 0.32);
+  border-radius: 0;
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.75rem;
+  letter-spacing: 0.08em;
+  text-transform: uppercase;
+  color: var(--color-error);
+  background: rgb(var(--color-error-rgb) / 0.1);
+  padding: 0.58rem 0.95rem;
+  cursor: pointer;
+}
+
+:root[data-theme='ultima-atlas'] .btn-delete:hover:not(:disabled) {
+  background: rgb(var(--color-error-rgb) / 0.18);
+}
+
+/* ── Error message ──────────────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .error-message {
+  margin-top: 0;
+  border: 1px solid rgb(var(--color-error-rgb) / 0.32);
+  border-radius: 0;
+  background: rgb(var(--color-error-rgb) / 0.08);
+  color: var(--color-error);
+  padding: 0.65rem 0.75rem;
+  font-family: var(--font-mono);
+  font-size: 0.8rem;
+}
+
+/* ── Database grid ──────────────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .db-grid {
+  display: grid;
+  grid-template-columns: minmax(0, 1.2fr) minmax(0, 1fr);
+  gap: 0.9rem;
+}
+
+:root[data-theme='ultima-atlas'] .db-list-panel,
+:root[data-theme='ultima-atlas'] .db-editor-panel {
+  border: 1px solid var(--ultimur-panel-border);
+  border-radius: 0;
+  background: rgb(255 255 255 / 0.02);
+  padding: 0.75rem;
+}
+
+:root[data-theme='ultima-atlas'] .db-toolbar {
+  display: flex;
+  gap: 0.55rem;
+  margin-bottom: 0.55rem;
+}
+
+:root[data-theme='ultima-atlas'] .db-table-wrap {
+  overflow: auto;
+  border: 1px solid var(--ultimur-panel-border);
+  border-radius: 0;
+}
+
+:root[data-theme='ultima-atlas'] .db-table {
+  width: 100%;
+  border-collapse: collapse;
+  font-family: var(--font-mono);
+  font-size: 0.75rem;
+}
+
+:root[data-theme='ultima-atlas'] .db-table th,
+:root[data-theme='ultima-atlas'] .db-table td {
+  text-align: left;
+  padding: 0.5rem;
+  border-bottom: 1px solid var(--ultimur-panel-border);
+  white-space: nowrap;
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='ultima-atlas'] .db-table th {
+  font-size: 0.62rem;
+  letter-spacing: 0.14em;
+  text-transform: uppercase;
+  color: var(--color-text-tertiary);
+}
+
+:root[data-theme='ultima-atlas'] .db-table tbody tr {
+  cursor: pointer;
+}
+
+:root[data-theme='ultima-atlas'] .db-table tbody tr:hover {
+  background: rgb(255 255 255 / 0.04);
+}
+
+:root[data-theme='ultima-atlas'] .db-table tbody tr.selected {
+  background: rgb(var(--color-success-rgb) / 0.1);
+}
+
+:root[data-theme='ultima-atlas'] .db-empty {
+  padding: 0.75rem;
+  color: var(--color-text-tertiary);
+  font-size: 0.78rem;
+}
+
+:root[data-theme='ultima-atlas'] .db-editor-panel h3 {
+  margin: 0 0 0.55rem;
+  font-family: var(--font-mono);
+  font-size: 0.78rem;
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  color: var(--color-text-primary);
+}
+
+:root[data-theme='ultima-atlas'] .db-editor-actions {
+  display: flex;
+  gap: 0.55rem;
+  flex-wrap: wrap;
+}
+
+/* ── Conflict modal ─────────────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .conflict-overlay {
+  position: fixed;
+  inset: 0;
+  z-index: 1200;
+  background: rgba(0, 0, 0, 0.78);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+:root[data-theme='ultima-atlas'] .conflict-modal {
+  width: min(1000px, 100%);
+  max-height: calc(100vh - 2rem);
+  overflow: auto;
+  border: 1px solid var(--ultimur-panel-border);
+  border-radius: 0;
+  padding: 1rem;
+  background: var(--color-bg-primary);
+  box-shadow: var(--shadow-xl);
+}
+
+:root[data-theme='ultima-atlas'] .conflict-modal h3 {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  letter-spacing: 0.06em;
+  text-transform: uppercase;
+  margin: 0 0 0.55rem;
+}
+
+:root[data-theme='ultima-atlas'] .conflict-list {
+  display: grid;
+  gap: 0.65rem;
+}
+
+:root[data-theme='ultima-atlas'] .conflict-item {
+  border: 1px solid var(--ultimur-panel-border);
+  border-radius: 0;
+  padding: 0.65rem;
+  background: rgb(255 255 255 / 0.02);
+}
+
+:root[data-theme='ultima-atlas'] .conflict-field {
+  font-family: var(--font-mono);
+  font-weight: 700;
+  font-size: 0.8rem;
+}
+
+:root[data-theme='ultima-atlas'] .conflict-badge {
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  text-transform: uppercase;
+  letter-spacing: 0.08em;
+  color: var(--color-warning);
+  border: 1px solid rgb(var(--color-warning-rgb) / 0.32);
+  border-radius: 0;
+  padding: 0.1rem 0.45rem;
+  background: rgb(var(--color-warning-rgb) / 0.1);
+}
+
+:root[data-theme='ultima-atlas'] .conflict-path {
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+  color: var(--color-text-secondary);
+  word-break: break-word;
+}
+
+:root[data-theme='ultima-atlas'] .conflict-choice {
+  display: grid;
+  gap: 0.35rem;
+  border: 1px solid var(--ultimur-panel-border);
+  border-radius: 0;
+  padding: 0.55rem;
+}
+
+:root[data-theme='ultima-atlas'] .conflict-choice pre {
+  margin: 0;
+  padding: 0.5rem;
+  border-radius: 0;
+  background: rgba(9, 10, 8, 0.72);
+  color: var(--color-text-primary);
+  overflow: auto;
+  max-height: 160px;
+  font-family: var(--font-mono);
+  font-size: 0.7rem;
+}
+
+:root[data-theme='ultima-atlas'] .conflict-actions {
+  margin-top: 0.8rem;
+  display: flex;
+  justify-content: flex-end;
+  gap: 0.6rem;
+}
+
+/* ── Loading / error states ─────────────────────────────────────── */
+
+:root[data-theme='ultima-atlas'] .settings-page .loading,
+:root[data-theme='ultima-atlas'] .settings-page .error {
+  padding: 2rem;
+  border: 1px solid var(--ultimur-panel-border);
+  border-radius: 0;
+  background: rgb(255 255 255 / 0.02);
+}
+
+:root[data-theme='ultima-atlas'] .settings-page .loading {
+  color: var(--color-text-secondary);
+}
+
+:root[data-theme='ultima-atlas'] .settings-page .error {
+  color: var(--color-error);
+}
+
+/* ── Responsive ─────────────────────────────────────────────────── */
+
+@media (max-width: 1024px) {
+  :root[data-theme='ultima-atlas'] .settings-shell {
+    grid-template-columns: 1fr;
+  }
+
+  :root[data-theme='ultima-atlas'] .settings-tabs {
+    position: static;
+    display: grid;
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+    max-height: none;
+    overflow: visible;
+  }
+
+  :root[data-theme='ultima-atlas'] .db-grid {
+    grid-template-columns: 1fr;
+  }
+
+  .conflict-columns {
+    grid-template-columns: 1fr;
+  }
+}
+
+@media (max-width: 700px) {
+  :root[data-theme='ultima-atlas'] .ultimur-settings {
+    padding: 0.75rem 0;
+  }
+
+  :root[data-theme='ultima-atlas'] .settings-topbar {
+    flex-direction: column;
+    align-items: flex-start;
+  }
+
+  :root[data-theme='ultima-atlas'] .settings-topbar__actions {
+    width: 100%;
+    flex-wrap: wrap;
+  }
+
+  :root[data-theme='ultima-atlas'] .settings-tabs {
+    grid-template-columns: 1fr;
+  }
+
+  :root[data-theme='ultima-atlas'] .settings-actions {
+    flex-wrap: wrap;
+  }
+
+  :root[data-theme='ultima-atlas'] .changes-indicator {
+    width: 100%;
+    margin-bottom: 0.25rem;
+  }
+
+  :root[data-theme='ultima-atlas'] .btn-save,
+  :root[data-theme='ultima-atlas'] .btn-reset {
+    flex: 1;
+  }
+}

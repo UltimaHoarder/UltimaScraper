@@ -1,0 +1,281 @@
+/* Pinterest-Style Masonry Gallery */
+
+.gallery {
+  display: flex;
+  flex-direction: column;
+  gap: 1rem;
+}
+
+/* Scroll sentinel for infinite loading */
+.scroll-sentinel {
+  height: 1px;
+  width: 100%;
+}
+
+/* Header */
+.gallery-header {
+  display: flex;
+  align-items: center;
+  justify-content: space-between;
+  margin-bottom: 1.25rem;
+  flex-wrap: wrap;
+  gap: 0.75rem;
+}
+
+.gallery-title {
+  display: flex;
+  align-items: baseline;
+  gap: 0.75rem;
+}
+
+.gallery-name {
+  font-size: 1.25rem;
+  font-weight: 600;
+  color: #1f2937;
+}
+
+.gallery-count {
+  font-size: 0.8rem;
+  color: #9ca3af;
+  font-weight: 500;
+}
+
+.gallery-filters {
+  display: flex;
+  gap: 0.5rem;
+}
+
+.gallery-filters select {
+  padding: 0.4rem 0.6rem;
+  border: 1px solid var(--color-border-primary, var(--color-border-primary));
+  border-radius: 6px;
+  background: var(--color-bg-secondary, var(--color-bg-secondary));
+  font-size: 0.8rem;
+  color: var(--color-text-secondary, var(--color-text-secondary));
+  cursor: pointer;
+}
+
+.gallery-filters select:hover {
+  border-color: var(--color-border-accent, var(--color-border-accent));
+}
+
+.gallery-filters select:focus {
+  outline: none;
+  border-color: var(--color-border-accent, var(--color-border-accent));
+}
+
+/* Masonry Grid - CSS Columns */
+.masonry {
+  column-count: 5;
+  column-gap: 12px;
+}
+
+@media (max-width: 1400px) {
+  .masonry { column-count: 4; }
+}
+
+@media (max-width: 1100px) {
+  .masonry { column-count: 3; }
+}
+
+@media (max-width: 768px) {
+  .masonry { column-count: 2; }
+}
+
+@media (max-width: 480px) {
+  .masonry { column-count: 1; }
+}
+
+/* Masonry Item */
+.masonry-item {
+  break-inside: avoid;
+  margin-bottom: 12px;
+  border-radius: 10px;
+  overflow: hidden;
+  cursor: pointer;
+  position: relative;
+  background: var(--color-bg-secondary, var(--color-bg-secondary));
+  transition: transform 0.15s ease, box-shadow 0.15s ease;
+}
+
+.masonry-item:hover {
+  transform: translateY(-3px);
+  box-shadow: 0 12px 28px rgba(0, 0, 0, 0.15);
+}
+
+.masonry-item img,
+.masonry-item video {
+  display: block;
+  width: 100%;
+  height: auto;
+}
+
+/* Video badge */
+.video-badge {
+  position: absolute;
+  bottom: 8px;
+  right: 8px;
+  width: 32px;
+  height: 32px;
+  background: rgba(0, 0, 0, 0.7);
+  border-radius: 50%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  color: #fff;
+  font-size: 0.75rem;
+  backdrop-filter: blur(4px);
+}
+
+/* Loading States */
+.gallery-loading,
+.gallery-empty {
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  min-height: 300px;
+  color: #9ca3af;
+}
+
+.gallery-loading-more {
+  display: flex;
+  justify-content: center;
+  padding: 2rem 0;
+}
+
+.loading-dots {
+  display: flex;
+  gap: 6px;
+}
+
+.loading-dots span {
+  width: 8px;
+  height: 8px;
+  background: #a5b4fc;
+  border-radius: 50%;
+  animation: bounce 1.4s infinite ease-in-out both;
+}
+
+.loading-dots span:nth-child(1) { animation-delay: -0.32s; }
+.loading-dots span:nth-child(2) { animation-delay: -0.16s; }
+
+@keyframes bounce {
+  0%, 80%, 100% { transform: scale(0.6); opacity: 0.5; }
+  40% { transform: scale(1); opacity: 1; }
+}
+
+.gallery-end {
+  text-align: center;
+  padding: 1.5rem;
+  color: #9ca3af;
+  font-size: 0.85rem;
+}
+
+/* Lightbox */
+.lightbox {
+  position: fixed;
+  inset: 0;
+  background: rgba(0, 0, 0, 0.92);
+  z-index: 9999;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  padding: 1rem;
+}
+
+.lightbox-media {
+  width: min(90vw, 1200px);
+  height: min(80vh, 720px);
+  max-width: 90vw;
+  max-height: 85vh;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+}
+
+.lightbox-media img,
+.lightbox-media video {
+  max-width: 100%;
+  max-height: 85vh;
+  border-radius: 6px;
+  object-fit: contain;
+}
+
+/* Video.js player inside lightbox needs explicit dimensions */
+.lightbox-media .vjs-lightbox {
+  width: 100%;
+  height: 100%;
+  min-height: 240px;
+}
+
+.lightbox-media .vjs-lightbox > div {
+  width: 100%;
+  height: 100%;
+}
+
+.lightbox-media .vjs-lightbox .video-js {
+  width: 100%;
+  height: 100%;
+}
+
+.lightbox-bar {
+  display: flex;
+  align-items: center;
+  gap: 1rem;
+  margin-top: 1rem;
+  padding: 0.5rem 1rem;
+  background: rgba(255, 255, 255, 0.08);
+  border-radius: 8px;
+  color: rgba(255, 255, 255, 0.85);
+  font-size: 0.85rem;
+}
+
+.lightbox-name {
+  max-width: 280px;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.lightbox-size {
+  color: rgba(255, 255, 255, 0.5);
+}
+
+.lightbox-dl {
+  padding: 0.4rem 0.8rem;
+  background: #6366f1;
+  color: #fff;
+  text-decoration: none;
+  border-radius: 5px;
+  font-weight: 500;
+  font-size: 0.8rem;
+  transition: background 0.15s;
+}
+
+.lightbox-dl:hover {
+  background: #4f46e5;
+}
+
+.lightbox-x {
+  position: absolute;
+  top: 1rem;
+  right: 1rem;
+  width: 36px;
+  height: 36px;
+  border: none;
+  background: rgba(255, 255, 255, 0.1);
+  color: #fff;
+  font-size: 1.5rem;
+  border-radius: 50%;
+  cursor: pointer;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  line-height: 1;
+  transition: background 0.15s;
+}
+
+.lightbox-x:hover {
+  background: rgba(255, 255, 255, 0.2);
+}

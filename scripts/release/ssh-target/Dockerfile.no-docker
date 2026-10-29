@@ -1,0 +1,18 @@
+# A disposable Ubuntu host without Docker, for the installer's Docker setup.
+# It has sshd and a sudo-capable deploy user; no init system, so the installer
+# starts Docker with the package's init script.
+FROM ubuntu:24.04@sha256:68ee22004a9109b44973313b02ff7b1de250f1de0f5ecb628d73f579aaff33ac
+
+ARG DEPLOY_PASSWORD
+
+RUN apt-get update -q \
+    && DEBIAN_FRONTEND=noninteractive apt-get install -y -q --no-install-recommends openssh-server sudo iproute2 \
+    && rm -rf /var/lib/apt/lists/* \
+    && mkdir -p /run/sshd \
+    && useradd --create-home --shell /bin/bash deploy \
+    && echo "deploy:${DEPLOY_PASSWORD:?Set DEPLOY_PASSWORD}" | chpasswd \
+    && echo 'deploy ALL=(ALL) ALL' > /etc/sudoers.d/deploy \
+    && chmod 0440 /etc/sudoers.d/deploy
+
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D", "-e"]

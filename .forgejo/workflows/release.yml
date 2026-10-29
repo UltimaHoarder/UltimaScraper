@@ -1,0 +1,214 @@
+name: UltimaScraper release images
+
+# Builds the backend, worker and WebUI images for amd64 and arm64 from the
+# pinned sibling commits in release/components.lock.json and pushes them to the
+# Forgejo registry.
+#
+#   tag vX.Y.Z (matching pyproject.toml)  ->  X.Y.Z, X.Y, latest, sha-<commit>
+#   push to main                          ->  X.Y.Z-edge.<commit>, edge, sha-<commit>
+#
+# A main build never writes a release tag or latest.
+on:
+  push:
+    tags: ["v*"]
+    branches: [main]
+  workflow_dispatch:
+
+# No permissions block: Forgejo ignores it. The push uses the REGISTRY_USERNAME
+# and REGISTRY_PASSWORD secrets, and checkout uses the run's own token.
+concurrency:
+  # One run at a time: every run uses the same builder and its cache. A run
+  # never cancels another's push.
+  group: usr-release
+  cancel-in-progress: false
+
+jobs:
+  release:
+    runs-on: [self-hosted, linux, amd64]
+    timeout-minutes: 240
+    env:
+      USR_DOCKER_HOME: /tmp/usr-release-docker-home-${{ forgejo.run_id }}
+      DOCKER_CONFIG: /tmp/usr-release-docker-home-${{ forgejo.run_id }}/.docker
+      USR_BUILDKIT_CONFIG: /tmp/usr-release-docker-home-${{ forgejo.run_id }}/buildkitd.toml
+      DOCKER_AUTH_CONFIG: ""
+      # A fixed name: removed with --keep-state after each run, so the next run's
+      # builder reattaches BuildKit's cache volume and reuses every unchanged
+      # layer (the runner is a host executor, so the volume stays on this host).
+      USR_BUILDX_BUILDER: usr-release-builder
+      # Same pinned BuildKit as the OnlySiterips release.
+      BUILDKIT_IMAGE: moby/buildkit@sha256:28a898719c18a33f4e8000685287fa36fd0dd9560c6440227d3a732d79bb41d8
+      # Optional repository variables; unset, images go to this Forgejo's own
+      # registry under the repository owner (see "Resolve the registry").
+      REGISTRY_PUSH_VAR: ${{ vars.REGISTRY_PUSH }}
+      REGISTRY_PUSH_ROOT_VAR: ${{ vars.REGISTRY_PUSH_ROOT }}
+      FORGEJO_SERVER_URL: ${{ forgejo.server_url }}
+      FORGEJO_OWNER: ${{ forgejo.repository_owner }}
+      RELEASE_PLATFORMS: linux/amd64,linux/arm64
+      USR_REVISION: ${{ forgejo.sha }}
+    steps:
+      - uses: https://data.forgejo.org/actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          path: USV/UltimaScraper
+          fetch-depth: 1
+          token: ${{ forgejo.token }}
+          github-server-url: ${{ forgejo.server_url }}
+
+      - name: Resolve the registry
+        run: |
+          set -euo pipefail
+          registry="${REGISTRY_PUSH_VAR:-}"
+          if test -z "$registry"; then
+            registry="${FORGEJO_SERVER_URL#*://}"
+            registry="${registry%%/*}"
+          fi
+          root="${REGISTRY_PUSH_ROOT_VAR:-}"
+          # Registry paths are lower case.
+          test -n "$root" || root="$registry/${FORGEJO_OWNER,,}/ultimascraper"
+          echo "Pushing to $root"
+          printf '%s\n' "REGISTRY_PUSH=$registry" "REGISTRY_PUSH_ROOT=$root" >> "$GITHUB_ENV"
+
+      - name: Resolve the release version
+        working-directory: USV/UltimaScraper
+        run: |
+          set -euo pipefail
+          project_version=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          sha_tag="sha-${USR_REVISION:0:12}"
+          if test "${{ forgejo.ref_type }}" = tag; then
+            tag="${{ forgejo.ref_name }}"
+            test "$tag" = "v$project_version" || { echo "tag $tag does not match pyproject version $project_version" >&2; exit 1; }
+            # A release: never overwritten, and moves the minor and latest tags.
+            printf '%s\n' \
+              "RELEASE_CHANNEL=release" \
+              "RELEASE_VERSION=$project_version" \
+              "RELEASE_EXTRA_TAGS=${project_version%.*} latest $sha_tag" \
+              "RELEASE_PACKAGE_VERSION=$project_version" \
+              >> "$GITHUB_ENV"
+          else
+            # main (or a manual run): a prerelease of the coming version.
+            printf '%s\n' \
+              "RELEASE_CHANNEL=edge" \
+              "RELEASE_VERSION=$project_version-edge.${USR_REVISION:0:12}" \
+              "RELEASE_EXTRA_TAGS=edge $sha_tag" \
+              "RELEASE_PACKAGE_VERSION=$project_version.dev$(git log -1 --format=%cd --date=format:%Y%m%d%H%M%S)" \
+              >> "$GITHUB_ENV"
+          fi
+
+      - name: Check out the pinned sibling repositories
+        working-directory: USV/UltimaScraper
+        run: |
+          set -euo pipefail
+          # Backend, DB and DB archive are private upstream: fetch them from
+          # this Forgejo under the same owner. Each commit is still checked.
+          python3 scripts/release/components.py checkout --root .. \
+            --mirror-base "${{ forgejo.server_url }}/${{ forgejo.repository_owner }}"
+          python3 scripts/release/components.py export-env "$GITHUB_ENV"
+
+      - name: Check every platform has prebuilt dependencies
+        working-directory: USV/UltimaScraper
+        run: ./scripts/release/check_platform_wheels.sh x86_64 aarch64
+
+      - name: Prepare isolated Docker credentials
+        env:
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          [[ "$USR_DOCKER_HOME" =~ ^/tmp/usr-release-docker-home-[0-9]+$ ]]
+          test -n "${REGISTRY_USERNAME:-}" && test -n "${REGISTRY_PASSWORD:-}" || {
+            echo "Set the REGISTRY_USERNAME and REGISTRY_PASSWORD Actions secrets on this repository." >&2
+            exit 1
+          }
+          mkdir -m 0700 -- "$USR_DOCKER_HOME" "$DOCKER_CONFIG"
+          install -m 0600 /dev/null "$DOCKER_CONFIG/config.json"
+          # A config with no saved login makes Docker hand logins to the host's
+          # keyring helper (docker-credential-secretservice), which needs a
+          # desktop session the runner does not have. With the registry already
+          # in "auths", Docker keeps credentials in this private file instead.
+          auth=$(printf '%s:%s' "$REGISTRY_USERNAME" "$REGISTRY_PASSWORD" | base64 -w0)
+          printf '{"auths":{"%s":{"auth":"%s"}}}\n' "$REGISTRY_PUSH" "$auth" > "$DOCKER_CONFIG/config.json"
+          unset auth
+          install -m 0600 /dev/null "$USR_BUILDKIT_CONFIG"
+          printf '%s\n' "[registry.\"$REGISTRY_PUSH\"]" '  ca = ["/etc/ssl/certs/ca-certificates.crt"]' > "$USR_BUILDKIT_CONFIG"
+          # Checks the credentials now rather than at the first push.
+          printf '%s' "$REGISTRY_PASSWORD" | env -u DOCKER_AUTH_CONFIG HOME="$USR_DOCKER_HOME" \
+            docker --config "$DOCKER_CONFIG" login --username "$REGISTRY_USERNAME" --password-stdin "$REGISTRY_PUSH"
+          grep -q '"credsStore"' "$DOCKER_CONFIG/config.json" && { echo "Docker chose a credential helper; refusing to continue." >&2; exit 1; } || true
+
+      - name: Start a pinned multi-platform builder
+        run: |
+          set -euo pipefail
+          test "$USR_BUILDX_BUILDER" = usr-release-builder
+          # A run that died before its cleanup leaves the container behind;
+          # remove it (its cache volume stays) so the builder can be created.
+          docker rm --force "buildx_buildkit_${USR_BUILDX_BUILDER}0" >/dev/null 2>&1 || true
+          docker_cmd=(env -u DOCKER_AUTH_CONFIG HOME="$USR_DOCKER_HOME" docker --config "$DOCKER_CONFIG")
+          "${docker_cmd[@]}" buildx create --name "$USR_BUILDX_BUILDER" --driver docker-container \
+            --driver-opt "image=$BUILDKIT_IMAGE" --buildkitd-config "$USR_BUILDKIT_CONFIG" --bootstrap
+          builder_platforms=$("${docker_cmd[@]}" buildx inspect "$USR_BUILDX_BUILDER" --bootstrap | grep '^Platforms:')
+          for platform in ${RELEASE_PLATFORMS//,/ }; do
+            grep -q "$platform" <<<"$builder_platforms" || {
+              echo "The runner cannot build $platform. Register QEMU on the runner host, e.g." >&2
+              echo "  sudo pacman -S qemu-user-static qemu-user-static-binfmt" >&2
+              exit 1
+            }
+          done
+
+      - name: Refuse to overwrite a released version
+        if: env.RELEASE_CHANNEL == 'release'
+        run: |
+          set -euo pipefail
+          for image in backend worker webui; do
+            if env -u DOCKER_AUTH_CONFIG HOME="$USR_DOCKER_HOME" docker --config "$DOCKER_CONFIG" \
+              manifest inspect "$REGISTRY_PUSH_ROOT/$image:$RELEASE_VERSION" >/dev/null 2>&1; then
+              echo "release tag already exists: $image:$RELEASE_VERSION" >&2
+              exit 1
+            fi
+          done
+
+      - name: Build, check and push the images
+        working-directory: USV/UltimaScraper
+        run: |
+          set -euo pipefail
+          tags=()
+          for tag in $RELEASE_EXTRA_TAGS; do tags+=(--tag "$tag"); done
+          env -u DOCKER_AUTH_CONFIG HOME="$USR_DOCKER_HOME" \
+            ./scripts/release/build_images.sh "$RELEASE_VERSION" \
+              --builder "$USR_BUILDX_BUILDER" \
+              --push "$REGISTRY_PUSH_ROOT" \
+              --platforms "$RELEASE_PLATFORMS" \
+              "${tags[@]}"
+          cat "dist/release-manifest-$RELEASE_VERSION.json"
+
+      # WebUIs installed as a Python package update themselves from Forgejo's
+      # PyPI registry. A main build is a dev release of the coming version
+      # (0.1.0.dev<commit time>), so it sorts below the release itself.
+      - name: Publish the WebUI package
+        working-directory: USV/UltimaScraper
+        env:
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          out=$(mktemp -d)
+          USR_PACKAGE_VERSION="$RELEASE_PACKAGE_VERSION" USR_IMAGE_VERSION="$RELEASE_VERSION" \
+            ./scripts/release/build_webui_package.sh "$out"
+          index="${FORGEJO_SERVER_URL%/}/api/packages/${FORGEJO_OWNER}/pypi"
+          # --system-certs: uv's own certificate list lacks the CA that signed this
+          # Forgejo; the runner's system store has it (Docker and BuildKit use it too).
+          UV_PUBLISH_USERNAME="$REGISTRY_USERNAME" UV_PUBLISH_PASSWORD="$REGISTRY_PASSWORD" \
+            uv publish --system-certs --publish-url "$index" "$out"/*.whl
+          echo "Published ultima-scraper-webui-server $RELEASE_PACKAGE_VERSION to $index/simple"
+
+      - name: Remove credentials and the builder
+        if: always()
+        run: |
+          if [[ "${USR_DOCKER_HOME:-}" =~ ^/tmp/usr-release-docker-home-[0-9]+$ ]] && test "${DOCKER_CONFIG:-}" = "$USR_DOCKER_HOME/.docker"; then
+            docker_cmd=(env -u DOCKER_AUTH_CONFIG HOME="$USR_DOCKER_HOME" docker --config "$DOCKER_CONFIG")
+            # The builder only exists when the run got that far. --keep-state
+            # keeps its cache volume for the next run.
+            if test "${USR_BUILDX_BUILDER:-}" = usr-release-builder \
+              && "${docker_cmd[@]}" buildx inspect "$USR_BUILDX_BUILDER" >/dev/null 2>&1; then
+              "${docker_cmd[@]}" buildx rm --keep-state "$USR_BUILDX_BUILDER" || true
+            fi
+            rm -rf -- "$USR_DOCKER_HOME"
+          fi

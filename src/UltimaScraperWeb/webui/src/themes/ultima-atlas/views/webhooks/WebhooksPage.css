@@ -1,0 +1,4 @@
+.wh-production { width: 100%; min-width: 0; }
+.wh-production .wh-workspace-title h1 { margin: 0; font: 700 28px/1.2 var(--font-sans, Arial, sans-serif); text-transform: uppercase; }
+.wh-action-error { padding: 12px 0; color: var(--color-error); font-size: 12px; }
+@media (max-width: 620px) { .wh-production .wh-workspace-title h1 { font-size: 24px; } }

@@ -1,0 +1,21 @@
+# A disposable Fedora host without Docker, for the installer's Docker setup.
+# sshd and a sudo-capable deploy user; no init system.
+FROM fedora:42@sha256:99e203b80b1c3d8f7e161ec10a68fd02b081ef83a3963553e513c82846b97814
+
+ARG DEPLOY_PASSWORD
+
+# A Fedora host's iptables is the nftables one; legacy iptables needs kernel
+# tables a container cannot load.
+RUN dnf install -y -q openssh-server sudo iproute passwd iptables-nft \
+    && alternatives --set iptables /usr/sbin/iptables-nft \
+    && dnf clean all \
+    && ssh-keygen -A \
+    && printf 'AllowTcpForwarding yes\nPasswordAuthentication yes\n' | cat - /etc/ssh/sshd_config > /tmp/sshd_config \
+    && mv /tmp/sshd_config /etc/ssh/sshd_config \
+    && useradd --create-home --shell /bin/bash deploy \
+    && echo "deploy:${DEPLOY_PASSWORD:?Set DEPLOY_PASSWORD}" | chpasswd \
+    && echo 'deploy ALL=(ALL) ALL' > /etc/sudoers.d/deploy \
+    && chmod 0440 /etc/sudoers.d/deploy
+
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D", "-e"]

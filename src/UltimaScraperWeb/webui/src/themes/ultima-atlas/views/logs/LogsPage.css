@@ -1,0 +1,23 @@
+/* ═══════════════════════════════════════════════════════════════
+   Ultima Atlas — Logs Workspace Layout
+   ═══════════════════════════════════════════════════════════════ */
+
+.logs-page {
+  display: flex;
+  flex-direction: column;
+  gap: 16px;
+  width: 100%;
+  min-width: 0;
+  max-width: none;
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+.logs-viewer-shell {
+  width: 100%;
+  min-width: 0;
+  display: flex;
+  flex-direction: column;
+  flex: 1;
+}

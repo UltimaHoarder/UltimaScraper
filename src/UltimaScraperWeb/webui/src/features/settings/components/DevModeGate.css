@@ -1,0 +1,24 @@
+.dev-mode-gate {
+  display: grid;
+  gap: 8px;
+  justify-items: start;
+  max-width: 520px;
+  margin: 48px auto;
+  padding: 20px;
+  border: 1px solid var(--color-border-primary);
+  background: var(--color-bg-secondary);
+}
+
+.dev-mode-gate h1 {
+  margin: 0;
+  font-size: 1rem;
+}
+
+.dev-mode-gate p {
+  margin: 0;
+  color: var(--color-text-secondary);
+}
+
+.dev-mode-gate a {
+  color: var(--color-accent-primary);
+}

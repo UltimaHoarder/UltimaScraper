@@ -1,0 +1,29 @@
+services:
+  backend:
+    image: ${USR_BACKEND_IMAGE:-ultimascraper-backend}:${USR_VERSION:-dev}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: runtime
+      args:
+        USR_REQUIRE_WHEELHOUSE: ${USR_REQUIRE_WHEELHOUSE:-1}
+        USR_VERSION: ${USR_VERSION:-dev}
+
+  worker:
+    image: ${USR_WORKER_IMAGE:-ultimascraper-worker}:${USR_VERSION:-dev}
+    build:
+      context: .
+      dockerfile: Dockerfile
+      target: worker-runtime
+      args:
+        USR_REQUIRE_WHEELHOUSE: ${USR_REQUIRE_WHEELHOUSE:-1}
+        USR_VERSION: ${USR_VERSION:-dev}
+
+  webui:
+    image: ${USR_WEBUI_IMAGE:-ultimascraper-webui}:${USR_VERSION:-dev}
+    build:
+      # The WebUI and its server live in src/UltimaScraperWeb, so the context is the repository root.
+      context: .
+      dockerfile: src/UltimaScraperWeb/webui/Dockerfile
+      args:
+        USR_VERSION: ${USR_VERSION:-dev}

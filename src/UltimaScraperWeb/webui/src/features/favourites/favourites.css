@@ -1,0 +1,47 @@
+.favourite-control { display: inline-flex; align-items: center; gap: .35rem; }
+.favourite-button { border: 1px solid var(--border-color, #454555); border-radius: 6px; background: transparent; color: inherit; padding: .3rem .55rem; cursor: pointer; font-size: 1.1rem; line-height: 1; }
+.favourite-button.is-favourite { color: var(--warning-color, #e9bd64); }
+.favourite-button:disabled { opacity: .55; cursor: default; }
+.favourite-button:focus-visible { outline: 2px solid var(--accent-color, #8e9fff); outline-offset: 2px; }
+.favourite-error { font-size: .75rem; color: var(--danger-color, #ed8181); }
+.favourites-toolbar, .favourites-tabs { display: flex; align-items: center; flex-wrap: wrap; gap: .5rem; margin-bottom: .8rem; }
+.favourites-toolbar > .users-toolbar__search input { flex: 1; min-width: 0; }
+.favourites-grid {
+  display: grid;
+  grid-template-columns: repeat(1, minmax(0, 1fr));
+  gap: 0.7rem;
+}
+
+@container (min-width: 612px) {
+  .favourites-grid {
+    grid-template-columns: repeat(2, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 1234px) {
+  .favourites-grid {
+    grid-template-columns: repeat(4, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 1545px) {
+  .favourites-grid {
+    grid-template-columns: repeat(5, minmax(0, 1fr));
+  }
+}
+
+@container (min-width: 3101px) {
+  .favourites-grid {
+    grid-template-columns: repeat(10, minmax(0, 1fr));
+  }
+}
+.favourite-entry { min-width: 0; display: flex; flex-direction: column; }
+.favourite-entry > .user-card { min-height: 0; flex: 1; }
+.favourites-users-grid { padding-bottom: 0; }
+.favourites-grid .content-card-header { flex-wrap: wrap; }
+.favourites-grid .content-card-meta { flex-basis: 100%; justify-content: flex-end; }
+.favourite-entry-meta { display: flex; align-items: center; gap: .5rem; justify-content: space-between; font-size: .75rem; padding: .3rem .2rem; }
+.favourite-availability { color: var(--warning-color, #e9bd64); text-transform: capitalize; }
+.favourites-page [hidden] { display: none !important; }
+
+.favourites-tabs { justify-content: center; }

@@ -1,0 +1,17 @@
+# A disposable Alpine host without Docker, for the installer's Docker setup.
+# sshd and a sudo-capable deploy user; no init system (no OpenRC).
+FROM alpine:3.22@sha256:2e0b81d60597f449baa56dc25d355367869d2dca4cd57e866f1e2b52af3eb55f
+
+ARG DEPLOY_PASSWORD
+
+RUN apk add --no-cache openssh-server openssh-keygen sudo iproute2 bash \
+    && ssh-keygen -A \
+    && printf 'AllowTcpForwarding yes\nPasswordAuthentication yes\n' | cat - /etc/ssh/sshd_config > /tmp/sshd_config \
+    && mv /tmp/sshd_config /etc/ssh/sshd_config \
+    && adduser -D -s /bin/bash deploy \
+    && echo "deploy:${DEPLOY_PASSWORD:?Set DEPLOY_PASSWORD}" | chpasswd \
+    && echo 'deploy ALL=(ALL) ALL' > /etc/sudoers.d/deploy \
+    && chmod 0440 /etc/sudoers.d/deploy
+
+EXPOSE 22
+CMD ["/usr/sbin/sshd", "-D", "-e"]

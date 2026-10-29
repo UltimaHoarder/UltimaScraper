@@ -1,27 +1,44 @@
-[tool.poetry]
-name = "ultima-scraper"
-version = "8.0.0"
-description = ""
-authors = [
-    "DIGITALCRIMINALS <89371864+digitalcriminals@users.noreply.github.com>",
-]
-license = "GPL-3.0"
+[project]
+name = "ultimascraper"
+version = "0.1.0"
+description = "WebUI-first control plane for PostgreSQL and Redis-backed scraping workflows"
 readme = "README.md"
-packages = [{ include = "ultima_scraper" }]
-include = ["ultima_scraper/py.typed"]
+license = "MIT"
+requires-python = ">=3.14,<3.15"
+dependencies = [
+    "ultima-scraper-backend>=0.1,<1",
+    "platformdirs>=4.5,<5",
+    "uvloop>=0.21; sys_platform != 'win32'",
+]
 
-[tool.poetry.dependencies]
-python = "^3.10 <3.12"
-requests = "^2.26.0"
-ultima-scraper-api = "1.1.4"
-ultima-scraper-collection = "1.1.3"
-ultima-scraper-renamer = "1.1.1"
-[tool.poetry.dev-dependencies]
-pyinstaller = { version = "^5.0.1", markers = "sys_platform == 'win32'" }
-requests-html = "^0.10.0"
-black = "^22.6.0"
+[dependency-groups]
+dev = [
+    # The WebUI main.py serves natively (ultima_webui_server.launcher). Kept out
+    # of the release wheel, whose images run the API and workers only.
+    "ultima-scraper-webui-server",
+    "pytest>=8.2",
+    "pytest-asyncio>=0.23",
+    "fakeredis[lua]>=2.34.1",
+    "pytest-cov>=7.0.0",
+]
+docs = [
+    "zensical>=0.0.72",
+]
 
+[tool.setuptools]
+py-modules = ["main"]
+
+[project.scripts]
+ultimascraper = "main:cli_main"
 
 [build-system]
-requires = ["poetry-core"]
-build-backend = "poetry.core.masonry.api"
+requires = ["setuptools>=61.0", "wheel"]
+build-backend = "setuptools.build_meta"
+
+[tool.uv.sources]
+ultima-scraper-api = { git = "https://github.com/UltimaHoarder/UltimaScraperAPI.git", branch = "main" }
+ultima-scraper-db = { git = "https://github.com/DATAHOARDERS/UltimaScraperDB.git", branch = "main" }
+ultima-scraper-core = { git = "https://github.com/UltimaHoarder/UltimaScraperCore.git", branch = "main" }
+ultima-scraper-webui-server = { path = "src/UltimaScraperWeb", editable = true }
+ultima-scraper-db-archive = { git = "https://github.com/UltimaHoarder/UltimaScraperDBArchive.git", branch = "main" }
+ultima-scraper-backend = { git = "https://github.com/UltimaHoarder/UltimaScraperBackend.git", branch = "main" }

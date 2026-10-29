@@ -1,0 +1,36 @@
+# The UltimaScraper WebUI server as a user service, for a machine that runs the
+# WebUI on its own (backends elsewhere, or deployed from it).
+#
+#   scripts/release/build_webui_package.sh
+#   uv tool install --find-links dist/webui-wheels ultima-scraper-webui-server
+#   install -Dm644 deploy/systemd/ultimascraper-webui.service ~/.config/systemd/user/
+#   systemctl --user daemon-reload && systemctl --user enable --now ultimascraper-webui
+#   loginctl enable-linger "$USER"   # keep it running while you are logged out
+#
+# Then open http://localhost:21120 from this machine to set the password. Settings
+# go in ~/.config/ultimascraper-webui.env (see the USR_WEBUI_* variables in
+# docs/operations/webui-server.md); remember USR_WEBUI_HOST=0.0.0.0 to reach it
+# from other machines.
+
+[Unit]
+Description=UltimaScraper WebUI server
+Documentation=https://github.com/UltimaHoarder/UltimaScraper
+After=network-online.target
+Wants=network-online.target
+
+[Service]
+Type=simple
+EnvironmentFile=-%h/.config/ultimascraper-webui.env
+ExecStart=%h/.local/bin/ultimascraper-webui
+Restart=on-failure
+RestartSec=5
+# Connections, sessions and the key that encrypts stored backend tokens stay in
+# the default data directory (~/.local/share/UltimaScraper/webui), the same one
+# `ultimascraper-webui` uses when started by hand; set USR_WEBUI_DATA_DIR in the
+# env file to move them.
+UMask=0077
+NoNewPrivileges=true
+PrivateTmp=true
+
+[Install]
+WantedBy=default.target

@@ -1,0 +1,7 @@
+# Written by the WebUI installer. Publishes the backend on the host's loopback
+# only: the WebUI that installed it reaches it through an SSH tunnel, so the
+# API is never exposed on the network.
+services:
+  backend:
+    ports:
+      - "127.0.0.1:${USR_BACKEND_PORT:-21121}:21121"

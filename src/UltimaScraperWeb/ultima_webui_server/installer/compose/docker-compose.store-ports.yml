@@ -1,0 +1,12 @@
+# Installer override: publish PostgreSQL and Redis ports on store-only hosts so
+# backends and workers on other machines can reach them.
+services:
+  postgres:
+    profiles: [postgres]
+    ports:
+      - "${POSTGRES_PORT:-5432}:5432"
+
+  redis:
+    profiles: [redis]
+    ports:
+      - "${REDIS_PORT:-6379}:6379"

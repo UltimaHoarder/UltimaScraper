@@ -1,0 +1,34 @@
+.job-deletion-dialog {
+  width: min(560px, calc(100vw - 2rem));
+  max-height: calc(100dvh - 2rem);
+  overflow: auto;
+  background: var(--color-bg-secondary, #161b22);
+  color: var(--color-text-primary, #e6edf3);
+  border: 1px solid var(--color-border-primary, #30363d);
+  border-top: 2px solid var(--color-warning, #d29922);
+  box-shadow: var(--shadow-xl, 0 20px 40px rgb(0 0 0 / 35%));
+}
+.job-deletion-dialog header { display: flex; align-items: flex-start; gap: 1rem; padding: 1.25rem; border-bottom: 1px solid var(--color-border-primary, #30363d); }
+.job-deletion-dialog header > div { flex: 1; min-width: 0; }
+.job-deletion-kicker { color: var(--color-warning, #d29922); font-size: 0.7rem; text-transform: uppercase; letter-spacing: 0.08em; }
+.job-deletion-dialog h2 { margin: 0.5rem 0; font-size: 1rem; line-height: 1.4; overflow-wrap: anywhere; }
+.job-deletion-dialog code { font-size: 0.7rem; color: var(--color-text-secondary, #8b949e); overflow-wrap: anywhere; }
+.job-deletion-dialog .modal-close { position: static; flex-shrink: 0; }
+.job-deletion-summary { padding: 1.25rem; }
+.job-deletion-stage { display: flex; flex-wrap: wrap; align-items: center; justify-content: space-between; gap: 0.5rem; font-size: 0.8rem; }
+.job-deletion-stage strong { overflow-wrap: anywhere; }
+.job-deletion-stage span { color: var(--color-text-secondary, #8b949e); font-size: 0.7rem; }
+.job-deletion-summary progress { display: block; width: 100%; height: 0.5rem; margin: 0.85rem 0 1.25rem; border: 0; border-radius: 99px; overflow: hidden; appearance: none; background: var(--color-bg-hover, #30363d); }
+.job-deletion-summary progress::-webkit-progress-bar { background: var(--color-bg-hover, #30363d); }
+.job-deletion-summary progress::-webkit-progress-value { background: var(--color-warning, #d29922); }
+.job-deletion-summary progress::-moz-progress-bar { background: var(--color-warning, #d29922); }
+.job-deletion-summary dl { display: grid; grid-template-columns: 1fr 1fr; gap: 1rem; margin: 0; }
+.job-deletion-summary dt { color: var(--color-text-secondary, #8b949e); font-size: 0.7rem; }
+.job-deletion-summary dd { margin: 0.4rem 0 0; font-family: var(--font-mono, monospace); font-size: 1.2rem; }
+
+@media (max-height: 400px) {
+  .job-deletion-dialog header, .job-deletion-summary { padding: 0.75rem 1rem; }
+  .job-deletion-dialog h2 { margin: 0.25rem 0; font-size: 0.85rem; }
+  .job-deletion-summary progress { margin: 0.6rem 0 0.75rem; }
+  .job-deletion-summary dd { font-size: 1rem; }
+}

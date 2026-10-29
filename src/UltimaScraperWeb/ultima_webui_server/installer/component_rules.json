@@ -1,0 +1,155 @@
+{
+  "modes": {
+    "backend": ["install", "none"],
+    "worker": ["install", "none"],
+    "postgres": ["install", "existing", "none"],
+    "redis": ["install", "existing", "none"],
+    "webui": ["reuse", "install"]
+  },
+  "error_messages": {
+    "nothing_installed": "Choose at least one component to install.",
+    "postgres_required": "Without the bundled PostgreSQL, give the database URL to use.",
+    "redis_required": "Without the bundled Redis, give the Redis host to use.",
+    "worker_needs_existing_stores": "A worker installed without a backend must use that backend's existing PostgreSQL and Redis.",
+    "unused_existing_store": "Existing PostgreSQL or Redis can only be used when installing a backend or worker."
+  },
+  "card_rules": {
+    "install:install": {
+      "backend": { "allowed": ["install", "none"], "disabled_reasons": {} },
+      "worker": { "allowed": ["install", "none"], "disabled_reasons": {}, "shared_stores_with_backend": true },
+      "postgres": {
+        "allowed": ["install", "existing"],
+        "disabled_reasons": { "none": "Backend needs PostgreSQL" }
+      },
+      "redis": {
+        "allowed": ["install", "existing"],
+        "disabled_reasons": { "none": "Backend needs Redis" }
+      },
+      "webui": { "allowed": ["reuse", "install"], "disabled_reasons": {} }
+    },
+    "install:none": {
+      "backend": { "allowed": ["install", "none"], "disabled_reasons": {} },
+      "worker": { "allowed": ["install", "none"], "disabled_reasons": {}, "shared_stores_with_backend": false },
+      "postgres": {
+        "allowed": ["install", "existing"],
+        "disabled_reasons": { "none": "Backend needs PostgreSQL" }
+      },
+      "redis": {
+        "allowed": ["install", "existing"],
+        "disabled_reasons": { "none": "Backend needs Redis" }
+      },
+      "webui": { "allowed": ["reuse", "install"], "disabled_reasons": {} }
+    },
+    "none:install": {
+      "backend": { "allowed": ["install", "none"], "disabled_reasons": {} },
+      "worker": { "allowed": ["install", "none"], "disabled_reasons": {}, "shared_stores_with_backend": false, "requires_backend_connection": true },
+      "postgres": {
+        "allowed": ["existing"],
+        "disabled_reasons": {
+          "install": "Worker without a backend must use the existing backend's PostgreSQL",
+          "none": "Worker needs PostgreSQL"
+        }
+      },
+      "redis": {
+        "allowed": ["existing"],
+        "disabled_reasons": {
+          "install": "Worker without a backend must use the existing backend's Redis",
+          "none": "Worker needs Redis"
+        }
+      },
+      "webui": { "allowed": ["reuse", "install"], "disabled_reasons": {} }
+    },
+    "none:none": {
+      "backend": { "allowed": ["install", "none"], "disabled_reasons": {} },
+      "worker": { "allowed": ["install", "none"], "disabled_reasons": {}, "shared_stores_with_backend": false },
+      "postgres": {
+        "allowed": ["install", "none"],
+        "disabled_reasons": { "existing": "Existing PostgreSQL is only used with Backend or Worker" },
+        "publishes_port_when_installed": true
+      },
+      "redis": {
+        "allowed": ["install", "none"],
+        "disabled_reasons": { "existing": "Existing Redis is only used with Backend or Worker" },
+        "publishes_port_when_installed": true
+      },
+      "webui": { "allowed": ["reuse", "install"], "disabled_reasons": {} }
+    }
+  },
+  "combinations": [
+    { "backend": "install", "worker": "install", "postgres": "install", "redis": "install", "webui": "reuse", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "install", "postgres": "install", "redis": "install", "webui": "install", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "install", "postgres": "install", "redis": "existing", "webui": "reuse", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "install", "postgres": "install", "redis": "existing", "webui": "install", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "install", "postgres": "install", "redis": "none", "webui": "reuse", "valid": false, "error_code": "redis_required" },
+    { "backend": "install", "worker": "install", "postgres": "install", "redis": "none", "webui": "install", "valid": false, "error_code": "redis_required" },
+    { "backend": "install", "worker": "install", "postgres": "existing", "redis": "install", "webui": "reuse", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "install", "postgres": "existing", "redis": "install", "webui": "install", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "install", "postgres": "existing", "redis": "existing", "webui": "reuse", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "install", "postgres": "existing", "redis": "existing", "webui": "install", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "install", "postgres": "existing", "redis": "none", "webui": "reuse", "valid": false, "error_code": "redis_required" },
+    { "backend": "install", "worker": "install", "postgres": "existing", "redis": "none", "webui": "install", "valid": false, "error_code": "redis_required" },
+    { "backend": "install", "worker": "install", "postgres": "none", "redis": "install", "webui": "reuse", "valid": false, "error_code": "postgres_required" },
+    { "backend": "install", "worker": "install", "postgres": "none", "redis": "install", "webui": "install", "valid": false, "error_code": "postgres_required" },
+    { "backend": "install", "worker": "install", "postgres": "none", "redis": "existing", "webui": "reuse", "valid": false, "error_code": "postgres_required" },
+    { "backend": "install", "worker": "install", "postgres": "none", "redis": "existing", "webui": "install", "valid": false, "error_code": "postgres_required" },
+    { "backend": "install", "worker": "install", "postgres": "none", "redis": "none", "webui": "reuse", "valid": false, "error_code": "postgres_required" },
+    { "backend": "install", "worker": "install", "postgres": "none", "redis": "none", "webui": "install", "valid": false, "error_code": "postgres_required" },
+
+    { "backend": "install", "worker": "none", "postgres": "install", "redis": "install", "webui": "reuse", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "none", "postgres": "install", "redis": "install", "webui": "install", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "none", "postgres": "install", "redis": "existing", "webui": "reuse", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "none", "postgres": "install", "redis": "existing", "webui": "install", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "none", "postgres": "install", "redis": "none", "webui": "reuse", "valid": false, "error_code": "redis_required" },
+    { "backend": "install", "worker": "none", "postgres": "install", "redis": "none", "webui": "install", "valid": false, "error_code": "redis_required" },
+    { "backend": "install", "worker": "none", "postgres": "existing", "redis": "install", "webui": "reuse", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "none", "postgres": "existing", "redis": "install", "webui": "install", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "none", "postgres": "existing", "redis": "existing", "webui": "reuse", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "none", "postgres": "existing", "redis": "existing", "webui": "install", "valid": true, "error_code": null },
+    { "backend": "install", "worker": "none", "postgres": "existing", "redis": "none", "webui": "reuse", "valid": false, "error_code": "redis_required" },
+    { "backend": "install", "worker": "none", "postgres": "existing", "redis": "none", "webui": "install", "valid": false, "error_code": "redis_required" },
+    { "backend": "install", "worker": "none", "postgres": "none", "redis": "install", "webui": "reuse", "valid": false, "error_code": "postgres_required" },
+    { "backend": "install", "worker": "none", "postgres": "none", "redis": "install", "webui": "install", "valid": false, "error_code": "postgres_required" },
+    { "backend": "install", "worker": "none", "postgres": "none", "redis": "existing", "webui": "reuse", "valid": false, "error_code": "postgres_required" },
+    { "backend": "install", "worker": "none", "postgres": "none", "redis": "existing", "webui": "install", "valid": false, "error_code": "postgres_required" },
+    { "backend": "install", "worker": "none", "postgres": "none", "redis": "none", "webui": "reuse", "valid": false, "error_code": "postgres_required" },
+    { "backend": "install", "worker": "none", "postgres": "none", "redis": "none", "webui": "install", "valid": false, "error_code": "postgres_required" },
+
+    { "backend": "none", "worker": "install", "postgres": "install", "redis": "install", "webui": "reuse", "valid": false, "error_code": "worker_needs_existing_stores" },
+    { "backend": "none", "worker": "install", "postgres": "install", "redis": "install", "webui": "install", "valid": false, "error_code": "worker_needs_existing_stores" },
+    { "backend": "none", "worker": "install", "postgres": "install", "redis": "existing", "webui": "reuse", "valid": false, "error_code": "worker_needs_existing_stores" },
+    { "backend": "none", "worker": "install", "postgres": "install", "redis": "existing", "webui": "install", "valid": false, "error_code": "worker_needs_existing_stores" },
+    { "backend": "none", "worker": "install", "postgres": "install", "redis": "none", "webui": "reuse", "valid": false, "error_code": "redis_required" },
+    { "backend": "none", "worker": "install", "postgres": "install", "redis": "none", "webui": "install", "valid": false, "error_code": "redis_required" },
+    { "backend": "none", "worker": "install", "postgres": "existing", "redis": "install", "webui": "reuse", "valid": false, "error_code": "worker_needs_existing_stores" },
+    { "backend": "none", "worker": "install", "postgres": "existing", "redis": "install", "webui": "install", "valid": false, "error_code": "worker_needs_existing_stores" },
+    { "backend": "none", "worker": "install", "postgres": "existing", "redis": "existing", "webui": "reuse", "valid": true, "error_code": null },
+    { "backend": "none", "worker": "install", "postgres": "existing", "redis": "existing", "webui": "install", "valid": true, "error_code": null },
+    { "backend": "none", "worker": "install", "postgres": "existing", "redis": "none", "webui": "reuse", "valid": false, "error_code": "redis_required" },
+    { "backend": "none", "worker": "install", "postgres": "existing", "redis": "none", "webui": "install", "valid": false, "error_code": "redis_required" },
+    { "backend": "none", "worker": "install", "postgres": "none", "redis": "install", "webui": "reuse", "valid": false, "error_code": "postgres_required" },
+    { "backend": "none", "worker": "install", "postgres": "none", "redis": "install", "webui": "install", "valid": false, "error_code": "postgres_required" },
+    { "backend": "none", "worker": "install", "postgres": "none", "redis": "existing", "webui": "reuse", "valid": false, "error_code": "postgres_required" },
+    { "backend": "none", "worker": "install", "postgres": "none", "redis": "existing", "webui": "install", "valid": false, "error_code": "postgres_required" },
+    { "backend": "none", "worker": "install", "postgres": "none", "redis": "none", "webui": "reuse", "valid": false, "error_code": "postgres_required" },
+    { "backend": "none", "worker": "install", "postgres": "none", "redis": "none", "webui": "install", "valid": false, "error_code": "postgres_required" },
+
+    { "backend": "none", "worker": "none", "postgres": "install", "redis": "install", "webui": "reuse", "valid": true, "error_code": null },
+    { "backend": "none", "worker": "none", "postgres": "install", "redis": "install", "webui": "install", "valid": true, "error_code": null },
+    { "backend": "none", "worker": "none", "postgres": "install", "redis": "existing", "webui": "reuse", "valid": false, "error_code": "unused_existing_store" },
+    { "backend": "none", "worker": "none", "postgres": "install", "redis": "existing", "webui": "install", "valid": false, "error_code": "unused_existing_store" },
+    { "backend": "none", "worker": "none", "postgres": "install", "redis": "none", "webui": "reuse", "valid": true, "error_code": null },
+    { "backend": "none", "worker": "none", "postgres": "install", "redis": "none", "webui": "install", "valid": true, "error_code": null },
+    { "backend": "none", "worker": "none", "postgres": "existing", "redis": "install", "webui": "reuse", "valid": false, "error_code": "unused_existing_store" },
+    { "backend": "none", "worker": "none", "postgres": "existing", "redis": "install", "webui": "install", "valid": false, "error_code": "unused_existing_store" },
+    { "backend": "none", "worker": "none", "postgres": "existing", "redis": "existing", "webui": "reuse", "valid": false, "error_code": "unused_existing_store" },
+    { "backend": "none", "worker": "none", "postgres": "existing", "redis": "existing", "webui": "install", "valid": false, "error_code": "unused_existing_store" },
+    { "backend": "none", "worker": "none", "postgres": "existing", "redis": "none", "webui": "reuse", "valid": false, "error_code": "unused_existing_store" },
+    { "backend": "none", "worker": "none", "postgres": "existing", "redis": "none", "webui": "install", "valid": false, "error_code": "unused_existing_store" },
+    { "backend": "none", "worker": "none", "postgres": "none", "redis": "install", "webui": "reuse", "valid": true, "error_code": null },
+    { "backend": "none", "worker": "none", "postgres": "none", "redis": "install", "webui": "install", "valid": true, "error_code": null },
+    { "backend": "none", "worker": "none", "postgres": "none", "redis": "existing", "webui": "reuse", "valid": false, "error_code": "unused_existing_store" },
+    { "backend": "none", "worker": "none", "postgres": "none", "redis": "existing", "webui": "install", "valid": false, "error_code": "unused_existing_store" },
+    { "backend": "none", "worker": "none", "postgres": "none", "redis": "none", "webui": "reuse", "valid": false, "error_code": "nothing_installed" },
+    { "backend": "none", "worker": "none", "postgres": "none", "redis": "none", "webui": "install", "valid": true, "error_code": null }
+  ]
+}

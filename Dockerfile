@@ -1,3 +1,7 @@
+# One image runs every UltimaScraper role: the API, the scrape workers and the
+# WebUI server. USR_CONTAINER_ROLE (api, the default; worker; webui) picks the
+# one a container runs, so docker-compose.yml starts each from this image.
+#
 # Layers are ordered so a release rebuilds as little as possible: the system
 # packages and the third-party dependencies only change with the base image or
 # docker/requirements.lock, and a build's own code (first-party wheels and
@@ -58,6 +62,8 @@ WORKDIR /build
 COPY docker/wheelhouse /wheelhouse
 COPY pyproject.toml README.md ./
 COPY main.py ./main.py
+COPY src/UltimaScraperWeb/pyproject.toml src/UltimaScraperWeb/README.md ./web/
+COPY src/UltimaScraperWeb/ultima_webui_server ./web/ultima_webui_server
 
 # The first-party packages go into /opt/overlay, laid out as they belong in
 # /opt/venv, so the runtime copies them over the dependencies as one small layer.
@@ -66,14 +72,26 @@ RUN site="$(/opt/venv/bin/python -c 'import sysconfig; print(sysconfig.get_paths
     && wheel_count="$(find /wheelhouse -maxdepth 1 -type f -name '*.whl' | wc -l)" \
     && if [ "$wheel_count" -gt 0 ]; then \
         test "$wheel_count" -eq 5; \
-        /opt/venv/bin/pip install --no-deps --target "$overlay" /wheelhouse/*.whl .; \
+        /opt/venv/bin/pip install --no-deps --target "$overlay" /wheelhouse/*.whl . ./web; \
     else \
         test "$USR_REQUIRE_WHEELHOUSE" = 0; \
-        /opt/venv/bin/pip install --target "$overlay" .; \
+        /opt/venv/bin/pip install --target "$overlay" . ./web; \
     fi \
     && mkdir -p /opt/overlay/opt/venv \
     && mv "$overlay/bin" /opt/overlay/opt/venv/bin \
     && PYTHONPATH="$overlay" /opt/venv/bin/pip check
+
+# The WebUI is plain static files, so it is built once on the build host's own
+# platform instead of under emulation for each target.
+FROM --platform=$BUILDPLATFORM node:22-alpine@sha256:fe4f6d74e20370acb04ad889077d14d0f64a9c8ea6a42bc60cddf1e844699914 AS webui-assets
+
+WORKDIR /build
+
+COPY src/UltimaScraperWeb/webui/package.json src/UltimaScraperWeb/webui/package-lock.json ./
+RUN npm ci
+
+COPY src/UltimaScraperWeb/webui/ .
+RUN npm run build:production
 
 FROM deps-builder AS deps
 
@@ -100,7 +118,7 @@ RUN apt-get update \
     && install -D -m 0755 /tmp/bento4/build/mp4decrypt /opt/bento4/mp4decrypt \
     && install -D -m 0755 /tmp/bento4/build/mp4dump /opt/bento4/mp4dump
 
-FROM python:3.14.7-slim-trixie@sha256:83ff1d245a3d57d04152252d3ef9cb361494d0b3395abd65a5ebe91c401c8e83 AS runtime-base
+FROM python:3.14.7-slim-trixie@sha256:83ff1d245a3d57d04152252d3ef9cb361494d0b3395abd65a5ebe91c401c8e83 AS runtime
 
 # Bento4 first: pymp4 installs an unrelated mp4dump into /opt/venv/bin, and
 # OnlyDRM finds its tools on PATH.
@@ -116,19 +134,23 @@ RUN apt-get update \
     && python -m pip uninstall --yes pip \
     && rm -rf /var/lib/apt/lists/* \
     && useradd --create-home --uid 1000 --shell /usr/sbin/nologin ultimascraper \
-    && mkdir -p /app/logs /app/__user_data__/plugins /home/ultimascraper/.config/ultima_scraper_verse \
-    && chown -R ultimascraper:ultimascraper /app /home/ultimascraper
+    && mkdir -p /app/logs /app/__user_data__/plugins /home/ultimascraper/.config/ultima_scraper_verse /data \
+    && chown -R ultimascraper:ultimascraper /app /home/ultimascraper /data
 
 COPY --from=bento4-builder /opt/bento4/ /opt/bento4/bin/
 COPY --from=deps /opt/venv /opt/venv
 
 WORKDIR /app
 COPY docker/backend-entrypoint.sh /usr/local/bin/usr-container-entrypoint
+COPY docker/healthcheck.sh /usr/local/bin/usr-healthcheck
 COPY docker/worker-healthcheck.py /usr/local/bin/usr-worker-healthcheck
 
 RUN chmod 0755 \
         /usr/local/bin/usr-container-entrypoint \
+        /usr/local/bin/usr-healthcheck \
         /usr/local/bin/usr-worker-healthcheck
+
+COPY --from=webui-assets /build/dist /opt/webui/static
 
 # This build's own code, over the dependencies.
 COPY --from=app-builder /opt/overlay/ /
@@ -141,11 +163,12 @@ ARG USDB_REVISION=unknown
 ARG USDB_ARCHIVE_REVISION=unknown
 ARG USR_CORE_REVISION=unknown
 
-# The release this image is, as the backend and workers report it (e.g. 0.1.0-edge.0123abcd4567).
-ENV USR_IMAGE_VERSION="${USR_VERSION}"
+# The release this image is, as the backend, workers and WebUI report it (e.g. 0.1.0-edge.0123abcd4567).
+ENV USR_IMAGE_VERSION="${USR_VERSION}" \
+    USR_WEBUI_VERSION="${USR_VERSION}"
 
-LABEL org.opencontainers.image.title="UltimaScraper runtime" \
-    org.opencontainers.image.description="Python 3.14 runtime base for UltimaScraper" \
+LABEL org.opencontainers.image.title="UltimaScraper" \
+    org.opencontainers.image.description="UltimaScraper's API, scrape workers and WebUI; USR_CONTAINER_ROLE picks one" \
     org.opencontainers.image.version="${USR_VERSION}" \
     org.opencontainers.image.revision="${USR_REVISION}" \
     org.opencontainers.image.source="https://github.com/UltimaHoarder/UltimaScraper" \
@@ -156,36 +179,17 @@ LABEL org.opencontainers.image.title="UltimaScraper runtime" \
     org.ultimascraper.core.revision="${USR_CORE_REVISION}" \
     org.opencontainers.image.licenses="MIT"
 
+# The role's own defaults (ports, bind address, data folders) are set by the
+# entrypoint, so each role starts as its own image used to.
+ENV USR_CONTAINER_ROLE=api
+
 USER ultimascraper
+
+# The API listens on 21121 and the WebUI on 21120; a worker listens on neither.
+EXPOSE 21121 21120
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=5 \
+    CMD ["usr-healthcheck"]
 
 ENTRYPOINT ["usr-container-entrypoint"]
 CMD ["ultimascraper"]
-
-FROM runtime-base AS runtime
-
-LABEL org.opencontainers.image.title="UltimaScraper backend" \
-    org.opencontainers.image.description="Python 3.14 API-only runtime for UltimaScraper"
-
-ENV RUN_MODE=api \
-    USR_CONTAINER_ROLE=api \
-    USR_EXPECTED_DATABASE=ultima_archive \
-    CONTROL_HOST=0.0.0.0 \
-    CONTROL_PORT=21121 \
-    USR_ALLOW_REMOTE_BIND=true
-
-EXPOSE 21121
-
-HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
-    CMD curl --fail --silent --show-error http://127.0.0.1:21121/api/v1/admin/health >/dev/null || exit 1
-
-FROM runtime-base AS worker-runtime
-
-ENV RUN_MODE=worker \
-    USR_CONTAINER_ROLE=worker \
-    USR_WORKER_READINESS_FILE=/dev/shm/usr-worker-readiness.json
-
-LABEL org.opencontainers.image.title="UltimaScraper worker" \
-    org.opencontainers.image.description="Python 3.14 scrape-worker runtime for UltimaScraper"
-
-HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=5 \
-    CMD ["python", "/usr/local/bin/usr-worker-healthcheck"]

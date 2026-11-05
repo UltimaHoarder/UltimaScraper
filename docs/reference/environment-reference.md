@@ -18,9 +18,8 @@ These variables configure service hostnames, ports, and release image specificat
 | `USR_ADMIN_TOKEN` | *Auto-generated* | Administrative bearer token securing the FastAPI backend. |
 | `USR_WEBUI_SECRET_KEY` | *Auto-generated* | 32-byte secret key used for AES-GCM at-rest credential encryption. |
 | `USR_STORAGE_PATH` | `./data` | Local filesystem path mounted for media files and downloads. |
-| `USR_BACKEND_IMAGE` | `ghcr.io/ultimahoarder/ultimascraper/backend` | Image repository for the FastAPI backend service. |
-| `USR_WORKER_IMAGE` | `ghcr.io/ultimahoarder/ultimascraper/worker` | Image repository for the worker pool service. |
-| `USR_WEBUI_IMAGE` | `ghcr.io/ultimahoarder/ultimascraper/webui` | Image repository for the WebUI gateway server. |
+| `USR_IMAGE` | `ghcr.io/ultimahoarder/ultimascraper/ultimascraper` | Image repository the backend, worker and WebUI containers all run. |
+| `USR_CONTAINER_ROLE` | `api` | What a container of that image runs: `api` (the backend), `worker` or `webui`. `docker-compose.yml` sets it for each service. |
 
 ---
 

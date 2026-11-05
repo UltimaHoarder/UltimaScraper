@@ -5,6 +5,7 @@ from pathlib import Path
 from types import SimpleNamespace
 
 import pytest
+import yaml
 
 ROOT = Path(__file__).resolve().parents[1]
 
@@ -35,22 +36,44 @@ def test_worker_healthcheck_requires_runtime_role_and_redis_heartbeats(
         healthcheck.main()
 
 
-def test_worker_image_does_not_inherit_api_exposure() -> None:
+def test_one_image_runs_every_role() -> None:
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
-    worker_stage = dockerfile.split("FROM runtime-base AS worker-runtime", 1)[1]
+    healthcheck = (ROOT / "docker" / "healthcheck.sh").read_text(encoding="utf-8")
 
-    assert "FROM runtime AS worker-runtime" not in dockerfile
-    assert "EXPOSE 21121" not in worker_stage
-    assert "USR_CONTAINER_ROLE=worker" in worker_stage
-    assert 'CMD ["python", "/usr/local/bin/usr-worker-healthcheck"]' in worker_stage
+    # One final stage: no per-role images to drift apart.
+    assert dockerfile.count(" AS runtime\n") == 1
+    assert "worker-runtime" not in dockerfile and "runtime-base" not in dockerfile
+    assert "ENV USR_CONTAINER_ROLE=api" in dockerfile
+    assert 'CMD ["usr-healthcheck"]' in dockerfile
+    # The WebUI build and server are in the same image.
+    assert "COPY --from=webui-assets /build/dist /opt/webui/static" in dockerfile
+    assert "./web/ultima_webui_server" in dockerfile
+    # Each role's healthcheck checks that role.
+    assert "exec python /usr/local/bin/usr-worker-healthcheck" in healthcheck
+    assert "exec python -m ultima_webui_server.healthcheck" in healthcheck
+    assert "/api/v1/admin/health" in healthcheck
 
 
-def test_compose_build_targets_match_container_roles() -> None:
-    compose = (ROOT / "docker-compose.build.yml").read_text(encoding="utf-8")
-    backend, worker = compose.split("  worker:", 1)
+def test_compose_runs_every_service_from_the_one_image() -> None:
+    for path in (ROOT / "docker-compose.yml", ROOT / "docker-compose.build.yml"):
+        compose = yaml.safe_load(path.read_text(encoding="utf-8"))["services"]
+        images = {compose[name]["image"] for name in ("backend", "worker", "webui")}
+        assert len(images) == 1, (path.name, images)
 
-    assert "target: runtime" in backend
-    assert "target: worker-runtime" in worker
+    services = yaml.safe_load((ROOT / "docker-compose.yml").read_text(encoding="utf-8"))["services"]
+    assert {name: services[name]["environment"]["USR_CONTAINER_ROLE"] for name in ("backend", "worker", "webui")} == {
+        "backend": "api",
+        "worker": "worker",
+        "webui": "webui",
+    }
+
+
+def test_compose_build_builds_the_image_once() -> None:
+    services = yaml.safe_load((ROOT / "docker-compose.build.yml").read_text(encoding="utf-8"))["services"]
+
+    assert services["backend"]["build"]["target"] == "runtime"
+    assert "build" not in services["worker"] and "build" not in services["webui"]
+    assert services["worker"]["pull_policy"] == services["webui"]["pull_policy"] == "never"
 
 
 @pytest.mark.parametrize(

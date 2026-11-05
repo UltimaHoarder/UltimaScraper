@@ -1,6 +1,31 @@
 #!/bin/sh
 set -eu
 
+# The image runs one role per container. Each role's defaults are the ones its
+# own image used to set; anything already in the environment wins.
+container_role="${USR_CONTAINER_ROLE:-api}"
+case "$container_role" in
+    api)
+        : "${USR_EXPECTED_DATABASE:=ultima_archive}" "${CONTROL_HOST:=0.0.0.0}" \
+            "${CONTROL_PORT:=21121}" "${USR_ALLOW_REMOTE_BIND:=true}"
+        export USR_EXPECTED_DATABASE CONTROL_HOST CONTROL_PORT USR_ALLOW_REMOTE_BIND
+        ;;
+    worker)
+        : "${USR_WORKER_READINESS_FILE:=/dev/shm/usr-worker-readiness.json}"
+        export USR_WORKER_READINESS_FILE
+        ;;
+    webui)
+        : "${USR_WEBUI_HOST:=0.0.0.0}" "${USR_WEBUI_PORT:=21120}" "${USR_WEBUI_DATA_DIR:=/data}" \
+            "${USR_WEBUI_STATIC_DIR:=/opt/webui/static}"
+        export USR_WEBUI_HOST USR_WEBUI_PORT USR_WEBUI_DATA_DIR USR_WEBUI_STATIC_DIR
+        # The WebUI server needs none of the backend's secrets or database settings.
+        if [ "$*" = ultimascraper ]; then
+            set -- ultimascraper-webui
+        fi
+        exec "$@"
+        ;;
+esac
+
 load_secret_file() {
     variable_name="$1"
     allow_empty="${2:-false}"
@@ -92,7 +117,6 @@ use_generated_secret() {
     export "$variable_name=$(tr -d '\r\n' < "$secret_file")"
 }
 
-container_role="${USR_CONTAINER_ROLE:-api}"
 case "$container_role:${RUN_MODE:-$container_role}" in
     api:api)
         RUN_MODE=api

@@ -26,7 +26,9 @@ USR_VERSION=0.2.0
 ```
 
 ### 3. Pull and Apply
-Pull the new release images and recreate containers:
+Coming from a version with separate backend, worker and WebUI images? Take `docker-compose.yml` from the new release too, and if your `.env` sets `USR_BACKEND_IMAGE`, `USR_WORKER_IMAGE` or `USR_WEBUI_IMAGE`, replace them with one `USR_IMAGE`. Installs made by the setup wizard get both from **Upgrade**.
+
+Pull the new release image and recreate containers:
 
 ```bash
 docker compose pull

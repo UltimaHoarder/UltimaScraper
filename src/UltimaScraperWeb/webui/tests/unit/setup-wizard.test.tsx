@@ -503,7 +503,7 @@ describe('SetupWizardPage', () => {
         facts: {
           ...makeDetectResponse().facts,
           architecture: 'arm64',
-          local_images: [{ version: 'acceptance-arm64', architecture: 'arm64', names: ['backend', 'worker'] }],
+          local_images: [{ version: 'acceptance-arm64', architecture: 'arm64', names: ['ultimascraper'] }],
         },
         recommended_image_source: 'target',
         recommended_version: 'acceptance-arm64',

@@ -2,7 +2,7 @@ import type { DetectResponse, InstallEnvironment } from '../../../api/webui';
 
 export type ImageSource = 'copy' | 'target' | 'registry';
 
-/** Where the published release images live. */
+/** The registry root the release image, ultimascraper, is published under. */
 export const DEFAULT_IMAGE_REGISTRY = 'ghcr.io/ultimahoarder/ultimascraper';
 
 /**

@@ -1,11 +1,12 @@
 name: ultimascraper
 
 # Every component is optional. COMPOSE_PROFILES in .env picks what runs on this
-# host: webui, backend, worker, postgres, redis. Without the postgres or redis
+# host: webui, backend, worker, postgres, redis. The backend, worker and webui
+# services all run the one UltimaScraper image, each in its own role. Without the postgres or redis
 # profile, point ULTIMA_ARCHIVE_DATABASE_URL or REDIS_HOST at existing servers.
 services:
   backend:
-    image: ${USR_BACKEND_IMAGE:-ghcr.io/ultimahoarder/ultimascraper/backend}:${USR_VERSION:-latest}
+    image: ${USR_IMAGE:-ghcr.io/ultimahoarder/ultimascraper/ultimascraper}:${USR_VERSION:-latest}
     profiles: [backend]
     init: true
     restart: unless-stopped
@@ -18,6 +19,7 @@ services:
         condition: service_healthy
         required: false
     environment:
+      USR_CONTAINER_ROLE: api
       RUN_MODE: api
       CONTROL_HOST: 0.0.0.0
       CONTROL_PORT: 21121
@@ -133,7 +135,7 @@ services:
       - usr
 
   worker:
-    image: ${USR_WORKER_IMAGE:-ghcr.io/ultimahoarder/ultimascraper/worker}:${USR_VERSION:-latest}
+    image: ${USR_IMAGE:-ghcr.io/ultimahoarder/ultimascraper/ultimascraper}:${USR_VERSION:-latest}
     profiles: [worker]
     init: true
     restart: unless-stopped
@@ -243,7 +245,7 @@ services:
       - usr
 
   webui:
-    image: ${USR_WEBUI_IMAGE:-ghcr.io/ultimahoarder/ultimascraper/webui}:${USR_VERSION:-latest}
+    image: ${USR_IMAGE:-ghcr.io/ultimahoarder/ultimascraper/ultimascraper}:${USR_VERSION:-latest}
     profiles: [webui]
     init: true
     restart: unless-stopped
@@ -252,6 +254,7 @@ services:
         condition: service_healthy
         required: false
     environment:
+      USR_CONTAINER_ROLE: webui
       # The connection the WebUI's /api and /ws reach. Empty: no default backend;
       # add backend connections from the WebUI instead.
       USR_WEBUI_DEFAULT_BACKEND_URL: ${USR_WEBUI_DEFAULT_BACKEND_URL-http://backend:21121}

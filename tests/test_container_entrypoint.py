@@ -278,3 +278,77 @@ def test_entrypoint_rejects_env_example_placeholders(tmp_path: Path) -> None:
         assert result.returncode != 0
         assert f"{name} still has the .env.example placeholder" in result.stderr
         assert value not in result.stderr
+
+
+_ROLE_DEFAULTS = (
+    "USR_EXPECTED_DATABASE",
+    "CONTROL_HOST",
+    "CONTROL_PORT",
+    "USR_ALLOW_REMOTE_BIND",
+    "USR_WORKER_READINESS_FILE",
+    "USR_WEBUI_HOST",
+    "USR_WEBUI_PORT",
+    "USR_WEBUI_DATA_DIR",
+    "USR_WEBUI_STATIC_DIR",
+)
+
+
+def _without_role_defaults(environment: dict[str, str]) -> dict[str, str]:
+    for name in _ROLE_DEFAULTS:
+        environment.pop(name, None)
+    return environment
+
+
+def test_each_role_starts_with_its_own_defaults() -> None:
+    api = _run(
+        _without_role_defaults(_base_environment()),
+        'echo "$CONTROL_HOST|$CONTROL_PORT|$USR_ALLOW_REMOTE_BIND|$USR_EXPECTED_DATABASE|${USR_WORKER_READINESS_FILE:-}"',
+    )
+    assert api.returncode == 0, api.stderr
+    assert api.stdout.strip() == "0.0.0.0|21121|true|ultima_archive|"
+
+    environment = _without_role_defaults(_base_environment())
+    environment.pop("USR_ADMIN_TOKEN")
+    environment.update(USR_CONTAINER_ROLE="worker", RUN_MODE="worker")
+    worker = _run(environment, 'echo "$USR_WORKER_READINESS_FILE|${CONTROL_HOST:-}"')
+    assert worker.returncode == 0, worker.stderr
+    assert worker.stdout.strip() == "/dev/shm/usr-worker-readiness.json|"
+
+
+def test_role_defaults_never_replace_configured_values() -> None:
+    environment = _without_role_defaults(_base_environment())
+    environment["CONTROL_PORT"] = "31121"
+
+    result = _run(environment, 'echo "$CONTROL_PORT"')
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "31121"
+
+
+def test_webui_role_runs_the_webui_server_without_backend_settings() -> None:
+    # No database, Redis or backend secrets: the WebUI server needs none.
+    environment = _without_role_defaults(
+        {key: value for key, value in os.environ.items() if key not in SECRET_VARIABLES and key != "REDIS_HOST"}
+    )
+    environment["USR_CONTAINER_ROLE"] = "webui"
+
+    result = _run(environment, 'echo "$USR_WEBUI_HOST|$USR_WEBUI_PORT|$USR_WEBUI_DATA_DIR|$USR_WEBUI_STATIC_DIR"')
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "0.0.0.0|21120|/data|/opt/webui/static"
+
+
+def test_webui_role_turns_the_default_command_into_the_webui_server(tmp_path: Path) -> None:
+    # The image's CMD is the backend's; for the webui role it becomes the WebUI server.
+    stub = tmp_path / "ultimascraper-webui"
+    stub.write_text("#!/bin/sh\necho webui-server-started\n", encoding="utf-8")
+    stub.chmod(0o755)
+    environment = _without_role_defaults(dict(os.environ))
+    environment.update(USR_CONTAINER_ROLE="webui", PATH=f"{tmp_path}:{environment['PATH']}")
+
+    result = subprocess.run(
+        ["/bin/sh", str(ENTRYPOINT), "ultimascraper"], env=environment, capture_output=True, text=True, check=False
+    )
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "webui-server-started"

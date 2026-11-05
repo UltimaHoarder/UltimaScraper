@@ -30,10 +30,11 @@ from ..connections import Connection, Connections
 from ..store import DeploymentRecord, Store, StoredTunnel
 from ..tunnels import TunnelManager
 from .docker_setup import DockerSetupFailed, install_docker
-from .images import ImagesUnavailable, copy_images, local_releases, require_images_on_target
+from .images import IMAGE_NAME, ImagesUnavailable, copy_images, local_releases, require_images_on_target
 from .probe import HostFacts, UnsupportedHost, check_service, needs_sudo_for, probe, recommend_components
 from .render import (
     BACKEND_TLS_FILE,
+    COMPOSE_DIR,
     COMPOSE_FILES,
     DEFAULT_BACKEND_TLS_PORT,
     STORE_PORTS_FILE,
@@ -56,6 +57,8 @@ DEFAULT_WEB_PORT = 21120
 # Written into the install folder; marks it as ours and records what runs there.
 # The .env as it was before an upgrade, until the new version runs.
 ENV_BACKUP = ".env.usr-before-upgrade"
+# Added to each Compose file's name for its copy from before an upgrade.
+COMPOSE_BACKUP_SUFFIX = ".usr-before-upgrade"
 STATE_FILE = ".usr-install.json"
 _VERSION_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._-]*$"
 # A registry path; it is written into .env and a sed expression, so nothing else.
@@ -219,11 +222,14 @@ def describe_target(target: TargetIn) -> str:
     return f"{target.username}@{target.host}" + (f":{target.port}" if target.port != 22 else "")
 
 
-def compose_command(install_dir: str, project: str, components: Components, *, shared: bool = False) -> str:
+def compose_names(components: Components, *, shared: bool = False) -> tuple[str, ...]:
+    """The Compose files an install of these components uses."""
     names = (*COMPOSE_FILES, STORE_PORTS_FILE) if components.store_only else COMPOSE_FILES
-    if shared:
-        names = (*names, BACKEND_TLS_FILE)
-    files = " ".join(f"-f {name}" for name in names)
+    return (*names, BACKEND_TLS_FILE) if shared else names
+
+
+def compose_command(install_dir: str, project: str, components: Components, *, shared: bool = False) -> str:
+    files = " ".join(f"-f {name}" for name in compose_names(components, shared=shared))
     return f"cd {shlex.quote(install_dir)} && docker compose --project-name {project} {files}"
 
 
@@ -1031,25 +1037,32 @@ class Installer:
 
             env_file = shlex.quote(spec.install_dir + "/.env")
             backup = shlex.quote(spec.install_dir + "/" + ENV_BACKUP)
+            compose_files = compose_names(spec.components, shared=spec.share_backend)
             # Kept until the new version runs, so a failed upgrade can go back.
             await target.run(f"cp -p {env_file} {backup}")
+            for name in compose_files:
+                path = shlex.quote(f"{spec.install_dir}/{name}")
+                await target.run(f"cp -p {path} {path}{COMPOSE_BACKUP_SUFFIX}")
 
             await emit("step", "Pointing the deployment at the new images")
             # Only the image settings change; the generated secrets stay as they are.
-            settings = {"USR_VERSION": spec.version} | {
-                f"USR_{name.upper()}_IMAGE": image_reference(spec, name).rsplit(":", 1)[0]
-                for name in ("backend", "worker", "webui")
-            }
-            edits = " ".join(f"-e {shlex.quote(f's|^{key}=.*|{key}={value}|')}" for key, value in settings.items())
+            settings = {"USR_VERSION": spec.version, "USR_IMAGE": image_reference(spec).rsplit(":", 1)[0]}
             try:
-                await target.run(f"sed -i {edits} {env_file}")
+                for key, value in settings.items():
+                    await target.run(_set_env_command(env_file, key, value))
+                # This WebUI's Compose files: an install from before the single
+                # image still names one image per role.
+                for name in compose_files:
+                    await self._put(target, f"{spec.install_dir}/{name}", (COMPOSE_DIR / name).read_bytes(), 0o644)
                 await self._provide_images(
                     target, facts, target_in.kind, source, spec, _image_names(spec.components), compose, emit
                 )
                 await self._start_services(target, facts, compose, emit)
             except Exception as exc:
                 previous = details["version"]
-                restored = await self._roll_back_upgrade(target, facts, compose, env_file, backup, previous, emit)
+                restored = await self._roll_back_upgrade(
+                    target, facts, compose, env_file, backup, spec.install_dir, compose_files, previous, emit
+                )
                 outcome = (
                     f"The upgrade to {spec.version} was undone: {deployment.name} is back on version {previous}."
                     if restored
@@ -1058,6 +1071,10 @@ class Installer:
                 raise InstallError(f"{_failure_message(exc)} {outcome}") from exc
             await self._write_state(target, spec, source)
             await target.run(f"rm -f -- {backup}", check=False)
+            for name in compose_files:
+                await target.run(
+                    f"rm -f -- {shlex.quote(f'{spec.install_dir}/{name}{COMPOSE_BACKUP_SUFFIX}')}", check=False
+                )
             details.update(
                 version=spec.version,
                 image_source=source,
@@ -1211,12 +1228,24 @@ class Installer:
 
     @staticmethod
     async def _roll_back_upgrade(
-        target: Target, facts: HostFacts, compose: str, env_file: str, backup: str, version: str, emit: Emit
+        target: Target,
+        facts: HostFacts,
+        compose: str,
+        env_file: str,
+        backup: str,
+        install_dir: str,
+        compose_files: tuple[str, ...],
+        version: str,
+        emit: Emit,
     ) -> bool:
-        """Restores the previous .env and starts that version again from the images still on the host."""
+        """Restores the previous .env and Compose files and starts that version again from the images still on the host."""
         await emit("step", f"Going back to version {version}")
         if (await target.run(f"mv -f -- {backup} {env_file}", check=False)).exit_status != 0:
             return False
+        for name in compose_files:
+            path = shlex.quote(f"{install_dir}/{name}")
+            if (await target.run(f"mv -f -- {path}{COMPOSE_BACKUP_SUFFIX} {path}", check=False)).exit_status != 0:
+                return False
         result = await target.run(
             f"{compose} up --detach --wait --wait-timeout 300",
             sudo=facts.docker_needs_sudo,
@@ -1435,7 +1464,7 @@ class Installer:
             await emit("step", "Checking the images already on the host")
             await require_images_on_target(
                 target,
-                [image_reference(spec, name) for name in names],
+                [image_reference(spec)],
                 docker_sudo=facts.docker_needs_sudo,
                 architecture=facts.architecture,
             )
@@ -1609,7 +1638,7 @@ async def _running_image_version(target: Target, facts: HostFacts, compose: str,
     A tag such as edge or latest moves; the label names the build behind it.
     Empty when no UltimaScraper service runs or the image has no label.
     """
-    service = next((name for name in _image_names(components)), None)
+    service = next((name for name in _service_names(components)), None)
     if service is None:
         return ""
     label = '{{ index .Config.Labels "org.opencontainers.image.version" }}'
@@ -1639,8 +1668,14 @@ def _set_env_command(env_file: str, key: str, value: str) -> str:
     return f"if grep -q '^{key}=' {env_file}; then sed -i {edit} {env_file}; else printf '%s\\n' {line} >> {env_file}; fi"
 
 
-def _image_names(components: Components) -> list[str]:
+def _service_names(components: Components) -> list[str]:
+    """The UltimaScraper services these components run."""
     return [name for name in ("backend", "worker", "webui") if getattr(components, name)]
+
+
+def _image_names(components: Components) -> list[str]:
+    """The images they need: the one image every service runs, when any runs."""
+    return [IMAGE_NAME] if _service_names(components) else []
 
 
 def _failure_message(exc: BaseException) -> str:

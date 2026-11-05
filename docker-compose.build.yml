@@ -1,6 +1,8 @@
 services:
+  # One image runs every role: it is built once here, and the worker and WebUI
+  # services run the same local image.
   backend:
-    image: ${USR_BACKEND_IMAGE:-ultimascraper-backend}:${USR_VERSION:-dev}
+    image: ${USR_IMAGE:-ultimascraper}:${USR_VERSION:-dev}
     build:
       context: .
       dockerfile: Dockerfile
@@ -10,20 +12,9 @@ services:
         USR_VERSION: ${USR_VERSION:-dev}
 
   worker:
-    image: ${USR_WORKER_IMAGE:-ultimascraper-worker}:${USR_VERSION:-dev}
-    build:
-      context: .
-      dockerfile: Dockerfile
-      target: worker-runtime
-      args:
-        USR_REQUIRE_WHEELHOUSE: ${USR_REQUIRE_WHEELHOUSE:-1}
-        USR_VERSION: ${USR_VERSION:-dev}
+    image: ${USR_IMAGE:-ultimascraper}:${USR_VERSION:-dev}
+    pull_policy: never
 
   webui:
-    image: ${USR_WEBUI_IMAGE:-ultimascraper-webui}:${USR_VERSION:-dev}
-    build:
-      # The WebUI and its server live in src/UltimaScraperWeb, so the context is the repository root.
-      context: .
-      dockerfile: src/UltimaScraperWeb/webui/Dockerfile
-      args:
-        USR_VERSION: ${USR_VERSION:-dev}
+    image: ${USR_IMAGE:-ultimascraper}:${USR_VERSION:-dev}
+    pull_policy: never

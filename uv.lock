@@ -1845,6 +1845,9 @@ dev = [
 docs = [
     { name = "zensical" },
 ]
+webui = [
+    { name = "ultima-scraper-webui-server" },
+]
 
 [package.metadata]
 requires-dist = [
@@ -1862,6 +1865,7 @@ dev = [
     { name = "ultima-scraper-webui-server", editable = "src/UltimaScraperWeb" },
 ]
 docs = [{ name = "zensical", specifier = ">=0.0.72" }]
+webui = [{ name = "ultima-scraper-webui-server", editable = "src/UltimaScraperWeb" }]
 
 [[package]]
 name = "unidecode"

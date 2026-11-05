@@ -8,6 +8,8 @@ KEEP_RESOURCES="${USR_ACCEPTANCE_KEEP:-0}"
 
 cd "$ROOT_DIR"
 
+# Every service is behind a profile; run them all, as .env.example does.
+export COMPOSE_PROFILES="webui,backend,worker,postgres,redis"
 # Empty: the containers generate both on first start, as for a new user.
 export USR_ADMIN_TOKEN=""
 export USR_ENCRYPT_SECRETS="true"
@@ -147,7 +149,7 @@ import json
 import os
 
 session = json.loads(os.environ["RESPONSE_JSON"])
-expected = {"authenticated": False, "password_set": False, "can_claim": True, "default_connection": "default"}
+expected = {"authenticated": False, "password_set": False, "can_claim": True, "default_connection": "default", "main_connections": []}
 if session != expected:
     raise SystemExit(f"Unexpected WebUI session state: {session}")
 PY

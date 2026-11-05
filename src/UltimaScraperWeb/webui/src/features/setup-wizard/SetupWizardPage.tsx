@@ -2153,7 +2153,7 @@ export function SetupWizardPage({
                         spellCheck={false}
                       />
                       <div className="setup-form-hint" style={{ marginTop: 'var(--space-1)' }}>
-                        Docker repository path. The official images are at <code>{DEFAULT_IMAGE_REGISTRY}</code>. Protocols (https://) are stripped and names are lowercased automatically.
+                        Docker repository path; the image <code>ultimascraper</code> is pulled from under it. The official image is at <code>{DEFAULT_IMAGE_REGISTRY}/ultimascraper</code>. Protocols (https://) are stripped and names are lowercased automatically.
                       </div>
                     </div>
                   )}

@@ -57,7 +57,9 @@ def test_render_writes_private_secrets_and_selected_profiles() -> None:
     assert env["COMPOSE_PROFILES"] == "webui,backend,postgres,redis"
     assert env["USR_ADMIN_TOKEN"] == rendered.admin_token and len(rendered.admin_token) >= 32
     assert env["BACKEND_ID"] == "nas-abc123"
-    assert env["USR_BACKEND_IMAGE"] == "ultimascraper-backend" and env["USR_VERSION"] == "0.1.0"
+    # One image runs every role.
+    assert env["USR_IMAGE"] == "ultimascraper" and env["USR_VERSION"] == "0.1.0"
+    assert not {"USR_BACKEND_IMAGE", "USR_WORKER_IMAGE", "USR_WEBUI_IMAGE"} & env.keys()
     assert env["REDIS_HOST"] == "redis" and env["ULTIMA_ARCHIVE_DATABASE_URL"] == ""
     assert env["USR_WEBUI_DEFAULT_BACKEND_URL"] == "http://backend:21121"
     # Every install gets fresh secrets.
@@ -105,7 +107,8 @@ def test_render_uses_registry_images_and_external_services() -> None:
     )
     env = _env(render(spec))
 
-    assert image_reference(spec, "worker") == "forgejo.example/org/ultimascraper/worker:0.1.0"
+    assert image_reference(spec) == "forgejo.example/org/ultimascraper/ultimascraper:0.1.0"
+    assert env["USR_IMAGE"] == "forgejo.example/org/ultimascraper/ultimascraper"
     assert env["COMPOSE_PROFILES"] == "backend,worker"
     assert env["ULTIMA_ARCHIVE_DATABASE_URL"] == "'postgresql+psycopg://usr:pw#1@db.example/ultima_archive'"
     assert (env["REDIS_HOST"], env["REDIS_PORT"], env["REDIS_PASSWORD"]) == ("redis.example", "6380", "secret")
@@ -118,7 +121,7 @@ def test_image_reference_normalizes_protocol_and_uppercase() -> None:
         image_prefix="https://forgejo.example/org/UltimaScraper/",
         version="edge",
     )
-    assert image_reference(spec, "worker") == "forgejo.example/org/ultimascraper/worker:edge"
+    assert image_reference(spec) == "forgejo.example/org/ultimascraper/ultimascraper:edge"
 
     install_in = InstallIn(
         name="test",
@@ -483,7 +486,7 @@ def test_detect_and_check_service_with_faked_local_target(
     from ultima_webui_server.installer.images import LocalRelease
 
     async def fake_releases() -> list[LocalRelease]:
-        return [LocalRelease(version="0.1.0", architecture="amd64", names=("backend", "worker", "webui"))]
+        return [LocalRelease(version="0.1.0", architecture="amd64", names=("ultimascraper",))]
 
     monkeypatch.setattr(probe_mod, "local_releases", fake_releases)
 
@@ -1084,11 +1087,15 @@ async def test_a_failed_upgrade_restores_the_previous_env_and_version(
 
     commands = [command for command, _ in target.commands]
     env, backup = "/home/deploy/ultimascraper/.env", "/home/deploy/ultimascraper/.env.usr-before-upgrade"
+    compose = "/home/deploy/ultimascraper/docker-compose.yml"
     backed_up = commands.index(f"cp -p {env} {backup}")
-    edited = next(i for i, command in enumerate(commands) if command.startswith("sed -i"))
+    compose_backed_up = commands.index(f"cp -p {compose} {compose}.usr-before-upgrade")
+    edited = next(i for i, command in enumerate(commands) if "USR_IMAGE=" in command)
+    rewritten = next(i for i, command in enumerate(commands) if f"cat > {compose} " in command)
     restored = commands.index(f"mv -f -- {backup} {env}")
+    compose_restored = commands.index(f"mv -f -- {compose}.usr-before-upgrade {compose}")
     restarted = commands.index(f"{_NAS_COMPOSE} up --detach --wait --wait-timeout 300")
-    assert backed_up < edited < restored < restarted
+    assert backed_up < compose_backed_up < edited < rewritten < restored < compose_restored < restarted
     # Nothing records the version that never ran.
     assert installer.store.get_deployment("dep1").details["version"] == "0.1.0"
     assert not any(".usr-install.json" in command and "cat >" in command for command in commands)
@@ -1121,7 +1128,11 @@ async def test_a_successful_upgrade_records_the_version_and_drops_the_backup(
 
     commands = [command for command, _ in target.commands]
     assert "rm -f -- /home/deploy/ultimascraper/.env.usr-before-upgrade" in commands
+    assert "rm -f -- /home/deploy/ultimascraper/docker-compose.yml.usr-before-upgrade" in commands
     assert not any(command.startswith("mv -f") for command in commands)
+    # An install from before the single image gets this WebUI's Compose files and USR_IMAGE.
+    assert any("cat > /home/deploy/ultimascraper/docker-compose.yml " in command for command in commands)
+    assert any("USR_IMAGE=" in command for command in commands)
     assert any(".usr-install.json" in command and "cat >" in command for command in commands)
     assert installer.store.get_deployment("dep1").details["version"] == "0.2.0"
 

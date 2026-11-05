@@ -15,8 +15,8 @@ from dataclasses import dataclass
 
 from .targets import OutputCallback, Target
 
-IMAGE_NAMES = ("backend", "worker", "webui")
-_LOCAL_PREFIX = "ultimascraper-"
+# One image runs every role; local builds and copies are tagged ultimascraper:<version>.
+IMAGE_NAME = "ultimascraper"
 _CHUNK = 1 << 20
 _PROGRESS_EVERY = 100 * _CHUNK
 
@@ -31,7 +31,7 @@ class LocalRelease:
 
     version: str
     architecture: str
-    # Which of backend / worker / webui exist for this version.
+    # The images present for this version: just the one, ultimascraper.
     names: tuple[str, ...]
 
 
@@ -52,21 +52,20 @@ async def local_releases() -> list[LocalRelease]:
     if not docker_cli_available():
         return []
     status, out, _ = await _docker(
-        "image", "ls", "--format", "{{.Repository}}:{{.Tag}}", "--filter", f"reference={_LOCAL_PREFIX}*"
+        "image", "ls", "--format", "{{.Repository}}:{{.Tag}}", "--filter", f"reference={IMAGE_NAME}"
     )
     if status != 0:
         return []
     found: dict[tuple[str, str], set[str]] = defaultdict(set)
     for reference in sorted(set(out.split())):
-        repository, _, version = reference.rpartition(":")
-        name = repository.removeprefix(_LOCAL_PREFIX)
-        if name not in IMAGE_NAMES or version == "<none>":
+        name, _, version = reference.rpartition(":")
+        if name != IMAGE_NAME or version == "<none>":
             continue
         status, architecture, _ = await _docker("image", "inspect", "--format", "{{.Architecture}}", reference)
         if status == 0:
             found[(version, architecture.strip())].add(name)
     return [
-        LocalRelease(version, architecture, tuple(name for name in IMAGE_NAMES if name in names))
+        LocalRelease(version, architecture, tuple(sorted(names)))
         for (version, architecture), names in sorted(found.items())
     ]
 
@@ -97,7 +96,7 @@ async def copy_images(
     on_output: OutputCallback,
 ) -> None:
     """Stream the named local images into the target's Docker."""
-    references = [f"{_LOCAL_PREFIX}{name}:{version}" for name in names]
+    references = [f"{name}:{version}" for name in names]
     process = await asyncio.create_subprocess_exec(
         "docker", "save", *references, stdout=asyncio.subprocess.PIPE, stderr=asyncio.subprocess.PIPE
     )

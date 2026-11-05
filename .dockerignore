@@ -72,8 +72,11 @@ docs/
 *.md
 !README.md
 
-# Frontend sources are built by the dedicated WebUI image.
-src/UltimaScraperWeb/webui/
+# The WebUI is built inside the image; only its sources are needed.
+src/UltimaScraperWeb/webui/dist/
+src/UltimaScraperWeb/webui/coverage/
+src/UltimaScraperWeb/webui/scratch/
+src/UltimaScraperWeb/ultima_webui_server/static/
 
 # Temporary files
 *.tmp

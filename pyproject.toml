@@ -12,10 +12,13 @@ dependencies = [
 ]
 
 [dependency-groups]
-dev = [
-    # The WebUI main.py serves natively (ultima_webui_server.launcher). Kept out
-    # of the release wheel, whose images run the API and workers only.
+# The WebUI server: main.py serves it natively (ultima_webui_server.launcher),
+# and the image runs it as its webui role. Kept out of the release wheel.
+webui = [
     "ultima-scraper-webui-server",
+]
+dev = [
+    { include-group = "webui" },
     "pytest>=8.2",
     "pytest-asyncio>=0.23",
     "fakeredis[lua]>=2.34.1",

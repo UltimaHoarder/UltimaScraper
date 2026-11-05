@@ -10,6 +10,8 @@ from pathlib import Path
 from typing import Any
 from urllib.parse import quote, urlsplit, urlunsplit
 
+from .images import IMAGE_NAME
+
 COMPOSE_DIR = Path(__file__).resolve().parent / "compose"
 COMPOSE_FILES = ("docker-compose.yml", "docker-compose.backend-port.yml")
 STORE_PORTS_FILE = "docker-compose.store-ports.yml"
@@ -197,9 +199,10 @@ def normalize_image_prefix(prefix: str) -> str:
     return cleaned.strip("/").lower()
 
 
-def image_reference(spec: DeploySpec, name: str) -> str:
+def image_reference(spec: DeploySpec) -> str:
+    """The one image every role runs: <prefix>/ultimascraper, or the local ultimascraper."""
     prefix = normalize_image_prefix(spec.image_prefix)
-    image = f"{prefix}/{name}" if prefix else f"ultimascraper-{name}"
+    image = f"{prefix}/{IMAGE_NAME}" if prefix else IMAGE_NAME
     return f"{image}:{spec.version}"
 
 
@@ -239,9 +242,7 @@ def render(spec: DeploySpec) -> Rendered:
     environment = {
         "COMPOSE_PROFILES": ",".join(spec.components.profiles()),
         "USR_VERSION": spec.version,
-        "USR_BACKEND_IMAGE": image_reference(spec, "backend").rsplit(":", 1)[0],
-        "USR_WORKER_IMAGE": image_reference(spec, "worker").rsplit(":", 1)[0],
-        "USR_WEBUI_IMAGE": image_reference(spec, "webui").rsplit(":", 1)[0],
+        "USR_IMAGE": image_reference(spec).rsplit(":", 1)[0],
         "BACKEND_ID": spec.backend_id,
         # Known to the WebUI that installs this backend, which adds it to requests.
         "USR_ADMIN_TOKEN": admin_token,

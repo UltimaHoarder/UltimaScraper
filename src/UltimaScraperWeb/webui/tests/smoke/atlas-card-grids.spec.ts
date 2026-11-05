@@ -14,6 +14,8 @@ const TARGET_VIEWPORTS = [
 const ALLOWED_COLUMNS = new Set([1, 2, 4, 5, 10]);
 
 test('Users card grid uses responsive column counts that divide 100 evenly (1, 2, 4, 5, 10)', async ({ page }, testInfo) => {
+  // Desktop loads the page at seven widths, up to 5120px, so it needs more than the default time.
+  test.slow(testInfo.project.name === 'desktop', 'loads the Users page at seven viewport widths');
   await seedConfiguredApp(page, { theme: 'ultima-atlas' });
   await installApiMocks(page);
 

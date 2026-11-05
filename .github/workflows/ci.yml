@@ -56,6 +56,16 @@ jobs:
       - run: npm run build:production
       - name: Install the smoke-test browser
         run: npx playwright install --with-deps chromium
+      - name: Use Google Chrome for the smoke tests
+        # Playwright's own Chromium cannot play H.264/AAC, which the video test
+        # streams; playwright.config.ts picks up this browser instead.
+        run: |
+          chrome="$(command -v google-chrome-stable || command -v google-chrome || true)"
+          if [ -z "$chrome" ]; then
+            npx playwright install --with-deps chrome
+            chrome=/opt/google/chrome/chrome
+          fi
+          echo "PLAYWRIGHT_CHROMIUM_EXECUTABLE=$chrome" >> "$GITHUB_ENV"
       - run: npm run test:smoke
       - name: Keep smoke-test results
         if: failure()

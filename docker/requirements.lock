@@ -3,7 +3,7 @@
 about-time==4.2.1
 aiofiles==25.1.0
 aiohappyeyeballs==2.7.1
-aiohttp==3.14.3
+aiohttp==3.14.5
 aiohttp-socks==0.12.0
 aiosignal==1.4.0
 alembic==1.19.1
@@ -16,7 +16,7 @@ asyncpg==0.31.0
 asyncssh==2.24.1
 attrs==26.1.0
 beautifulsoup4==4.15.0
-certifi==2026.7.22
+certifi==2026.10.23
 cffi==2.1.1 ; platform_python_implementation != 'PyPy'
 charset-normalizer==3.5.1
 click==8.5.0
@@ -24,7 +24,7 @@ colorama==0.4.6 ; sys_platform == 'win32'
 construct==2.8.8
 cryptography==50.0.1
 dill==0.4.1
-dnspython==2.8.0
+dnspython==2.9.2
 email-validator==2.3.0
 fastapi==0.135.4
 ffmpeg-python==0.2.0
@@ -42,10 +42,10 @@ inflection==0.5.1
 jsonschema==4.26.0
 jsonschema-specifications==2025.9.1
 lxml==6.1.2
-mako==1.4.1
+mako==1.4.3
 markupsafe==3.0.3
 mergedeep==1.3.4
-multidict==6.7.1
+multidict==7.2.1
 orjson==3.12.0
 packaging==26.3
 platformdirs==4.11.5
@@ -82,7 +82,7 @@ tzdata==2026.3 ; sys_platform == 'win32'
 tzlocal==5.4.4
 ujson==5.13.0
 unidecode==1.4.0
-urllib3==2.7.0
+urllib3==2.8.0
 user-agent==0.1.14
 uvicorn==0.41.0
 uvloop==0.22.1 ; sys_platform != 'win32'
@@ -90,4 +90,4 @@ watchfiles==1.2.0
 websockets==15.0.1
 win32-setctime==1.2.0 ; sys_platform == 'win32'
 xmltodict==1.0.4
-yarl==1.24.5
+yarl==1.25.1

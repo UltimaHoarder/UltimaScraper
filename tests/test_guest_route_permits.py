@@ -89,6 +89,22 @@ async def test_unknown_routes_and_redis_failures_do_not_block_sends(client, capl
     assert "sending without them" in caplog.text
 
 
+@pytest.mark.asyncio
+async def test_the_first_redis_failure_is_logged_right_after_boot(client, caplog, monkeypatch):
+    # time.monotonic() counts from boot: a fresh machine must still log the first failure.
+    monkeypatch.setattr(guest_route_permits, "time", SimpleNamespace(monotonic=lambda: 5.0))
+    permits = GuestRoutePermits(client, {PROXY: 1})
+
+    async def broken(*args, **kwargs):
+        raise ConnectionError("redis down")
+
+    permits._acquire = broken
+    with caplog.at_level("WARNING", logger=guest_route_permits.__name__):
+        async with permits(PROXY):
+            pass  # fails open
+    assert "sending without them" in caplog.text
+
+
 def test_permit_keys_never_contain_proxy_credentials():
     key = permit_key(PROXY)
     assert key.startswith(guest_route_permits.KEY_PREFIX)

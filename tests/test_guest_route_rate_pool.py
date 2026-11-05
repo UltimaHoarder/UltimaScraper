@@ -67,6 +67,20 @@ async def test_redis_failure_falls_back_to_local_pacing(client, caplog):
     assert "pacing per worker" in caplog.text
 
 
+async def test_the_first_redis_failure_is_logged_right_after_boot(client, caplog, monkeypatch):
+    # time.monotonic() counts from boot: a fresh machine must still log the first failure.
+    monkeypatch.setattr(guest_route_rate_pool, "time", SimpleNamespace(monotonic=lambda: 5.0))
+    pool = GuestRouteRatePool(client, 10.0, burst_seconds=0.5)
+
+    async def broken(*args, **kwargs):
+        raise ConnectionError("redis down")
+
+    pool._reserve = broken
+    with caplog.at_level("WARNING", logger=guest_route_rate_pool.__name__):
+        assert await pool(ROUTE, 1.0) is False
+    assert "pacing per worker" in caplog.text
+
+
 def test_schedule_keys_never_contain_proxy_credentials():
     key = schedule_key(ROUTE)
     assert key.startswith(guest_route_rate_pool.KEY_PREFIX)

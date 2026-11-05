@@ -1722,7 +1722,7 @@ wheels = [
 
 [[package]]
 name = "ultima-scraper-backend"
-version = "0.1.0"
+version = "0.1.1"
 source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
@@ -1750,9 +1750,9 @@ dependencies = [
     { name = "uvloop", marker = "sys_platform != 'win32'" },
     { name = "websockets" },
 ]
-sdist = { url = "https://files.pythonhosted.org/packages/b6/28/fd7c5c65718403512d227c7e33449fd93363db0012783bf207af827e2642/ultima_scraper_backend-0.1.0.tar.gz", hash = "sha256:63bd564bad9205ce58768ebd7fe1e4f23713c71d3d049a26c694db4fc6fd3813", size = 1156752, upload-time = "2026-11-05T13:55:50.76Z" }
+sdist = { url = "https://files.pythonhosted.org/packages/45/65/3f9bd89f421ded445f4c215722bdde22efc3503de014cde0bfd4dda20de8/ultima_scraper_backend-0.1.1.tar.gz", hash = "sha256:e4e61c9f115d6df30cd18ebd64ab2e9bb26225c5eafc7ab53c6c3381cfd904d6", size = 1156913, upload-time = "2026-11-05T14:31:48.437Z" }
 wheels = [
-    { url = "https://files.pythonhosted.org/packages/44/93/63ceb4ed52a4052bbf78411048a411434150dc5ead9c70c646d87c1c1610/ultima_scraper_backend-0.1.0-py3-none-any.whl", hash = "sha256:74a02d1a54f7b6690a63275d4ce9a66b8fc93468d1a1d3618c2812b16ec57ceb", size = 1226648, upload-time = "2026-11-05T13:55:48.865Z" },
+    { url = "https://files.pythonhosted.org/packages/d9/4f/c5253ef5c7c6f39a2e48e0904036f7f421de6897b949ef8224619c28ce86/ultima_scraper_backend-0.1.1-py3-none-any.whl", hash = "sha256:e89ea79c46d23728fdfce7cf23a840e9492249dbf44fddecb90cef63bc1d05d3", size = 1226801, upload-time = "2026-11-05T14:31:46.613Z" },
 ]
 
 [[package]]
@@ -1849,7 +1849,7 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "platformdirs", specifier = ">=4.5,<5" },
-    { name = "ultima-scraper-backend", specifier = ">=0.1,<1" },
+    { name = "ultima-scraper-backend", specifier = ">=0.1.1,<1" },
     { name = "uvloop", marker = "sys_platform != 'win32'", specifier = ">=0.21" },
 ]
 

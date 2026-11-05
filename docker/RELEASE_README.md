@@ -1,15 +1,17 @@
 # UltimaScraper Docker release
 
-This bundle deploys the UltimaScraper image, which runs the API-only backend,
-worker and WebUI containers, all at one version.
+This bundle deploys the API-only backend, worker and WebUI containers, all at
+one version. By default all three run the full UltimaScraper image; each can run
+from its own image instead.
 It does not need the source repository or sibling repositories.
 
 1. Copy `.env.example` to `.env` and replace every `replace-with-...` value.
    Leave `USR_ADMIN_TOKEN` and `USR_SECRET_KEY` empty to have them generated on
    first start.
 2. Set `USR_IMAGE` and `USR_VERSION` to the immutable image reference supplied
-   by your release channel. If you loaded the matching image archive, the
-   default image name can be used.
+   by your release channel, and `USR_BACKEND_IMAGE`, `USR_WORKER_IMAGE` or
+   `USR_WEBUI_IMAGE` for any service that should run its own image. If you
+   loaded the matching image archive, the default image names can be used.
 3. Choose the components in `COMPOSE_PROFILES`. The default runs the WebUI,
    backend, worker, PostgreSQL and Redis together:
 

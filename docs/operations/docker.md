@@ -6,7 +6,7 @@ UltimaScraper provides production-grade, multi-architecture Docker images (`linu
 
 ## Container Architecture
 
-The Docker deployment breaks UltimaScraper down into focused, non-root, single-purpose containers. The `webui`, `backend` and `worker` containers all run one image, `ghcr.io/ultimahoarder/ultimascraper/ultimascraper`; `USR_CONTAINER_ROLE` (`webui`, `api` or `worker`) sets which part each one runs:
+The Docker deployment breaks UltimaScraper down into focused, non-root, single-purpose containers. By default the `webui`, `backend` and `worker` containers all run the full image, `ghcr.io/ultimahoarder/ultimascraper/ultimascraper`, and `USR_CONTAINER_ROLE` (`webui`, `api` or `worker`) sets which part each one runs. Each also has its own image (`…/backend`, `…/worker` and a much smaller `…/webui`); set `USR_BACKEND_IMAGE`, `USR_WORKER_IMAGE` or `USR_WEBUI_IMAGE` in `.env` to run a service from it:
 
 | Container | Image Role | Default Port | Description |
 |---|---|---|---|

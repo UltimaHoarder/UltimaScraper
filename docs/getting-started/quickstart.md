@@ -61,8 +61,7 @@ docker run -d \
   -p 21120:21120 \
   -v usr_webui:/data \
   --add-host host.docker.internal:host-gateway \
-  -e USR_CONTAINER_ROLE=webui \
-  ghcr.io/ultimahoarder/ultimascraper/ultimascraper:0.1.0
+  ghcr.io/ultimahoarder/ultimascraper/webui:0.1.0
 ```
 
 ### 2. Complete the Unified Setup Wizard at `/setup`

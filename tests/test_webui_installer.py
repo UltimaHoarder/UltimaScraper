@@ -1130,9 +1130,14 @@ async def test_a_successful_upgrade_records_the_version_and_drops_the_backup(
     assert "rm -f -- /home/deploy/ultimascraper/.env.usr-before-upgrade" in commands
     assert "rm -f -- /home/deploy/ultimascraper/docker-compose.yml.usr-before-upgrade" in commands
     assert not any(command.startswith("mv -f") for command in commands)
-    # An install from before the single image gets this WebUI's Compose files and USR_IMAGE.
+    # An install from before the single image gets this WebUI's Compose files and USR_IMAGE,
+    # and loses the per-service image keys that would override the full image.
     assert any("cat > /home/deploy/ultimascraper/docker-compose.yml " in command for command in commands)
     assert any("USR_IMAGE=" in command for command in commands)
+    assert (
+        "sed -i -e '/^USR_BACKEND_IMAGE=/d' -e '/^USR_WORKER_IMAGE=/d' -e '/^USR_WEBUI_IMAGE=/d' "
+        "/home/deploy/ultimascraper/.env"
+    ) in commands
     assert any(".usr-install.json" in command and "cat >" in command for command in commands)
     assert installer.store.get_deployment("dep1").details["version"] == "0.2.0"
 

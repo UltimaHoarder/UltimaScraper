@@ -59,6 +59,9 @@ DEFAULT_WEB_PORT = 21120
 ENV_BACKUP = ".env.usr-before-upgrade"
 # Added to each Compose file's name for its copy from before an upgrade.
 COMPOSE_BACKUP_SUFFIX = ".usr-before-upgrade"
+_LEGACY_IMAGE_KEYS_EDIT = " ".join(
+    f"-e '/^USR_{role}_IMAGE=/d'" for role in ("BACKEND", "WORKER", "WEBUI")
+)
 STATE_FILE = ".usr-install.json"
 _VERSION_PATTERN = r"^[A-Za-z0-9][A-Za-z0-9._-]*$"
 # A registry path; it is written into .env and a sed expression, so nothing else.
@@ -1050,6 +1053,9 @@ class Installer:
             try:
                 for key, value in settings.items():
                     await target.run(_set_env_command(env_file, key, value))
+                # Installs from here run the full image; the per-service images an
+                # older install names would override it and are not the ones provided.
+                await target.run(f"sed -i {_LEGACY_IMAGE_KEYS_EDIT} {env_file}")
                 # This WebUI's Compose files: an install from before the single
                 # image still names one image per role.
                 for name in compose_files:

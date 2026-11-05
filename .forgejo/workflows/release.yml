@@ -1,8 +1,9 @@
-name: UltimaScraper release image
+name: UltimaScraper release images
 
-# Builds the UltimaScraper image (the backend, worker and WebUI roles in one)
-# for amd64 and arm64 from the pinned sibling commits in
-# release/components.lock.json and pushes it to the Forgejo registry.
+# Builds the release images for amd64 and arm64 from the pinned sibling commits
+# in release/components.lock.json and pushes them to the Forgejo registry: the
+# full ultimascraper image (every role in one) and the backend, worker and webui
+# images.
 #
 #   tag vX.Y.Z (matching pyproject.toml)  ->  X.Y.Z, X.Y, latest, sha-<commit>
 #   push to main                          ->  X.Y.Z-edge.<commit>, edge, sha-<commit>
@@ -157,13 +158,15 @@ jobs:
         if: env.RELEASE_CHANNEL == 'release'
         run: |
           set -euo pipefail
-          if env -u DOCKER_AUTH_CONFIG HOME="$USR_DOCKER_HOME" docker --config "$DOCKER_CONFIG" \
-            manifest inspect "$REGISTRY_PUSH_ROOT/ultimascraper:$RELEASE_VERSION" >/dev/null 2>&1; then
-            echo "release tag already exists: ultimascraper:$RELEASE_VERSION" >&2
-            exit 1
-          fi
+          for image in ultimascraper backend worker webui; do
+            if env -u DOCKER_AUTH_CONFIG HOME="$USR_DOCKER_HOME" docker --config "$DOCKER_CONFIG" \
+              manifest inspect "$REGISTRY_PUSH_ROOT/$image:$RELEASE_VERSION" >/dev/null 2>&1; then
+              echo "release tag already exists: $image:$RELEASE_VERSION" >&2
+              exit 1
+            fi
+          done
 
-      - name: Build, check and push the image
+      - name: Build, check and push the images
         working-directory: USV/UltimaScraper
         run: |
           set -euo pipefail

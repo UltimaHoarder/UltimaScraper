@@ -62,10 +62,10 @@ The workflow needs a runner labelled `self-hosted`, `linux`, `amd64` with Docker
 
 The runner is a host executor, so BuildKit's own cache is kept on that host between runs: every run uses a builder named `usr-release-builder`, and removes it afterwards with `docker buildx rm --keep-state`. The next run's builder reattaches the same cache volume (`buildx_buildkit_usr-release-builder0_state`). Runs therefore queue one at a time.
 
-The Dockerfile is ordered for it:
+The Dockerfiles are ordered for it:
 
-- the system packages and the third-party dependencies are rebuilt only when the base image, `docker/requirements.lock` changes;
-- a build's own code (the first-party wheels, `main.py`, the WebUI server) is pure Python, installed once on the build host's own platform and copied into the image as a small layer, so arm64 does not build it under QEMU;
+- the system packages and the third-party dependencies are rebuilt only when the base image, `docker/requirements.lock` or `docker/webui-requirements.lock` change;
+- a build's own code (the first-party wheels, `main.py`, the WebUI server) is pure Python, installed once on the build host's own platform and copied into every image as a small layer, so arm64 does not build it under QEMU;
 - version and revision build arguments are declared after the heavy steps, because a build argument used by a `RUN` step makes that step miss the cache whenever its value changes.
 
 So a typical `main` build redoes only the first-party layers. The first run on a host, or after a lock file changes, builds everything. To start over, remove the volume: `docker volume rm buildx_buildkit_usr-release-builder0_state`.

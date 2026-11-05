@@ -36,17 +36,26 @@ def test_worker_healthcheck_requires_runtime_role_and_redis_heartbeats(
         healthcheck.main()
 
 
-def test_one_image_runs_every_role() -> None:
+def _stages(dockerfile: str) -> dict[str, str]:
+    """Each build stage's text, by name."""
+    stages: dict[str, str] = {}
+    for chunk in dockerfile.split("\nFROM ")[1:]:
+        header, _, body = chunk.partition("\n")
+        stages[header.rsplit(" AS ", 1)[-1].strip()] = body
+    return stages
+
+
+def test_the_full_image_runs_every_role() -> None:
     dockerfile = (ROOT / "Dockerfile").read_text(encoding="utf-8")
     healthcheck = (ROOT / "docker" / "healthcheck.sh").read_text(encoding="utf-8")
+    stages = _stages(dockerfile)
 
-    # One final stage: no per-role images to drift apart.
-    assert dockerfile.count(" AS runtime\n") == 1
-    assert "worker-runtime" not in dockerfile and "runtime-base" not in dockerfile
-    assert "ENV USR_CONTAINER_ROLE=api" in dockerfile
-    assert 'CMD ["usr-healthcheck"]' in dockerfile
-    # The WebUI build and server are in the same image.
-    assert "COPY --from=webui-assets /build/dist /opt/webui/static" in dockerfile
+    # The full image is the last stage, so a plain docker build makes it.
+    assert list(stages)[-1] == "runtime"
+    assert "ENV USR_CONTAINER_ROLE=api" in stages["runtime"]
+    assert "EXPOSE 21121 21120" in stages["runtime"]
+    # The WebUI build and server are in the shared base.
+    assert "COPY --from=webui-assets /build/dist /opt/webui/static" in stages["runtime-base"]
     assert "./web/ultima_webui_server" in dockerfile
     # Each role's healthcheck checks that role.
     assert "exec python /usr/local/bin/usr-worker-healthcheck" in healthcheck
@@ -54,13 +63,24 @@ def test_one_image_runs_every_role() -> None:
     assert "/api/v1/admin/health" in healthcheck
 
 
-def test_compose_runs_every_service_from_the_one_image() -> None:
-    for path in (ROOT / "docker-compose.yml", ROOT / "docker-compose.build.yml"):
-        compose = yaml.safe_load(path.read_text(encoding="utf-8"))["services"]
-        images = {compose[name]["image"] for name in ("backend", "worker", "webui")}
-        assert len(images) == 1, (path.name, images)
+def test_the_backend_and_worker_images_keep_their_role_contracts() -> None:
+    stages = _stages((ROOT / "Dockerfile").read_text(encoding="utf-8"))
 
+    assert "ENV USR_CONTAINER_ROLE=api" in stages["backend"]
+    assert "EXPOSE 21121\n" in stages["backend"] and "21120" not in stages["backend"]
+    assert "ENV USR_CONTAINER_ROLE=worker" in stages["worker"]
+    assert "EXPOSE" not in stages["worker"]
+    for name in ("backend", "worker", "runtime"):
+        assert 'CMD ["usr-healthcheck"]' in stages[name]
+
+
+def test_compose_defaults_every_service_to_the_full_image() -> None:
     services = yaml.safe_load((ROOT / "docker-compose.yml").read_text(encoding="utf-8"))["services"]
+    full = "${USR_IMAGE:-ghcr.io/ultimahoarder/ultimascraper/ultimascraper}"
+
+    for service, override in (("backend", "BACKEND"), ("worker", "WORKER"), ("webui", "WEBUI")):
+        # Its own image when USR_<SERVICE>_IMAGE is set, the full image otherwise.
+        assert services[service]["image"] == f"${{USR_{override}_IMAGE:-{full}}}:${{USR_VERSION:-latest}}"
     assert {name: services[name]["environment"]["USR_CONTAINER_ROLE"] for name in ("backend", "worker", "webui")} == {
         "backend": "api",
         "worker": "worker",

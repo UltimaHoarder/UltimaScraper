@@ -26,7 +26,7 @@ USR_VERSION=0.2.0
 ```
 
 ### 3. Pull and Apply
-Coming from a version with separate backend, worker and WebUI images? Take `docker-compose.yml` from the new release too, and if your `.env` sets `USR_BACKEND_IMAGE`, `USR_WORKER_IMAGE` or `USR_WEBUI_IMAGE`, replace them with one `USR_IMAGE`. Installs made by the setup wizard get both from **Upgrade**.
+Coming from a version where every service had its own image? Take `docker-compose.yml` from the new release too. Services then run the full image, except those your `.env` gives one with `USR_BACKEND_IMAGE`, `USR_WORKER_IMAGE` or `USR_WEBUI_IMAGE`; remove those lines to use the full image for everything. Installs made by the setup wizard get the new Compose files and the full image from **Upgrade**.
 
 Pull the new release image and recreate containers:
 

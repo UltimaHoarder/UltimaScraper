@@ -1,6 +1,9 @@
-# One image runs every UltimaScraper role: the API, the scrape workers and the
-# WebUI server. USR_CONTAINER_ROLE (api, the default; worker; webui) picks the
-# one a container runs, so docker-compose.yml starts each from this image.
+# The full image, ultimascraper (the last stage, runtime), runs every
+# UltimaScraper role: the API, the scrape workers and the WebUI server.
+# USR_CONTAINER_ROLE (api, the default; worker; webui) picks the one a container
+# runs. The backend and worker stages are the same build with their role, ports
+# and healthcheck fixed; the slim WebUI-only image is
+# src/UltimaScraperWeb/webui/Dockerfile.
 #
 # Layers are ordered so a release rebuilds as little as possible: the system
 # packages and the third-party dependencies only change with the base image or
@@ -118,7 +121,7 @@ RUN apt-get update \
     && install -D -m 0755 /tmp/bento4/build/mp4decrypt /opt/bento4/mp4decrypt \
     && install -D -m 0755 /tmp/bento4/build/mp4dump /opt/bento4/mp4dump
 
-FROM python:3.14.7-slim-trixie@sha256:83ff1d245a3d57d04152252d3ef9cb361494d0b3395abd65a5ebe91c401c8e83 AS runtime
+FROM python:3.14.7-slim-trixie@sha256:83ff1d245a3d57d04152252d3ef9cb361494d0b3395abd65a5ebe91c401c8e83 AS runtime-base
 
 # Bento4 first: pymp4 installs an unrelated mp4dump into /opt/venv/bin, and
 # OnlyDRM finds its tools on PATH.
@@ -179,17 +182,44 @@ LABEL org.opencontainers.image.title="UltimaScraper" \
     org.ultimascraper.core.revision="${USR_CORE_REVISION}" \
     org.opencontainers.image.licenses="MIT"
 
-# The role's own defaults (ports, bind address, data folders) are set by the
-# entrypoint, so each role starts as its own image used to.
+USER ultimascraper
+
+ENTRYPOINT ["usr-container-entrypoint"]
+CMD ["ultimascraper"]
+
+# The backend image: the API role only.
+FROM runtime-base AS backend
+
+LABEL org.opencontainers.image.title="UltimaScraper backend" \
+    org.opencontainers.image.description="UltimaScraper's API control plane"
+
 ENV USR_CONTAINER_ROLE=api
 
-USER ultimascraper
+EXPOSE 21121
+
+HEALTHCHECK --interval=30s --timeout=5s --start-period=60s --retries=5 \
+    CMD ["usr-healthcheck"]
+
+# The worker image: scrape workers only; it listens on no port.
+FROM runtime-base AS worker
+
+LABEL org.opencontainers.image.title="UltimaScraper worker" \
+    org.opencontainers.image.description="UltimaScraper's scrape and download workers"
+
+ENV USR_CONTAINER_ROLE=worker
+
+HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=5 \
+    CMD ["usr-healthcheck"]
+
+# The full image, last so a plain docker build makes it. The role's own
+# defaults (ports, bind address, data folders) are set by the entrypoint, so
+# each role starts as its own image does.
+FROM runtime-base AS runtime
+
+ENV USR_CONTAINER_ROLE=api
 
 # The API listens on 21121 and the WebUI on 21120; a worker listens on neither.
 EXPOSE 21121 21120
 
 HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=5 \
     CMD ["usr-healthcheck"]
-
-ENTRYPOINT ["usr-container-entrypoint"]
-CMD ["ultimascraper"]

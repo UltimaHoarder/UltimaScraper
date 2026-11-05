@@ -1,5 +1,6 @@
-# The release image, ultimascraper, for every supported architecture. It runs
-# every role (API, workers, WebUI); USR_CONTAINER_ROLE picks one per container.
+# The release images for every supported architecture: the full ultimascraper
+# image, which runs every role (USR_CONTAINER_ROLE picks one per container), and
+# the backend, worker and slim webui images for those who want one role each.
 #
 # Local, host-platform build loaded into Docker (what build_images.sh does first):
 #   docker buildx bake --load --set '*.platform=linux/amd64'
@@ -26,7 +27,7 @@ variable "EXTRA_TAGS" {
 variable "CACHE_REF" {
   # Registry repository for the build cache, e.g.
   # forgejo.example/owner/ultimascraper/buildcache; empty builds without one.
-  # The image keeps its cache under its own tag (buildcache:ultimascraper).
+  # Each image keeps its cache under its own tag (buildcache:ultimascraper, ...).
   default = ""
 }
 
@@ -69,7 +70,8 @@ variable "USR_CORE_REVISION" {
 
 function "image" {
   params = [name]
-  result = REGISTRY == "" ? name : "${REGISTRY}/${name}"
+  # Local names: ultimascraper, and ultimascraper-backend etc. for the others.
+  result = REGISTRY == "" ? (name == "ultimascraper" ? name : "ultimascraper-${name}") : "${REGISTRY}/${name}"
 }
 
 function "tags" {
@@ -94,18 +96,17 @@ function "cache_to" {
 }
 
 group "default" {
-  targets = ["ultimascraper"]
+  targets = ["ultimascraper", "backend", "worker", "webui"]
 }
 
 target "_release" {
   platforms = split(",", PLATFORMS)
 }
 
-target "ultimascraper" {
+target "_python" {
   inherits   = ["_release"]
   context    = "."
   dockerfile = "Dockerfile"
-  target     = "runtime"
   args = {
     USR_REQUIRE_WHEELHOUSE = USR_REQUIRE_WHEELHOUSE
     USR_VERSION            = USR_VERSION
@@ -116,7 +117,41 @@ target "ultimascraper" {
     USDB_ARCHIVE_REVISION  = USDB_ARCHIVE_REVISION
     USR_CORE_REVISION      = USR_CORE_REVISION
   }
+}
+
+target "ultimascraper" {
+  inherits   = ["_python"]
+  target     = "runtime"
   tags       = tags("ultimascraper")
   cache-from = cache_from("ultimascraper")
   cache-to   = cache_to("ultimascraper")
+}
+
+target "backend" {
+  inherits   = ["_python"]
+  target     = "backend"
+  tags       = tags("backend")
+  cache-from = cache_from("backend")
+  cache-to   = cache_to("backend")
+}
+
+target "worker" {
+  inherits   = ["_python"]
+  target     = "worker"
+  tags       = tags("worker")
+  cache-from = cache_from("worker")
+  cache-to   = cache_to("worker")
+}
+
+target "webui" {
+  inherits   = ["_release"]
+  # The WebUI and its server live in src/UltimaScraperWeb, so the context is the repository root.
+  context    = "."
+  dockerfile = "src/UltimaScraperWeb/webui/Dockerfile"
+  args = {
+    USR_VERSION = USR_VERSION
+  }
+  tags       = tags("webui")
+  cache-from = cache_from("webui")
+  cache-to   = cache_to("webui")
 }

@@ -25,8 +25,9 @@ browser.
   cluster, with invites for other WebUIs.
 - **Storage:** archives spread over several drives, with free-space warnings.
 - **Webhooks and plugins** to react to events and extend UltimaScraper.
-- **One Docker image** that runs the backend, workers and WebUI, each in its
-  own container, for amd64 and arm64.
+- **Docker images** for amd64 and arm64: one full image that runs the backend,
+  workers and WebUI, each in its own container, and separate backend, worker
+  and WebUI images for those who want one role each.
 
 ### Security
 

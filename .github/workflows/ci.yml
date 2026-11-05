@@ -89,3 +89,25 @@ jobs:
         run: uv sync --frozen --python 3.14 --only-group docs
       - name: Build
         run: uv run --frozen --no-sync zensical build --strict
+      - name: Keep the site for GitHub Pages
+        if: github.event_name != 'pull_request'
+        uses: actions/upload-pages-artifact@v4
+        with:
+          path: site
+
+  docs-publish:
+    name: Publish docs
+    # Pushes to main publish https://ultimahoarder.github.io/UltimaScraper/.
+    if: github.event_name != 'pull_request'
+    needs: docs
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    permissions:
+      pages: write
+      id-token: write
+    environment:
+      name: github-pages
+      url: ${{ steps.deployment.outputs.page_url }}
+    steps:
+      - id: deployment
+        uses: actions/deploy-pages@v4

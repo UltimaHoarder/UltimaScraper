@@ -77,6 +77,8 @@ that `docker compose logs webui` prints.
 
 ## 📚 Learn more
 
+The full documentation is at [ultimahoarder.github.io/UltimaScraper](https://ultimahoarder.github.io/UltimaScraper/).
+
 - 🏁 [Quick start guide](docs/getting-started/quickstart.md)
 - 🧭 [Using the WebUI](docs/user-guide/webui-overview.md)
 - ⚡ [Running jobs](docs/user-guide/job-management.md)

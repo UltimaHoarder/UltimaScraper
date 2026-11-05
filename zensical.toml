@@ -2,7 +2,9 @@
 site_name = "UltimaScraper Documentation"
 site_description = "WebUI-first control plane for PostgreSQL and Redis-backed scraping workflows"
 site_author = "UltimaScraper"
-site_url = "https://github.com/UltimaHoarder/UltimaScraper"
+site_url = "https://ultimahoarder.github.io/UltimaScraper/"
+repo_name = "UltimaHoarder/UltimaScraper"
+repo_url = "https://github.com/UltimaHoarder/UltimaScraper"
 copyright = "Copyright &copy; 2026 UltimaScraper"
 
 nav = [

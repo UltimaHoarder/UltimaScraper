@@ -4,6 +4,8 @@ import importlib.util
 from contextlib import contextmanager
 from pathlib import Path
 
+import ultima_scraper_db_archive
+
 import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
@@ -26,8 +28,7 @@ from ultima_scraper_backend.job_system.ledger import ExecutionLedger, Limits
 __all__ = ["ledger", "ledger_engine", "partitioned_engine", "postgres_engine"]
 
 VERSIONS = (
-    Path(__file__).resolve().parents[2]
-    / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions"
+    Path(ultima_scraper_db_archive.__file__).parent / "migrations/alembic/versions"
 )
 MIGRATIONS = (
     VERSIONS / "b7c41e9a2d58_runtime_role_partition_ddl.py",

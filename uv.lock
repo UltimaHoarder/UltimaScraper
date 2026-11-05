@@ -1379,8 +1379,8 @@ wheels = [
 
 [[package]]
 name = "pywidevine"
-version = "1.8.0"
-source = { git = "https://github.com/UltimaHoarder/pywidevine.git#fe033c96471d67fae5bc3742faf061cac60e23b5" }
+version = "1.9.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "click" },
     { name = "protobuf" },
@@ -1389,6 +1389,10 @@ dependencies = [
     { name = "pyyaml" },
     { name = "requests" },
     { name = "unidecode" },
+]
+sdist = { url = "https://files.pythonhosted.org/packages/52/b6/4855cb958892653029f3cafa8a4724d554b847de0a43a3808cea109b9e78/pywidevine-1.9.0.tar.gz", hash = "sha256:6742daf5fd797c5a4813eb1300efb3181ffcddd0c8c478ee28c7c536aa0e51b2", size = 75511, upload-time = "2025-10-27T09:13:15.909Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/dd/e2/e692647f12008495654868e99c972696f2b8cb39637b507c409f5f99b4b6/pywidevine-1.9.0-py3-none-any.whl", hash = "sha256:70b5726abc2c3fe763f070da853b7c87d6aeb6131a27778743187258bf97e492", size = 70419, upload-time = "2025-10-27T09:13:14.303Z" },
 ]
 
 [[package]]
@@ -1685,8 +1689,8 @@ wheels = [
 
 [[package]]
 name = "ultima-scraper-api"
-version = "3.0.0b4"
-source = { editable = "../UltimaScraperAPI" }
+version = "3.0.0b5"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "aiofiles" },
     { name = "aiohttp" },
@@ -1711,51 +1715,15 @@ dependencies = [
     { name = "win32-setctime", marker = "sys_platform == 'win32'" },
     { name = "xmltodict" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "aiofiles", specifier = ">=22.1.0" },
-    { name = "aiohttp", specifier = ">=3.8.4" },
-    { name = "aiohttp-socks", specifier = ">=0.9.0" },
-    { name = "alive-progress", specifier = ">=3.1.5" },
-    { name = "beautifulsoup4", specifier = ">=4.11.1" },
-    { name = "black", marker = "extra == 'dev'", specifier = ">=23.3.0" },
-    { name = "dill", specifier = ">=0.3.6" },
-    { name = "ffmpeg-python", specifier = ">=0.2.0" },
-    { name = "httpx", specifier = ">=0.28" },
-    { name = "inflection", specifier = ">=0.5.1" },
-    { name = "lxml", specifier = ">=4.9.1" },
-    { name = "mergedeep", specifier = ">=1.3.4" },
-    { name = "mkdocs-material", marker = "extra == 'dev'", specifier = ">=9.6.22" },
-    { name = "nox", marker = "extra == 'dev'", specifier = ">=2024.0.0" },
-    { name = "orjson", specifier = ">=3.8.3" },
-    { name = "pydantic", specifier = ">=2.0" },
-    { name = "pytest", marker = "extra == 'dev'", specifier = ">=7.0.0" },
-    { name = "pytest-asyncio", marker = "extra == 'dev'", specifier = ">=0.21.0" },
-    { name = "pytest-cov", marker = "extra == 'dev'", specifier = ">=4.0.0" },
-    { name = "python-dateutil", specifier = ">=2.8.2" },
-    { name = "python-semantic-release", marker = "extra == 'dev'", specifier = ">=7.33.2" },
-    { name = "python-socks", extras = ["asyncio"], specifier = ">=2.2.0" },
-    { name = "pywidevine", git = "https://github.com/UltimaHoarder/pywidevine.git" },
-    { name = "redis", extras = ["hiredis"], specifier = ">=6.2.0,<7.0.0" },
-    { name = "requests", extras = ["socks"], specifier = ">=2.28" },
-    { name = "user-agent", specifier = ">=0.1.10" },
-    { name = "websockets", specifier = ">=15.0.1,<16.0.0" },
-    { name = "win32-setctime", marker = "sys_platform == 'win32'", specifier = ">=1.1.0" },
-    { name = "xmltodict", specifier = ">=0.13.0" },
-]
-provides-extras = ["dev"]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mkdocs", specifier = ">=1.6.1" },
-    { name = "mkdocs-material", specifier = ">=9.6.22" },
+sdist = { url = "https://files.pythonhosted.org/packages/11/03/c2820131770ae3bdde8da39b5cb327b64333bbbe8111314e074616700b02/ultima_scraper_api-3.0.0b5.tar.gz", hash = "sha256:187956a5f23d7e2a8075ad1d6516937a27de57ad06dc03d3466711039708e704", size = 462581, upload-time = "2026-11-05T13:55:43.044Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/6b/4a/aa7e58e306feb1bfd3760285aca4affda3cadc16da464f4a99bbee308871/ultima_scraper_api-3.0.0b5-py3-none-any.whl", hash = "sha256:099a5f3194b1cffff36e63fa92735087bf553f788faf66c8a01b9a3c73b05326", size = 193902, upload-time = "2026-11-05T13:55:40.975Z" },
 ]
 
 [[package]]
 name = "ultima-scraper-backend"
 version = "0.1.0"
-source = { editable = "../UltimaBackends/UltimaScraperBackend" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
     { name = "anyio" },
@@ -1782,78 +1750,41 @@ dependencies = [
     { name = "uvloop", marker = "sys_platform != 'win32'" },
     { name = "websockets" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "alembic", specifier = ">=1.18,<2" },
-    { name = "anyio", specifier = ">=4.12,<5" },
-    { name = "apscheduler", specifier = ">=3.11,<4" },
-    { name = "asyncpg", specifier = ">=0.31,<1" },
-    { name = "fastapi", specifier = ">=0.135,<0.136" },
-    { name = "greenlet", specifier = ">=3.2,<4" },
-    { name = "httpx", specifier = ">=0.28,<0.29" },
-    { name = "jsonschema", specifier = ">=4.23,<5" },
-    { name = "packaging", specifier = ">=24,<27" },
-    { name = "platformdirs", specifier = ">=4.5" },
-    { name = "psutil", specifier = ">=7.2,<8" },
-    { name = "psycopg", extras = ["binary"], specifier = ">=3.3,<4" },
-    { name = "pydantic", extras = ["email"], specifier = ">=2.12,<3" },
-    { name = "python-multipart", specifier = ">=0.0.22,<0.1" },
-    { name = "redis", extras = ["hiredis"], specifier = ">=6.2.0,<7.0.0" },
-    { name = "sqlmodel", specifier = ">=0.0.24" },
-    { name = "ujson", specifier = ">=5,<6" },
-    { name = "ultima-scraper-api", editable = "../UltimaScraperAPI" },
-    { name = "ultima-scraper-core", editable = "src/UltimaScraperCore" },
-    { name = "ultima-scraper-db", editable = "../UltimaDatabases/UltimaScraperDB" },
-    { name = "ultima-scraper-db-archive", editable = "../UltimaDatabases/UltimaScraperDBArchive" },
-    { name = "uvicorn", extras = ["standard"], specifier = ">=0.41,<0.42" },
-    { name = "uvloop", marker = "sys_platform != 'win32'", specifier = ">=0.21" },
-    { name = "websockets", specifier = ">=15,<16" },
+sdist = { url = "https://files.pythonhosted.org/packages/b6/28/fd7c5c65718403512d227c7e33449fd93363db0012783bf207af827e2642/ultima_scraper_backend-0.1.0.tar.gz", hash = "sha256:63bd564bad9205ce58768ebd7fe1e4f23713c71d3d049a26c694db4fc6fd3813", size = 1156752, upload-time = "2026-11-05T13:55:50.76Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/44/93/63ceb4ed52a4052bbf78411048a411434150dc5ead9c70c646d87c1c1610/ultima_scraper_backend-0.1.0-py3-none-any.whl", hash = "sha256:74a02d1a54f7b6690a63275d4ce9a66b8fc93468d1a1d3618c2812b16ec57ceb", size = 1226648, upload-time = "2026-11-05T13:55:48.865Z" },
 ]
 
 [[package]]
 name = "ultima-scraper-core"
 version = "0.1.0"
-source = { editable = "src/UltimaScraperCore" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "platformdirs" },
 ]
-
-[package.metadata]
-requires-dist = [{ name = "platformdirs", specifier = ">=4.3,<5" }]
-
-[package.metadata.requires-dev]
-dev = [{ name = "pytest", specifier = ">=8.0" }]
+sdist = { url = "https://files.pythonhosted.org/packages/9f/44/eb37f25ade06c0f477f96d16bc01f90d8a24408d64ba976d9f408c0faee0/ultima_scraper_core-0.1.0.tar.gz", hash = "sha256:647e409ecd9f2ae9ca15a030b42f397836d55baacc3428e15c7288034f44c34c", size = 12030, upload-time = "2026-11-05T13:55:36.326Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/61/86/f5079c927a9669d912822e3a6c0ba00f455dacb45d5528195302a6777d31/ultima_scraper_core-0.1.0-py3-none-any.whl", hash = "sha256:de207a3deb4b7cb6976bb7659002159fd3c066d92140ef293b16f893273d5ad2", size = 16146, upload-time = "2026-11-05T13:55:35.05Z" },
+]
 
 [[package]]
 name = "ultima-scraper-db"
-version = "0.2.0"
-source = { editable = "../UltimaDatabases/UltimaScraperDB" }
+version = "0.5.0"
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
     { name = "asyncpg" },
     { name = "sqlalchemy", extra = ["asyncio"] },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "alembic", specifier = ">=1.17,<2" },
-    { name = "asyncpg", specifier = ">=0.30,<1" },
-    { name = "sqlalchemy", extras = ["asyncio"], specifier = ">=2.0.44,<3" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "mypy", specifier = ">=1.14,<2" },
-    { name = "pytest", specifier = ">=8.2,<9" },
-    { name = "pytest-asyncio", specifier = ">=0.23,<2" },
-    { name = "ruff", specifier = ">=0.12,<1" },
+sdist = { url = "https://files.pythonhosted.org/packages/ec/ea/1254130ea788dc434af486f7aa42d38fcad233f0e1c68a504d99804b09a1/ultima_scraper_db-0.5.0.tar.gz", hash = "sha256:a8d448b5d18c8365e9ebb363d344ce408b1476f1f3c81dd0de070b19365036ce", size = 59532, upload-time = "2026-11-05T13:55:39.236Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/07/f5/42fe172dcbe73dae99af5d10dde84a3b7bcf06088330d4d752e6fe0100f2/ultima_scraper_db-0.5.0-py3-none-any.whl", hash = "sha256:12181bd00459e68e4e22094b80ad492db5fe9cdd6ee41dcc7210614cfeeed137", size = 33078, upload-time = "2026-11-05T13:55:37.721Z" },
 ]
 
 [[package]]
 name = "ultima-scraper-db-archive"
 version = "0.2.0"
-source = { editable = "../UltimaDatabases/UltimaScraperDBArchive" }
+source = { registry = "https://pypi.org/simple" }
 dependencies = [
     { name = "alembic" },
     { name = "cryptography" },
@@ -1863,23 +1794,9 @@ dependencies = [
     { name = "ultima-scraper-core" },
     { name = "ultima-scraper-db" },
 ]
-
-[package.metadata]
-requires-dist = [
-    { name = "alembic", specifier = ">=1.14,<2" },
-    { name = "cryptography", specifier = ">=50,<51" },
-    { name = "psycopg", extras = ["binary"], specifier = ">=3.3,<4" },
-    { name = "sqlmodel", specifier = ">=0.0.24,<1" },
-    { name = "ultima-scraper-api", editable = "../UltimaScraperAPI" },
-    { name = "ultima-scraper-core", editable = "src/UltimaScraperCore" },
-    { name = "ultima-scraper-db", editable = "../UltimaDatabases/UltimaScraperDB" },
-]
-
-[package.metadata.requires-dev]
-dev = [
-    { name = "pytest", specifier = ">=8.2,<9" },
-    { name = "pytest-asyncio", specifier = ">=0.23,<2" },
-    { name = "ruff", specifier = ">=0.12,<1" },
+sdist = { url = "https://files.pythonhosted.org/packages/da/8f/6b186a18ed3c202959858810e65a7a1d88bc9bbdb56c67967c63a4dbdec5/ultima_scraper_db_archive-0.2.0.tar.gz", hash = "sha256:4ad5b0e22f155ca90614f4c2557d3a17d22aa305b3c0f56d6a9a516e838cbc92", size = 172812, upload-time = "2026-11-05T13:55:46.713Z" }
+wheels = [
+    { url = "https://files.pythonhosted.org/packages/c9/74/94c35de1c4669112b8e86db51a237bdb8a12440952b49b3a8293e73236ce/ultima_scraper_db_archive-0.2.0-py3-none-any.whl", hash = "sha256:48e9bb07e0855f368ac0f2a252230799fcd5852d36e03bfebe3eb8e61b4fb926", size = 154385, upload-time = "2026-11-05T13:55:44.869Z" },
 ]
 
 [[package]]
@@ -1932,7 +1849,7 @@ docs = [
 [package.metadata]
 requires-dist = [
     { name = "platformdirs", specifier = ">=4.5,<5" },
-    { name = "ultima-scraper-backend", editable = "../UltimaBackends/UltimaScraperBackend" },
+    { name = "ultima-scraper-backend", specifier = ">=0.1,<1" },
     { name = "uvloop", marker = "sys_platform != 'win32'", specifier = ">=0.21" },
 ]
 
@@ -2152,7 +2069,6 @@ wheels = [
     { url = "https://files.pythonhosted.org/packages/df/b2/30d59a91ed2828fbe6d9a297990dd6de1fd3c5d722354421d80352bba322/zensical-0.0.72-cp311-abi3-macosx_10_12_x86_64.whl", hash = "sha256:9afa0bdb357e0197f5d65cb882e2ad1652d7a3790e2fc3d243f0669092aab536", size = 18269323, upload-time = "2026-10-23T14:52:02.987Z" },
     { url = "https://files.pythonhosted.org/packages/2b/46/33d705f40d8fb3c2291fff63fce8b0688d11e11b4729c7bd11491ead3649/zensical-0.0.72-cp311-abi3-macosx_11_0_arm64.whl", hash = "sha256:2103dabfb6fcbea16ffbf226b5405389f3ac67370293eb649f949f03314dd64c", size = 17790144, upload-time = "2026-10-23T14:52:06.092Z" },
     { url = "https://files.pythonhosted.org/packages/45/02/9d4ed7fa43f0cc8464e4ba4e844201c83abcfce9043073c06acf3518f4ba/zensical-0.0.72-cp311-abi3-manylinux_2_17_aarch64.manylinux2014_aarch64.whl", hash = "sha256:3631d44074d4b28448e710d7b54a506caacb6156b38bd0d91d6a033d65da6ad3", size = 18290933, upload-time = "2026-10-23T14:52:09.003Z" },
-    { url = "https://files.pythonhosted.org/packages/5b/e9/8aa7a24085811cb62987427e86bb5071dbc7c8da7a541a1128996311f070/zensical-0.0.72-cp311-abi3-manylinux_2_17_armv7l.manylinux2014_armv7l.whl", hash = "sha256:1298ced62e0acfe52787ab59607358fbcf6643bf793a1a66813fb760aec009f9", size = 18237453, upload-time = "2026-10-23T14:52:11.589Z" },
     { url = "https://files.pythonhosted.org/packages/98/d8/d176cc7515465c5347c20b412f7e52313f051dc4bcf585b18060044d0d61/zensical-0.0.72-cp311-abi3-manylinux_2_17_x86_64.manylinux2014_x86_64.whl", hash = "sha256:3513bf501ff5e28b9e8b7255f225bb117d5651c5d50af39a1eb7bb3bbd7251b0", size = 18789079, upload-time = "2026-10-23T14:52:13.896Z" },
     { url = "https://files.pythonhosted.org/packages/07/01/e378f3cb316bd0f3d1e7c2610d4eb8e6a4adf8797fdfebcaf6cb7e15f85f/zensical-0.0.72-cp311-abi3-musllinux_1_2_aarch64.whl", hash = "sha256:a0603827ea0a04f920cf2a5be555f9e81818beaac1ff5a92399f19f79e330b2e", size = 18467423, upload-time = "2026-10-23T14:52:16.554Z" },
     { url = "https://files.pythonhosted.org/packages/95/b3/979d2344d0efcb3d43bdcf613fa9846daae174993ba79ba5bab6e02aad45/zensical-0.0.72-cp311-abi3-musllinux_1_2_x86_64.whl", hash = "sha256:042795a983823efd2478630164afa708b04b6aff7708a04177657e57292bc1b8", size = 19047304, upload-time = "2026-10-23T14:52:19.283Z" },

@@ -7,6 +7,8 @@ import statistics
 import time
 from pathlib import Path
 
+import ultima_scraper_db_archive
+
 import pytest
 from alembic import op
 from alembic.migration import MigrationContext
@@ -31,8 +33,7 @@ __all__ = ["ledger", "ledger_engine", "postgres_engine"]
 
 def _migration(connection, action="upgrade"):
     path = (
-        Path(__file__).resolve().parents[2]
-        / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions/9e7c3a1d6b20_narrow_execution_queue.py"
+        Path(ultima_scraper_db_archive.__file__).parent / "migrations/alembic/versions/9e7c3a1d6b20_narrow_execution_queue.py"
     )
     spec = importlib.util.spec_from_file_location("queue_storage_migration", path)
     module = importlib.util.module_from_spec(spec)

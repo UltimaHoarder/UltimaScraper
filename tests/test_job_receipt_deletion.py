@@ -7,6 +7,8 @@ from concurrent.futures import ThreadPoolExecutor, TimeoutError
 from dataclasses import replace
 from datetime import UTC, datetime
 from pathlib import Path
+
+import ultima_scraper_db_archive
 from types import SimpleNamespace
 from threading import Event
 from unittest.mock import AsyncMock
@@ -291,8 +293,7 @@ def test_missing_receipt_index_keeps_a_resumable_checkpoint(ledger):
 
 
 def test_receipt_index_migration_is_resumable_and_reversible(ledger_engine):
-    path = (Path(__file__).resolve().parents[2]
-            / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions/6f4b2e9a17c0_index_job_receipt_deletion.py")
+    path = (Path(ultima_scraper_db_archive.__file__).parent / "migrations/alembic/versions/6f4b2e9a17c0_index_job_receipt_deletion.py")
     spec = importlib.util.spec_from_file_location("job_receipt_index", path)
     migration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migration)

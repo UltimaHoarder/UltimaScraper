@@ -36,9 +36,5 @@ requires = ["setuptools>=61.0", "wheel"]
 build-backend = "setuptools.build_meta"
 
 [tool.uv.sources]
-ultima-scraper-api = { git = "https://github.com/UltimaHoarder/UltimaScraperAPI.git", branch = "main" }
-ultima-scraper-db = { git = "https://github.com/DATAHOARDERS/UltimaScraperDB.git", branch = "main" }
-ultima-scraper-core = { git = "https://github.com/UltimaHoarder/UltimaScraperCore.git", branch = "main" }
+# The siblings come from PyPI. To work on one, see CONTRIBUTING.md.
 ultima-scraper-webui-server = { path = "src/UltimaScraperWeb", editable = true }
-ultima-scraper-db-archive = { git = "https://github.com/UltimaHoarder/UltimaScraperDBArchive.git", branch = "main" }
-ultima-scraper-backend = { git = "https://github.com/UltimaHoarder/UltimaScraperBackend.git", branch = "main" }

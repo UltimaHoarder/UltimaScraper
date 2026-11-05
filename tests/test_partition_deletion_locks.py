@@ -4,6 +4,8 @@ import importlib.util
 import json
 from concurrent.futures import ThreadPoolExecutor
 from pathlib import Path
+
+import ultima_scraper_db_archive
 from threading import Event
 
 from alembic.migration import MigrationContext
@@ -21,8 +23,7 @@ def test_background_lease_does_not_block_partition_disposal(
 ):
     submit(ledger, [task()], identity="job-delete-lock")
     path = (
-        Path(__file__).resolve().parents[2]
-        / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions/c92ea6407b31_partition_all_job_history.py"
+        Path(ultima_scraper_db_archive.__file__).parent / "migrations/alembic/versions/c92ea6407b31_partition_all_job_history.py"
     )
     spec = importlib.util.spec_from_file_location("history_lock_migration", path)
     migration = importlib.util.module_from_spec(spec)

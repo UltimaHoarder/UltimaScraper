@@ -4,6 +4,7 @@ from datetime import UTC, datetime, timedelta
 from pathlib import Path
 
 import pytest
+import ultima_scraper_db_archive
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import event, select, text
@@ -20,6 +21,10 @@ from ultima_scraper_db_archive.execution_models import (
 from ultima_scraper_db_archive.global_db import CentralTaskModel, MPSPlanModel
 
 __all__ = ["ledger", "ledger_engine", "postgres_engine"]
+
+
+# The installed package's migrations, so the test works without the source checkout.
+ARCHIVE_MIGRATIONS = Path(ultima_scraper_db_archive.__file__).parent / "migrations/alembic"
 
 
 def test_all_history_repartition_preserves_keys_and_restart_deletion(
@@ -60,10 +65,7 @@ def test_all_history_repartition_preserves_keys_and_restart_deletion(
             )
         }
         session.commit()
-    path = (
-        Path(__file__).resolve().parents[2]
-        / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions/c92ea6407b31_partition_all_job_history.py"
-    )
+    path = ARCHIVE_MIGRATIONS / "versions/c92ea6407b31_partition_all_job_history.py"
     spec = importlib.util.spec_from_file_location("all_history_migration", path)
     migration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migration)
@@ -398,7 +400,7 @@ def test_all_history_repartition_preserves_keys_and_restart_deletion(
 
 @pytest.mark.parametrize("row, expected", [(('p', 'LIST (run_id)'), True), (('r', None), False), (None, False)])
 def test_history_migration_preserves_existing_mutation_partition(row, expected):
-    path = Path(__file__).resolve().parents[2] / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions/c92ea6407b31_partition_all_job_history.py"
+    path = ARCHIVE_MIGRATIONS / "versions/c92ea6407b31_partition_all_job_history.py"
     spec = importlib.util.spec_from_file_location("preserve_mutation_history", path)
     migration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migration)
@@ -418,7 +420,7 @@ def test_upgrade_does_not_copy_or_rename_existing_partitioned_mutations(monkeypa
     from sqlalchemy.dialects.postgresql import dialect as postgres_dialect
     from sqlalchemy.schema import Table
 
-    path = Path(__file__).resolve().parents[2] / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions/c92ea6407b31_partition_all_job_history.py"
+    path = ARCHIVE_MIGRATIONS / "versions/c92ea6407b31_partition_all_job_history.py"
     spec = importlib.util.spec_from_file_location("no_mutation_rewrite", path)
     migration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migration)

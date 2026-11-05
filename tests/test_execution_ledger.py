@@ -11,6 +11,8 @@ from dataclasses import replace
 from datetime import UTC, datetime
 from decimal import Decimal
 from pathlib import Path
+
+import ultima_scraper_db_archive
 from types import SimpleNamespace
 from unittest.mock import AsyncMock, Mock
 
@@ -52,8 +54,7 @@ from ultima_scraper_db_archive.execution_models import (
 @pytest.fixture(scope="module")
 def ledger_engine(postgres_engine):  # noqa: F811 - imported pytest fixture
     migration_path = (
-        Path(__file__).resolve().parents[2]
-        / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions/f6b83a9021c4_add_execution_ledger.py"
+        Path(ultima_scraper_db_archive.__file__).parent / "migrations/alembic/versions/f6b83a9021c4_add_execution_ledger.py"
     )
     spec = importlib.util.spec_from_file_location("ledger_migration", migration_path)
     migration = importlib.util.module_from_spec(spec)
@@ -1751,8 +1752,7 @@ def test_background_deletion_finishes_jobs_in_request_order(ledger, monkeypatch)
 
 
 def test_deletion_indexes_migration_roundtrip(ledger_engine):
-    path = (Path(__file__).resolve().parents[2] /
-        "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions/a6d901fe7823_index_execution_deletion.py")
+    path = (Path(ultima_scraper_db_archive.__file__).parent / "migrations/alembic/versions/a6d901fe7823_index_execution_deletion.py")
     spec = importlib.util.spec_from_file_location("deletion_indexes", path)
     migration = importlib.util.module_from_spec(spec)
     spec.loader.exec_module(migration)

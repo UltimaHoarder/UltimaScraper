@@ -4,6 +4,8 @@ import importlib.util
 import json
 from pathlib import Path
 
+import ultima_scraper_db_archive
+
 import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
@@ -33,8 +35,7 @@ def ledger_engine(postgres_engine):
 
 
 def repartition(ledger_engine):
-    path = (Path(__file__).resolve().parents[2]
-            / 'UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive'
+    path = (Path(ultima_scraper_db_archive.__file__).parent
             / 'migrations/alembic/versions/c92ea6407b31_partition_all_job_history.py')
     spec = importlib.util.spec_from_file_location('archive_directory_migration', path)
     module = importlib.util.module_from_spec(spec)
@@ -129,8 +130,7 @@ def test_missing_directory_uses_original_global_history(ledger, ledger_engine):
 
 
 def optimized_guard_migration():
-    path = (Path(__file__).resolve().parents[2]
-            / 'UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive'
+    path = (Path(ultima_scraper_db_archive.__file__).parent
             / 'migrations/alembic/versions/a43f7c9d2e61_avoid_redundant_history_identity_reads.py')
     spec = importlib.util.spec_from_file_location('optimized_identity_guard', path)
     module = importlib.util.module_from_spec(spec)

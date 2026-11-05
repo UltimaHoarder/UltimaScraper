@@ -1,12 +1,12 @@
 """Startup upgrades to head, so the archive graph must have one target."""
 from pathlib import Path
 
+import ultima_scraper_db_archive
 from alembic.script import ScriptDirectory
 
 
 def test_archive_migrations_have_one_head_and_join_both_branches():
-    directory = (Path(__file__).resolve().parents[2] /
-        "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic")
+    directory = Path(ultima_scraper_db_archive.__file__).parent / "migrations/alembic"
     scripts = ScriptDirectory(str(directory))
     head = scripts.get_current_head()
     assert head is not None

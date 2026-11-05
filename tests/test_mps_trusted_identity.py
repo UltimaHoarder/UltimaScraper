@@ -6,6 +6,8 @@ import os
 from dataclasses import replace
 from pathlib import Path
 
+import ultima_scraper_db_archive
+
 import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
@@ -27,8 +29,7 @@ SWITCH = "ULTIMA_ARCHIVE_TRUSTED_MPS_IDENTITY"
 
 
 def trust_migration(ledger_engine, direction="upgrade"):
-    path = (Path(__file__).resolve().parents[2]
-            / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive"
+    path = (Path(ultima_scraper_db_archive.__file__).parent
             / "migrations/alembic/versions/d5e1a7c39b42_trusted_mps_task_identity.py")
     spec = importlib.util.spec_from_file_location("trusted_identity_migration", path)
     module = importlib.util.module_from_spec(spec)

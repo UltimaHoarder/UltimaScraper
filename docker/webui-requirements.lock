@@ -1,7 +1,7 @@
 # Runtime dependencies of the WebUI server image, pinned to the versions in
 # docker/requirements.lock. Regenerate with:
 #   uv pip compile src/UltimaScraperWeb/pyproject.toml --python-version 3.14 \
-#     --constraint docker/requirements.lock --find-links docker/wheelhouse \
+#     --constraint docker/requirements.lock \
 #     --no-emit-package ultima-scraper-core --no-annotate --no-header -o docker/webui-requirements.lock
 annotated-doc==0.0.5
 annotated-types==0.8.0

@@ -1,6 +1,8 @@
 import importlib.util
 from pathlib import Path
 
+import ultima_scraper_db_archive
+
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
 from sqlalchemy import text
@@ -31,8 +33,7 @@ def test_partition_migration_keeps_legacy_and_drops_only_requested_job(
         )
         session.commit()
     path = (
-        Path(__file__).resolve().parents[2]
-        / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions/a84df9201c76_partition_execution_mutations_by_run.py"
+        Path(ultima_scraper_db_archive.__file__).parent / "migrations/alembic/versions/a84df9201c76_partition_execution_mutations_by_run.py"
     )
     spec = importlib.util.spec_from_file_location("partition_migration", path)
     migration = importlib.util.module_from_spec(spec)

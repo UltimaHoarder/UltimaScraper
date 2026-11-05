@@ -2,6 +2,7 @@
 
 from __future__ import annotations
 
+import random
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -174,6 +175,8 @@ async def test_sparse_hole_decade_does_not_halt_search() -> None:
 
 @pytest.mark.asyncio
 async def test_adaptive_sampling_population_accuracy() -> None:
+    # The estimate samples IDs at random; a fixed seed keeps its bounds deterministic.
+    random.seed(42)
     # 5,000 users distributed in 1..10,000 (every even ID is valid -> 50% density)
     async def mock_lookup(user_id: int) -> bool:
         return 1 <= user_id <= 10_000 and user_id % 2 == 0

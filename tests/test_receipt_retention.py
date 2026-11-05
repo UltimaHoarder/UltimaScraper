@@ -4,6 +4,8 @@ import importlib.util
 from dataclasses import replace
 from datetime import UTC, datetime, timedelta
 from pathlib import Path
+
+import ultima_scraper_db_archive
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
 
@@ -309,8 +311,7 @@ async def test_retention_cycle_pause_preserves_cursor_and_reports_status(monkeyp
 
 def test_retention_migration_roundtrip(ledger_engine):
     path = (
-        Path(__file__).resolve().parents[2]
-        / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions/e761bc24a908_add_write_receipt_retention.py"
+        Path(ultima_scraper_db_archive.__file__).parent / "migrations/alembic/versions/e761bc24a908_add_write_receipt_retention.py"
     )
     spec = importlib.util.spec_from_file_location("receipt_retention_migration", path)
     migration = importlib.util.module_from_spec(spec)

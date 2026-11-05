@@ -2,6 +2,8 @@
 
 import importlib.util
 from pathlib import Path
+
+import ultima_scraper_db_archive
 from threading import Event
 from types import SimpleNamespace
 from unittest.mock import AsyncMock
@@ -29,8 +31,7 @@ __all__ = ["ledger", "ledger_engine", "postgres_engine"]
 @pytest.fixture(scope="module")
 def partitioned(ledger_engine):
     path = (
-        Path(__file__).resolve().parents[2]
-        / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions/c92ea6407b31_partition_all_job_history.py"
+        Path(ultima_scraper_db_archive.__file__).parent / "migrations/alembic/versions/c92ea6407b31_partition_all_job_history.py"
     )
     spec = importlib.util.spec_from_file_location("history_retirement_migration", path)
     migration = importlib.util.module_from_spec(spec)

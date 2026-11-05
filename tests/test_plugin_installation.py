@@ -374,8 +374,11 @@ def test_git_confirmation_never_moves_an_existing_source_repository(
 @pytest.mark.asyncio
 @pytest.mark.parametrize("folder", ["USWeb", "USWebAdmin", "UltimaAI", "WebshareProxy"])
 async def test_all_source_repositories_support_setup(platform, folder):
+    source = ROOT.parent / "USRPlugins" / folder
+    if not source.is_dir():
+        pytest.skip(f"needs the USRPlugins checkout next to this repository ({folder})")
     directory = platform.sources_directory() / folder
-    shutil.copytree(ROOT.parent / "USRPlugins" / folder, directory)
+    shutil.copytree(source, directory)
     preview = prepare(platform, directory)
     confirm(platform, preview)
     plugin_id = preview["plugin_id"]

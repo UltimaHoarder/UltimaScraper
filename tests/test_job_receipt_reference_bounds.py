@@ -3,6 +3,8 @@
 import importlib.util
 from pathlib import Path
 
+import ultima_scraper_db_archive
+
 import pytest
 from alembic.migration import MigrationContext
 from alembic.operations import Operations
@@ -45,8 +47,7 @@ def test_each_receipt_reference_check_uses_a_command_point_lookup(ledger, ledger
             VALUES ('job-legacy','shared-task','shared',repeat('f',32))"""))
         session.commit()
     if partitioned:
-        path = (Path(__file__).resolve().parents[2]
-                / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions/a84df9201c76_partition_execution_mutations_by_run.py")
+        path = (Path(ultima_scraper_db_archive.__file__).parent / "migrations/alembic/versions/a84df9201c76_partition_execution_mutations_by_run.py")
         spec = importlib.util.spec_from_file_location("receipt_legacy_reference_migration", path)
         migration = importlib.util.module_from_spec(spec)
         spec.loader.exec_module(migration)

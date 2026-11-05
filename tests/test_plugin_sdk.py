@@ -10,6 +10,8 @@ from contextlib import contextmanager
 from datetime import timedelta
 from pathlib import Path
 
+import ultima_scraper_db_archive
+
 import pytest
 import yaml
 from alembic.migration import MigrationContext
@@ -80,8 +82,7 @@ def plugin_engine(ledger_engine):  # noqa: F811
     from ultima_scraper_db_archive.global_db import BackendInventoryModel, SettingsModel
 
     migration_path = (
-        Path(__file__).resolve().parents[2]
-        / "UltimaDatabases/UltimaScraperDBArchive/ultima_scraper_db_archive/migrations/alembic/versions/d2a70c16f493_add_plugin_runtime.py"
+        Path(ultima_scraper_db_archive.__file__).parent / "migrations/alembic/versions/d2a70c16f493_add_plugin_runtime.py"
     )
     spec = importlib.util.spec_from_file_location("plugin_migration", migration_path)
     migration = importlib.util.module_from_spec(spec)

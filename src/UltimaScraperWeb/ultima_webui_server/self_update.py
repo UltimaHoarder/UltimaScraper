@@ -1,4 +1,4 @@
-"""The WebUI updating itself from the package index CI publishes to.
+"""The WebUI updating itself from PyPI, where each release is published.
 
 A WebUI installed with `uv tool install` checks the index for a newer
 ultima-scraper-webui-server, installs exactly that version with uv, and starts
@@ -6,8 +6,8 @@ again in its own process (os.execv), so it works with or without systemd.
 
 Settings come from the environment:
 
-  USR_WEBUI_UPDATE_INDEX    PEP 503 simple index, e.g.
-                            https://forge.example/api/packages/OWNER/pypi/simple
+  USR_WEBUI_UPDATE_INDEX    PEP 503 simple index to update from; defaults to
+                            PyPI (https://pypi.org/simple)
   USR_WEBUI_UPDATE_CHANNEL  release (X.Y.Z only) or edge (also builds of main);
                             defaults to the channel the running version is on
   USR_WEBUI_UV              the uv executable, when it is not on PATH
@@ -37,6 +37,9 @@ from .installer.runner import in_container
 from .version import PACKAGE, package_version
 
 logger = logging.getLogger("ultima_webui_server.self_update")
+
+# .github/workflows/webui-package.yml publishes every release here.
+DEFAULT_INDEX = "https://pypi.org/simple"
 
 Channel = Literal["release", "edge"]
 InstallKind = Literal["uv-tool", "container", "other"]
@@ -107,7 +110,7 @@ class Environment:
     def detect(cls) -> Environment:
         channel = os.environ.get("USR_WEBUI_UPDATE_CHANNEL", "").strip().lower()
         return cls(
-            index=os.environ.get("USR_WEBUI_UPDATE_INDEX", "").strip(),
+            index=os.environ.get("USR_WEBUI_UPDATE_INDEX", "").strip() or DEFAULT_INDEX,
             channel=channel if channel in ("release", "edge") else None,  # type: ignore[arg-type]
             uv=find_uv(),
             kind=install_kind(),
@@ -185,7 +188,7 @@ class SelfUpdater:
         elif env.kind != "uv-tool":
             reason = "Only a WebUI installed with `uv tool install` updates itself."
         elif not env.index:
-            reason = "Set USR_WEBUI_UPDATE_INDEX to the package index CI publishes to."
+            reason = "Set USR_WEBUI_UPDATE_INDEX to the package index to update from."
         elif not env.uv:
             reason = "uv was not found; set USR_WEBUI_UV to its path."
         if env.index:

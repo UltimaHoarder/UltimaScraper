@@ -43,11 +43,10 @@ The primary release validation script is located at `scripts/release/check.sh`.
 2. **Git Tagging**: Create and push an annotated git tag matching the version:
    ```bash
    git tag -a v0.1.0 -m "Release v0.1.0"
-   git push https://github.com/UltimaHoarder/UltimaScraper.git v0.1.0
    git push origin v0.1.0
    ```
 3. **Automated CI Build**: The GitHub Actions release workflow (`.github/workflows/release.yml`) builds multi-architecture images for both `linux/amd64` and `linux/arm64` and publishes them to `ghcr.io/ultimahoarder/ultimascraper/{ultimascraper,backend,worker,webui}`, the images Docker Compose and the setup wizard use.
-4. **WebUI package**: The Forgejo workflow (`.forgejo/workflows/webui-package.yml`) publishes `ultima-scraper-webui-server` to the Forgejo PyPI registry, which WebUIs installed with `uv tool install` update from. See [Updating the WebUI](webui-server.md#updating-the-webui).
+4. **WebUI package**: The GitHub Actions workflow `.github/workflows/webui-package.yml` publishes `ultima-scraper-webui-server` to [PyPI](https://pypi.org/project/ultima-scraper-webui-server/), which WebUIs installed with `uv tool install` update from. See [Updating the WebUI](webui-server.md#updating-the-webui).
 
 ### Image tags
 
@@ -60,7 +59,9 @@ Pin a release (`0.1.0`) for real deployments. Use `edge` to try `main` on a test
 
 The workflow runs on GitHub's own runners and pushes with the run's own token, so each ghcr package must give the UltimaScraper repository write access (package settings → **Manage Actions access**). It needs no secrets.
 
-The WebUI package workflow needs a Forgejo runner labelled `self-hosted`, `linux`, `amd64` with Node.js, `uv` and Python 3.14, and the `REGISTRY_USERNAME` and `REGISTRY_PASSWORD` Actions secrets: a Forgejo user and an access token that can write packages.
+The WebUI package workflow publishes through PyPI's trusted publishing: the `ultima-scraper-webui-server` project on PyPI trusts the `UltimaHoarder/UltimaScraper` repository's `webui-package.yml` workflow in the `pypi` environment, so it needs no token.
+
+`origin` fetches from GitHub and pushes to both GitHub and the Forgejo backup mirror, so `git push origin` (or the push button in VS Code) updates both. Forgejo runs no workflows.
 
 ### Build cache
 

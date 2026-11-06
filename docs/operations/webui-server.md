@@ -92,18 +92,18 @@ accepts next to its own admin token; revoking it (`DELETE /api/v1/cluster/client
 
 ## Updating the WebUI
 
-**Upgrade** under Backends → Deployments updates a deployment's containers (backend, worker, PostgreSQL, Redis, and a WebUI container if that deployment has one). The WebUI you are using is separate when it was installed with `uv tool install`; it updates itself from the package index the WebUI package workflow (`.forgejo/workflows/webui-package.yml`) publishes to.
+**Upgrade** under Backends → Deployments updates a deployment's containers (backend, worker, PostgreSQL, Redis, and a WebUI container if that deployment has one). The WebUI you are using is separate when it was installed with `uv tool install`; it updates itself from [PyPI](https://pypi.org/project/ultima-scraper-webui-server/), where each release is published.
 
 - The **Backends** page shows the WebUI's version and channel, and **Update to …** when a newer one is published.
 - Updating installs exactly that version with `uv tool install --force`, then the WebUI starts again in its own process. The page reloads once it answers.
-- CI publishes `ultima-scraper-webui-server` to the Forgejo PyPI registry: `X.Y.Z` for a release tag, `X.Y.Z.dev<commit time>` for each build of `main`. A dev build sorts below its release. Its `ultima-scraper-core` dependency comes from PyPI.
+- `.github/workflows/webui-package.yml` publishes `ultima-scraper-webui-server` to PyPI for each release tag (`X.Y.Z`). Builds of `main` are not published there; their images are on ghcr.io as `edge`. Its `ultima-scraper-core` dependency comes from PyPI too.
 
 Settings, from the environment:
 
 | Variable | Purpose |
 |---|---|
-| `USR_WEBUI_UPDATE_INDEX` | The simple index, e.g. `https://<forgejo>/api/packages/<owner>/pypi/simple`. Without it no update is offered. |
-| `USR_WEBUI_UPDATE_CHANNEL` | `release` (only `X.Y.Z`) or `edge` (also builds of `main`). Defaults to the channel of the running version. |
+| `USR_WEBUI_UPDATE_INDEX` | The simple index to update from. Defaults to PyPI (`https://pypi.org/simple`). |
+| `USR_WEBUI_UPDATE_CHANNEL` | `release` (only `X.Y.Z`) or `edge` (also dev builds, on an index that has them). Defaults to the channel of the running version. |
 | `USR_WEBUI_UV` | The `uv` executable, when it is not on `PATH`. |
 | `SSL_CERT_FILE` | A CA bundle to trust, when the index's certificate is signed by a private CA (e.g. mkcert) that is not in the system store. uv also uses the system store. |
 

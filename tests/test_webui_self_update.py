@@ -204,3 +204,11 @@ def test_a_published_package_reports_the_image_built_with_it(monkeypatch: pytest
 def test_index_credentials_never_show() -> None:
     assert su.redact_url("https://bot:tok@forge.example:3000/simple") == "https://***@forge.example:3000/simple"
     assert su.redact_url(INDEX) == INDEX
+
+
+def test_updates_come_from_pypi_unless_another_index_is_set(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.delenv("USR_WEBUI_UPDATE_INDEX", raising=False)
+    assert su.Environment.detect().index == "https://pypi.org/simple"
+
+    monkeypatch.setenv("USR_WEBUI_UPDATE_INDEX", " https://forge.example/api/packages/owner/pypi/simple ")
+    assert su.Environment.detect().index == "https://forge.example/api/packages/owner/pypi/simple"

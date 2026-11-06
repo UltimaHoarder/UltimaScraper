@@ -1,0 +1,63 @@
+name: WebUI package
+
+# Publishes ultima-scraper-webui-server to PyPI for each release tag. WebUIs
+# installed with `uv tool install` update themselves from there (see
+# ultima_webui_server/self_update.py). Builds of main are not published.
+#
+#   tag vX.Y.Z (matching pyproject.toml)  ->  ultima-scraper-webui-server X.Y.Z
+#
+# PyPI accepts the upload through trusted publishing: the project trusts this
+# workflow and its "pypi" environment, so no token is stored here.
+on:
+  push:
+    tags: ["v*"]
+
+permissions:
+  contents: read
+
+jobs:
+  build:
+    name: Build
+    runs-on: ubuntu-latest
+    timeout-minutes: 20
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: 22
+          cache: npm
+          cache-dependency-path: src/UltimaScraperWeb/webui/package-lock.json
+      - uses: astral-sh/setup-uv@v6
+        with:
+          python-version: "3.14"
+
+      - name: Build the package
+        run: |
+          set -euo pipefail
+          version=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          test "$GITHUB_REF_NAME" = "v$version" || { echo "tag $GITHUB_REF_NAME does not match pyproject version $version" >&2; exit 1; }
+          # The image version is the release's images on ghcr.io.
+          USR_PACKAGE_VERSION="$version" USR_IMAGE_VERSION="$version" \
+            ./scripts/release/build_webui_package.sh dist/webui-package
+
+      - uses: actions/upload-artifact@v4
+        with:
+          name: webui-package
+          path: dist/webui-package/*.whl
+
+  publish:
+    name: Publish to PyPI
+    needs: build
+    runs-on: ubuntu-latest
+    timeout-minutes: 10
+    environment:
+      name: pypi
+      url: https://pypi.org/project/ultima-scraper-webui-server/
+    permissions:
+      id-token: write
+    steps:
+      - uses: actions/download-artifact@v4
+        with:
+          name: webui-package
+          path: dist
+      - uses: pypa/gh-action-pypi-publish@release/v1

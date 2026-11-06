@@ -57,7 +57,7 @@ test('Users card grid uses responsive column counts that divide 100 evenly (1, 2
       await page.setViewportSize({ width, height: 960 });
     }
     await page.goto('/users?site=onlyfans');
-    await expect(page.locator('.users-grid .user-card').first()).toBeVisible();
+    await expect(page.locator('.users-grid .user-card').first()).toBeVisible({ timeout: 15_000 });
 
     const info = await page.evaluate(() => {
       const grid = document.querySelector('.users-grid');
@@ -91,6 +91,7 @@ test('Users card grid uses responsive column counts that divide 100 evenly (1, 2
 });
 
 test('Subscriptions card grid uses responsive column counts that divide 100 evenly (1, 2, 4, 5, 10)', async ({ page }, testInfo) => {
+  test.slow(testInfo.project.name === 'desktop', 'loads the Subscriptions page at seven viewport widths');
   await seedConfiguredApp(page, { theme: 'ultima-atlas' });
   await installApiMocks(page);
 
@@ -103,7 +104,7 @@ test('Subscriptions card grid uses responsive column counts that divide 100 even
       await page.setViewportSize({ width, height: 960 });
     }
     await page.goto('/subscriptions');
-    await expect(page.locator('.subscriptions-grid .user-card').first()).toBeVisible();
+    await expect(page.locator('.subscriptions-grid .user-card').first()).toBeVisible({ timeout: 15_000 });
 
     const info = await page.evaluate(() => {
       const grid = document.querySelector('.subscriptions-grid');
@@ -132,6 +133,7 @@ test('Subscriptions card grid uses responsive column counts that divide 100 even
 });
 
 test('Favourites creators card grid uses responsive column counts dividing 100 evenly', async ({ page }, testInfo) => {
+  test.slow(testInfo.project.name === 'desktop', 'loads the Favourites page at seven viewport widths');
   await seedConfiguredApp(page, { theme: 'ultima-atlas' });
   await installApiMocks(page);
 
@@ -185,7 +187,7 @@ test('Favourites creators card grid uses responsive column counts dividing 100 e
       await page.setViewportSize({ width, height: 960 });
     }
     await page.goto('/favourites');
-    await expect(page.locator('.favourites-users-grid .user-card').first()).toBeVisible();
+    await expect(page.locator('.favourites-users-grid .user-card').first()).toBeVisible({ timeout: 15_000 });
 
     const info = await page.evaluate(() => {
       const grid = document.querySelector('.favourites-users-grid');

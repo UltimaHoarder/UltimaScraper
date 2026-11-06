@@ -152,9 +152,8 @@ fi
 
 if [[ -n "$registry" ]]; then
     # One image at a time: the full, backend and worker images share most layers,
-    # and the Forgejo registry fails ("error writing layer blob: unknown") when the
-    # same blob is uploaded twice at once. Each later image reuses the layers the
-    # first one pushed.
+    # so each later image reuses the layers the first one pushed instead of
+    # uploading the same blobs at once, which some registries reject.
     for target in ultimascraper backend worker webui; do
         REGISTRY="$registry" PLATFORMS="$platforms" EXTRA_TAGS="$(IFS=,; echo "${extra_tags[*]}")" CACHE_EXPORT=1 \
             "${bake[@]}" --push "$target"

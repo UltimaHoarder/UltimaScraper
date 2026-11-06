@@ -1,0 +1,76 @@
+name: WebUI package
+
+# Publishes ultima-scraper-webui-server to this Forgejo's PyPI registry, which
+# WebUIs installed with `uv tool install` update themselves from. The images are
+# built and pushed to ghcr.io by .github/workflows/release.yml.
+#
+#   tag vX.Y.Z (matching pyproject.toml)  ->  X.Y.Z
+#   push to main                          ->  X.Y.Z.dev<commit time>
+#
+# A main build is a dev release of the coming version, so it sorts below the
+# release itself.
+on:
+  push:
+    tags: ["v*"]
+    branches: [main]
+  workflow_dispatch:
+
+# No permissions block: Forgejo ignores it. The upload uses the REGISTRY_USERNAME
+# and REGISTRY_PASSWORD secrets, and checkout uses the run's own token.
+concurrency:
+  group: usr-webui-package
+  cancel-in-progress: false
+
+jobs:
+  publish:
+    runs-on: [self-hosted, linux, amd64]
+    timeout-minutes: 30
+    env:
+      FORGEJO_SERVER_URL: ${{ forgejo.server_url }}
+      FORGEJO_OWNER: ${{ forgejo.repository_owner }}
+      USR_REVISION: ${{ forgejo.sha }}
+    steps:
+      - uses: https://data.forgejo.org/actions/checkout@11d5960a326750d5838078e36cf38b85af677262 # v4
+        with:
+          fetch-depth: 1
+          token: ${{ forgejo.token }}
+          github-server-url: ${{ forgejo.server_url }}
+
+      - name: Resolve the version
+        run: |
+          set -euo pipefail
+          project_version=$(python3 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          if test "${{ forgejo.ref_type }}" = tag; then
+            tag="${{ forgejo.ref_name }}"
+            test "$tag" = "v$project_version" || { echo "tag $tag does not match pyproject version $project_version" >&2; exit 1; }
+            printf '%s\n' \
+              "IMAGE_VERSION=$project_version" \
+              "PACKAGE_VERSION=$project_version" \
+              >> "$GITHUB_ENV"
+          else
+            # The image version is the matching edge build on ghcr.io.
+            printf '%s\n' \
+              "IMAGE_VERSION=$project_version-edge.${USR_REVISION:0:12}" \
+              "PACKAGE_VERSION=$project_version.dev$(git log -1 --format=%cd --date=format:%Y%m%d%H%M%S)" \
+              >> "$GITHUB_ENV"
+          fi
+
+      - name: Publish the WebUI package
+        env:
+          REGISTRY_USERNAME: ${{ secrets.REGISTRY_USERNAME }}
+          REGISTRY_PASSWORD: ${{ secrets.REGISTRY_PASSWORD }}
+        run: |
+          set -euo pipefail
+          test -n "${REGISTRY_USERNAME:-}" && test -n "${REGISTRY_PASSWORD:-}" || {
+            echo "Set the REGISTRY_USERNAME and REGISTRY_PASSWORD Actions secrets on this repository." >&2
+            exit 1
+          }
+          out=$(mktemp -d)
+          USR_PACKAGE_VERSION="$PACKAGE_VERSION" USR_IMAGE_VERSION="$IMAGE_VERSION" \
+            ./scripts/release/build_webui_package.sh "$out"
+          index="${FORGEJO_SERVER_URL%/}/api/packages/${FORGEJO_OWNER}/pypi"
+          # --system-certs: uv's own certificate list lacks the CA that signed this
+          # Forgejo; the runner's system store has it.
+          UV_PUBLISH_USERNAME="$REGISTRY_USERNAME" UV_PUBLISH_PASSWORD="$REGISTRY_PASSWORD" \
+            uv publish --system-certs --publish-url "$index" "$out"/*.whl
+          echo "Published ultima-scraper-webui-server $PACKAGE_VERSION to $index/simple"

@@ -4,7 +4,7 @@
 #
 # Local, host-platform build loaded into Docker (what build_images.sh does first):
 #   docker buildx bake --load --set '*.platform=linux/amd64'
-# Release, all platforms, pushed to the Forgejo registry:
+# Release, all platforms, pushed to ghcr.io:
 #   REGISTRY=ghcr.io/ultimahoarder/ultimascraper USR_VERSION=0.1.0 \
 #     docker buildx bake --push
 # A multi-platform build needs a docker-container builder and, on an amd64 host,
@@ -26,7 +26,7 @@ variable "EXTRA_TAGS" {
 
 variable "CACHE_REF" {
   # Registry repository for the build cache, e.g.
-  # forgejo.example/owner/ultimascraper/buildcache; empty builds without one.
+  # ghcr.io/ultimahoarder/ultimascraper/buildcache; empty builds without one.
   # Each image keeps its cache under its own tag (buildcache:ultimascraper, ...).
   default = ""
 }

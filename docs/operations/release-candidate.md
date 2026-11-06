@@ -43,11 +43,11 @@ The primary release validation script is located at `scripts/release/check.sh`.
 2. **Git Tagging**: Create and push an annotated git tag matching the version:
    ```bash
    git tag -a v0.1.0 -m "Release v0.1.0"
+   git push https://github.com/UltimaHoarder/UltimaScraper.git v0.1.0
    git push origin v0.1.0
    ```
-3. **Automated CI Build**: Two release workflows build multi-architecture images for both `linux/amd64` and `linux/arm64`, with the same tags:
-   - The GitHub Actions workflow (`.github/workflows/release.yml`) publishes them to `ghcr.io/ultimahoarder/ultimascraper/{ultimascraper,backend,worker,webui}`, the images Docker Compose and the setup wizard use.
-   - The Forgejo CI workflow (`.forgejo/workflows/release.yml`) publishes them to the Forgejo instance's own container registry, as `<forgejo-host>/<owner>/ultimascraper/{ultimascraper,backend,worker,webui}`. Set the `REGISTRY_PUSH` and `REGISTRY_PUSH_ROOT` repository variables to push somewhere else.
+3. **Automated CI Build**: The GitHub Actions release workflow (`.github/workflows/release.yml`) builds multi-architecture images for both `linux/amd64` and `linux/arm64` and publishes them to `ghcr.io/ultimahoarder/ultimascraper/{ultimascraper,backend,worker,webui}`, the images Docker Compose and the setup wizard use.
+4. **WebUI package**: The Forgejo workflow (`.forgejo/workflows/webui-package.yml`) publishes `ultima-scraper-webui-server` to the Forgejo PyPI registry, which WebUIs installed with `uv tool install` update from. See [Updating the WebUI](webui-server.md#updating-the-webui).
 
 ### Image tags
 
@@ -58,13 +58,13 @@ The primary release validation script is located at `scripts/release/check.sh`.
 
 Pin a release (`0.1.0`) for real deployments. Use `edge` to try `main` on a test host, for example with **Upgrade** under Backends → Deployments.
 
-The GitHub workflow pushes with the run's own token, so each ghcr package must give the UltimaScraper repository write access (package settings → **Manage Actions access**). It keeps its build cache in `ghcr.io/ultimahoarder/ultimascraper/buildcache`.
+The workflow runs on GitHub's own runners and pushes with the run's own token, so each ghcr package must give the UltimaScraper repository write access (package settings → **Manage Actions access**). It needs no secrets.
 
-The Forgejo workflow needs a runner labelled `self-hosted`, `linux`, `amd64` with Docker, QEMU registered for arm64, and Python 3.14. It also needs the `REGISTRY_USERNAME` and `REGISTRY_PASSWORD` Actions secrets: a Forgejo user and an access token that can write packages.
+The WebUI package workflow needs a Forgejo runner labelled `self-hosted`, `linux`, `amd64` with Node.js, `uv` and Python 3.14, and the `REGISTRY_USERNAME` and `REGISTRY_PASSWORD` Actions secrets: a Forgejo user and an access token that can write packages.
 
 ### Build cache
 
-The runner is a host executor, so BuildKit's own cache is kept on that host between runs: every run uses a builder named `usr-release-builder`, and removes it afterwards with `docker buildx rm --keep-state`. The next run's builder reattaches the same cache volume (`buildx_buildkit_usr-release-builder0_state`). Runs therefore queue one at a time.
+The workflow keeps BuildKit's cache in `ghcr.io/ultimahoarder/ultimascraper/buildcache`, one tag per image. Every build reads it and every push writes it back, so the next run reuses each unchanged layer.
 
 The Dockerfiles are ordered for it:
 
@@ -72,6 +72,6 @@ The Dockerfiles are ordered for it:
 - a build's own code (the first-party wheels, `main.py`, the WebUI server) is pure Python, installed once on the build host's own platform and copied into every image as a small layer, so arm64 does not build it under QEMU;
 - version and revision build arguments are declared after the heavy steps, because a build argument used by a `RUN` step makes that step miss the cache whenever its value changes.
 
-So a typical `main` build redoes only the first-party layers. The first run on a host, or after a lock file changes, builds everything. To start over, remove the volume: `docker volume rm buildx_buildkit_usr-release-builder0_state`.
+So a typical `main` build redoes only the first-party layers. The first run, or a run after a lock file changes, builds everything.
 
-Images are pushed one at a time: backend and worker share most layers, and the Forgejo registry fails (`error writing layer blob: unknown`) when the same blob is uploaded twice at once. For the same reason the workflow does not use a registry cache (`build_images.sh --cache` remains for builders that cannot keep their own).
+Images are pushed one at a time: the full, backend and worker images share most layers, so each later image reuses what the first one uploaded.

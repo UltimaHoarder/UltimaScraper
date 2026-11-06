@@ -92,7 +92,7 @@ accepts next to its own admin token; revoking it (`DELETE /api/v1/cluster/client
 
 ## Updating the WebUI
 
-**Upgrade** under Backends → Deployments updates a deployment's containers (backend, worker, PostgreSQL, Redis, and a WebUI container if that deployment has one). The WebUI you are using is separate when it was installed with `uv tool install`; it updates itself from the package index the release workflow publishes to.
+**Upgrade** under Backends → Deployments updates a deployment's containers (backend, worker, PostgreSQL, Redis, and a WebUI container if that deployment has one). The WebUI you are using is separate when it was installed with `uv tool install`; it updates itself from the package index the WebUI package workflow (`.forgejo/workflows/webui-package.yml`) publishes to.
 
 - The **Backends** page shows the WebUI's version and channel, and **Update to …** when a newer one is published.
 - Updating installs exactly that version with `uv tool install --force`, then the WebUI starts again in its own process. The page reloads once it answers.

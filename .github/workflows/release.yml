@@ -3,7 +3,7 @@ name: Release images
 # Builds the release images for amd64 and arm64 from the pinned sibling commits
 # in release/components.lock.json and pushes them to ghcr.io: the full
 # ultimascraper image (every role in one) and the backend, worker and webui
-# images. .forgejo/workflows/release.yml does the same for the Forgejo registry.
+# images.
 #
 #   tag vX.Y.Z (matching pyproject.toml)  ->  X.Y.Z, X.Y, latest, sha-<commit>
 #   push to main                          ->  X.Y.Z-edge.<commit>, edge, sha-<commit>

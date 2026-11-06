@@ -1,8 +1,9 @@
 # The full image, ultimascraper (the last stage, runtime), runs every
 # UltimaScraper role: the API, the scrape workers and the WebUI server.
-# USR_CONTAINER_ROLE (api, the default; worker; webui) picks the one a container
-# runs. The backend and worker stages are the same build with their role, ports
-# and healthcheck fixed; the slim WebUI-only image is
+# USR_CONTAINER_ROLE (api, worker or webui) picks the one a container runs;
+# unset, a container with no database or Redis settings runs the WebUI, and
+# any other the API. The backend and worker stages are the same build with
+# their role, ports and healthcheck fixed; the slim WebUI-only image is
 # src/UltimaScraperWeb/webui/Dockerfile.
 #
 # Layers are ordered so a release rebuilds as little as possible: the system
@@ -215,8 +216,6 @@ HEALTHCHECK --interval=15s --timeout=5s --start-period=60s --retries=5 \
 # defaults (ports, bind address, data folders) are set by the entrypoint, so
 # each role starts as its own image does.
 FROM runtime-base AS runtime
-
-ENV USR_CONTAINER_ROLE=api
 
 # The API listens on 21121 and the WebUI on 21120; a worker listens on neither.
 EXPOSE 21121 21120

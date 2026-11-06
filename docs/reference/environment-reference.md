@@ -22,7 +22,7 @@ These variables configure service hostnames, ports, and release image specificat
 | `USR_BACKEND_IMAGE` | *Empty* | Runs the backend from its own image instead, e.g. `ghcr.io/ultimahoarder/ultimascraper/backend`. |
 | `USR_WORKER_IMAGE` | *Empty* | Runs the workers from their own image instead, e.g. `ghcr.io/ultimahoarder/ultimascraper/worker`. |
 | `USR_WEBUI_IMAGE` | *Empty* | Runs the WebUI from its own, much smaller image instead, e.g. `ghcr.io/ultimahoarder/ultimascraper/webui`. |
-| `USR_CONTAINER_ROLE` | `api` | What a container of that image runs: `api` (the backend), `worker` or `webui`. `docker-compose.yml` sets it for each service. |
+| `USR_CONTAINER_ROLE` | *Picked from the settings* | What a container of the full image runs: `api` (the backend), `worker` or `webui`. `docker-compose.yml` sets it for each service. Unset, a container with no database or Redis settings runs the WebUI, and any other the backend. |
 
 ---
 

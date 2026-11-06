@@ -3,7 +3,20 @@ set -eu
 
 # The image runs one role per container. Each role's defaults are the ones its
 # own image used to set; anything already in the environment wins.
-container_role="${USR_CONTAINER_ROLE:-api}"
+# Without USR_CONTAINER_ROLE, a container given no database or Redis settings
+# runs the WebUI, and any other the API. healthcheck.sh repeats this rule.
+if [ -n "${USR_CONTAINER_ROLE:-}" ]; then
+    container_role="$USR_CONTAINER_ROLE"
+elif [ -z "${ULTIMA_ARCHIVE_DATABASE_URL:-}${ULTIMA_ARCHIVE_DATABASE_URL_FILE:-}${DATABASE_URL:-}${DATABASE_URL_FILE:-}${POSTGRES_HOST:-}${REDIS_HOST:-}" ]; then
+    container_role=webui
+else
+    container_role=api
+fi
+if [ -z "${USR_CONTAINER_ROLE:-}" ] && [ "$container_role" = webui ]; then
+    echo "No database or Redis settings, so this container runs the WebUI. Set USR_CONTAINER_ROLE to choose another role." >&2
+fi
+USR_CONTAINER_ROLE="$container_role"
+export USR_CONTAINER_ROLE
 case "$container_role" in
     api)
         : "${USR_EXPECTED_DATABASE:=ultima_archive}" "${CONTROL_HOST:=0.0.0.0}" \

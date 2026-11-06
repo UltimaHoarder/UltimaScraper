@@ -52,7 +52,8 @@ def test_the_full_image_runs_every_role() -> None:
 
     # The full image is the last stage, so a plain docker build makes it.
     assert list(stages)[-1] == "runtime"
-    assert "ENV USR_CONTAINER_ROLE=api" in stages["runtime"]
+    # It fixes no role; the entrypoint picks one from the settings.
+    assert "USR_CONTAINER_ROLE" not in stages["runtime"]
     assert "EXPOSE 21121 21120" in stages["runtime"]
     # The WebUI build and server are in the shared base.
     assert "COPY --from=webui-assets /build/dist /opt/webui/static" in stages["runtime-base"]

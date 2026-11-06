@@ -352,3 +352,75 @@ def test_webui_role_turns_the_default_command_into_the_webui_server(tmp_path: Pa
 
     assert result.returncode == 0, result.stderr
     assert result.stdout.strip() == "webui-server-started"
+
+
+HEALTHCHECK = ENTRYPOINT.with_name("healthcheck.sh")
+_ROLE_SETTINGS = (
+    "USR_CONTAINER_ROLE",
+    "ULTIMA_ARCHIVE_DATABASE_URL_FILE",
+    "DATABASE_URL_FILE",
+    "POSTGRES_HOST",
+    "REDIS_HOST",
+)
+
+
+def _unconfigured_environment() -> dict[str, str]:
+    environment = _without_role_defaults(dict(os.environ))
+    for name in (*SECRET_VARIABLES, *_ROLE_SETTINGS):
+        environment.pop(name, None)
+    return environment
+
+
+def test_an_unconfigured_container_runs_the_webui() -> None:
+    # A container started with no settings at all, as a NAS app first is.
+    result = _run(_unconfigured_environment(), 'echo "$USR_CONTAINER_ROLE|$USR_WEBUI_PORT"')
+
+    assert result.returncode == 0, result.stderr
+    assert result.stdout.strip() == "webui|21120"
+    assert "runs the WebUI" in result.stderr
+
+
+def test_any_database_or_redis_setting_means_the_api() -> None:
+    for name, value in (
+        ("POSTGRES_HOST", "postgres"),
+        ("REDIS_HOST", "redis"),
+        ("ULTIMA_ARCHIVE_DATABASE_URL", "postgresql+psycopg://test:test@postgres/ultima_archive"),
+    ):
+        environment = _unconfigured_environment()
+        environment[name] = value
+
+        result = _run(environment, "true")
+
+        # The API then names what is still missing instead of starting the WebUI.
+        assert result.returncode != 0, name
+        assert "runs the WebUI" not in result.stderr
+
+
+def test_a_chosen_role_is_kept_without_settings() -> None:
+    environment = _unconfigured_environment()
+    environment["USR_CONTAINER_ROLE"] = "api"
+
+    result = _run(environment, "true")
+
+    assert result.returncode != 0
+    assert "Set ULTIMA_ARCHIVE_DATABASE_URL" in result.stderr
+
+
+def test_healthcheck_checks_the_role_the_entrypoint_picked(tmp_path: Path) -> None:
+    for command in ("python", "curl"):
+        stub = tmp_path / command
+        stub.write_text(f'#!/bin/sh\necho "{command} $*"\n', encoding="utf-8")
+        stub.chmod(0o755)
+
+    def check(environment: dict[str, str]) -> str:
+        environment["PATH"] = f"{tmp_path}:{environment['PATH']}"
+        result = subprocess.run(
+            ["/bin/sh", str(HEALTHCHECK)], env=environment, capture_output=True, text=True, check=False
+        )
+        assert result.returncode == 0, result.stderr
+        return result.stdout.strip()
+
+    assert check(_unconfigured_environment()) == "python -m ultima_webui_server.healthcheck"
+    configured = _unconfigured_environment()
+    configured["REDIS_HOST"] = "redis"
+    assert check(configured).startswith("curl ")

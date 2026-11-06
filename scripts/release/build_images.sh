@@ -118,8 +118,10 @@ done
 
 role() { inspect "$1" '{{range .Config.Env}}{{if eq . "USR_CONTAINER_ROLE='"$2"'"}}'"$2"'{{end}}{{end}}'; }
 ports() { inspect "$1" '{{json .Config.ExposedPorts}}'; }
-[[ "$(role "$full_ref" api)" == api && "$(ports "$full_ref")" == '{"21120/tcp":{},"21121/tcp":{}}' ]] \
-    || fail "The full image does not default to the API role with the API and WebUI ports."
+# The full image fixes no role; its entrypoint picks one from the settings.
+[[ -z "$(inspect "$full_ref" '{{range .Config.Env}}{{if eq (index (split . "=") 0) "USR_CONTAINER_ROLE"}}set{{end}}{{end}}')" \
+    && "$(ports "$full_ref")" == '{"21120/tcp":{},"21121/tcp":{}}' ]] \
+    || fail "The full image fixes a role or lacks the API and WebUI ports."
 [[ "$(role "$backend_ref" api)" == api && "$(ports "$backend_ref")" == '{"21121/tcp":{}}' ]] \
     || fail "The backend image does not satisfy the API-only role/port contract."
 [[ "$(role "$worker_ref" worker)" == worker && "$(ports "$worker_ref")" == null ]] \
@@ -140,6 +142,9 @@ docker run --rm --entrypoint sh "$full_ref" -c \
     || fail "The full image lacks the backend or WebUI programs or the WebUI build."
 webui_start="$(docker run --rm -e USR_CONTAINER_ROLE=webui "$full_ref" sh -c 'echo "$USR_WEBUI_PORT|$USR_WEBUI_DATA_DIR"')"
 [[ "$webui_start" == "21120|/data" ]] || fail "The full image's WebUI role does not start with its defaults ($webui_start)."
+# With no database or Redis settings, as a NAS app first starts, it runs the WebUI.
+bare_start="$(docker run --rm "$full_ref" sh -c 'echo "$USR_CONTAINER_ROLE"' 2>/dev/null)"
+[[ "$bare_start" == webui ]] || fail "The full image without settings does not run the WebUI ($bare_start)."
 
 echo "Docker release images built: $full_ref, $backend_ref, $worker_ref, $webui_ref"
 

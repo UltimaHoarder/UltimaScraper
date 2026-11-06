@@ -27,7 +27,8 @@ browser.
 - **Webhooks and plugins** to react to events and extend UltimaScraper.
 - **Docker images** for amd64 and arm64: one full image that runs the backend,
   workers and WebUI, each in its own container, and separate backend, worker
-  and WebUI images for those who want one role each.
+  and WebUI images for those who want one role each. Started on its own with
+  no database or Redis settings, the full image runs the WebUI.
 
 ### Changed
 

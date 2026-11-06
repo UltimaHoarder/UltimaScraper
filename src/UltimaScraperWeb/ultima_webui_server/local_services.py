@@ -325,9 +325,14 @@ class LocalServices:
             # Never this container's own backend: it gets them from here.
             if connection.id != self._load().get("connection_id")
         ]
+        reasons: list[str] = []
         for connection in members:
             stores = await self._read_stores(connection.id)
-            if not stores.get("available") or stores.get("cluster_id") not in (cluster_id, None):
+            if not stores.get("available"):
+                reasons.extend(stores.get("reasons") or [f"{connection.name}: it gave no database or Redis settings"])
+                continue
+            if stores.get("cluster_id") not in (cluster_id, None):
+                reasons.append(f"{connection.name}: it belongs to another cluster ({stores.get('cluster_id')})")
                 continue
             source_host = _source_host(connection)
             for kind in ("database", "redis"):
@@ -336,10 +341,11 @@ class LocalServices:
                     # Where that backend runs, which is not this machine.
                     found["host"] = source_host
             return stores, connection
-        raise HTTPException(
-            status_code=502,
-            detail="No backend of this cluster gave its database and Redis settings. Check that one is running.",
-        )
+        if not members:
+            detail = "This WebUI has no connection to another backend of this cluster to get its settings from."
+        else:
+            detail = "No backend of this cluster gave its database and Redis settings: " + "; ".join(reasons) + "."
+        raise HTTPException(status_code=502, detail=detail)
 
     async def configure(self, request: LocalServicesIn) -> LocalServicesOut:
         if not self._is_available():

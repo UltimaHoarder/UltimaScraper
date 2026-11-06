@@ -406,6 +406,8 @@ class Installer:
         if not conns:
             conns = self.connections.all()
 
+        # Why each backend gave nothing, for the caller to show.
+        reasons: list[str] = []
         for conn in conns:
             try:
                 reached = await self.tunnels.resolve(conn)
@@ -419,9 +421,13 @@ class Installer:
                         "/api/v1/system/cluster-stores",
                         headers={"x-usr-admin-token": token} if token else {},
                     )
-                    if resp.is_success:
+                    if not resp.is_success:
+                        reasons.append(f"{conn.name}: HTTP {resp.status_code} from {reached.base_url}")
+                    else:
                         data = resp.json()
-                        if data.get("available"):
+                        if not data.get("available"):
+                            reasons.append(f"{conn.name}: it has no database or Redis settings")
+                        else:
                             db = data.get("database")
                             redis = data.get("redis")
                             lan_ip = _local_lan_ip() if target_is_remote else None
@@ -455,6 +461,7 @@ class Installer:
                             }
             except Exception as exc:
                 logger.debug("Failed querying cluster stores from connection %s: %s", conn.id, exc)
+                reasons.append(f"{conn.name}: {exc or type(exc).__name__}")
 
         # Fallback to local server environment if no backend answered over HTTP
         try:
@@ -515,6 +522,7 @@ class Installer:
             "database": None,
             "redis": None,
             "source_backend_name": None,
+            "reasons": reasons,
         }
 
     async def register_existing(self, request: RegisterExistingIn) -> DeploymentRecord:

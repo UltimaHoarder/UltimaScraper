@@ -363,6 +363,22 @@ def test_cluster_stores_returns_fallback_and_rewrites_for_remote(tmp_path: Path,
     assert res_remote["redis"]["host"] != "127.0.0.1"
 
 
+async def test_cluster_stores_say_why_a_backend_gave_nothing(tmp_path: Path, monkeypatch: pytest.MonkeyPatch) -> None:
+    for name in ("ULTIMA_ARCHIVE_DATABASE_URL", "DATABASE_URL", "REDIS_HOST"):
+        monkeypatch.delenv(name, raising=False)
+    client = _signed_in(tmp_path)
+    # Nothing listens on port 1.
+    down = client.app.state.connections.create_installed(
+        name="Home backend", base_url="http://127.0.0.1:1", token="t", tunnel=None
+    )
+
+    stores = await client.app.state.installer.get_cluster_stores(connection_id=down.id)
+
+    assert stores["available"] is False
+    [reason] = stores["reasons"]
+    assert reason.startswith("Home backend: ")
+
+
 @pytest.mark.parametrize(
     ("deployment_id", "body", "status", "message"),
     [

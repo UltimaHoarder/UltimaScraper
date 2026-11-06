@@ -200,6 +200,26 @@ async def test_unreachable_stores_and_other_images_are_refused(setup, monkeypatc
     assert refused.value.status_code == 409
 
 
+async def test_the_refusal_says_why_each_backend_gave_nothing(setup) -> None:
+    services = setup["make"]()
+
+    async def unavailable(connection_id: str) -> dict:
+        return {"available": False, "reasons": ["Home backend: HTTP 404 from http://192.0.2.10:21121"]}
+
+    services._read_stores = unavailable
+    with pytest.raises(HTTPException) as refused:
+        await services.configure(LocalServicesIn(cluster_id="c-1", backend=True, worker=False))
+    assert refused.value.status_code == 502
+    assert "Home backend: HTTP 404 from http://192.0.2.10:21121" in refused.value.detail
+
+    async def other_cluster(connection_id: str) -> dict:
+        return {"available": True, "cluster_id": "c-2", "database": {}, "redis": {}}
+
+    services._read_stores = other_cluster
+    with pytest.raises(HTTPException, match=r"belongs to another cluster \(c-2\)"):
+        await services.configure(LocalServicesIn(cluster_id="c-1", backend=True, worker=False))
+
+
 def test_only_a_full_image_container_can_run_them(monkeypatch) -> None:
     monkeypatch.setattr(module, "in_container", lambda: True)
     monkeypatch.setattr(module.shutil, "which", lambda name: f"/usr/local/bin/{name}")

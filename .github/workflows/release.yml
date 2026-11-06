@@ -1,0 +1,130 @@
+name: Release images
+
+# Builds the release images for amd64 and arm64 from the pinned sibling commits
+# in release/components.lock.json and pushes them to ghcr.io: the full
+# ultimascraper image (every role in one) and the backend, worker and webui
+# images. .forgejo/workflows/release.yml does the same for the Forgejo registry.
+#
+#   tag vX.Y.Z (matching pyproject.toml)  ->  X.Y.Z, X.Y, latest, sha-<commit>
+#   push to main                          ->  X.Y.Z-edge.<commit>, edge, sha-<commit>
+#
+# A main build never writes a release tag or latest.
+on:
+  push:
+    tags: ["v*"]
+    branches: [main]
+  workflow_dispatch:
+
+permissions:
+  contents: read
+  packages: write
+
+concurrency:
+  # One run at a time, and a run never cancels another's push.
+  group: release-images
+  cancel-in-progress: false
+
+env:
+  REGISTRY_PUSH_ROOT: ghcr.io/ultimahoarder/ultimascraper
+  RELEASE_PLATFORMS: linux/amd64,linux/arm64
+  USR_REVISION: ${{ github.sha }}
+
+jobs:
+  release:
+    name: Build and push
+    runs-on: ubuntu-latest
+    timeout-minutes: 240
+    steps:
+      # The sibling repositories are checked out next to this one, as
+      # scripts/release/build_docker_wheelhouse.sh expects.
+      - uses: actions/checkout@v4
+        with:
+          path: USV/UltimaScraper
+      - uses: actions/setup-python@v5
+        with:
+          python-version: "3.14"
+      - uses: astral-sh/setup-uv@v6
+
+      - name: Resolve the release version
+        working-directory: USV/UltimaScraper
+        run: |
+          set -euo pipefail
+          project_version=$(python3.14 -c 'import tomllib; print(tomllib.load(open("pyproject.toml", "rb"))["project"]["version"])')
+          sha_tag="sha-${USR_REVISION:0:12}"
+          if test "$GITHUB_REF_TYPE" = tag; then
+            test "$GITHUB_REF_NAME" = "v$project_version" || { echo "tag $GITHUB_REF_NAME does not match pyproject version $project_version" >&2; exit 1; }
+            # A release: never overwritten, and moves the minor and latest tags.
+            printf '%s\n' \
+              "RELEASE_CHANNEL=release" \
+              "RELEASE_VERSION=$project_version" \
+              "RELEASE_EXTRA_TAGS=${project_version%.*} latest $sha_tag" \
+              >> "$GITHUB_ENV"
+          else
+            # main (or a manual run): a prerelease of the coming version.
+            printf '%s\n' \
+              "RELEASE_CHANNEL=edge" \
+              "RELEASE_VERSION=$project_version-edge.${USR_REVISION:0:12}" \
+              "RELEASE_EXTRA_TAGS=edge $sha_tag" \
+              >> "$GITHUB_ENV"
+          fi
+
+      - name: Check out the pinned sibling repositories
+        working-directory: USV/UltimaScraper
+        run: |
+          set -euo pipefail
+          python3.14 scripts/release/components.py checkout --root ..
+          python3.14 scripts/release/components.py export-env "$GITHUB_ENV"
+
+      - name: Check every platform has prebuilt dependencies
+        working-directory: USV/UltimaScraper
+        run: ./scripts/release/check_platform_wheels.sh x86_64 aarch64
+
+      - name: Free disk space
+        # Four images for two platforms, and their build cache, outgrow the
+        # runner's free space; the preinstalled SDKs are not needed here.
+        run: |
+          sudo rm -rf /usr/share/dotnet /usr/local/lib/android /opt/ghc /opt/hostedtoolcache/CodeQL
+          df -h /
+
+      - uses: docker/setup-qemu-action@v3
+        with:
+          platforms: arm64
+      - id: buildx
+        uses: docker/setup-buildx-action@v3
+      - uses: docker/login-action@v3
+        with:
+          registry: ghcr.io
+          username: ${{ github.actor }}
+          password: ${{ secrets.GITHUB_TOKEN }}
+
+      - name: Refuse to overwrite a released version
+        if: env.RELEASE_CHANNEL == 'release'
+        run: |
+          set -euo pipefail
+          for image in ultimascraper backend worker webui; do
+            if docker buildx imagetools inspect "$REGISTRY_PUSH_ROOT/$image:$RELEASE_VERSION" >/dev/null 2>&1; then
+              echo "release tag already exists: $image:$RELEASE_VERSION" >&2
+              exit 1
+            fi
+          done
+
+      - name: Build, check and push the images
+        working-directory: USV/UltimaScraper
+        run: |
+          set -euo pipefail
+          tags=()
+          for tag in $RELEASE_EXTRA_TAGS; do tags+=(--tag "$tag"); done
+          ./scripts/release/build_images.sh "$RELEASE_VERSION" \
+            --builder "${{ steps.buildx.outputs.name }}" \
+            --push "$REGISTRY_PUSH_ROOT" \
+            --platforms "$RELEASE_PLATFORMS" \
+            --cache "$REGISTRY_PUSH_ROOT/buildcache" \
+            "${tags[@]}"
+          cat "dist/release-manifest-$RELEASE_VERSION.json"
+
+      - name: Keep the release manifest
+        uses: actions/upload-artifact@v4
+        with:
+          name: release-manifest-${{ env.RELEASE_VERSION }}
+          path: USV/UltimaScraper/dist/release-manifest-${{ env.RELEASE_VERSION }}.json
+          retention-days: 90

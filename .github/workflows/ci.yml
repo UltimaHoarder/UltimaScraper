@@ -1,7 +1,8 @@
 name: CI
 
 # The checks of scripts/release/check.sh, without the Docker acceptance run.
-# Images are built and pushed by .forgejo/workflows/release.yml.
+# Images are built and pushed by release.yml (ghcr.io) and
+# .forgejo/workflows/release.yml (the Forgejo registry).
 on:
   push:
     branches: [main]

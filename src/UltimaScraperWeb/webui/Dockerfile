@@ -89,6 +89,7 @@ ARG USR_VERSION=dev
 LABEL org.opencontainers.image.title="UltimaScraper WebUI" \
     org.opencontainers.image.description="WebUI server: the app, sign-in, and proxies to UltimaScraper backends" \
     org.opencontainers.image.version="${USR_VERSION}" \
+    org.opencontainers.image.source="https://github.com/UltimaHoarder/UltimaScraper" \
     org.opencontainers.image.licenses="MIT"
 
 ENV USR_WEBUI_VERSION="${USR_VERSION}"

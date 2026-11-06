@@ -45,7 +45,9 @@ The primary release validation script is located at `scripts/release/check.sh`.
    git tag -a v0.1.0 -m "Release v0.1.0"
    git push origin v0.1.0
    ```
-3. **Automated CI Build**: The Forgejo CI release workflow (`.forgejo/workflows/release.yml`) compiles multi-architecture images for both `linux/amd64` and `linux/arm64` and publishes them to the Forgejo instance's own container registry, as `<forgejo-host>/<owner>/ultimascraper/{backend,worker,webui}`. Set the `REGISTRY_PUSH` and `REGISTRY_PUSH_ROOT` repository variables to push somewhere else.
+3. **Automated CI Build**: Two release workflows build multi-architecture images for both `linux/amd64` and `linux/arm64`, with the same tags:
+   - The GitHub Actions workflow (`.github/workflows/release.yml`) publishes them to `ghcr.io/ultimahoarder/ultimascraper/{ultimascraper,backend,worker,webui}`, the images Docker Compose and the setup wizard use.
+   - The Forgejo CI workflow (`.forgejo/workflows/release.yml`) publishes them to the Forgejo instance's own container registry, as `<forgejo-host>/<owner>/ultimascraper/{ultimascraper,backend,worker,webui}`. Set the `REGISTRY_PUSH` and `REGISTRY_PUSH_ROOT` repository variables to push somewhere else.
 
 ### Image tags
 
@@ -56,7 +58,9 @@ The primary release validation script is located at `scripts/release/check.sh`.
 
 Pin a release (`0.1.0`) for real deployments. Use `edge` to try `main` on a test host, for example with **Upgrade** under Backends → Deployments.
 
-The workflow needs a runner labelled `self-hosted`, `linux`, `amd64` with Docker, QEMU registered for arm64, and Python 3.14. It also needs the `REGISTRY_USERNAME` and `REGISTRY_PASSWORD` Actions secrets: a Forgejo user and an access token that can write packages.
+The GitHub workflow pushes with the run's own token, so each ghcr package must give the UltimaScraper repository write access (package settings → **Manage Actions access**). It keeps its build cache in `ghcr.io/ultimahoarder/ultimascraper/buildcache`.
+
+The Forgejo workflow needs a runner labelled `self-hosted`, `linux`, `amd64` with Docker, QEMU registered for arm64, and Python 3.14. It also needs the `REGISTRY_USERNAME` and `REGISTRY_PASSWORD` Actions secrets: a Forgejo user and an access token that can write packages.
 
 ### Build cache
 

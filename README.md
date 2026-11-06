@@ -116,5 +116,7 @@ at no extra cost to you.
 
 ## 📄 License
 
-UltimaScraper is released under the [MIT License](LICENSE). Found a security
-issue? See [SECURITY.md](SECURITY.md).
+UltimaScraper is free software, released under the
+[GNU Affero General Public License v3.0 or later](LICENSE). If you run a
+modified version as a service for others, you must offer them its source code.
+Found a security issue? See [SECURITY.md](SECURITY.md).

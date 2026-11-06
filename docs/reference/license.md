@@ -1,31 +1,36 @@
 # License
 
-UltimaScraper is open-source software licensed under the **MIT License**.
+UltimaScraper is free software, licensed under the **GNU Affero General Public
+License v3.0 or later** (SPDX: `AGPL-3.0-or-later`).
+
+Copyright © 2019–2026 UltimaScraper contributors.
 
 ---
 
-## MIT License Text
+## What it means
 
-```text
-MIT License
+- You may use, study, change and share UltimaScraper, for any purpose.
+- If you share it, changed or not, you must share it under the same license and
+  include its source code.
+- If you run a changed version as a network service that other people use, you
+  must offer those people the source code of your version.
+- It comes with no warranty.
 
-Copyright (c) 2024–2026 UltimaScraper Contributors
+This summary is not the license. The full terms are in the
+[`LICENSE`](https://github.com/UltimaHoarder/UltimaScraper/blob/main/LICENSE)
+file and at [gnu.org/licenses/agpl-3.0](https://www.gnu.org/licenses/agpl-3.0.html).
 
-Permission is hereby granted, free of charge, to any person obtaining a copy
-of this software and associated documentation files (the "Software"), to deal
-in the Software without restriction, including without limitation the rights
-to use, copy, modify, merge, publish, distribute, sublicense, and/or sell
-copies of the Software, and to permit persons to whom the Software is
-furnished to do so, subject to the following conditions:
+## The UltimaScraper packages
 
-The above copyright notice and this permission notice shall be included in all
-copies or substantial portions of the Software.
+Every package UltimaScraper is built from uses the same license:
 
-THE SOFTWARE IS PROVIDED "AS IS", WITHOUT WARRANTY OF ANY KIND, EXPRESS OR
-IMPLIED, INCLUDING BUT NOT LIMITED TO THE WARRANTIES OF MERCHANTABILITY,
-FITNESS FOR A PARTICULAR PURPOSE AND NONINFRINGEMENT. IN NO EVENT SHALL THE
-AUTHORS OR COPYRIGHT HOLDERS BE LIABLE FOR ANY CLAIM, DAMAGES OR OTHER
-LIABILITY, WHETHER IN AN ACTION OF CONTRACT, TORT OR OTHERWISE, ARISING FROM,
-OUT OF OR IN CONNECTION WITH THE SOFTWARE OR THE USE OR OTHER DEALINGS IN THE
-SOFTWARE.
-```
+| Package | Repository |
+|---|---|
+| `ultimascraper` and `ultima-scraper-webui-server` | [UltimaHoarder/UltimaScraper](https://github.com/UltimaHoarder/UltimaScraper) |
+| `ultima-scraper-core` | [UltimaHoarder/UltimaScraperCore](https://github.com/UltimaHoarder/UltimaScraperCore) |
+| `ultima-scraper-backend` | [UltimaHoarder/UltimaScraperBackend](https://github.com/UltimaHoarder/UltimaScraperBackend) |
+| `ultima-scraper-api` | [UltimaHoarder/UltimaScraperAPI](https://github.com/UltimaHoarder/UltimaScraperAPI) |
+| `ultima-scraper-db` | [DATAHOARDERS/UltimaScraperDB](https://github.com/DATAHOARDERS/UltimaScraperDB) |
+| `ultima-scraper-db-archive` | [UltimaHoarder/UltimaScraperDBArchive](https://github.com/UltimaHoarder/UltimaScraperDBArchive) |
+
+Third-party libraries keep their own licenses.

@@ -90,7 +90,7 @@ LABEL org.opencontainers.image.title="UltimaScraper WebUI" \
     org.opencontainers.image.description="WebUI server: the app, sign-in, and proxies to UltimaScraper backends" \
     org.opencontainers.image.version="${USR_VERSION}" \
     org.opencontainers.image.source="https://github.com/UltimaHoarder/UltimaScraper" \
-    org.opencontainers.image.licenses="MIT"
+    org.opencontainers.image.licenses="AGPL-3.0-or-later"
 
 ENV USR_WEBUI_VERSION="${USR_VERSION}"
 

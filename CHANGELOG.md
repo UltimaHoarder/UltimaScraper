@@ -29,6 +29,12 @@ browser.
   workers and WebUI, each in its own container, and separate backend, worker
   and WebUI images for those who want one role each.
 
+### Changed
+
+- **License:** UltimaScraper is now licensed under the GNU Affero General
+  Public License v3.0 or later (AGPL-3.0-or-later), in place of the GPL-3.0 of
+  earlier versions.
+
 ### Security
 
 - The WebUI is protected by a password of at least 12 characters, with

@@ -180,7 +180,7 @@ LABEL org.opencontainers.image.title="UltimaScraper" \
     org.ultimascraper.usdb.revision="${USDB_REVISION}" \
     org.ultimascraper.usdb-archive.revision="${USDB_ARCHIVE_REVISION}" \
     org.ultimascraper.core.revision="${USR_CORE_REVISION}" \
-    org.opencontainers.image.licenses="MIT"
+    org.opencontainers.image.licenses="AGPL-3.0-or-later"
 
 USER ultimascraper
 

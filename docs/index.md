@@ -56,7 +56,7 @@ flowchart LR
 │   └── Plugin System             — Manifest v2 SDK, supervisor leases, and contributions
 └── Reference
     ├── Environment Variables     — Exhaustive runtime and resource tuning parameters
-    └── License                   — MIT License and copyright information
+    └── License                   — AGPL-3.0-or-later and copyright information
 ```
 
 ---

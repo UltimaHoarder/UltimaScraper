@@ -75,7 +75,7 @@ GitHub Actions too.
   README and docs images from demo data.
 
 By contributing, you agree that your contributions are licensed under the
-[MIT License](LICENSE).
+[GNU Affero General Public License v3.0 or later](LICENSE).
 
 ## Code of conduct
 

@@ -7,6 +7,7 @@ import type { ContentLibraryItem, ContentMediaInfo } from '../../api/types/conte
 import { LazyVideoPlayer } from '../LazyVideoPlayer';
 import { formatPrice } from '../../shared/lib/format';
 import { FavouriteButton } from '../../features/favourites/FavouriteButton';
+import { copyText } from '../../utils/clipboard';
 
 interface ContentCardProps {
   item: ContentLibraryItem;
@@ -498,7 +499,7 @@ export const ContentCard = memo(function ContentCard({
 
   const copyToClipboard = useCallback(async (value: string) => {
     try {
-      await navigator.clipboard.writeText(value);
+      await copyText(value);
       return true;
     } catch {
       try {

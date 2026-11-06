@@ -2,6 +2,7 @@ import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
 import { getWebSocketBaseUrl } from '../../api/http';
 import { useWebSocket } from '../../hooks/useWebSocket';
 import './LogViewer.css';
+import { copyText } from '../../utils/clipboard';
 
 export interface LogEntry {
   timestamp: string;
@@ -298,7 +299,7 @@ export function LogViewer({ initialLogs = [], onStatsChange, className = '' }: L
       )
       .join('\n');
     try {
-      await navigator.clipboard.writeText(content);
+      await copyText(content);
       setCopiedAll(true);
       setTimeout(() => setCopiedAll(false), 2000);
     } catch {
@@ -309,7 +310,7 @@ export function LogViewer({ initialLogs = [], onStatsChange, className = '' }: L
   const handleCopyLine = useCallback(async (index: number, log: LogEntry) => {
     const line = `[${log.timestamp}] [${log.level.toUpperCase()}]${log.category ? ` [${log.category.toUpperCase()}]` : ''}${log.source ? ` [${log.source}]` : ''} ${log.message}`;
     try {
-      await navigator.clipboard.writeText(line);
+      await copyText(line);
       setCopiedIndex(index);
       setTimeout(() => setCopiedIndex(null), 1800);
     } catch {

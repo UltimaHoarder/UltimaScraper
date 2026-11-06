@@ -16,6 +16,7 @@ import {
 } from '../../../api/webui';
 import { parseTicketString } from '../../connections/lib/ticket';
 import { useWebUIPreferences } from '../hooks/useWebUIPreferences';
+import { copyText } from '../../../utils/clipboard';
 
 type TestState = BackendConnectionTest | 'testing' | undefined;
 
@@ -38,7 +39,7 @@ export function ConnectionsSettingsSection() {
   const copyTicket = async (id: string) => {
     try {
       const res = await getConnectionTicket(id);
-      await navigator.clipboard.writeText(res.ticket);
+      await copyText(res.ticket);
       setCopiedId(id);
       setTimeout(() => setCopiedId((curr) => (curr === id ? null : curr)), 2500);
     } catch (err) {

@@ -36,6 +36,7 @@ import {
 } from '../lib/historicalComparison';
 import { SvgLineChart } from './SvgLineChart';
 import './JobDiagnosticsReport.css';
+import { copyText } from '../../../utils/clipboard';
 
 function TelemetryBar({ value, limit, label, tone, description: detail, markers = [] }: {
   value: number;
@@ -609,7 +610,7 @@ export function JobDiagnosticsReport({
       resolvedSite,
       comparison,
     );
-    navigator.clipboard.writeText(report).then(() => {
+    copyText(report).then(() => {
       setCopiedReport(true);
       setTimeout(() => setCopiedReport(false), 2000);
     });
@@ -845,7 +846,7 @@ export function JobDiagnosticsReport({
       .map((p) => p.proxyUrl)
       .join('\n');
     if (!bad) return;
-    navigator.clipboard.writeText(bad).then(() => {
+    copyText(bad).then(() => {
       setCopiedBadProxies(true);
       setTimeout(() => setCopiedBadProxies(false), 2000);
     });

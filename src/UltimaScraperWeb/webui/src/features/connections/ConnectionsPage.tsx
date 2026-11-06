@@ -23,6 +23,7 @@ import { defaultClusterName, groupConnections, reachableAlternative } from './li
 import { parseTicketString } from './lib/ticket';
 import './connections.css';
 import { followInApp } from './lib/navigation';
+import { copyText } from '../../utils/clipboard';
 
 type TestState = BackendConnectionTest | 'testing' | undefined;
 
@@ -121,7 +122,7 @@ export function ConnectionsPage({ onClose, onSelectBackend, initialAdd }: Connec
   const copyTicket = async (id: string) => {
     try {
       const res = await getConnectionTicket(id);
-      await navigator.clipboard.writeText(res.ticket);
+      await copyText(res.ticket);
       setTicketWarning(res.warning);
       setCopiedId(id);
       setTimeout(() => setCopiedId((curr) => (curr === id ? null : curr)), 2500);

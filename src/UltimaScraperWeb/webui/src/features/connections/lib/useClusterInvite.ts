@@ -1,6 +1,7 @@
 import { useState } from 'react';
 
 import { getClusterInvite, type ClusterInvite } from '../../../api/webui';
+import { copyText } from '../../../utils/clipboard';
 
 /** Creates an invite for another WebUI to join the cluster, and copies it. */
 export function useClusterInvite(clusterId: string | null) {
@@ -12,7 +13,7 @@ export function useClusterInvite(clusterId: string | null) {
     setError('');
     try {
       const created = await getClusterInvite(clusterId);
-      await navigator.clipboard.writeText(created.invite);
+      await copyText(created.invite);
       setInvite(created);
     } catch (failure) {
       setInvite(null);

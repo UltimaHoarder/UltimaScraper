@@ -75,6 +75,7 @@ import {
   type Deployment,
   type HostKey,
 } from '../../api/webui';
+import { copyText } from '../../utils/clipboard';
 
 type RegisterTab = 'cluster' | 'backends' | 'workers' | 'clients' | 'mounts' | 'database';
 type RegisterFilter = 'all' | 'attention' | 'healthy' | 'warning' | 'offline' | 'running' | 'idle';
@@ -371,7 +372,7 @@ function BackendInspection({
       if (!ticketToCopy) {
         throw new Error('No ticket available for this backend.');
       }
-      await navigator.clipboard.writeText(ticketToCopy);
+      await copyText(ticketToCopy);
       setTicketCopied(true);
       setTimeout(() => setTicketCopied(false), 2500);
     } catch (err) {

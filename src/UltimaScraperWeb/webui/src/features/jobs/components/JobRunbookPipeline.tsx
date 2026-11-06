@@ -51,6 +51,7 @@ import {
   formatProxyHost,
   getTaskProxySummary,
 } from '../lib/taskProxyUtils';
+import { copyText } from '../../../utils/clipboard';
 
 interface JobRunbookPipelineProps {
   jobId: string;
@@ -810,7 +811,7 @@ export function JobRunbookPipeline({
                         className="btn btn-secondary"
                         disabled={!selectedMedia.path}
                         onClick={() => {
-                          if (selectedMedia.path) void navigator.clipboard?.writeText(selectedMedia.path);
+                          if (selectedMedia.path) void copyText(selectedMedia.path);
                         }}
                       >
                         Copy path

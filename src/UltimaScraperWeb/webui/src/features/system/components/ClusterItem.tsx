@@ -3,6 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { getClusterHosts, revokeClusterClient, type ClusterHost, type ClusterNode } from '../../../api/webui';
 import { ClusterHostsTable } from './ClusterHostsTable';
+import { copyText } from '../../../utils/clipboard';
 
 /**
  * One cluster in the clusters list: its name, health and actions, and when
@@ -63,7 +64,7 @@ export function ClusterItem({
   };
 
   const copyId = () => {
-    void navigator.clipboard?.writeText(clusterId);
+    void copyText(clusterId);
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };

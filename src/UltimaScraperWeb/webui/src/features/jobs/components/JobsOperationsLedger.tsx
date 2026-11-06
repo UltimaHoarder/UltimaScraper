@@ -11,6 +11,7 @@ import {
   timeAgo,
 } from '../lib/jobUtils';
 import './JobsOperationsLedger.css';
+import { copyText } from '../../../utils/clipboard';
 
 type LedgerSort = 'created' | 'priority' | 'progress';
 type SortDirection = 'asc' | 'desc';
@@ -334,14 +335,18 @@ export function JobsOperationsLedger({
     });
   }, [isServerFiltered, jobs, ownerFilter, scheduleFilter, sort, sortDirection, typeFilter]);
 
-  useEffect(() => {
+  // A new jobs list drops the selected jobs it no longer has. Done while
+  // rendering rather than in an effect, so the stale selection never shows.
+  const [selectionJobs, setSelectionJobs] = useState(jobs);
+  if (selectionJobs !== jobs) {
+    setSelectionJobs(jobs);
     const loadedIds = new Set(jobs.map((job) => job.job_id));
     setSelected((current) => {
       const next = new Set(Array.from(current).filter((jobId) => loadedIds.has(jobId)));
       if (next.size === current.size) return current;
       return next;
     });
-  }, [jobs]);
+  }
 
   useEffect(() => {
     const handleOutsideClick = (event: MouseEvent) => {
@@ -450,8 +455,7 @@ export function JobsOperationsLedger({
 
   const copySelectedIds = async () => {
     try {
-      if (!navigator.clipboard) throw new Error('Clipboard unavailable');
-      await navigator.clipboard.writeText(selectedJobs.map((job) => job.job_id).join('\n'));
+      await copyText(selectedJobs.map((job) => job.job_id).join('\n'));
       onNotice(`Copied ${selectedJobs.length} job ${selectedJobs.length === 1 ? 'ID' : 'IDs'}.`);
     } catch {
       onNotice('Clipboard access is unavailable in this browser.');

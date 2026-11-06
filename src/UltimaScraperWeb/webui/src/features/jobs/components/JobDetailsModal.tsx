@@ -67,6 +67,7 @@ import {
 import { getTaskProxySummary } from '../lib/taskProxyUtils';
 import './JobDetailsModal.css';
 import { JobDeletionProgress } from './JobDeletionProgress';
+import { copyText } from '../../../utils/clipboard';
 
 interface TaskFailureEvidence {
   evidenceId: string;
@@ -1056,8 +1057,7 @@ function JobExecutionDetailsModal({
       .join('\n');
 
     try {
-      if (!navigator.clipboard) throw new Error('Clipboard unavailable');
-      await navigator.clipboard.writeText(summary);
+      await copyText(summary);
       setDiagnosticCopyState('copied');
     } catch {
       setDiagnosticCopyState('error');

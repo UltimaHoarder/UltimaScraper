@@ -69,6 +69,7 @@ import {
   type AdvancedFilterState,
   type UserOverviewVersion,
 } from '../lib/userProfileUtils';
+import { copyText } from '../../../utils/clipboard';
 
 const IDENTIFIER_CHOOSER_PAGE_SIZE = 100;
 
@@ -364,7 +365,7 @@ export function useUserProfileController() {
   );
 
   const handleCopyDir = (path: string) => {
-    navigator.clipboard.writeText(path).then(() => {
+    copyText(path).then(() => {
       if (copyDirTimeout.current !== null) {
         window.clearTimeout(copyDirTimeout.current);
       }

@@ -9,6 +9,7 @@ import type {
   AgeVerificationResponse,
   AuthCredential,
 } from '../../../api/types/auths';
+import { copyText } from '../../../utils/clipboard';
 
 interface VerificationModalContent {
   kind: 'age' | 'identity';
@@ -86,7 +87,7 @@ function VerificationModal({
       return;
     }
     try {
-      await navigator.clipboard.writeText(verificationData.redirect_url);
+      await copyText(verificationData.redirect_url);
       setCopySuccess(true);
       setTimeout(() => setCopySuccess(false), 2000);
     } catch {

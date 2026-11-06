@@ -32,6 +32,7 @@ import type {
 import { ClusterUpgradeModal } from './ClusterUpgradeModal';
 import { summarizeStoragePool } from '../lib/storagePool';
 import './ClusterSection.css';
+import { copyText } from '../../../utils/clipboard';
 
 export interface AvailableCluster {
   clusterId: string;
@@ -200,7 +201,7 @@ export function ClusterSection({
       const targetId =
         member?.connection_id ?? (backend.isLocal ? (getActiveConnectionId() ?? 'default') : backend.backendId);
       const res = await getConnectionTicket(targetId);
-      await navigator.clipboard.writeText(res.ticket);
+      await copyText(res.ticket);
       setNodeTicketWarning(res.warning);
       setCopiedNodeId(backend.backendId);
       setTimeout(() => setCopiedNodeId((curr) => (curr === backend.backendId ? null : curr)), 2500);

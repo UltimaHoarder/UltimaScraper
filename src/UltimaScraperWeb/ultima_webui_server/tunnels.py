@@ -9,6 +9,7 @@ from urllib.parse import urlsplit
 import asyncssh
 
 from .connections import Connection
+from .installer.targets import reachable_host
 
 
 class TunnelUnavailable(ConnectionError):
@@ -47,7 +48,7 @@ class TunnelManager:
             assert tunnel is not None
             try:
                 ssh = await asyncssh.connect(
-                    tunnel.host,
+                    reachable_host(tunnel.host),
                     tunnel.port,
                     username=tunnel.user,
                     client_keys=[asyncssh.import_private_key(tunnel.private_key)],

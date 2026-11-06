@@ -74,7 +74,31 @@ POSTGRES_HOST=control-plane.local
 REDIS_HOST=control-plane.local
 POSTGRES_PASSWORD=your_secure_password
 REDIS_PASSWORD=your_secure_password
+# The control plane's key: docker compose exec backend cat /home/ultimascraper/.config/ultima_scraper_verse/secrets/USR_SECRET_KEY
+USR_SECRET_KEY=the_control_plane_key
 ```
+
+### Several Backends on One Database
+
+Backends that share a PostgreSQL database form a cluster. Every backend and worker in it must:
+
+- use the **same PostgreSQL database and the same Redis**;
+- use the **same `USR_SECRET_KEY`**, because each one reads the secrets the others encrypted, such as auth cookies;
+- have **its own `BACKEND_ID`**. The Docker default is `usr-docker` on every host, so set one for each backend you add by hand.
+
+The first backend to start records its key in the database. A backend or worker started later with a different key refuses to start and says where to copy the right one from. Docker generates a new key on any host where `USR_SECRET_KEY` is empty, so on a second host set it to the first host's key. The WebUI installer copies the key for you when it adds a backend or worker to a cluster.
+
+To change the key for the whole cluster, set the new key as `USR_SECRET_KEY` and the old one as `USR_SECRET_KEY_PREVIOUS` on every backend and worker, then restart them. Once one has started with the new key, any still on only the old key are refused.
+
+### One App on a NAS (TrueNAS)
+
+A NAS app is usually one container. Run the full image with no settings: with no database or Redis settings it starts as the WebUI.
+
+1. Open the WebUI, create your password, and join your cluster with an invite from another WebUI.
+2. On the **Cluster** page, this WebUI's host shows **Edit** under Services. Turn on **Backend**, **Workers** or both, and check the machine's address. A container cannot see that address, so the WebUI fills it in from what the cluster saw.
+3. Apply. The WebUI runs them in its own container, using the database, Redis and `USR_SECRET_KEY` a backend of the cluster gives it. Each service gets the same `BACKEND_ID`, unique to this host. They start again whenever the app does, and their output appears in the app's log, prefixed `[backend]` or `[worker]`.
+
+For other machines to use this backend, publish port `21121` as well as the WebUI's `21120`. Workers save media to the folders in the cluster's storage settings, so mount those folders into the app at the same paths. Keep the WebUI's data folder (`/data`) on a volume: it holds these settings and the services' secrets, encrypted.
 
 ---
 

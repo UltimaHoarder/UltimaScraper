@@ -24,7 +24,17 @@ UltimaScraper enforces strict boundaries to protect stored credentials, scraper 
 
 ---
 
-## At-Rest Secret Encryption (AES-GCM)
+## Backend Secret Encryption (`USR_SECRET_KEY`)
+
+The backend encrypts the secrets it stores in PostgreSQL with `USR_SECRET_KEY`: auth cookies and other auth details, proxy passwords, webhook URLs, plugin credentials and settings marked secret. Docker generates the key on first start and keeps it in the config volume.
+
+- **Back it up.** Without it, the encrypted values in the database can't be read again.
+- **One key per database.** Every backend and worker sharing a database must use the same key. The database records the first key used, and a backend or worker with a different one refuses to start. See [Several Backends on One Database](docker.md#several-backends-on-one-database).
+- **Rotation**: set the new key as `USR_SECRET_KEY` and the old one as `USR_SECRET_KEY_PREVIOUS` everywhere, then restart.
+
+---
+
+## WebUI Secret Encryption (AES-GCM)
 
 All platform session cookies, authentication tokens, and remote SSH forwarding keys are encrypted at rest using authenticated **AES-256-GCM**:
 

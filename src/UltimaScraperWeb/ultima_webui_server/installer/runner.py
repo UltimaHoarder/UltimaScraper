@@ -1505,43 +1505,17 @@ class Installer:
         emit: Emit,
     ) -> None:
         await emit("step", "Registering worker in cluster inventory")
-        try:
-            conn = self.connections.get(join_connection_id)
-            reached = await self.tunnels.resolve(conn)
-            token = reached.token()
-            settings_id = cluster_info.get("settings_id") if cluster_info else None
-            ip_str = target_in.host if (target_in.kind == "ssh" and target_in.host) else _local_lan_ip()
-            async with httpx.AsyncClient(
-                base_url=reached.base_url,
-                verify=reached.tls_verify,
-                timeout=10.0,
-            ) as client:
-                if not settings_id:
-                    list_resp = await client.get(
-                        "/api/v1/settings/db/backends",
-                        headers={"x-usr-admin-token": token} if token else {},
-                    )
-                    if list_resp.is_success and list_resp.json():
-                        settings_id = list_resp.json()[0].get("settings_id") or 1
-                    else:
-                        settings_id = 1
-
-                resp = await client.put(
-                    "/api/v1/settings/db/backends",
-                    headers={"x-usr-admin-token": token} if token else {},
-                    json={
-                        "backend_name": node_name,
-                        "hostname": spec.backend_id,
-                        "local_ip": ip_str,
-                        "settings_id": settings_id,
-                    },
-                )
-                if resp.is_success:
-                    await emit("output", f"Registered worker '{spec.backend_id}' in cluster inventory.")
-                else:
-                    logger.warning("Failed registering worker inventory (HTTP %s): %s", resp.status_code, resp.text)
-        except Exception as exc:
-            logger.warning("Failed registering worker in cluster inventory: %s", exc)
+        registered = await register_worker_inventory(
+            self.connections,
+            self.tunnels,
+            connection_id=join_connection_id,
+            node_name=node_name,
+            backend_id=spec.backend_id,
+            address=target_in.host if (target_in.kind == "ssh" and target_in.host) else _local_lan_ip(),
+            settings_id=cluster_info.get("settings_id") if cluster_info else None,
+        )
+        if registered:
+            await emit("output", f"Registered worker '{spec.backend_id}' in cluster inventory.")
 
     async def _verify_worker_cluster(
         self,
@@ -1696,6 +1670,46 @@ def _failure_message(exc: BaseException) -> str:
     if isinstance(exc, OSError):
         return f"Could not reach the host: {exc}"
     return f"Unexpected error: {exc}"
+
+
+async def register_worker_inventory(
+    connections: Connections,
+    tunnels: TunnelManager,
+    *,
+    connection_id: str,
+    node_name: str,
+    backend_id: str,
+    address: str,
+    settings_id: int | None,
+) -> bool:
+    """List a worker host in the cluster's inventory through one of its backends."""
+    try:
+        reached = await tunnels.resolve(connections.get(connection_id))
+        token = reached.token()
+        headers = {"x-usr-admin-token": token} if token else {}
+        async with httpx.AsyncClient(base_url=reached.base_url, verify=reached.tls_verify, timeout=10.0) as client:
+            if not settings_id:
+                list_resp = await client.get("/api/v1/settings/db/backends", headers=headers)
+                if list_resp.is_success and list_resp.json():
+                    settings_id = list_resp.json()[0].get("settings_id") or 1
+                else:
+                    settings_id = 1
+            resp = await client.put(
+                "/api/v1/settings/db/backends",
+                headers=headers,
+                json={
+                    "backend_name": node_name,
+                    "hostname": backend_id,
+                    "local_ip": address,
+                    "settings_id": settings_id,
+                },
+            )
+        if resp.is_success:
+            return True
+        logger.warning("Failed registering worker inventory (HTTP %s): %s", resp.status_code, resp.text)
+    except Exception as exc:
+        logger.warning("Failed registering worker in cluster inventory: %s", exc)
+    return False
 
 
 def in_container() -> bool:

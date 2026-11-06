@@ -22,6 +22,7 @@ import { ClusterHostsTable } from './ClusterHostsTable';
 import { ArchitectureModal } from './ArchitectureModal';
 import { ClusterItem } from './ClusterItem';
 import { EditHostModal } from './EditHostModal';
+import { LocalServicesModal } from './LocalServicesModal';
 import { ManageClusterModal } from './ManageClusterModal';
 import type {
   RegisterBackend,
@@ -177,6 +178,12 @@ export function ClusterSection({
   const [addHostFor, setAddHostFor] = useState<string | null>(null);
   const [upgradeFor, setUpgradeFor] = useState<string | null>(null);
   const [editHost, setEditHost] = useState<ClusterHost | null>(null);
+  const [localServicesFor, setLocalServicesFor] = useState<{ host: ClusterHost; clusterId: string } | null>(null);
+  // This WebUI's own host runs its services in this container; others were installed over SSH.
+  const editHostIn = (hostClusterId: string | null | undefined) => (host: ClusterHost) => {
+    if (host.local_services && hostClusterId) setLocalServicesFor({ host, clusterId: hostClusterId });
+    else setEditHost(host);
+  };
   const [architectureOpen, setArchitectureOpen] = useState(false);
   const { clients: webuis, checkedAt: now } = useClusterWebUIs(clusterId);
   const queryClient = useQueryClient();
@@ -467,7 +474,7 @@ export function ClusterSection({
               onConfigureBackend={onConfigureBackend}
               onInspectBackend={onInspectBackend}
               onRenamed={() => void hostsQuery.refetch()}
-              onEditHost={setEditHost}
+              onEditHost={editHostIn(clusterId)}
               onRemoveWebUI={(node) => {
                 if (!clusterId || !node.client_id) return;
                 if (!window.confirm(`${node.name} will lose access to ${clusterTitle}. Remove it?`)) return;
@@ -780,7 +787,7 @@ export function ClusterSection({
               onManage={() => setManageFor(item.clusterId)}
               onMakeMain={clustersData ? () => makeMain.mutate(item.clusterId) : undefined}
               onOpen={item.isActive ? undefined : () => onSelectCluster?.(item.clusterId, item.connectionId)}
-              onEditHost={setEditHost}
+              onEditHost={editHostIn(item.clusterId)}
               onConfigureBackend={item.isActive ? onConfigureBackend : () => onSelectCluster?.(item.clusterId, item.connectionId)}
               onInspectBackend={item.isActive ? onInspectBackend : () => onSelectCluster?.(item.clusterId, item.connectionId)}
               onInspectDatabase={item.isActive ? () => onNavigateToTab('database') : undefined}
@@ -825,6 +832,17 @@ export function ClusterSection({
       )}
       {architectureOpen && <ArchitectureModal backends={clusterBackends} onClose={() => setArchitectureOpen(false)} />}
       {upgradeFor && <ClusterUpgradeModal clusterId={upgradeFor} onClose={() => setUpgradeFor(null)} />}
+      {localServicesFor && (
+        <LocalServicesModal
+          host={localServicesFor.host}
+          clusterId={localServicesFor.clusterId}
+          onClose={() => setLocalServicesFor(null)}
+          onChanged={() => {
+            onNodeAdded?.();
+            void queryClient.invalidateQueries({ queryKey: ['webui', 'cluster-hosts'] });
+          }}
+        />
+      )}
       {editHost && (
         <EditHostModal
           host={editHost}

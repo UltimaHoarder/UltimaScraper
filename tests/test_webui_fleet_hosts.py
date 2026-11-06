@@ -197,3 +197,59 @@ def test_a_webui_that_stopped_checking_in_is_offline_then_left_out(tmp_path: Pat
     out = _build(store, clients=[_client("pi", "WebUI on alpha", "192.168.50.120", last_seen_at=OLD)])
     alpha = next(host for host in out.hosts if host.address == "192.168.50.120")
     assert "webui" not in alpha.roles
+
+
+def test_this_webuis_host_offers_its_own_services_only_when_it_can_run_them(tmp_path: Path) -> None:
+    store = Store(tmp_path / "w.db")
+    nas = [_client("me", "WebUI on nas01", "192.168.50.40", is_self=True)]
+
+    hosts = {host.name: host for host in _build(store, clients=nas, local_services_available=True).hosts}
+    assert hosts["192.168.50.40"].local_services
+    assert not any(host.local_services for name, host in hosts.items() if name != "192.168.50.40")
+
+    # The slim WebUI image cannot run them.
+    assert not any(host.local_services for host in _build(store, clients=nas).hosts)
+
+
+def test_services_started_here_show_on_this_host_before_they_report(tmp_path: Path) -> None:
+    from ultima_webui_server.local_services import LocalHost
+
+    out = _build(
+        Store(tmp_path / "w.db"),
+        clients=[_client("me", "WebUI on nas01", "192.168.50.40", is_self=True)],
+        local=LocalHost(cluster_id="c-1", address="192.168.50.40", backend=True, worker=True, backend_id="nas01-a1b2c3"),
+        local_services_available=True,
+    )
+
+    nas = next(host for host in out.hosts if host.address == "192.168.50.40")
+    assert nas.local_services
+    assert nas.roles == ["backend", "workers", "webui", "postgres"]
+    started = [node for node in nas.nodes if node.installed_only]
+    assert {node.role for node in started} == {"backend", "workers"}
+    assert all(node.name == "nas01-a1b2c3" for node in started)
+
+
+def test_a_webui_the_cluster_does_not_list_still_gets_its_own_host(tmp_path: Path) -> None:
+    # Connected to a backend directly, not joined with an invite.
+    out = _build(Store(tmp_path / "w.db"), clients=[], local_services_available=True)
+
+    own = [host for host in out.hosts if host.local_services]
+    assert len(own) == 1
+    assert own[0].roles == ["webui"] and own[0].nodes[0].is_self
+
+
+def test_services_started_here_join_the_host_they_report_from(tmp_path: Path) -> None:
+    from ultima_webui_server.local_services import LocalHost
+
+    out = _build(
+        Store(tmp_path / "w.db"),
+        backends=[_backend("hoarder01", "192.168.1.20"), _backend("nas01-a1b2c3", None, max_workers=5, api_url="http://127.0.0.1:21121")],
+        clients=[],
+        local=LocalHost(cluster_id="c-1", address=None, backend=True, worker=True, backend_id="nas01-a1b2c3"),
+        local_services_available=True,
+    )
+
+    own = [host for host in out.hosts if host.local_services]
+    assert len(own) == 1
+    assert {node.role for node in own[0].nodes} == {"backend", "workers"}
+    assert not any(node.installed_only for node in own[0].nodes)

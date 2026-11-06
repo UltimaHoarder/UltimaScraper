@@ -28,7 +28,9 @@ browser.
 - **Docker images** for amd64 and arm64: one full image that runs the backend,
   workers and WebUI, each in its own container, and separate backend, worker
   and WebUI images for those who want one role each. Started on its own with
-  no database or Redis settings, the full image runs the WebUI.
+  no database or Redis settings, the full image runs the WebUI. That WebUI can
+  then run the backend and workers in the same container once it joins a
+  cluster, for single-container NAS apps such as TrueNAS.
 
 ### Changed
 

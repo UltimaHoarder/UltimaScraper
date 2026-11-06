@@ -4,8 +4,10 @@ from __future__ import annotations
 
 import asyncio
 import shlex
+import socket
 from collections.abc import AsyncIterator, Awaitable, Callable
 from dataclasses import dataclass
+from pathlib import Path
 from typing import Protocol
 
 import asyncssh
@@ -49,9 +51,42 @@ _HOST_KEY_PREFERENCE = [
 ]
 
 
+DOCKER_HOST_NAME = "host.docker.internal"
+
+
+def _default_gateway(route_table: str = "/proc/net/route") -> str | None:
+    try:
+        lines = Path(route_table).read_text(encoding="ascii").splitlines()[1:]
+    except OSError:
+        return None
+    for line in lines:
+        fields = line.split()
+        # The default route; the gateway is a little-endian hex IPv4 address.
+        if len(fields) > 2 and fields[1] == "00000000" and fields[2] != "00000000":
+            return socket.inet_ntoa(bytes.fromhex(fields[2])[::-1])
+    return None
+
+
+def reachable_host(host: str) -> str:
+    """The host to connect to for ``host``.
+
+    Compose maps host.docker.internal to the machine a container runs on. A
+    container started without that (a NAS app, a plain docker run) has no such
+    name, so it reaches the machine through its default gateway instead.
+    """
+    if host != DOCKER_HOST_NAME or not Path("/.dockerenv").exists():
+        return host
+    try:
+        socket.getaddrinfo(host, None)
+        return host
+    except OSError:
+        return _default_gateway() or host
+
+
 async def scan_host_key(host: str, port: int) -> HostKey:
     key = await asyncio.wait_for(
-        asyncssh.get_server_host_key(host, port, server_host_key_algs=_HOST_KEY_PREFERENCE), timeout=15
+        asyncssh.get_server_host_key(reachable_host(host), port, server_host_key_algs=_HOST_KEY_PREFERENCE),
+        timeout=15,
     )
     if key is None:
         raise ConnectionError(f"{host}:{port} did not present an SSH host key.")
@@ -186,7 +221,7 @@ class SSHTarget:
     ) -> SSHTarget:
         """Connect only if the host presents exactly the key the user accepted."""
         connection = await asyncssh.connect(
-            host,
+            reachable_host(host),
             port,
             username=username,
             password=password,

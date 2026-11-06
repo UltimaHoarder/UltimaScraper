@@ -16,7 +16,10 @@ These variables configure service hostnames, ports, and release image specificat
 | `USR_VERSION` | `latest` | Release image tag to pull. Pin a version such as `0.1.0` to upgrade only when you choose. |
 | `USR_WEB_PORT` | `21120` | External host port mapped to the WebUI server gateway. |
 | `USR_ADMIN_TOKEN` | *Auto-generated* | Administrative bearer token securing the FastAPI backend. |
-| `USR_WEBUI_SECRET_KEY` | *Auto-generated* | 32-byte secret key used for AES-GCM at-rest credential encryption. |
+| `USR_SECRET_KEY` | *Auto-generated* | Encrypts secrets stored in PostgreSQL, such as auth cookies. Every backend and worker sharing a database must use the same value; one with a different key refuses to start. Rotate with `USR_SECRET_KEY_PREVIOUS`. |
+| `USR_SECRET_KEY_PREVIOUS` | *Empty* | The old key while rotating `USR_SECRET_KEY`. Secrets encrypted with it can still be read. |
+| `BACKEND_ID` | `usr-docker` | This backend's id in the cluster. Give each backend sharing a database its own. |
+| `USR_WEBUI_SECRET_KEY` | *Auto-generated* | 32-byte secret key used for AES-GCM encryption of the WebUI's own stored credentials. |
 | `USR_STORAGE_PATH` | `./data` | Local filesystem path mounted for media files and downloads. |
 | `USR_IMAGE` | `ghcr.io/ultimahoarder/ultimascraper/ultimascraper` | The full image, which the backend, worker and WebUI containers run by default. |
 | `USR_BACKEND_IMAGE` | *Empty* | Runs the backend from its own image instead, e.g. `ghcr.io/ultimahoarder/ultimascraper/backend`. |

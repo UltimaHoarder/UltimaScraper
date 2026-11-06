@@ -114,6 +114,52 @@ def test_secret_walker_encrypts_proxy_passwords(monkeypatch) -> None:
     assert payload["settings"]["network"]["proxies"][0]["password"] == "encrypted"
 
 
+def test_webhook_urls_are_encrypted_at_rest(monkeypatch) -> None:
+    import copy
+
+    from ultima_scraper_backend import config
+    from ultima_scraper_db_archive.crypto import get_secret_crypto
+
+    monkeypatch.setenv("USR_ENCRYPT_SECRETS", "true")
+    monkeypatch.setenv("USR_SECRET_KEY", "webhook-fixture-key")
+    get_secret_crypto.cache_clear()
+    routed = "https://discord.com/api/webhooks/1/routed-token"
+    legacy = "https://discord.com/api/webhooks/2/legacy-token"
+    payload = {
+        "settings": {
+            "webhook_routing": {
+                "onlyfans": {
+                    "destinations": [{"id": "d1", "name": "Discord", "url": routed}],
+                    "rules": [],
+                },
+                "fansly": None,
+            }
+        },
+        "site_apis": {
+            "onlyfans": {"webhooks": {"auth": {"url": legacy, "active": True}}},
+            "loyalfans": {"webhooks": {"download": {"url": None, "active": False}}},
+        },
+    }
+    try:
+        stored = copy.deepcopy(payload)
+        config.encrypt_config_secrets(stored)
+        stored_routed = stored["settings"]["webhook_routing"]["onlyfans"]["destinations"][0]["url"]
+        stored_legacy = stored["site_apis"]["onlyfans"]["webhooks"]["auth"]["url"]
+        assert stored_routed.startswith("enc:v1:") and "routed-token" not in stored_routed
+        assert stored_legacy.startswith("enc:v1:") and "legacy-token" not in stored_legacy
+        assert stored["site_apis"]["loyalfans"]["webhooks"]["download"]["url"] is None
+
+        config.decrypt_config_secrets(stored)
+        assert stored == payload
+
+        # Rows saved before this change hold plain URLs; they still load.
+        plain = copy.deepcopy(payload)
+        config.decrypt_config_secrets(plain)
+        assert plain == payload
+    finally:
+        get_secret_crypto.cache_clear()
+
+
 @pytest.mark.parametrize(
     "key",
     [

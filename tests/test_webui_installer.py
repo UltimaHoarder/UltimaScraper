@@ -1299,3 +1299,30 @@ async def test_a_failed_change_goes_back_to_the_services_it_ran(tmp_path: Path, 
     env, backup = "/home/deploy/ultimascraper/.env", "/home/deploy/ultimascraper/.env.usr-before-upgrade"
     assert commands.index(f"mv -f -- {backup} {env}") < commands.index(f"{_NAS_COMPOSE} up --detach --wait --wait-timeout 300")
     assert installer.store.get_deployment("dep1").details["components"]["webui"] is False
+
+
+def test_a_container_without_host_docker_internal_reaches_its_gateway(tmp_path, monkeypatch):
+    import socket
+    from pathlib import Path
+
+    from ultima_webui_server.installer import targets
+
+    route_table = tmp_path / "route"
+    route_table.write_text(
+        "Iface\tDestination\tGateway \tFlags\n"
+        "eth0\t000011AC\t00000000\t0001\n"
+        "eth0\t00000000\t010011AC\t0003\n",
+        encoding="ascii",
+    )
+    read_routes = targets._default_gateway
+    monkeypatch.setattr(targets, "_default_gateway", lambda: read_routes(str(route_table)))
+    real_exists = Path.exists
+    monkeypatch.setattr(Path, "exists", lambda self: str(self) == "/.dockerenv" or real_exists(self))
+
+    def unknown(host, *args, **kwargs):
+        raise socket.gaierror(-2, "Name or service not known")
+
+    monkeypatch.setattr(socket, "getaddrinfo", unknown)
+    assert targets.reachable_host("host.docker.internal") == "172.17.0.1"
+    # Any other host is left as given.
+    assert targets.reachable_host("nas.home.arpa") == "nas.home.arpa"

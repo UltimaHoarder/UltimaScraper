@@ -483,6 +483,35 @@ export interface DeploymentOperation {
 
 export const listDeployments = () => request<Deployment[]>('/deployments');
 
+export type LocalServiceName = 'backend' | 'worker';
+
+export interface LocalService {
+  name: LocalServiceName;
+  state: 'running' | 'restarting' | 'stopped';
+  exit_code: number | null;
+  log: string[];
+}
+
+/** The backend and workers this WebUI runs in its own container. */
+export interface LocalServices {
+  available: boolean;
+  backend: boolean;
+  worker: boolean;
+  cluster_id: string | null;
+  backend_id: string | null;
+  advertise_host: string | null;
+  services: LocalService[];
+}
+
+export const getLocalServices = () => request<LocalServices>('/local-services');
+
+export const setLocalServices = (change: {
+  cluster_id: string;
+  backend: boolean;
+  worker: boolean;
+  advertise_host?: string | null;
+}) => request<LocalServices>('/local-services', { method: 'PUT', body: JSON.stringify(change) });
+
 export const operateDeployment = (id: string, operation: DeploymentOperation) =>
   request<{ id: string }>(`/deployments/${encodeURIComponent(id)}/operations`, {
     method: 'POST',
@@ -661,6 +690,8 @@ export interface ClusterHost {
   state: NodeState;
   nodes: ClusterNode[];
   deployment_id: string | null;
+  /** This WebUI's host, where it can run the backend and workers itself. */
+  local_services?: boolean;
 }
 
 export interface ClusterHosts {

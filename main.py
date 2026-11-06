@@ -631,12 +631,39 @@ def wait_for_first_time_setup(shutdown: ShutdownRequest) -> bool:
     return False
 
 
+def verify_cluster_secret_key() -> None:
+    """Refuse to start with a USR_SECRET_KEY the rest of the cluster doesn't use.
+
+    Backends and workers sharing one database read each other's encrypted
+    secrets. Before setup has created the schema there is nothing to check;
+    setup checks the key once it has migrated the database.
+    """
+    from ultima_scraper_db_archive.global_db import get_global_engine, is_setup_complete
+    from ultima_scraper_db_archive.secret_key_check import (
+        SecretKeyMismatch,
+        verify_secret_key_for_engine,
+    )
+
+    if not is_setup_complete():
+        return
+    engine = get_global_engine()
+    try:
+        verify_secret_key_for_engine(engine)
+    except SecretKeyMismatch as exc:
+        logger.error("%s", exc)
+        raise SystemExit(str(exc)) from None
+    finally:
+        # The launcher only supervises from here; release its connection.
+        engine.dispose()
+
+
 def run_worker_runtime() -> ShutdownRequest:
     """Supervise the writer, worker pool and plugins without a control plane."""
     logger.info("Starting explicit worker-only runtime")
     shutdown = ShutdownRequest.install()
     if not wait_for_first_time_setup(shutdown):
         return shutdown
+    verify_cluster_secret_key()
     process_context = get_process_context()
     writers: list[tuple[str, BaseProcess]] = []
     worker_process: BaseProcess | None = None
@@ -773,6 +800,8 @@ def main() -> ShutdownRequest:
 
     if run_mode == "worker":
         return run_worker_runtime()
+
+    verify_cluster_secret_key()
 
     shutdown = ShutdownRequest.install()
     os.environ[SUPERVISOR_PID_ENV] = str(os.getpid())

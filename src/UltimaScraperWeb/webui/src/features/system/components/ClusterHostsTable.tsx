@@ -114,7 +114,7 @@ export function ClusterHostsTable({
   onInspectBackend: (backendId: string) => void;
   onInspectDatabase?: () => void;
   onRenamed: () => void;
-  /** Change the services on a host this WebUI installed. */
+  /** Change the services on a host this WebUI installed, or on its own host. */
   onEditHost?: (host: ClusterHost) => void;
   /** Revoke another WebUI's access to the cluster. */
   onRemoveWebUI?: (node: ClusterNode) => void;
@@ -200,7 +200,7 @@ export function ClusterHostsTable({
                     )}
                   </td>
                   <td data-label="Services">
-                    {onEditHost && host.deployment_id ? (
+                    {onEditHost && (host.deployment_id || host.local_services) ? (
                       <button
                         type="button"
                         className="fleet-register-link"

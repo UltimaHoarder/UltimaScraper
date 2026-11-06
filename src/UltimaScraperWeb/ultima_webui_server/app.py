@@ -60,7 +60,17 @@ from .tickets import (
 from .installer.routes import DeploymentOut, InstallStarted, deployment_router, install_router
 from .fleet_hosts import ClusterHostsOut, build_hosts, rename_host
 from .hosts import HostGuard, HostPolicy
-from .installer.runner import CredentialsIn, ImageSource, Installer, OperationIn, _local_lan_ip, in_container
+from .installer.runner import (
+    CredentialsIn,
+    ImageSource,
+    Installer,
+    OperationIn,
+    _local_lan_ip,
+    in_container,
+    register_worker_inventory,
+)
+from .local_services import LocalServices, LocalServicesIn, LocalServicesOut
+from .local_services import available as local_services_available
 from .proxy import BackendProxy, BackendUnreachable
 from .self_update import SelfUpdater, self_update_router
 from .store import DeploymentRecord, Store
@@ -227,6 +237,17 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     proxy = BackendProxy()
     tunnels = TunnelManager()
     installer = Installer(store, connections, tunnels, local_allowed=not in_container())
+    local_services = LocalServices(
+        store,
+        vault,
+        connections,
+        tunnels,
+        read_stores=lambda connection_id: installer.get_cluster_stores(connection_id=connection_id),
+        cluster_connections=lambda cluster_id: [
+            connection for connection, _ in cluster_connections(connections, store, cluster_id)
+        ],
+        register_worker=register_worker_inventory,
+    )
     self_updater = SelfUpdater()
 
     def ensure_main_cluster() -> str | None:
@@ -276,8 +297,10 @@ def create_app(settings: Settings | None = None) -> FastAPI:
                 rule,
             )
         sync_task = asyncio.create_task(membership.run())
+        await local_services.resume()
         yield
         sync_task.cancel()
+        await local_services.stop_all()
         await proxy.aclose()
         await tunnels.close()
         store.close()
@@ -287,6 +310,7 @@ def create_app(settings: Settings | None = None) -> FastAPI:
     app.state.auth = auth
     app.state.connections = connections
     app.state.installer = installer
+    app.state.local_services = local_services
     app.state.self_updater = self_updater
 
     @app.get("/health", response_class=PlainTextResponse, include_in_schema=False)
@@ -517,7 +541,21 @@ def create_app(settings: Settings | None = None) -> FastAPI:
             deployments=cluster_deployments(cluster_id),
             this_machine=_local_lan_ip(),
             answered_by=answered_by,
+            local=local_services.local_host(),
+            local_services_available=local_services_available(),
         )
+
+    # ---- The backend and workers in this WebUI's own container ----------
+
+    @app.get("/webui/api/v1/local-services", response_model=LocalServicesOut, dependencies=signed_in)
+    def get_local_services() -> LocalServicesOut:
+        return local_services.describe()
+
+    @app.put("/webui/api/v1/local-services", response_model=LocalServicesOut, dependencies=signed_in)
+    async def set_local_services(body: LocalServicesIn) -> LocalServicesOut:
+        if not cluster_connections(connections, store, body.cluster_id):
+            raise HTTPException(status_code=404, detail="This WebUI has no connection in that cluster.")
+        return await local_services.configure(body)
 
     @app.put("/webui/api/v1/hosts/name", response_model=HostNameIn, dependencies=signed_in)
     def set_host_name(body: HostNameIn) -> HostNameIn:

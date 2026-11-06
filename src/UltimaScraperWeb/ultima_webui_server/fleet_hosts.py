@@ -8,7 +8,8 @@ address, from what the cluster reports:
 - WebUIs: the cluster's clients, at the address a backend saw them connect from;
 - PostgreSQL and Redis: the addresses in the cluster's settings;
 - this WebUI's deployments: the components its installer put on each host,
-  shown even before (or without) them reporting.
+  shown even before (or without) them reporting;
+- the backend and workers this WebUI runs in its own container, on its host.
 
 An address that only means something to the backend that reported it
 (loopback, a Compose service name, a Docker network address nobody else has)
@@ -25,6 +26,7 @@ from typing import Any, Literal
 
 from pydantic import BaseModel
 
+from .local_services import LocalHost
 from .store import DeploymentRecord, Store
 
 Role = Literal["backend", "workers", "webui", "postgres", "redis"]
@@ -67,6 +69,8 @@ class HostOut(BaseModel):
     state: State
     nodes: list[NodeOut]
     deployment_id: str | None = None
+    # This WebUI's host, where it can run the backend and workers itself.
+    local_services: bool = False
 
 
 class ClusterHostsOut(BaseModel):
@@ -171,6 +175,7 @@ class _Host:
         self.nodes: list[NodeOut] = []
         self.names: list[str] = []
         self.deployment: DeploymentRecord | None = None
+        self.local = False
 
 
 def build_hosts(
@@ -187,6 +192,8 @@ def build_hosts(
     deployments: Iterable[DeploymentRecord],
     this_machine: str | None,
     answered_by: str | None,
+    local: LocalHost | None = None,
+    local_services_available: bool = False,
     now: datetime | None = None,
 ) -> ClusterHostsOut:
     now = now or datetime.now(UTC)
@@ -346,6 +353,39 @@ def build_hosts(
                     )
                 )
 
+    if local_services_available:
+        local_target: _Host | None = None
+        if local and local.cluster_id == cluster_id and (local.backend or local.worker):
+            # Where they already report, else the address they were given.
+            local_target = next(
+                (
+                    item
+                    for item in hosts.values()
+                    if local.backend_id and any(node.backend_id == local.backend_id for node in item.nodes)
+                ),
+                None,
+            ) or host(local.address, "local")
+            present = {node.role for node in local_target.nodes}
+            for role, wanted in (("backend", local.backend), ("workers", local.worker)):
+                if wanted and role not in present:
+                    local_target.nodes.append(
+                        NodeOut(
+                            role=role,  # type: ignore[arg-type]
+                            name=local.backend_id or role,
+                            state="unknown",
+                            detail="Started here; not reporting to this cluster yet",
+                            installed_only=True,
+                        )
+                    )
+        if local_target is None:
+            local_target = next((item for item in hosts.values() if any(node.is_self for node in item.nodes)), None)
+        if local_target is None:
+            # Connected to the cluster directly rather than joined with an
+            # invite: the cluster does not list this WebUI, but it runs here.
+            local_target = host(None, "local")
+            local_target.nodes.append(NodeOut(role="webui", name="This WebUI", state="healthy", is_self=True))
+        local_target.local = True
+
     out: list[HostOut] = []
     for key, item in hosts.items():
         nodes = sorted(item.nodes, key=lambda node: (_ROLE_ORDER[node.role], node.name.lower()))
@@ -371,6 +411,7 @@ def build_hosts(
                 state=state,
                 nodes=nodes,
                 deployment_id=item.deployment.id if item.deployment else None,
+                local_services=item.local,
             )
         )
     out.sort(key=lambda value: value.name.lower())

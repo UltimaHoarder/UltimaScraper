@@ -3,23 +3,23 @@
   "components": {
     "usr_backend": {
       "repository": "https://github.com/UltimaHoarder/UltimaScraperBackend.git",
-      "commit": "3e7d72081c9cf5aedcf06b38bf973fdefaac79cf"
+      "commit": "acdf930ab8c171966145a3caf548e4cc8f33b833"
     },
     "usdb": {
       "repository": "https://github.com/DATAHOARDERS/UltimaScraperDB.git",
-      "commit": "8b7457724f395a99f888fccd30a38aa32c77c6c0"
+      "commit": "2115cca48c59f1353f4af789e4b4f16a8c405273"
     },
     "usdb_archive": {
       "repository": "https://github.com/UltimaHoarder/UltimaScraperDBArchive.git",
-      "commit": "28f53a4d771f0fda28aa3ff322a307e6cda773c5"
+      "commit": "d7a24d4b8f97fe438bac82df7bdb85ff7680a6ae"
     },
     "usr_api": {
       "repository": "https://github.com/UltimaHoarder/UltimaScraperAPI.git",
-      "commit": "879273d9042cf0c05efa52658cfe19740f2ca0f7"
+      "commit": "1aac21581a5d6ce2c57c1d452639ec008e1baeb3"
     },
     "usr_core": {
       "repository": "https://github.com/UltimaHoarder/UltimaScraperCore.git",
-      "commit": "63ce2b87d2df424a7eb0010aa645c8e67bfe890c"
+      "commit": "785d3c61a4e75c576095130039c8c55f7f60ad8a"
     }
   }
 }

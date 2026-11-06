@@ -23,7 +23,7 @@ from .store import Store
 
 SESSION_COOKIE = "usr_webui_session"
 SESSION_LIFETIME_SECONDS = 30 * 24 * 3600
-MIN_PASSWORD_LENGTH = 12
+MIN_PASSWORD_LENGTH = 8
 _PASSWORD_KEY = "password_hash"
 _SCRYPT = {"n": 2**15, "r": 8, "p": 1, "maxmem": 64 * 1024 * 1024}
 _SAFE_METHODS = {"GET", "HEAD", "OPTIONS"}

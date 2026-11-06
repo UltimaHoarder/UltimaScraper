@@ -38,7 +38,7 @@ browser.
 
 ### Security
 
-- The WebUI is protected by a password of at least 12 characters, with
+- The WebUI is protected by a password of at least 8 characters, with
   HttpOnly, SameSite=Strict session cookies and same-origin checks on writes.
 - The WebUI answers only to local and configured host names, which stops DNS
   rebinding, and asks for a setup code when first opened from elsewhere or

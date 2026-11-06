@@ -1,6 +1,6 @@
 import { useCallback, useEffect, useState, type FormEvent, type ReactNode } from 'react';
 
-import { claimWebUI, getWebUISession, MIN_WEBUI_PASSWORD_LENGTH, signInToWebUI, type WebUISession } from '../../api/webui';
+import { claimWebUI, getWebUISession, MIN_WEBUI_PASSWORD_LENGTH, signInToWebUI, WEBUI_ACCOUNT_NAME, type WebUISession } from '../../api/webui';
 import './signInCard.css';
 
 /**
@@ -90,9 +90,11 @@ export function WebUISignInGate({ children }: { children: ReactNode }) {
               )}
             </div>
             <form onSubmit={submit}>
+              <input type="text" name="username" autoComplete="username" value={WEBUI_ACCOUNT_NAME} readOnly hidden />
               <label htmlFor="webui-password">Password</label>
               <input
                 id="webui-password"
+                name={creating ? 'new-password' : 'password'}
                 type="password"
                 autoComplete={creating ? 'new-password' : 'current-password'}
                 value={password}
@@ -106,6 +108,7 @@ export function WebUISignInGate({ children }: { children: ReactNode }) {
                   <label htmlFor="webui-password-confirmation">Confirm password</label>
                   <input
                     id="webui-password-confirmation"
+                    name="confirm-password"
                     type="password"
                     autoComplete="new-password"
                     value={confirmation}
@@ -120,8 +123,11 @@ export function WebUISignInGate({ children }: { children: ReactNode }) {
                   <label htmlFor="webui-setup-code">Setup code</label>
                   <input
                     id="webui-setup-code"
-                    type="password"
-                    autoComplete="off"
+                    name="setup-code"
+                    // Not a password field, so password managers leave it alone.
+                    type="text"
+                    autoComplete="one-time-code"
+                    spellCheck={false}
                     value={code}
                     disabled={submitting}
                     onChange={(event) => setCode(event.target.value)}

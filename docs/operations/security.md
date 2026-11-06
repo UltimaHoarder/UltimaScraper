@@ -11,7 +11,7 @@ UltimaScraper enforces strict boundaries to protect stored credentials, scraper 
 - **First-Time Password Initialization**:
   - The first browser connecting from a loopback (`127.0.0.1`) or private network IP (`10.0.0.0/8`, `172.16.0.0/12`, `192.168.0.0/16`) may set the password directly.
   - Remote connections, and every connection through a reverse proxy that is not listed in `USR_WEBUI_TRUSTED_PROXIES`, must supply the ephemeral **Setup Code** printed in the WebUI container logs on first startup.
-  - The password must be at least 12 characters. Changing it signs out every other browser.
+  - The password must be at least 8 characters. Changing it signs out every other browser.
 - **Host Names**: The WebUI answers only to IP addresses, single-label names, this machine's own names, private names such as `*.local`, `*.lan` and `*.home.arpa`, and the names in `USR_WEBUI_ALLOWED_HOSTS`. This stops DNS rebinding, where a public site points its own name at your server. See [Host names and reverse proxies](webui-server.md#host-names-and-reverse-proxies).
 - **Response Headers**: Pages cannot be framed by other sites (`frame-ancestors 'none'`), and responses carry `nosniff` and a same-origin referrer policy.
 - **Session Tokens**: Handled exclusively via `HttpOnly`, `SameSite=Strict`, secure cookies with automatic CSRF origin validation.

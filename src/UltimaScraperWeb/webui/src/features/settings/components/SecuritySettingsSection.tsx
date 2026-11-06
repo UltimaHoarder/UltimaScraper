@@ -1,5 +1,5 @@
 import { useState, type FormEvent } from 'react';
-import { changeWebUIPassword, MIN_WEBUI_PASSWORD_LENGTH, revokeAllWebUISessions, signOutOfWebUI } from '../../../api/webui';
+import { changeWebUIPassword, MIN_WEBUI_PASSWORD_LENGTH, revokeAllWebUISessions, signOutOfWebUI, WEBUI_ACCOUNT_NAME } from '../../../api/webui';
 
 export function SecuritySettingsSection() {
   const [currentPassword, setCurrentPassword] = useState('');
@@ -96,6 +96,8 @@ export function SecuritySettingsSection() {
           The WebUI password restricts access to this web application and all connected scraper backends.
         </span>
 
+        <input type="text" name="username" autoComplete="username" value={WEBUI_ACCOUNT_NAME} readOnly hidden />
+
         <div>
           <label htmlFor="current-password" style={{ display: 'block', marginBottom: '0.25rem' }}>
             Current Password
@@ -103,6 +105,7 @@ export function SecuritySettingsSection() {
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <input
               id="current-password"
+              name="current-password"
               type={showCurrent ? 'text' : 'password'}
               value={currentPassword}
               onChange={(e) => setCurrentPassword(e.target.value)}
@@ -127,6 +130,7 @@ export function SecuritySettingsSection() {
           <div style={{ display: 'flex', gap: '0.5rem' }}>
             <input
               id="new-password"
+              name="new-password"
               type={showNew ? 'text' : 'password'}
               value={newPassword}
               onChange={(e) => setNewPassword(e.target.value)}
@@ -150,6 +154,7 @@ export function SecuritySettingsSection() {
           </label>
           <input
             id="confirm-password"
+            name="confirm-password"
             type="password"
             value={confirmPassword}
             onChange={(e) => setConfirmPassword(e.target.value)}

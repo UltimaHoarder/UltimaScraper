@@ -197,7 +197,7 @@ def test_short_passwords_and_cross_site_claims_are_refused(tmp_path: Path) -> No
     client = _client(_app(tmp_path))
 
     assert client.post("/webui/api/v1/session/claim", json={"password": ""}, headers=ORIGIN).status_code == 400
-    assert client.post("/webui/api/v1/session/claim", json={"password": "elevenchars"}, headers=ORIGIN).status_code == 400
+    assert client.post("/webui/api/v1/session/claim", json={"password": "seven77"}, headers=ORIGIN).status_code == 400
     assert client.post("/webui/api/v1/session/claim", json={"password": "twelve-chars"}, headers=ORIGIN).status_code == 204
     cross_site = client.post(
         "/webui/api/v1/session/claim",
@@ -233,10 +233,10 @@ def test_change_password_and_revoke_sessions(tmp_path: Path) -> None:
         headers=ORIGIN,
     ).status_code == 422  # validation error on min_length
 
-    # A new password shorter than 12 characters
+    # A new password shorter than 8 characters
     assert client.post(
         "/webui/api/v1/session/password",
-        json={"current_password": "a-long-password", "new_password": "short-pass"},
+        json={"current_password": "a-long-password", "new_password": "short-p"},
         headers=ORIGIN,
     ).status_code == 400
 

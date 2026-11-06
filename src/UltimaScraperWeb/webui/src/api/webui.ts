@@ -116,7 +116,11 @@ async function request<T>(path: string, init: RequestInit = {}): Promise<T> {
 }
 
 /** The shortest WebUI password the server accepts. */
-export const MIN_WEBUI_PASSWORD_LENGTH = 12;
+export const MIN_WEBUI_PASSWORD_LENGTH = 8;
+// The WebUI has one password and no username. Its password forms carry this
+// in a hidden username field, which password managers need to offer, save and
+// fill the password.
+export const WEBUI_ACCOUNT_NAME = 'UltimaScraper';
 
 export const getWebUISession = () => request<WebUISession>('/session');
 

@@ -208,11 +208,11 @@ describe('WebUISignInGate', () => {
     const fetchMock = stubServer({ authenticated: false, password_set: false, can_claim: true, default_connection: 'default' });
     render(<WebUISignInGate><div>Application</div></WebUISignInGate>);
 
-    fireEvent.change(await screen.findByLabelText('Password'), { target: { value: 'short-pass' } });
-    fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'short-pass' } });
+    fireEvent.change(await screen.findByLabelText('Password'), { target: { value: 'short-p' } });
+    fireEvent.change(screen.getByLabelText('Confirm password'), { target: { value: 'short-p' } });
     expect(screen.queryByLabelText('Setup code')).not.toBeInTheDocument();
     fireEvent.click(screen.getByRole('button', { name: 'Create password' }));
-    expect(await screen.findByText('Use at least 12 characters.')).toBeInTheDocument();
+    expect(await screen.findByText('Use at least 8 characters.')).toBeInTheDocument();
     expect(fetchMock.mock.calls.some(([url]) => String(url).endsWith('/session/claim'))).toBe(false);
 
     fireEvent.change(screen.getByLabelText('Password'), { target: { value: 'a-long-password' } });
@@ -230,6 +230,21 @@ describe('WebUISignInGate', () => {
 
     expect(await screen.findByLabelText('Setup code')).toBeInTheDocument();
     expect(screen.getByText('docker compose logs webui')).toBeInTheDocument();
+  });
+
+  it('gives password managers a sign-up form they can generate a password for', async () => {
+    stubServer({ authenticated: false, password_set: false, can_claim: false, default_connection: null });
+    const { container } = render(<WebUISignInGate><div>Application</div></WebUISignInGate>);
+
+    // Only the new password and its confirmation are password fields; the setup
+    // code is not, or a manager would take the form for a password change.
+    const code = await screen.findByLabelText('Setup code');
+    expect(code).toHaveAttribute('type', 'text');
+    expect(code).toHaveAttribute('autocomplete', 'one-time-code');
+    const passwords = [...container.querySelectorAll('input[type="password"]')];
+    expect(passwords.map((input) => input.getAttribute('autocomplete'))).toEqual(['new-password', 'new-password']);
+    // The username the saved login is filed under.
+    expect(container.querySelector('input[autocomplete="username"]')).toHaveValue('UltimaScraper');
   });
 
   it('refuses mismatched passwords before sending them', async () => {

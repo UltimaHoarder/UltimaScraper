@@ -135,12 +135,12 @@ describe('WebUI SettingsPage', () => {
 
     // Too short
     fireEvent.change(currentInput, { target: { value: 'oldpass' } });
-    fireEvent.change(newInput, { target: { value: 'newsecret' } });
-    fireEvent.change(confirmInput, { target: { value: 'newsecret' } });
+    fireEvent.change(newInput, { target: { value: 'secret7' } });
+    fireEvent.change(confirmInput, { target: { value: 'secret7' } });
 
     fireEvent.click(screen.getByRole('button', { name: 'Update Password' }));
 
-    expect(await screen.findByText('Use a new password of at least 12 characters.')).toBeInTheDocument();
+    expect(await screen.findByText('Use a new password of at least 8 characters.')).toBeInTheDocument();
     expect(webuiApi.changeWebUIPassword).not.toHaveBeenCalled();
 
     // Mismatched passwords

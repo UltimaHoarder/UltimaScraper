@@ -2222,3 +2222,74 @@ async def test_mp4decrypt_takes_over_when_ffmpeg_cannot_decrypt(tmp_path) -> Non
 
     assert len(only_drm.decrypted) == 2
     assert item.get_filepath().read_bytes() == b"merged"
+
+
+@pytest.mark.asyncio
+async def test_head_request_retries_a_dropped_proxy_connection(
+    tmp_path, monkeypatch
+) -> None:
+    import aiohttp
+
+    calls: list[str] = []
+
+    class FakeResponse:
+        status = 200
+        content_length = 3
+
+        async def __aenter__(self):
+            if len(calls) <= 2:
+                raise aiohttp.ClientConnectionError("Cannot connect to host")
+            return self
+
+        async def __aexit__(self, *exc) -> None:
+            return None
+
+    class FakeSession:
+        def head(self, url, **kwargs):
+            calls.append(url)
+            return FakeResponse()
+
+    async def no_sleep(seconds) -> None:
+        return None
+
+    manager = DownloadManager(config=_build_config())
+    manager.session = FakeSession()
+    monkeypatch.setattr(download_manager_module.asyncio, "sleep", no_sleep)
+    item = DownloadItem(
+        url="https://cdn2.onlyfans.com/files/example/photo.jpg",
+        filename="photo.jpg",
+        directory=tmp_path,
+    )
+
+    response = await manager.head_request(item)
+
+    # Two drops, then the size: the file isn't failed for a dropped connection.
+    assert response is not None and response.content_length == 3
+    assert len(calls) == 3
+
+
+@pytest.mark.asyncio
+async def test_head_request_gives_up_after_its_attempts(tmp_path, monkeypatch) -> None:
+    import aiohttp
+
+    calls: list[str] = []
+
+    class FakeSession:
+        def head(self, url, **kwargs):
+            calls.append(url)
+            raise aiohttp.ClientConnectionError("Cannot connect to host")
+
+    async def no_sleep(seconds) -> None:
+        return None
+
+    manager = DownloadManager(config=_build_config())
+    manager.session = FakeSession()
+    monkeypatch.setattr(download_manager_module.asyncio, "sleep", no_sleep)
+    item = DownloadItem(
+        url="https://cdn2.onlyfans.com/files/example/photo.jpg",
+        filename="photo.jpg",
+        directory=tmp_path,
+    )
+
+    assert await manager.head_request(item) is None
+    assert len(calls) == download_manager_module.HEAD_ATTEMPTS

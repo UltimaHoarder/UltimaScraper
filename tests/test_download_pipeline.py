@@ -1,6 +1,8 @@
 from __future__ import annotations
 
 import asyncio
+import shutil
+import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
@@ -728,11 +730,13 @@ async def test_bulk_download_emits_in_flight_byte_progress(
     async def inline_to_thread(func, /, *args, **kwargs):
         return func(*args, **kwargs)
 
-    monkeypatch.setattr(
-        download_manager_module.aiofiles,
-        "open",
-        lambda path, mode: FakeAsyncFile(Path(path), mode),
-    )
+    # Releases that append each part to its own file write through aiofiles.
+    if hasattr(download_manager_module, "aiofiles"):
+        monkeypatch.setattr(
+            download_manager_module.aiofiles,
+            "open",
+            lambda path, mode: FakeAsyncFile(Path(path), mode),
+        )
     monkeypatch.setattr(
         download_manager_module.asyncio,
         "to_thread",
@@ -1357,7 +1361,7 @@ async def test_download_manager_supports_audio_only_drm(tmp_path, monkeypatch) -
 
 
 @pytest.mark.asyncio
-async def test_process_drm_items_merges_in_temp_directory_then_moves_to_final(
+async def test_process_drm_items_merges_then_publishes_the_final_file(
     tmp_path, monkeypatch
 ) -> None:
     class FakeOnlyDrm:
@@ -1429,8 +1433,13 @@ async def test_process_drm_items_merges_in_temp_directory_then_moves_to_final(
     await _process_drm_items([item])
 
     assert only_drm.decrypt_calls == [drm_temp_directory, drm_temp_directory]
-    assert only_drm.merge_targets == [drm_temp_directory / "final.mp4.tmp"]
+    if hasattr(download_handler_module, "_merge_target"):
+        # Merged beside the final file, then renamed: no copy out of staging.
+        assert only_drm.merge_targets == [tmp_path / "library" / "final.mp4.tmp"]
+    else:
+        assert only_drm.merge_targets == [drm_temp_directory / "final.mp4.tmp"]
     assert (tmp_path / "library" / "final.mp4").exists()
+    assert not (tmp_path / "library" / "final.mp4.tmp").exists()
     assert not (drm_temp_directory / "final.mp4").exists()
     assert not (drm_temp_directory / "final.mp4.tmp").exists()
 
@@ -2007,3 +2016,206 @@ async def test_real_merge_errors_still_fail(
     assert await manager.merge_parts(destination, [part]) is False
     assert not destination.exists()
     assert not destination.with_suffix(".mp4.tmp").exists()
+
+
+# ---- Parts written in place ------------------------------------------------
+
+writes_in_place = pytest.mark.skipif(
+    not hasattr(download_manager_module, "_download_target"),
+    reason="this backend release joins part files instead",
+)
+
+
+class _RangeSession:
+    """Serves `body` with ranges, recording each range asked for."""
+
+    def __init__(self, body: bytes, *, honour_ranges: bool = True) -> None:
+        self.body = body
+        self.honour_ranges = honour_ranges
+        self.ranges: list[str] = []
+
+    def head(self, *args, **kwargs):
+        return self._response(200, self.body)
+
+    def get(self, url, *, headers, **kwargs):
+        wanted = headers["Range"]
+        self.ranges.append(wanted)
+        if not self.honour_ranges:
+            return self._response(200, self.body)
+        start, end = (int(x) for x in wanted.removeprefix("bytes=").split("-"))
+        return self._response(206, self.body[start : end + 1])
+
+    @staticmethod
+    def _response(status: int, data: bytes):
+        class Content:
+            async def iter_chunked(self, size: int):
+                for offset in range(0, len(data), 7):
+                    yield data[offset : offset + 7]
+
+        class Response:
+            content = Content()
+            content_length = len(data)
+
+            async def __aenter__(self):
+                return self
+
+            async def __aexit__(self, *exc) -> None:
+                return None
+
+        Response.status = status
+        return Response()
+
+
+def _in_place_manager(session: _RangeSession) -> DownloadManager:
+    return DownloadManager(
+        config=_build_config(),
+        resource_manager=ResourceManager(
+            max_concurrency=8, buffer_size=10, per_domain_concurrency=8, head_concurrency=1
+        ),
+        session=session,
+    )
+
+
+@writes_in_place
+async def test_parts_are_written_in_place_and_published_by_rename(tmp_path) -> None:
+    body = bytes(range(256)) * 3
+    session = _RangeSession(body)
+    manager = _in_place_manager(session)
+    item = DownloadItem(url="https://cdn.example/file.mp4", filename="file.mp4", directory=tmp_path)
+
+    assert await manager.bulk_download([item], create_session=False) == {
+        "total": 1, "completed": 1, "failed": 0, "success_rate": 100.0,
+    }
+
+    assert (tmp_path / "file.mp4").read_bytes() == body
+    assert len(session.ranges) == 8
+    # Nothing left behind: no part files, shared file or ledger.
+    assert sorted(path.name for path in tmp_path.iterdir()) == ["file.mp4"]
+
+
+@writes_in_place
+async def test_a_restart_downloads_only_the_ranges_not_finished(tmp_path) -> None:
+    body = b"0123456789" * 8
+    target = download_manager_module._download_target(tmp_path / "file.mp4")
+    # A first run finished the first range before it stopped.
+    download_manager_module._prepare_download_target(target, len(body))
+    target.write_bytes(body[:10])
+    download_manager_module._record_range(target, "0-9")
+    session = _RangeSession(body)
+    manager = _in_place_manager(session)
+    item = DownloadItem(url="https://cdn.example/file.mp4", filename="file.mp4", directory=tmp_path)
+
+    assert (await manager.bulk_download([item], create_session=False))["completed"] == 1
+
+    assert (tmp_path / "file.mp4").read_bytes() == body
+    assert "bytes=0-9" not in session.ranges and len(session.ranges) == 7
+
+
+@writes_in_place
+async def test_a_different_file_at_the_same_name_starts_again(tmp_path) -> None:
+    body = b"abcdefghij" * 4
+    target = download_manager_module._download_target(tmp_path / "file.mp4")
+    # Left by an earlier download of another size, with its first range done.
+    download_manager_module._prepare_download_target(target, 999)
+    target.write_bytes(b"x" * 999)
+    download_manager_module._record_range(target, "0-9")
+    session = _RangeSession(body)
+    item = DownloadItem(url="https://cdn.example/file.mp4", filename="file.mp4", directory=tmp_path)
+
+    assert (await _in_place_manager(session).bulk_download([item], create_session=False))["completed"] == 1
+
+    assert (tmp_path / "file.mp4").read_bytes() == body
+    assert "bytes=0-9" in session.ranges
+
+
+@writes_in_place
+async def test_a_server_ignoring_ranges_fails_the_download(tmp_path) -> None:
+    session = _RangeSession(b"abcdefghij" * 4, honour_ranges=False)
+    item = DownloadItem(url="https://cdn.example/file.mp4", filename="file.mp4", directory=tmp_path)
+
+    stats = await _in_place_manager(session).bulk_download([item], create_session=False)
+
+    assert stats["failed"] == 1 and not (tmp_path / "file.mp4").exists()
+
+
+# ---- Decrypting and merging in one pass --------------------------------------
+
+decrypts_in_one_pass = pytest.mark.skipif(
+    not hasattr(download_handler_module, "_decrypt_and_merge"),
+    reason="this backend release decrypts with mp4decrypt, then merges",
+)
+
+
+class _FormatterOnlyDrm:
+    """The DRM module with a real media formatter; mp4decrypt only if it falls back."""
+
+    def __init__(self, formatter) -> None:
+        self.media_formatter = formatter
+        self.decrypted: list[Path] = []
+
+    async def decrypt_file_async(self, filepath, key, temp_output_path=None):
+        self.decrypted.append(filepath)
+        output = temp_output_path / filepath.name.replace(".enc", ".dec")
+        output.write_bytes(b"dec")
+        return output
+
+    async def merge_media(self, output_filepath, media_paths):
+        output_filepath.write_bytes(b"merged")
+        return True
+
+
+def _real_drm_item(tmp_path: Path, only_drm: object, kid: str, key: str) -> DownloadItem:
+    from test_offload import _encrypted_streams
+
+    item = _build_staged_drm_item(tmp_path, 9, only_drm)
+    work = item.drm_media_settings.drm_temp_directory
+    streams = _encrypted_streams(work, kid, key)
+    item.drm_media_settings.drm_video_path = streams["video"]
+    item.drm_media_settings.drm_audio_path = streams["audio"]
+    assert item.media_metadata is not None
+    item.media_metadata.drm_key = f"{kid}:{key}"
+    return item
+
+
+@decrypts_in_one_pass
+@pytest.mark.skipif(not shutil.which("ffmpeg"), reason="needs ffmpeg")
+async def test_drm_streams_are_decrypted_and_merged_in_one_ffmpeg_pass(tmp_path) -> None:
+    from ultima_scraper_api.apis.onlyfans.classes.only_drm import MediaFormatter
+
+    formatter = MediaFormatter(max_workers=1)
+    only_drm = _FormatterOnlyDrm(formatter)
+    kid, key = "a1b2c3d4e5f60718293a4b5c6d7e8f90", "0123456789abcdef0123456789abcdef"
+    item = _real_drm_item(tmp_path, only_drm, kid, key)
+    streams = [item.drm_media_settings.drm_video_path, item.drm_media_settings.drm_audio_path]
+
+    await _process_drm_items([item])
+
+    final = item.get_filepath()
+    probe = await asyncio.to_thread(
+        subprocess.run,
+        ["ffprobe", "-v", "error", "-show_entries", "stream=codec_type", "-of", "csv=p=0", str(final)],
+        check=True, capture_output=True, text=True,
+    )
+    assert sorted(probe.stdout.split()) == ["audio", "video"]
+    assert only_drm.decrypted == []  # mp4decrypt never ran
+    assert not any(stream.exists() for stream in streams)
+    assert not final.with_name(final.name + ".tmp").exists()
+    await formatter.shutdown()
+
+
+@decrypts_in_one_pass
+async def test_mp4decrypt_takes_over_when_ffmpeg_cannot_decrypt(tmp_path) -> None:
+    class FailingFormatter:
+        async def run_process(self, args, *, stdout_consumer=None):
+            Path(args[-1]).write_bytes(b"half")  # a partial output is removed
+            return SimpleNamespace(returncode=1, stderr=b"Invalid data found")
+
+    only_drm = _FormatterOnlyDrm(FailingFormatter())
+    item = _build_staged_drm_item(tmp_path, 10, only_drm)
+    assert item.media_metadata is not None
+    item.media_metadata.drm_key = "a1b2c3d4e5f60718293a4b5c6d7e8f90:0123456789abcdef0123456789abcdef"
+
+    await _process_drm_items([item])
+
+    assert len(only_drm.decrypted) == 2
+    assert item.get_filepath().read_bytes() == b"merged"

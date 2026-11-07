@@ -258,6 +258,8 @@ export function JobRunbookPipeline({
   const selectedDownloadErrors = selectedTask ? getTaskDownloadErrorCount(selectedTask) : 0;
   const metricSpeed = asNumber(selectedMetrics.speed_bps ?? selectedMetrics.avg_speed_bps);
   const speedBps = selectedLiveTransfer?.speedBps ?? metricSpeed;
+  const writtenBytes = selectedLiveTransfer?.processedBytes ?? asNumber(selectedMetrics.bytes_written);
+  const expectedTaskBytes = selectedLiveTransfer?.expectedBytes ?? asNumber(selectedMetrics.total_bytes);
   const mediaEntries: RunbookMediaEntry[] = [];
   if (selectedTask) {
     if (selectedLiveTransfer) {
@@ -268,8 +270,9 @@ export function JobRunbookPipeline({
         path: selectedLiveTransfer.path,
         url: selectedLiveTransfer.url,
         status: selectedLiveTransfer.status || 'downloading',
-        processedBytes: selectedLiveTransfer.processedBytes,
-        expectedBytes: selectedLiveTransfer.expectedBytes,
+        // The file's own bytes: the task's totals are shown under Written.
+        processedBytes: selectedLiveTransfer.mediaProcessedBytes,
+        expectedBytes: selectedLiveTransfer.mediaExpectedBytes,
         speedBps: selectedLiveTransfer.speedBps,
         isLive: true,
       });
@@ -567,6 +570,11 @@ export function JobRunbookPipeline({
                   <span>Items</span>
                   <strong>{selectedTask.items_processed.toLocaleString()}</strong>
                   <small>of {selectedTask.items_total?.toLocaleString() ?? 'unknown'}</small>
+                </div>
+                <div>
+                  <span>Written</span>
+                  <strong>{formatTransferBytes(writtenBytes)}</strong>
+                  <small>{expectedTaskBytes ? `of ${formatTransferBytes(expectedTaskBytes)} so far` : 'size not known'}</small>
                 </div>
                 <div>
                   <span>Speed</span>

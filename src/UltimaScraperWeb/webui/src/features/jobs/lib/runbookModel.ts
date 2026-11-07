@@ -24,8 +24,12 @@ interface LiveTransfer {
   status: string | null;
   contentType: string | null;
   workerId: string | null;
+  /** The whole task's bytes, across every file it downloads. */
   processedBytes: number | null;
   expectedBytes: number | null;
+  /** The file named by mediaId; null from workers that do not report it. */
+  mediaProcessedBytes: number | null;
+  mediaExpectedBytes: number | null;
   speedBps: number | null;
   completed: number | null;
   failed: number | null;
@@ -385,6 +389,8 @@ export function parseLiveTransfer(event: WebSocketEvent | null | undefined, jobI
     workerId: asString(event.worker_id),
     processedBytes: asNumber(event.processed_bytes ?? event.total_bytes),
     expectedBytes: asNumber(event.expected_bytes),
+    mediaProcessedBytes: asNumber(event.media_processed_bytes),
+    mediaExpectedBytes: asNumber(event.media_expected_bytes),
     speedBps: asNumber(event.speed_bps),
     completed: asNumber(event.completed),
     failed: asNumber(event.failed),

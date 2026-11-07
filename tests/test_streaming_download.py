@@ -313,7 +313,8 @@ async def test_progress_never_expects_fewer_bytes_than_the_task_has_written(monk
         async def bulk_download(self, items, **kwargs):
             item = items[0]
             event = {"status": "progress", "item": item, "bytes": 5_000, "processed_bytes": 5_000,
-                     "expected_bytes": 8_000, "completed": 0, "failed": 0, "total": 1}
+                     "expected_bytes": 8_000, "item_processed_bytes": 5_000, "item_expected_bytes": 8_000,
+                     "completed": 0, "failed": 0, "total": 1}
             for callback in self.on_progress:
                 await callback(event)
             file = item.get_filepath()
@@ -346,6 +347,8 @@ async def test_progress_never_expects_fewer_bytes_than_the_task_has_written(monk
     [event] = published
     assert event["processed_bytes"] == 15_000
     assert event["expected_bytes"] == 18_000  # written so far plus this file's real size
+    # The file named by media_id: only its own bytes.
+    assert (event["media_processed_bytes"], event["media_expected_bytes"]) == (5_000, 8_000)
     persisted = [call.kwargs["task"].result.metrics for call in storage.persist_task.call_args_list]
     assert any(metrics["total_bytes"] == 18_000 for metrics in persisted)
     assert all(metrics["total_bytes"] >= metrics["bytes_written"] for metrics in persisted)

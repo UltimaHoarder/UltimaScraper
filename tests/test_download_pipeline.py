@@ -778,6 +778,9 @@ async def test_bulk_download_emits_in_flight_byte_progress(
     assert progress_events[-1]["processed_bytes"] == 6
     assert progress_events[-1]["expected_bytes"] == 6
     assert progress_events[-1]["completed"] == 1
+    # The file's own bytes travel beside the batch's.
+    assert progress_events[-1]["item_processed_bytes"] == 6
+    assert progress_events[-1]["item_expected_bytes"] == 6
 
 
 @pytest.mark.asyncio

@@ -1056,3 +1056,48 @@ async def test_users_list_description_search_scoped_and_trigram_conditions(
             assert "JOIN users ON users.id = user_infos.user_id" not in sql
             assert "JOIN users ON users.id = histo_user_infos.user_id" not in sql
 
+
+
+def _inventory_engine():
+    from sqlalchemy import create_engine, text
+    from sqlalchemy.pool import StaticPool
+    from ultima_scraper_db_archive.global_db import SettingsModel
+
+    engine = create_engine("sqlite://", poolclass=StaticPool, connect_args={"check_same_thread": False})
+    with engine.begin() as connection:
+        connection.execute(text("ATTACH DATABASE ':memory:' AS management"))
+    SettingsModel.__table__.create(engine)
+    with engine.begin() as connection:
+        # SQLite has no INET: the address is kept as text.
+        connection.execute(text(
+            "CREATE TABLE management.backends (id INTEGER PRIMARY KEY, backend_name TEXT, hostname TEXT, "
+            "local_ip TEXT, settings_id INTEGER, created_at TIMESTAMP, updated_at TIMESTAMP)"
+        ))
+        connection.execute(text(
+            "INSERT INTO management.settings (id, backend, key, value, is_secret, version) "
+            "VALUES (1, 'datahoarders', 'config', '{}', 0, 1)"
+        ))
+        connection.execute(text(
+            "INSERT INTO management.backends (id, backend_name, hostname, local_ip, settings_id) VALUES "
+            "(1, 'datahoarders', 'datahoarders', '192.0.2.98', 1), (2, 'nas', '192-0-2-84-1', '192.0.2.84', 1)"
+        ))
+    return engine
+
+
+async def test_backends_sharing_one_settings_row_are_all_listed(monkeypatch) -> None:
+    import inspect
+
+    from sqlmodel import Session
+    from ultima_scraper_backend.api.routes import settings as settings_mod
+
+    if "session.expunge(settings_row)" in inspect.getsource(settings_mod.list_backend_inventory):
+        pytest.skip("this backend release detaches the shared settings row twice")
+    engine = _inventory_engine()
+    monkeypatch.setattr("ultima_scraper_db_archive.global_db.get_global_session", lambda: Session(engine))
+
+    listed = await settings_mod.list_backend_inventory(hostname=None)
+
+    assert [(row.hostname, row.settings_id, row.settings_scope) for row in listed] == [
+        ("192-0-2-84-1", 1, "datahoarders"),
+        ("datahoarders", 1, "datahoarders"),
+    ]

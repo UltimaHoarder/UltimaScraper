@@ -18,6 +18,7 @@ from fastapi.responses import JSONResponse
 from starlette.testclient import TestClient
 from ultima_scraper_core.tls import ensure_self_signed, fingerprint
 from ultima_webui_server import Settings, create_app
+from ultima_webui_server.installer.runner import register_worker_inventory
 from ultima_webui_server.pinning import PinMismatch, pinned_certificate, pinned_context
 from ultima_webui_server.tickets import (
     create_cluster_join_invite,
@@ -25,6 +26,7 @@ from ultima_webui_server.tickets import (
     parse_cluster_invite,
     parse_cluster_join_invite,
 )
+from ultima_webui_server.tunnels import TunnelManager
 
 ORIGIN = {"origin": "http://testserver"}
 CODE = "usri_once"
@@ -41,6 +43,7 @@ class _Cluster:
         self.redeemed: list[dict] = []
         self.heartbeats: list[dict] = []
         self.revoked: list[str] = []
+        self.inventory: list[dict] = []
         self.codes = {CODE}
         self.name = "Home"
         with socket.socket() as probe:
@@ -142,6 +145,25 @@ class _Cluster:
         @app.get("/api/v1/jobs")
         def jobs(request: Request):
             return {"authorised": allowed(request)}
+
+        @app.get("/api/v1/system/cluster-stores")
+        def cluster_stores(request: Request):
+            if not allowed(request):
+                return JSONResponse({"detail": "Unauthorized"}, status_code=401)
+            return {
+                "available": True,
+                "cluster_id": "c-1",
+                "database": {"host": "192.0.2.98", "port": 5432, "name": "ultima_archive"},
+                "redis": {"host": "192.0.2.98", "port": 6379},
+                "settings_id": 1,
+            }
+
+        @app.put("/api/v1/settings/db/backends")
+        async def inventory(request: Request):
+            if not allowed(request):
+                return JSONResponse({"detail": "Unauthorized"}, status_code=401)
+            self.inventory.append(await request.json())
+            return {}
 
         return app
 
@@ -250,6 +272,32 @@ def test_joining_pins_each_member_and_reaches_it_with_the_client_token(cluster: 
     # The code worked once.
     again = client.post("/webui/api/v1/clusters/join", json={"ticket": _invite(cluster)}, headers=ORIGIN)
     assert again.status_code == 400 and "already used" in again.json()["detail"]
+
+
+def test_local_services_reach_a_joined_member_through_its_pinned_certificate(
+    cluster: _Cluster, tmp_path: Path
+) -> None:
+    client = _webui(tmp_path)
+    joined = client.post("/webui/api/v1/clusters/join", json={"ticket": _invite(cluster)}, headers=ORIGIN)
+    assert joined.status_code == 200, joined.text
+    state = client.app.state
+
+    stores = asyncio.run(state.installer.get_cluster_stores(connection_id="devbox"))
+    listed = asyncio.run(
+        register_worker_inventory(
+            state.connections,
+            TunnelManager(),
+            connection_id="devbox",
+            node_name="nas",
+            backend_id="192-0-2-84-1",
+            address="192.0.2.84",
+            settings_id=1,
+        )
+    )
+
+    assert stores["available"] is True, stores
+    assert stores["database"]["host"] == "192.0.2.98"
+    assert listed and cluster.inventory[0]["local_ip"] == "192.0.2.84"
 
 
 def test_a_member_presenting_another_certificate_is_not_joined(cluster: _Cluster, tmp_path: Path) -> None:

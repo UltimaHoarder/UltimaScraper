@@ -414,7 +414,7 @@ class Installer:
                 token = reached.token()
                 async with httpx.AsyncClient(
                     base_url=reached.base_url,
-                    verify=reached.tls_verify,
+                    verify=reached.verify,
                     timeout=5.0,
                 ) as client:
                     resp = await client.get(
@@ -1695,7 +1695,7 @@ async def register_worker_inventory(
         reached = await tunnels.resolve(connections.get(connection_id))
         token = reached.token()
         headers = {"x-usr-admin-token": token} if token else {}
-        async with httpx.AsyncClient(base_url=reached.base_url, verify=reached.tls_verify, timeout=10.0) as client:
+        async with httpx.AsyncClient(base_url=reached.base_url, verify=reached.verify, timeout=10.0) as client:
             if not settings_id:
                 list_resp = await client.get("/api/v1/settings/db/backends", headers=headers)
                 if list_resp.is_success and list_resp.json():

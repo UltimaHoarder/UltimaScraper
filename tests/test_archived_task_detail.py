@@ -91,3 +91,29 @@ def test_invalid_result_json_still_yields_message_fallback() -> None:
     detail = _central_task_row_to_detail(row)  # type: ignore[arg-type]
 
     assert detail.result == {"message": "fallback"}
+
+
+def _unclaimed_scrape() -> _FakeRow:
+    return _FakeRow(task_type="scrape_user", status="pending", items_processed=0, items_total=None,
+                    started_at=None, completed_at=None, last_event_at=None)
+
+
+def test_an_unclaimed_signed_in_task_shows_no_route_rather_than_direct() -> None:
+    payload = {"auth_id": 1, "use_guest_auth": False, "guest_proxy_url": None, "guest_fallback_proxy_urls": []}
+
+    detail = _central_task_row_to_detail(  # type: ignore[arg-type]
+        _unclaimed_scrape(), definition_json=json.dumps({"payload": payload})
+    )
+
+    # The account's proxy is chosen when a worker claims it, so the WebUI shows that.
+    assert detail.proxy_routes is None and detail.proxy_url is None
+
+
+def test_an_unclaimed_guest_task_shows_its_routes() -> None:
+    payload = {"use_guest_auth": True, "guest_proxy_url": "http://192.0.2.5:8000", "guest_fallback_proxy_urls": []}
+
+    detail = _central_task_row_to_detail(  # type: ignore[arg-type]
+        _unclaimed_scrape(), definition_json=json.dumps({"payload": payload})
+    )
+
+    assert detail.proxy_routes == ["http://192.0.2.5:8000"]

@@ -482,3 +482,40 @@ async def test_a_host_that_cannot_decrypt_hands_drm_items_to_the_owner(tmp_path)
 
     assert await handler._DRMPipeline(1, remote_store=remote)._process(item)
     assert item.offloaded_path == "/mnt/media/library/8.mp4"
+
+
+@pytest.mark.asyncio
+async def test_profile_media_go_to_the_owner_from_a_backend_without_drives(monkeypatch, tmp_path) -> None:
+    client = _Client()
+    remote = _remote(tmp_path, client)
+
+    class Offload:
+        async def destination(self, **kwargs):
+            return remote
+
+    class Manager:
+        def __init__(self, **kwargs):
+            pass
+
+        async def bulk_download(self, items, create_session):
+            for item in items:
+                item.directory.mkdir(parents=True, exist_ok=True)
+                (item.directory / item.filename).write_bytes(b"avatar")
+
+    profile = SimpleNamespace(id=4, avatar_url="https://public.example/files/a/ab/abc/abcdef/avatar.jpg", header_url=None)
+    db_manager = SimpleNamespace(get_content=lambda **kwargs: [profile])
+    monkeypatch.setattr(handler, "DownloadManager", Manager)
+    monkeypatch.setattr(handler, "_resolve_proxy_url", lambda authed, db_manager: None)
+    task = SimpleNamespace(user_id=7, site_name="onlyfans", payload=None, task_id="task-1")
+    user = SimpleNamespace(get_usernames=lambda: ["tester"])
+
+    result = await handler._handle_profile_download(
+        task=task, context=SimpleNamespace(database_writes=None), user=user, db_user=None,
+        db_manager=db_manager, authed=None, user_manager=None, config=None, offload=Offload(),
+    )
+
+    [(data, root, path)] = client.stored
+    assert (data, root) == (b"avatar", "/mnt/media") and path.startswith("OnlyFans/T/tester/Profile/Avatars/")
+    [kept] = result.output["download_results"]
+    assert kept["status"] == "downloaded" and kept["path"] == f"/mnt/media/{path}"
+    assert result.output["files"][0]["path"] == f"/mnt/media/{path}"

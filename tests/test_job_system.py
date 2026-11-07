@@ -2442,6 +2442,46 @@ class TestBoundedTaskReads:
         )
 
     @pytest.mark.asyncio
+    async def test_seeded_scrape_download_template_downloads_each_content_type_once(
+        self, fake_redis: Any
+    ) -> None:
+        from collections import Counter
+
+        from ultima_scraper_backend.job_system.auth_expansion import (
+            iter_scrape_tasks_by_db_subscriptions,
+        )
+        from ultima_scraper_backend.job_system.models import TaskType
+        from ultima_scraper_backend.job_system.templates import (
+            JobTemplateStore,
+            seed_builtin_templates,
+        )
+
+        store = JobTemplateStore(FakeRedisManager(fake_redis))
+        (template,) = await seed_builtin_templates(store)
+        instantiation = template.instantiate(
+            {"site": "OnlyFans", "user_id": 544318955, "username": "alice"},
+            created_by="tests",
+        )
+
+        # Expanding a signed-in scrape adds a download for download_media;
+        # the template's own download task must stay the only one.
+        expanded = []
+        for task in instantiation.tasks:
+            task.auth_id = 53348944
+            if task.task_type == TaskType.SCRAPE:
+                expanded.extend(
+                    iter_scrape_tasks_by_db_subscriptions(task=task, db_manager=None)
+                )
+            else:
+                expanded.append(task)
+
+        downloads = Counter(
+            task.content_type for task in expanded if task.task_type == TaskType.DOWNLOAD
+        )
+        assert len(downloads) == 6
+        assert set(downloads.values()) == {1}
+
+    @pytest.mark.asyncio
     async def test_fetch_job_with_tasks_skips_task_loading_when_disabled(
         self, storage: Any
     ) -> None:

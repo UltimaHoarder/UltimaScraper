@@ -278,3 +278,74 @@ async def test_real_batch_pipeline_finalizes_files_and_records_unusable_media(
     assert len(result.output["download_results"]) == 2
     assert submit.call_args.args[0] == DatabaseWriteOperation.FINALIZE_DOWNLOAD
     assert submit.call_args.args[1]["media_ids"] == [1]
+
+
+async def test_progress_never_expects_fewer_bytes_than_the_task_has_written(monkeypatch, tmp_path):
+    from datetime import datetime, timezone
+    from test_download_pipeline import _build_api_user, _build_config
+    from ultima_scraper_backend.job_system.handlers.download import handler
+    from ultima_scraper_backend.job_system.metadata_models import ContentMetadata, MediaMetadata
+
+    config = _build_config()
+    user = _build_api_user(config)
+    content = ContentMetadata(
+        content_id=1, api_type="posts", user_id=user.id, created_at=datetime(2026, 9, 5, tzinfo=timezone.utc)
+    )
+    # The archive knew no size for this video, so the estimate counts it as 0.
+    content.medias.append(
+        MediaMetadata(
+            media_id=1, media_type="videos", urls=["https://fixture/one.mp4"], content_id=1,
+            user_id=user.id, created_at=content.created_at, size=None, content_metadata=content,
+        )
+    )
+    published = []
+    monkeypatch.setattr(handler, "publish_download_progress", AsyncMock(side_effect=published.append))
+
+    class Manager:
+        on_progress = []
+        on_status = []
+        on_downloaded = []
+        resource_manager = SimpleNamespace(get_file_concurrency=lambda: 1)
+
+        def release_workspace(self, item):
+            pass
+
+        async def bulk_download(self, items, **kwargs):
+            item = items[0]
+            event = {"status": "progress", "item": item, "bytes": 5_000, "processed_bytes": 5_000,
+                     "expected_bytes": 8_000, "completed": 0, "failed": 0, "total": 1}
+            for callback in self.on_progress:
+                await callback(event)
+            file = item.get_filepath()
+            file.parent.mkdir(parents=True, exist_ok=True)
+            file.write_bytes(b"x")
+            item.downloaded_this_run = True
+            return {"completed": 1, "total": 1, "success_rate": 100}
+
+    storage = SimpleNamespace(persist_task=AsyncMock())
+    context = SimpleNamespace(
+        job=SimpleNamespace(job_id="job"),
+        worker_id="worker",
+        database_writes=SimpleNamespace(submit=AsyncMock(return_value={})),
+        storage=storage,
+    )
+    task = SimpleNamespace(task_id="task", site_name="onlyfans")
+    selection = SimpleNamespace(
+        root=tmp_path, absolute_path=tmp_path, requires_full_directory_render=False, directory_format=tmp_path
+    )
+
+    await handler._download_content_batch(
+        task=task, context=context, user=user, db_user=SimpleNamespace(username="creator"),
+        authed=user.get_authed(), config=config, content_metadatas=[content], content_type="posts",
+        destination_selection=selection, download_manager=Manager(),
+        # Earlier pages wrote 10 kB against an estimate of 3 kB.
+        aggregate={"total_items": 1, "expected_bytes": 3_000, "progress_total": 1, "bytes_written": 10_000},
+        evidence_spec={"selection_id": "selection"},
+    )
+
+    [event] = published
+    assert event["processed_bytes"] == 15_000
+    assert event["expected_bytes"] == 18_000  # written so far plus this file's real size
+    persisted = [call.kwargs["task"].result.metrics for call in storage.persist_task.call_args_list]
+    assert any(metrics["total_bytes"] == 18_000 for metrics in persisted)
+    assert all(metrics["total_bytes"] >= metrics["bytes_written"] for metrics in persisted)

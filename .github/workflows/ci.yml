@@ -30,8 +30,21 @@ jobs:
         run: uv lock --check --python 3.14
       - name: Install
         run: uv sync --frozen --python 3.14 --group dev
+      # The images are built from the sibling commits in components.lock.json,
+      # which can be ahead of their releases on PyPI: test those.
+      - name: Install the pinned sibling commits
+        run: |
+          set -euo pipefail
+          siblings="$RUNNER_TEMP/siblings"
+          uv run --frozen --no-sync python scripts/release/components.py checkout --root "$siblings"
+          uv pip install --no-deps \
+            "$siblings/UltimaScraperCore" \
+            "$siblings/UltimaScraperAPI" \
+            "$siblings/UltimaDatabases/UltimaScraperDB" \
+            "$siblings/UltimaDatabases/UltimaScraperDBArchive" \
+            "$siblings/UltimaBackends/UltimaScraperBackend"
       - name: Test
-        run: uv run --frozen pytest -q
+        run: uv run --frozen --no-sync pytest -q
 
   webui:
     name: WebUI

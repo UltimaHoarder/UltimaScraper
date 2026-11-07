@@ -101,6 +101,27 @@ test.describe('operational smoke flows', () => {
     await expect(page.getByText(/Updated Network \(direct\)|Updated http:\/\/proxy1\.example:8080/)).toBeVisible();
   });
 
+  test('saves the download limits every proxy uses', async ({ page }) => {
+    await seedConfiguredApp(page);
+    await installApiMocks(page);
+
+    await page.goto('/network');
+    await expect(page.getByRole('heading', { name: 'Download limits' })).toBeVisible();
+    const perDomain = page.getByLabel(/Per-domain concurrency/);
+    await expect(perDomain).not.toHaveValue('');
+    await perDomain.fill('16');
+
+    const saved = page.waitForRequest(
+      (request) => request.method() === 'PUT' && new URL(request.url()).pathname.replace(/\/$/, '') === '/api/v1/settings',
+    );
+    await page.getByRole('button', { name: 'Save limits' }).click();
+    const payload = (await saved).postDataJSON() as { network: { downloads: Record<string, number> } };
+
+    expect(payload.network.downloads.per_domain_concurrency).toBe(16);
+    expect(Object.keys(payload.network)).toEqual(['downloads']);
+    await expect(page.getByRole('status').filter({ hasText: 'Saved.' })).toBeVisible();
+  });
+
   test('bulk-edits connection capacity across selected proxies', async ({ page }) => {
     await seedConfiguredApp(page);
     await installApiMocks(page);

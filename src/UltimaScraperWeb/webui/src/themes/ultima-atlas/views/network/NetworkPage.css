@@ -888,3 +888,76 @@
     padding: 1rem;
   }
 }
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-download-limits {
+  min-height: 0;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-download-limits__fields {
+  display: grid;
+  gap: 0.8rem;
+  grid-template-columns: repeat(3, minmax(0, 1fr));
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-download-limits__field {
+  display: grid;
+  gap: 0.35rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-download-limits__field > span {
+  color: var(--color-text-secondary);
+  font-family: var(--font-mono);
+  font-size: 0.62rem;
+  letter-spacing: 0.1em;
+  text-transform: uppercase;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-download-limits__field input {
+  background: rgba(255, 255, 255, 0.035);
+  border: 1px solid var(--network-line);
+  border-radius: 0;
+  color: var(--color-text-primary);
+  font-family: var(--font-mono);
+  font-size: 0.9rem;
+  padding: 0.5rem 0.6rem;
+  width: 100%;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-download-limits__field input:focus-visible {
+  border-color: var(--color-success);
+  outline: none;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-download-limits__field small {
+  color: var(--color-text-tertiary);
+  font-size: 0.72rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-download-limits__footer {
+  align-items: center;
+  display: flex;
+  gap: 1rem;
+  justify-content: space-between;
+  margin-top: 0.9rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-download-limits__error {
+  color: var(--network-danger);
+  margin-top: 0.6rem;
+}
+
+:root[data-theme='ultima-atlas'] .proxies-page .network-download-limits__saved {
+  color: var(--network-good);
+  margin-top: 0.6rem;
+}
+
+@media (max-width: 760px) {
+  :root[data-theme='ultima-atlas'] .proxies-page .network-download-limits__fields {
+    grid-template-columns: minmax(0, 1fr);
+  }
+
+  :root[data-theme='ultima-atlas'] .proxies-page .network-download-limits__footer {
+    align-items: stretch;
+    flex-direction: column;
+  }
+}

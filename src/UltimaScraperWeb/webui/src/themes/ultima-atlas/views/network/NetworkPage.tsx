@@ -3,11 +3,13 @@ import { useState } from 'react';
 import { BulkProxyModal } from '../../../../features/network/components/BulkProxyModal';
 import { BulkEditConnectionsModal } from '../../../../features/network/components/BulkEditConnectionsModal';
 import { DirectConnectionCard } from '../../../../features/network/components/DirectConnectionCard';
+import { DownloadLimitsCard } from '../../../../features/network/components/DownloadLimitsCard';
 import { ErrorDetailModal } from '../../../../features/network/components/ErrorDetailModal';
 import { ProxyAnalyzerModal } from '../../../../features/network/components/ProxyAnalyzerModal';
 import { ProxyFormModal } from '../../../../features/network/components/ProxyFormModal';
 import { ProxyListSection } from '../../../../features/network/components/ProxyListSection';
 import { useGroupLookupTimeouts } from '../../../../features/network/hooks/useGroupLookupTimeouts';
+import { useNetworkDownloadLimits } from '../../../../features/network/hooks/useNetworkDownloadLimits';
 import { useNetworkPageController } from '../../../../features/network/hooks/useNetworkPageController';
 import {
   DIRECT_CONNECTION_PROXY,
@@ -129,6 +131,7 @@ const NetworkPage = () => {
     geoLoading,
   } = useNetworkPageController();
   const groupTimeouts = useGroupLookupTimeouts(existingGroups);
+  const downloadLimits = useNetworkDownloadLimits();
 
   const analyzerErrorCount = Object.values(analyzerErrors).filter(Boolean).length;
   if (isLoading) {
@@ -237,6 +240,24 @@ const NetworkPage = () => {
             <p>Guest resolution can rotate through up to three configured proxy exits after the direct route.</p>
           </article>
         </div>
+      </section>
+
+      <section className="network-command" aria-labelledby="download-limits-title">
+        <div className="network-section-head">
+          <div>
+            <span className="network-kicker">Transfers</span>
+            <h2 id="download-limits-title">Download limits</h2>
+            <p>Connections each download task opens, through every proxy and the direct route.</p>
+          </div>
+        </div>
+        <DownloadLimitsCard
+          limits={downloadLimits.limits}
+          isLoading={downloadLimits.isLoading}
+          loadError={downloadLimits.loadError}
+          isSaving={downloadLimits.isSaving}
+          saveError={downloadLimits.saveError}
+          onSave={downloadLimits.save}
+        />
       </section>
 
       <div className="network-section network-section--inventory">

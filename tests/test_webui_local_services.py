@@ -23,10 +23,12 @@ _STUB = """
 import json, os, sys, time
 out = os.environ["STUB_DIR"]
 role = os.environ["USR_CONTAINER_ROLE"]
+# The environment first, whole, so a counted start always has it to read.
+with open(os.path.join(out, role + ".json.tmp"), "w") as env:
+    json.dump(dict(os.environ), env)
+os.replace(os.path.join(out, role + ".json.tmp"), os.path.join(out, role + ".json"))
 with open(os.path.join(out, role + ".starts"), "a") as starts:
     starts.write("x")
-with open(os.path.join(out, role + ".json"), "w") as env:
-    json.dump(dict(os.environ), env)
 print(role, "started", flush=True)
 code = int(os.environ.get("STUB_EXIT", "-1"))
 if code >= 0:

@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any
@@ -25,6 +26,9 @@ class _FakeOrdersRouteResult:
     def scalar_one_or_none(self) -> Any:
         return self._scalar_one_or_none_value
 
+    def first(self) -> Any:
+        return self._scalar_one_or_none_value
+
     def scalars(self) -> _FakeOrdersRouteResult:
         return self
 
@@ -36,6 +40,9 @@ class _FakeOrdersRouteSession:
     def __init__(self, results: list[_FakeOrdersRouteResult]) -> None:
         self._results = results
         self.deleted: list[Any] = []
+        # Whether a transaction is open, as PgBouncer sees it.
+        self.in_transaction = False
+        self.expire_on_commit = True
 
     def __enter__(self) -> _FakeOrdersRouteSession:
         return self
@@ -44,6 +51,7 @@ class _FakeOrdersRouteSession:
         return None
 
     def execute(self, _statement: Any) -> _FakeOrdersRouteResult:
+        self.in_transaction = True
         if not self._results:
             raise AssertionError("Unexpected execute call")
         return self._results.pop(0)
@@ -52,7 +60,10 @@ class _FakeOrdersRouteSession:
         self.deleted.append(value)
 
     def flush(self) -> None:
-        return None
+        self.in_transaction = True
+
+    def commit(self) -> None:
+        self.in_transaction = False
 
 
 @pytest.mark.asyncio
@@ -532,3 +543,108 @@ async def test_delete_ordered_performer_recomputes_parent_order_status(
     assert response.order.total_price == pytest.approx(10.0)
     assert [item.id for item in response.items] == [remaining_item.id]
     assert fake_session.deleted == [deleted_item]
+
+
+@pytest.mark.asyncio
+async def test_execute_order_keeps_no_transaction_open_while_it_buys(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    now = datetime.now(timezone.utc)
+    order = orders_module.OrderModel(id=80, site_id=3, status="pending", total_price=0.0, created_at=now)
+    site = orders_module.SiteModel(id=3, name="onlyfans", created_at=now)
+    items = [
+        orders_module.OrderedPerformerModel(
+            id=index, order_id=order.id, site_id=site.id, user_id=2000 + index,
+            username=f"p{index}", price=5.0, status="pending", created_at=now,
+        )
+        for index in (1, 2)
+    ]
+    session = _FakeOrdersRouteSession(
+        [
+            _FakeOrdersRouteResult(scalar_one_or_none_value=order),
+            _FakeOrdersRouteResult(scalar_one_or_none_value=site),
+            _FakeOrdersRouteResult(scalars_all_value=items),
+        ]
+    )
+    open_during_purchase: list[bool] = []
+
+    async def buy(*_args: Any) -> tuple[bool, None, float]:
+        open_during_purchase.append(session.in_transaction)
+        return True, None, 5.0
+
+    spawned: list[Any] = []
+    monkeypatch.setattr(orders_module, "ensure_orders_schema", lambda: None)
+    monkeypatch.setattr(orders_module, "create_orders_session", lambda: session)
+    monkeypatch.setattr(orders_module, "_get_candidate_auth_ids", lambda site_name, price: [(999, "paid")])
+    monkeypatch.setattr(orders_module, "_get_stored_user_balances", lambda site_name, auth_ids: {999: 100.0})
+    monkeypatch.setattr(orders_module, "_get_cached_authed_session", AsyncMock(return_value=SimpleNamespace(id=999)))
+    monkeypatch.setattr(orders_module, "_knapsack_optimize", lambda paid_items, spender_balances: {999: list(paid_items)})
+    monkeypatch.setattr(orders_module, "_execute_subscription", buy)
+    monkeypatch.setattr(orders_module, "_refresh_spender_balance_after_purchase", AsyncMock())
+    monkeypatch.setattr(orders_module, "_upsert_subscription_after_purchase", AsyncMock())
+    monkeypatch.setattr(orders_module, "_add_to_watch_list", lambda site_name, user_id: None)
+    monkeypatch.setattr(orders_module, "spawn_background_task", spawned.append)
+    created: list[int] = []
+    running = 0
+
+    async def create_job(site_name: str, auth_id: int, user_id: int, username: Any, manager: Any) -> None:
+        nonlocal running
+        running += 1
+        assert running == 1, "jobs are created one at a time"
+        created.append(user_id)
+        await asyncio.sleep(0)
+        running -= 1
+
+    monkeypatch.setattr(orders_module, "_create_scrape_download_job", create_job)
+
+    response = await orders_module.execute_order(order_id=order.id, backend_manager=SimpleNamespace())
+
+    assert response.success is True and response.order.status == "completed"
+    assert open_during_purchase == [False, False]
+    # One background task creates every performer's job, in turn.
+    [jobs] = spawned
+    await jobs
+    assert created == [2001, 2002]
+
+
+@pytest.mark.asyncio
+async def test_execute_ordered_performer_keeps_no_transaction_open_while_it_buys(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    now = datetime.now(timezone.utc)
+    order = orders_module.OrderModel(id=81, site_id=3, status="pending", total_price=0.0, created_at=now)
+    site = orders_module.SiteModel(id=3, name="onlyfans", created_at=now)
+    item = orders_module.OrderedPerformerModel(
+        id=5, order_id=order.id, site_id=site.id, user_id=3005, username="p5",
+        price=5.0, status="pending", created_at=now,
+    )
+    session = _FakeOrdersRouteSession(
+        [
+            _FakeOrdersRouteResult(scalar_one_or_none_value=(item, order, site)),
+            _FakeOrdersRouteResult(scalars_all_value=[item]),
+        ]
+    )
+    open_during_calls: list[bool] = []
+
+    async def buy(*_args: Any) -> tuple[bool, None, float]:
+        open_during_calls.append(session.in_transaction)
+        return True, None, 5.0
+
+    async def after_purchase(**_kwargs: Any) -> None:
+        open_during_calls.append(session.in_transaction)
+
+    monkeypatch.setattr(orders_module, "ensure_orders_schema", lambda: None)
+    monkeypatch.setattr(orders_module, "create_orders_session", lambda: session)
+    monkeypatch.setattr(
+        orders_module, "_select_spender", AsyncMock(return_value=(SimpleNamespace(id=999), 999, 100.0))
+    )
+    monkeypatch.setattr(orders_module, "_execute_subscription", buy)
+    monkeypatch.setattr(orders_module, "_refresh_spender_balance_after_purchase", after_purchase)
+    monkeypatch.setattr(orders_module, "_upsert_subscription_after_purchase", after_purchase)
+    monkeypatch.setattr(orders_module, "_add_to_watch_list", lambda site_name, user_id: None)
+    monkeypatch.setattr(orders_module, "_create_scrape_download_job", AsyncMock())
+
+    response = await orders_module.execute_ordered_performer(performer_id=item.id, backend_manager=SimpleNamespace())
+
+    assert response.success is True and response.item.status == "completed"
+    assert open_during_calls == [False, False, False]

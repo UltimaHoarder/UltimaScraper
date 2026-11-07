@@ -9,7 +9,7 @@ from fastapi import APIRouter, Depends, HTTPException, Request
 from pydantic import BaseModel, Field
 
 from ..auth import Auth
-from ..version import own_version
+from ..version import install_version
 from .images import docker_cli_available, local_releases
 from .probe import UnsupportedHost
 from .runner import (
@@ -184,7 +184,7 @@ def install_router(installer: Installer, auth: Auth) -> APIRouter:
     async def environment() -> EnvironmentOut:
         releases = await local_releases()
         return EnvironmentOut(
-            version=own_version(),
+            version=install_version(),
             local_available=installer.local_allowed,
             in_container=in_container(),
             copy_available=docker_cli_available() and bool(releases),
@@ -217,7 +217,7 @@ def install_router(installer: Installer, auth: Auth) -> APIRouter:
     @router.post("/detect", response_model=DetectOut)
     async def detect(body: DetectIn) -> DetectOut:
         try:
-            result = await installer.detect(body, default_version=own_version() or "0.1.0")
+            result = await installer.detect(body, default_version=install_version())
         except HTTPException:
             raise
         except UnsupportedHost as exc:
@@ -256,7 +256,7 @@ def install_router(installer: Installer, auth: Auth) -> APIRouter:
     @router.post("", response_model=InstallStarted, status_code=202)
     async def start(body: InstallIn) -> InstallStarted:
         if not body.version:
-            body = body.model_copy(update={"version": own_version() or "0.1.0"})
+            body = body.model_copy(update={"version": install_version()})
         return InstallStarted(id=installer.start(body))
 
     @router.get("/{install_id}", response_model=InstallOut)

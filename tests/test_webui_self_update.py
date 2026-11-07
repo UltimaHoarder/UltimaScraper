@@ -201,6 +201,18 @@ def test_a_published_package_reports_the_image_built_with_it(monkeypatch: pytest
     assert version_mod.own_version() == "0.1.0"
 
 
+def test_installs_use_this_webuis_image_or_edge(monkeypatch: pytest.MonkeyPatch) -> None:
+    monkeypatch.setenv("USR_WEBUI_VERSION", "0.1.0-edge.0123abcd4567")
+    assert version_mod.install_version() == "0.1.0-edge.0123abcd4567"
+
+    # A local build: its package version names no published image.
+    monkeypatch.delenv("USR_WEBUI_VERSION")
+    monkeypatch.setitem(sys.modules, "ultima_webui_server._build", None)
+    monkeypatch.setattr(version_mod, "package_version", lambda: "0.1.0")
+    assert version_mod.own_version() == "0.1.0"
+    assert version_mod.install_version() == "edge"
+
+
 def test_index_credentials_never_show() -> None:
     assert su.redact_url("https://bot:tok@forge.example:3000/simple") == "https://***@forge.example:3000/simple"
     assert su.redact_url(INDEX) == INDEX

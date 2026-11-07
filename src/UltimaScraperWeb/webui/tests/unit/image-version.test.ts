@@ -35,6 +35,10 @@ describe('versionForSource', () => {
 
   it('falls back to this WebUI release before detection finishes', () => {
     expect(versionForSource('registry', null, environment)).toBe('0.1.0');
-    expect(versionForSource('target', null, null)).toBe('0.1.0');
+  });
+
+  it('offers edge when nothing names a release', () => {
+    expect(versionForSource('registry', null, null)).toBe('edge');
+    expect(versionForSource('target', null, null)).toBe('edge');
   });
 });

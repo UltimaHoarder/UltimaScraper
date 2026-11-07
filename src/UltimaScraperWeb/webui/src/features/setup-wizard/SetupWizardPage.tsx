@@ -2134,7 +2134,7 @@ export function SetupWizardPage({
                           setVersion(event.target.value);
                           setVersionEdited(true);
                         }}
-                        placeholder="0.1.0"
+                        placeholder="edge"
                       />
                     </div>
                   </div>

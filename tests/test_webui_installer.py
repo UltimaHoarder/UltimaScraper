@@ -237,7 +237,8 @@ def test_install_api_needs_a_session_and_complete_ssh_details(tmp_path: Path) ->
 
     environment = client.get("/webui/api/v1/installs/environment").json()
     assert set(environment) == {"version", "local_available", "in_container", "copy_available", "releases"}
-    assert environment["version"] == "0.1.0"  # the installed package's
+    # A local build has no image of its own, and no image carries its package version.
+    assert environment["version"] == "edge"
 
     incomplete = client.post(
         "/webui/api/v1/installs",

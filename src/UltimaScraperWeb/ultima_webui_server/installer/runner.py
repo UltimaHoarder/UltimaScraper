@@ -29,6 +29,7 @@ from ..clusters import describe_clusters
 from ..connections import Connection, Connections
 from ..store import DeploymentRecord, Store, StoredTunnel
 from ..tunnels import TunnelManager
+from ..version import install_version
 from .docker_setup import DockerSetupFailed, install_docker
 from .images import IMAGE_NAME, ImagesUnavailable, copy_images, local_releases, require_images_on_target
 from .probe import HostFacts, UnsupportedHost, check_service, needs_sudo_for, probe, recommend_components
@@ -121,7 +122,7 @@ class InstallIn(BaseModel):
     install_dir: str = Field(default="~/ultimascraper", min_length=1, max_length=200)
     # copy: from this server's Docker; target: already on the host; registry: pulled there.
     image_source: ImageSource = "copy"
-    version: str = Field(default="0.1.0", min_length=1, max_length=128, pattern=_VERSION_PATTERN)
+    version: str = Field(default_factory=install_version, min_length=1, max_length=128, pattern=_VERSION_PATTERN)
     # Registry root for image_source=registry, e.g. forgejo.example/org/ultimascraper.
     image_prefix: str = Field(default="", max_length=300, pattern=_REGISTRY_PATTERN)
     # Install Docker from the distribution's packages when the host lacks it.
@@ -314,7 +315,7 @@ class Installer:
             sudo_password=target_in.sudo_password,
         )
 
-    async def detect(self, request: DetectIn, *, default_version: str = "0.1.0") -> dict:
+    async def detect(self, request: DetectIn, *, default_version: str = "edge") -> dict:
         target = await self.open_target(request.target)
         try:
             facts = await probe(
@@ -345,7 +346,7 @@ class Installer:
             recommended_version = preferred.version
         else:
             recommended_image_source = "registry"
-            recommended_version = default_version or "0.1.0"
+            recommended_version = default_version or "edge"
 
         return {
             "facts": {

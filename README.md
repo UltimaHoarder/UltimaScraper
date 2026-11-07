@@ -1,4 +1,4 @@
-# 🗄️ UltimaScraper
+# <img src="src/UltimaScraperWeb/webui/public/favicon.svg" alt="" width="40" height="40" align="top"> UltimaScraper
 
 <a href="https://buymeacoffee.com/datahoarders" target="_blank" rel="noopener noreferrer"><img src="https://img.shields.io/badge/Buy%20Me%20a%20Coffee-ffdd00?style=for-the-badge&logo=buy-me-a-coffee&logoColor=black" alt="Buy Me a Coffee"></a>
 <a href="https://www.webshare.io/?referral_code=s8w96gu8w77g" target="_blank" rel="sponsored noopener noreferrer"><img src="https://img.shields.io/badge/Proxies-Webshare-1a73e8?style=for-the-badge" alt="Proxies by Webshare"></a>

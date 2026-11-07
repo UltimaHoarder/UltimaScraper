@@ -569,6 +569,27 @@ def test_resource_manager_uses_matching_proxy_download_limits() -> None:
     assert resources.get_current_buffer_size() == 4096
 
 
+
+def test_resource_manager_uses_network_download_limits_for_a_proxy_without_its_own() -> None:
+    config = _build_config()
+    config.settings.network.downloads.per_domain_concurrency = 16
+    config.settings.network.proxies = [Proxy(url="http://proxy.test:8022")]
+
+    resources = ResourceManager.from_config(config, "http://proxy.test:8022")
+
+    # The Network page's Download Concurrency is the only place the WebUI edits.
+    assert config.settings.network.proxies[0].downloads is None
+    assert resources.get_per_domain_concurrency() == 16
+
+
+def test_a_saved_proxy_keeps_no_download_settings_of_its_own() -> None:
+    saved = Proxy(url="http://proxy.test:8022").model_dump(mode="json")
+
+    # Left out rather than null, which backends from before this reject.
+    assert "downloads" not in saved
+    assert Proxy.model_validate(saved).downloads is None
+    assert "downloads" in Proxy(url="http://proxy.test:8022", downloads=DownloadSettings()).model_dump()
+
 @pytest.mark.asyncio
 async def test_download_admission_bounds_large_stream_and_cancels_before_close(
     tmp_path, monkeypatch

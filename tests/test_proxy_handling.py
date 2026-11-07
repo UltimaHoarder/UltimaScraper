@@ -13,7 +13,7 @@ from ultima_scraper_backend.usapi_initializer import (
     resolve_assigned_proxy_url,
     resolve_proxy_url,
 )
-from ultima_scraper_backend.config import Proxy
+from ultima_scraper_backend.config import Network, Proxy
 from ultima_scraper_api.managers.session_manager import SessionManager
 
 
@@ -137,7 +137,7 @@ async def test_proxy_update_persists_enabled_state(monkeypatch) -> None:
     persist_config = Mock()
     monkeypatch.setattr(proxies_module, "_persist_proxy_config", persist_config)
     config = SimpleNamespace(
-        settings=SimpleNamespace(network=SimpleNamespace(proxies=[proxy])),
+        settings=SimpleNamespace(network=Network(proxies=[proxy])),
     )
 
     response = await proxies_module.update_proxy(
@@ -489,7 +489,7 @@ async def test_update_proxy_group(monkeypatch) -> None:
     persist = Mock()
     monkeypatch.setattr(proxies_module, "_persist_proxy_config", persist)
     config = SimpleNamespace(
-        settings=SimpleNamespace(network=SimpleNamespace(proxies=[proxy])),
+        settings=SimpleNamespace(network=Network(proxies=[proxy])),
     )
 
     req = proxies_module.ProxyUpdateRequest(group="NewGroup")
@@ -562,9 +562,9 @@ async def test_update_group_settings(monkeypatch) -> None:
     p3 = Proxy(url="http://203.0.113.30:6462", max_connections=4, group="OtherGroup")
     persist = Mock()
     monkeypatch.setattr(proxies_module, "_persist_proxy_config", persist)
-    config = SimpleNamespace(
-        settings=SimpleNamespace(network=SimpleNamespace(proxies=[p1, p2, p3])),
-    )
+    network = Network(proxies=[p1, p2, p3])
+    network.downloads.per_domain_concurrency = 16
+    config = SimpleNamespace(settings=SimpleNamespace(network=network))
 
     req = proxies_module.GroupSettingsUpdateRequest(
         max_connections=16,
@@ -578,7 +578,9 @@ async def test_update_group_settings(monkeypatch) -> None:
     assert p2.max_connections == 16
     assert p2.downloads.max_concurrency == 8
     assert p3.max_connections == 4
-    assert p3.downloads.max_concurrency != 8
+    # Their own settings start from the network's, not the built-in defaults.
+    assert p1.downloads.per_domain_concurrency == 16
+    assert p3.downloads is None
     persist.assert_called_once_with(config)
 
 

@@ -3,7 +3,7 @@
   "components": {
     "usr_backend": {
       "repository": "https://github.com/UltimaHoarder/UltimaScraperBackend.git",
-      "commit": "1c65cf94e0bbf69628990aa8b49c56c376ef732c"
+      "commit": "a74ba2ce35889dbcc741c1abf4e74731cf0791b9"
     },
     "usdb": {
       "repository": "https://github.com/DATAHOARDERS/UltimaScraperDB.git",
@@ -15,7 +15,7 @@
     },
     "usr_api": {
       "repository": "https://github.com/UltimaHoarder/UltimaScraperAPI.git",
-      "commit": "1aac21581a5d6ce2c57c1d452639ec008e1baeb3"
+      "commit": "9c7639f4000586965a9f12c55ac30ad34a5bcdb4"
     },
     "usr_core": {
       "repository": "https://github.com/UltimaHoarder/UltimaScraperCore.git",

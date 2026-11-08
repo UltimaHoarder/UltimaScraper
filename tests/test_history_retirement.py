@@ -403,6 +403,11 @@ async def test_persisted_past_end_cursor_rewinds_and_bytes_keys_are_cleared(
         return original(session_factory=history.session_factory, grace_seconds=0, **kwargs)
 
     monkeypatch.setattr(history_retirement, "retire_finished_history", owned)
+    monkeypatch.setattr(
+        history_retirement,
+        "retire_finished_api_commands",
+        lambda **kwargs: {"retired": 0, "busy": 0, "waiting": 0},
+    )
     assert await history_retirement.run_history_retirement_cycle(SimpleNamespace(client=client)) == 0
     assert _directory_count(partitioned, run) == 0
     client.hdel.assert_awaited_once_with(history_retirement.CURSOR_KEY, run)
@@ -474,3 +479,141 @@ def test_orphan_discovery_timeout_defers_cleanup_but_other_errors_raise(
         with pytest.raises(OperationalError):
             _retire(history)
     assert _directory_count(partitioned, run) == before
+
+
+ALL_LEAVES = {"execution_outbox", "execution_mutations", "execution_attempts", "job_tasks"}
+TASK_LEAVES = {"execution_attempts", "job_tasks"}
+
+
+def _retire_commands(ledger, **kwargs):
+    return history_retirement.retire_finished_api_commands(
+        session_factory=ledger.session_factory,
+        **{"grace_seconds": 0, "failed_days": 3, **kwargs},
+    )
+
+
+def _failed(ledger, run_id):
+    submit(ledger, [task(f"{run_id}-task")], identity=run_id)
+    assert ledger.tick() == run_id
+    finish(ledger, claim(ledger), success=False)
+    ledger.tick()
+    assert ledger.job(run_id)["state"] == "failed"
+    while ledger.relay(publish_many=lambda payloads: None):
+        pass
+
+
+def _age_run(engine, run_id, days):
+    with engine.begin() as connection:
+        connection.execute(
+            text(
+                "UPDATE management.execution_runs "
+                "SET completed_at = now() - make_interval(days => :days) WHERE run_id = :run"
+            ),
+            {"run": run_id, "days": days},
+        )
+
+
+def _task_directory_count(engine, run_id):
+    with engine.connect() as connection:
+        return connection.scalar(
+            text(
+                "SELECT (SELECT count(*) FROM management.job_task_identities WHERE job_id=:run)"
+                " + (SELECT count(*) FROM management.execution_attempt_identities WHERE run_id=:run)"
+            ),
+            {"run": run_id},
+        )
+
+
+def test_finished_api_command_loses_every_leaf_and_its_directory_rows(history, partitioned):
+    _finished(history, "api-done")
+    assert _task_directory_count(partitioned, "api-done") > 0
+
+    assert _retire_commands(history) == {"retired": 4, "busy": 0, "waiting": 0}
+
+    assert _leaves(partitioned, "api-done") == set()
+    assert _task_directory_count(partitioned, "api-done") == 0
+    # The job header stays for the jobs list.
+    assert history.job("api-done")["state"] == "completed"
+    assert _retire_commands(history) == {"retired": 0, "busy": 0, "waiting": 0}
+
+
+def test_api_command_retirement_leaves_other_jobs_alone(history, partitioned):
+    _finished(history, "job-scrape")
+    assert _retire_commands(history)["retired"] == 0
+    assert _leaves(partitioned, "job-scrape") == ALL_LEAVES
+
+
+def test_api_command_waits_for_grace_queued_writes_and_event_delivery(history, partitioned):
+    _finished(history, "api-young")
+    assert _retire_commands(history, grace_seconds=600)["retired"] == 0
+    assert _leaves(partitioned, "api-young") == ALL_LEAVES
+
+    assert _retire_commands(history, protected_run_ids={"api-young"})["retired"] == 0
+    assert _leaves(partitioned, "api-young") == ALL_LEAVES
+
+    _finished(history, "api-undelivered", deliver=False)
+    _retire_commands(history)
+    assert _leaves(partitioned, "api-undelivered") == {"execution_outbox"}
+
+
+def test_failed_api_command_keeps_task_history_for_the_retention_period(history, partitioned):
+    _failed(history, "api-failed")
+    assert _retire_commands(history)["retired"] == 0
+    assert _leaves(partitioned, "api-failed") == ALL_LEAVES
+
+    _age_run(partitioned, "api-failed", 4)
+    assert _retire_commands(history, failed_days=0)["retired"] == 0
+    assert _retire_commands(history)["retired"] == 2
+    # Its events and mutations follow the ordinary retirement rule.
+    assert _leaves(partitioned, "api-failed") == {"execution_outbox", "execution_mutations"}
+
+
+def test_api_command_cycle_respects_its_leaf_limit_oldest_first(history, partitioned):
+    _finished(history, "api-newer")
+    _finished(history, "api-older")
+    _age_run(partitioned, "api-older", 1)
+    assert _retire_commands(history, limit=4)["retired"] == 4
+    assert _leaves(partitioned, "api-older") == set()
+    assert _leaves(partitioned, "api-newer") == ALL_LEAVES
+
+
+def test_deletion_finishes_after_api_command_retirement(history, partitioned):
+    _finished(history, "api-delete")
+    assert _retire_commands(history)["retired"] == 4
+    assert history.delete("api-delete", receipt_queue=ReceiptQueueSnapshot()) is True
+    assert history.job("api-delete") is None
+
+
+def test_retired_api_command_can_still_be_retried_from_its_manifest(history, partitioned):
+    _finished(history, "api-retry")
+    assert _retire_commands(history)["retired"] == 4
+    retried = history.retry("api-retry")
+    assert history.stats(retried["job_id"])["total"] == 1
+
+
+@pytest.mark.asyncio
+async def test_cycle_adds_api_command_retirement_to_its_counts(history, monkeypatch):
+    from ultima_scraper_backend.database import receipt_retention
+
+    client = SimpleNamespace(
+        hgetall=AsyncMock(return_value={}),
+        hset=AsyncMock(return_value=1),
+        hdel=AsyncMock(return_value=1),
+    )
+    monkeypatch.setattr(receipt_retention, "pending_run_ids", AsyncMock(return_value=frozenset({"api-busy"})))
+    monkeypatch.setattr(receipt_retention, "retention_mode", lambda: "idle")
+    monkeypatch.setattr(
+        history_retirement,
+        "retire_finished_history",
+        lambda **kwargs: {"retired": 2, "busy": 1, "waiting": 0},
+    )
+    seen = {}
+
+    def commands(**kwargs):
+        seen.update(kwargs)
+        return {"retired": 4, "busy": 0, "waiting": 3}
+
+    monkeypatch.setattr(history_retirement, "retire_finished_api_commands", commands)
+    assert await history_retirement.run_history_retirement_cycle(SimpleNamespace(client=client)) == 6
+    assert seen == {"protected_run_ids": frozenset({"api-busy"})}
+    assert client.hset.await_args.kwargs["mapping"]["waiting"] == "3"

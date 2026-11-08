@@ -183,6 +183,18 @@ def test_ineligible_runs_keep_their_full_history(history_engine):
         assert (state["tasks"], state["attempts"], state["metadata"]) == (200, 201, None)
 
 
+def test_api_command_without_leaves_does_not_block_older_candidates(history_engine):
+    # One run per cycle, oldest first: a run with no leaves to compact would
+    # be picked again forever.
+    make_run(history_engine, "api-retired", age_days=20)
+    with history_engine.begin() as connection:
+        for leaf in hc._leaves("api-retired"):
+            connection.execute(text(f"DROP TABLE {leaf}"))
+    make_run(history_engine, "job-next", age_days=10)
+    hc.compact_finished_history(session_factory=factory_for(history_engine), days=3)
+    assert history(history_engine, "job-next")["metadata"] is not None
+
+
 def test_lock_timeout_rolls_back_to_full_history_and_retries(history_engine, monkeypatch):
     monkeypatch.setattr(hc, "LOCK_TIMEOUT", "100ms")
     make_run(history_engine, "job-busy")

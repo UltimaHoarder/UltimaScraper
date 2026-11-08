@@ -65,6 +65,7 @@ def _create_user_subscription_tables(engine: Engine) -> None:
             text(
                 "CREATE TABLE users (id INTEGER PRIMARY KEY, username TEXT, "
                 "balance REAL NOT NULL DEFAULT 0, spend BOOL NOT NULL DEFAULT 0, "
+                "wallet_tax_percent REAL, "
                 "spender_type VARCHAR(32), performer BOOL NOT NULL DEFAULT 0, "
                 "favorite BOOL NOT NULL DEFAULT 0, watched BOOL NOT NULL DEFAULT 0, "
                 "ignored BOOL NOT NULL DEFAULT 0, active BOOL NOT NULL DEFAULT 1, "

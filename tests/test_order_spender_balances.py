@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import asyncio
 from datetime import datetime, timezone
 from types import SimpleNamespace
 from typing import Any
@@ -174,3 +175,108 @@ async def test_choosing_a_spender_for_one_item_sees_a_top_up(
     )
 
     assert selection == (authed, 53348944, 79.05)
+
+
+def _payment_methods(percent: float) -> dict[str, Any]:
+    return {
+        "cards": [
+            {"isInternal": False, "vatPercent": 21.0},
+            {"isInternal": True, "vatPercent": percent, "taxPercent": 0, "mediaTaxPercent": 0},
+        ]
+    }
+
+
+@pytest.mark.parametrize(
+    ("balance", "tax_percent", "spendable"),
+    [(10.77, 8.25, 9.94), (10.77, 0.0, 10.77), (10.77, None, 10.77), (0.0, 8.25, 0.0)],
+)
+def test_a_balance_is_what_it_can_pay_once_tax_is_added(
+    balance: float, tax_percent: float | None, spendable: float
+) -> None:
+    assert orders_module._after_tax(balance, tax_percent) == spendable
+
+
+@pytest.mark.asyncio
+async def test_the_spenders_tax_is_read_from_the_site_and_stored(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    stored = SimpleNamespace(id=53348944, wallet_tax_percent=None)
+    session = SimpleNamespace(get=lambda model, key: stored, add=lambda row: None, commit=lambda: None)
+
+    class _Context:
+        def __enter__(self) -> Any:
+            return session
+
+        def __exit__(self, *_args: Any) -> None:
+            return None
+
+    site_db = SimpleNamespace(get_session=_Context)
+    monkeypatch.setattr(
+        orders_module,
+        "MultiSiteDatabaseManager",
+        lambda: SimpleNamespace(get_or_create_manager=lambda site: site_db),
+    )
+    requester = SimpleNamespace(json_request=AsyncMock(return_value=_payment_methods(8.25)))
+    authed = SimpleNamespace(get_requester=lambda: requester)
+
+    percent = await orders_module._refresh_spender_tax(
+        site="onlyfans", authed=authed, auth_id=53348944
+    )
+
+    assert percent == 8.25
+    assert stored.wallet_tax_percent == 8.25
+    assert "methods-vat" in requester.json_request.await_args.args[0]
+
+
+@pytest.mark.asyncio
+async def test_other_sites_ask_for_no_tax() -> None:
+    authed = SimpleNamespace(get_requester=AsyncMock())
+
+    percent = await orders_module._refresh_spender_tax(
+        site="fansly", authed=authed, auth_id=1
+    )
+
+    assert percent is None
+    authed.get_requester.assert_not_called()
+
+
+@pytest.mark.asyncio
+async def test_the_chat_balance_asks_for_a_tax_it_does_not_have(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(orders_module, "_get_stored_tax_percents", lambda site, ids: {})
+    monkeypatch.setattr(orders_module, "_refresh_spender_tax", AsyncMock(return_value=8.25))
+
+    spendable = await orders_module._spendable_balance(
+        site="onlyfans", authed=SimpleNamespace(), auth_id=53348944, balance=10.77
+    )
+
+    assert spendable == 9.94
+
+
+def test_a_spender_that_cant_cover_the_tax_is_not_chosen(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    monkeypatch.setattr(
+        orders_module, "_get_stored_tax_percents", lambda site, ids: {53348944: 8.25}
+    )
+    monkeypatch.setattr(
+        orders_module, "_get_candidate_auth_ids", lambda site, price: [(53348944, "paid")]
+    )
+    user = SimpleNamespace(id=53348944, credit_balance=10.77)
+    authed = SimpleNamespace(
+        get_me=AsyncMock(return_value=user), get_authed_user=AsyncMock(return_value=user)
+    )
+    monkeypatch.setattr(
+        orders_module,
+        "MultiSiteDatabaseManager",
+        lambda: SimpleNamespace(get_or_create_manager=lambda site: None),
+    )
+
+    selection = asyncio.run(
+        orders_module._select_spender(
+            "onlyfans", 9.99, SimpleNamespace(get_authed_session=AsyncMock(return_value=authed))
+        )
+    )
+
+    assert selection is None

@@ -79,11 +79,13 @@ export function DirectChatModal({
 
   const chatAuthOptions = useMemo(
     () =>
-      (eligibleAuthsData?.auths ?? [])
-        .filter((auth) => auth.is_active)
+      // An expired subscription can still hold a conversation; active ones come first.
+      [...(eligibleAuthsData?.auths ?? [])]
+        .sort((a, b) => Number(b.is_active) - Number(a.is_active))
         .map((auth) => ({
           id: auth.auth_id,
           username: auth.auth_username || `User ${auth.auth_id}`,
+          expired: !auth.is_active,
         })),
     [eligibleAuthsData?.auths]
   );
@@ -339,12 +341,14 @@ export function DirectChatModal({
             >
               {chatAuthOptions.map((auth) => (
                 <option key={auth.id} value={auth.id}>
-                  @{auth.username}
+                  @{auth.username}{auth.expired ? ' (expired)' : ''}
                 </option>
               ))}
             </select>
           ) : chatAuthOptions.length === 1 ? (
-            <span className="direct-chat-auth-single">@{chatAuthOptions[0].username}</span>
+            <span className="direct-chat-auth-single">
+              @{chatAuthOptions[0].username}{chatAuthOptions[0].expired ? ' (expired)' : ''}
+            </span>
           ) : null}
           <span className="direct-chat-balance">
             {isBalanceLoading

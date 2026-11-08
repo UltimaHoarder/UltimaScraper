@@ -413,7 +413,9 @@ async def test_paid_downloader_pages_authors_reuses_pool_and_persists_complete_e
 
     async def persist_task(*, task, **kwargs):
         output = task.result.output
-        assert len(output["files"]) <= 2 and len(output["download_results"]) <= 2
+        # The first result, saved before any page, only names the route.
+        assert len(output.get("files", [])) <= 2
+        assert len(output.get("download_results", [])) <= 2
 
     def destination(**kwargs):
         assert kwargs["required_space"] == files_each * 10

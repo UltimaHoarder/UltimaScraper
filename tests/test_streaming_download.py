@@ -352,3 +352,120 @@ async def test_progress_never_expects_fewer_bytes_than_the_task_has_written(monk
     persisted = [call.kwargs["task"].result.metrics for call in storage.persist_task.call_args_list]
     assert any(metrics["total_bytes"] == 18_000 for metrics in persisted)
     assert all(metrics["total_bytes"] >= metrics["bytes_written"] for metrics in persisted)
+
+
+@pytest.mark.asyncio
+async def test_a_download_shows_its_proxy_before_the_selection_is_prepared(monkeypatch):
+    from test_download_pipeline import _build_config
+    from ultima_scraper_backend.job_system.handlers.download import handler
+
+    proxy = "http://192.0.2.10:8022"
+    persisted = []
+
+    async def persist_task(*, task, **kwargs):
+        persisted.append(task.result)
+
+    async def prepare(*args, **kwargs):
+        # Preparing can take minutes; the running panel reads the route meanwhile.
+        assert [result.metrics["proxy_url"] for result in persisted] == [proxy]
+        raise RuntimeError("stop after preparing")
+
+    monkeypatch.setattr(handler, "_resolve_proxy_url", lambda *args: proxy)
+    monkeypatch.setattr(streaming, "prepare_download_selection", prepare)
+    task = SimpleNamespace(
+        task_id="task",
+        site_name="onlyfans",
+        payload=SimpleNamespace(ignore_space_requirements=False),
+    )
+    context = SimpleNamespace(
+        job=SimpleNamespace(job_id="job"),
+        storage=SimpleNamespace(persist_task=persist_task),
+    )
+    user = SimpleNamespace(id=7, get_usernames=lambda: ["seven"])
+
+    with pytest.raises(RuntimeError, match="stop after preparing"):
+        await streaming.download_selected_media(
+            task=task,
+            context=context,
+            user=user,
+            db_user=user,
+            db_manager=SimpleNamespace(get_session=None),
+            authed=SimpleNamespace(guest=False),
+            config=_build_config(),
+            content_type="posts",
+            resolved_auth_id=99,
+        )
+
+    [started] = persisted
+    assert started.metrics["proxy_routes"] == [proxy]
+    assert started.metrics["proxy_hop_used"] == 0
+
+
+@pytest.mark.asyncio
+async def test_download_progress_keeps_the_proxy_route(monkeypatch, tmp_path):
+    from datetime import datetime, timezone
+    from test_download_pipeline import _build_api_user, _build_config
+    from ultima_scraper_backend.job_system.handlers.download import handler
+    from ultima_scraper_backend.job_system.metadata_models import ContentMetadata, MediaMetadata
+
+    proxy = "http://192.0.2.10:8022"
+    config = _build_config()
+    user = _build_api_user(config)
+    content = ContentMetadata(
+        content_id=1, api_type="posts", user_id=user.id, created_at=datetime(2026, 9, 5, tzinfo=timezone.utc)
+    )
+    content.medias.append(
+        MediaMetadata(
+            media_id=1, media_type="videos", urls=["https://fixture/one.mp4"], content_id=1,
+            user_id=user.id, created_at=content.created_at, size=8_000, content_metadata=content,
+        )
+    )
+    monkeypatch.setattr(handler, "publish_download_progress", AsyncMock())
+
+    class Manager:
+        on_progress = []
+        on_status = []
+        on_downloaded = []
+        resource_manager = SimpleNamespace(get_file_concurrency=lambda: 1)
+
+        def release_workspace(self, item):
+            pass
+
+        async def bulk_download(self, items, **kwargs):
+            item = items[0]
+            event = {"status": "progress", "item": item, "bytes": 5_000, "processed_bytes": 5_000,
+                     "expected_bytes": 8_000, "item_processed_bytes": 5_000, "item_expected_bytes": 8_000,
+                     "completed": 0, "failed": 0, "total": 1}
+            for callback in self.on_progress:
+                await callback(event)
+            file = item.get_filepath()
+            file.parent.mkdir(parents=True, exist_ok=True)
+            file.write_bytes(b"x")
+            item.downloaded_this_run = True
+            return {"completed": 1, "total": 1, "success_rate": 100}
+
+    storage = SimpleNamespace(persist_task=AsyncMock())
+    context = SimpleNamespace(
+        job=SimpleNamespace(job_id="job"),
+        worker_id="worker",
+        database_writes=SimpleNamespace(submit=AsyncMock(return_value={})),
+        storage=storage,
+    )
+    selection = SimpleNamespace(
+        root=tmp_path, absolute_path=tmp_path, requires_full_directory_render=False, directory_format=tmp_path
+    )
+
+    await handler._download_content_batch(
+        task=SimpleNamespace(task_id="task", site_name="onlyfans"), context=context, user=user,
+        db_user=SimpleNamespace(username="creator"), authed=user.get_authed(), config=config,
+        content_metadatas=[content], content_type="posts", destination_selection=selection,
+        download_manager=Manager(), aggregate={"total_items": 1, "expected_bytes": 8_000, "progress_total": 1},
+        evidence_spec={"selection_id": "selection"}, proxy_url=proxy,
+    )
+
+    persisted = [call.kwargs["task"].result.metrics for call in storage.persist_task.call_args_list]
+    assert persisted
+    assert all(
+        (metrics["proxy_url"], metrics["proxy_routes"], metrics["proxy_hop_used"]) == (proxy, [proxy], 0)
+        for metrics in persisted
+    )

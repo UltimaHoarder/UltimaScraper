@@ -577,6 +577,31 @@ def test_api_command_cycle_respects_its_leaf_limit_oldest_first(history, partiti
     assert _leaves(partitioned, "api-newer") == ALL_LEAVES
 
 
+def test_leaf_dropped_by_another_process_does_not_abort_the_cycle(
+    history, partitioned, monkeypatch
+):
+    _finished(history, "api-raced")
+    leaf = partition_name("api-raced", "execution_outbox")
+    locked = history_retirement._terminal_run_locked
+    owned = history_retirement._owned_partition
+
+    def drop_first(session, run_id, grace):
+        with partitioned.begin() as connection:
+            connection.execute(text(f"DROP TABLE IF EXISTS management.{leaf}"))
+        return locked(session, run_id, grace)
+
+    # The other process drops the leaf just after this one saw it.
+    monkeypatch.setattr(history_retirement, "_terminal_run_locked", drop_first)
+    monkeypatch.setattr(
+        history_retirement,
+        "_owned_partition",
+        lambda session, run_id, table="execution_mutations": table == "execution_outbox"
+        or owned(session, run_id, table),
+    )
+    assert _retire_commands(history) == {"retired": 3, "busy": 1, "waiting": 0}
+    assert _leaves(partitioned, "api-raced") == set()
+
+
 def test_deletion_finishes_after_api_command_retirement(history, partitioned):
     _finished(history, "api-delete")
     assert _retire_commands(history)["retired"] == 4

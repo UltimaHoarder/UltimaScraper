@@ -314,7 +314,8 @@ async def test_progress_never_expects_fewer_bytes_than_the_task_has_written(monk
             item = items[0]
             event = {"status": "progress", "item": item, "bytes": 5_000, "processed_bytes": 5_000,
                      "expected_bytes": 8_000, "item_processed_bytes": 5_000, "item_expected_bytes": 8_000,
-                     "completed": 0, "failed": 0, "total": 1}
+                     "completed": 0, "failed": 0, "total": 1,
+                     "active_transfers": [{"media_id": 7, "path": "/dest/7.mp4", "processed_bytes": 5_000, "expected_bytes": 8_000}]}
             for callback in self.on_progress:
                 await callback(event)
             file = item.get_filepath()
@@ -340,11 +341,19 @@ async def test_progress_never_expects_fewer_bytes_than_the_task_has_written(monk
         authed=user.get_authed(), config=config, content_metadatas=[content], content_type="posts",
         destination_selection=selection, download_manager=Manager(),
         # Earlier pages wrote 10 kB against an estimate of 3 kB.
-        aggregate={"total_items": 1, "expected_bytes": 3_000, "progress_total": 1, "bytes_written": 10_000},
+        aggregate={"total_items": 100, "expected_bytes": 3_000, "progress_total": 100, "bytes_written": 10_000,
+                   "progress_units": 40, "successful": 37, "skipped": 3},
         evidence_spec={"selection_id": "selection"},
     )
 
     [event] = published
+    assert event["active_transfers"] == [
+        {"media_id": 7, "path": "/dest/7.mp4", "processed_bytes": 5_000, "expected_bytes": 8_000}
+    ]
+    results = [call.kwargs["task"].result for call in storage.persist_task.call_args_list]
+    # The whole task's position, not this batch's.
+    assert results[-1].message == "Download in progress: 40/100"
+    assert results[-1].metrics["skipped"] == 3
     assert event["processed_bytes"] == 15_000
     assert event["expected_bytes"] == 18_000  # written so far plus this file's real size
     # The file named by media_id: only its own bytes.

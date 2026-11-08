@@ -33,6 +33,7 @@ import {
   RUNBOOK_STAGES,
   taskAttempt,
   taskDuration,
+  taskFileCounts,
   taskHopUsed,
   taskIsGeoBlocked,
   taskMessage,
@@ -262,7 +263,22 @@ export function JobRunbookPipeline({
   const expectedTaskBytes = selectedLiveTransfer?.expectedBytes ?? asNumber(selectedMetrics.total_bytes);
   const mediaEntries: RunbookMediaEntry[] = [];
   if (selectedTask) {
-    if (selectedLiveTransfer) {
+    for (const transfer of selectedLiveTransfer?.activeTransfers ?? []) {
+      mediaEntries.push({
+        key: `live-${transfer.mediaId || transfer.path}`,
+        resultIndex: null,
+        mediaId: transfer.mediaId,
+        path: transfer.path,
+        url: null,
+        status: 'downloading',
+        processedBytes: transfer.processedBytes,
+        expectedBytes: transfer.expectedBytes,
+        speedBps: null,
+        isLive: true,
+      });
+    }
+
+    if (selectedLiveTransfer && selectedLiveTransfer.activeTransfers.length === 0) {
       mediaEntries.push({
         key: `live-${selectedLiveTransfer.mediaId || selectedLiveTransfer.path || selectedLiveTransfer.taskId}`,
         resultIndex: null,
@@ -322,6 +338,9 @@ export function JobRunbookPipeline({
   const completeMediaCount = mediaEntries.filter(
     (entry) => normalizedMediaState(entry.status, entry.isLive) === 'complete',
   ).length;
+  const fileCounts = taskFileCounts(selectedMetrics);
+  const totalMediaCount = fileCounts?.total ?? mediaEntries.length;
+  const shownMediaCount = Math.max(6, mediaEntries.filter((entry) => entry.isLive).length);
   const loadedCounts = useMemo(
     () =>
       tasks.reduce(
@@ -682,10 +701,20 @@ export function JobRunbookPipeline({
                       <strong>{taskTitle(selectedTask)}</strong>
                     </div>
                     <div className="jdm-runbook-media-summary">
-                      <strong>{mediaEntries.length} file{mediaEntries.length === 1 ? '' : 's'}</strong>
+                      <strong>{totalMediaCount} file{totalMediaCount === 1 ? '' : 's'}</strong>
                       {activeMediaCount > 0 ? <span>{activeMediaCount} active</span> : null}
-                      {queuedMediaCount > 0 ? <span>{queuedMediaCount} queued</span> : null}
-                      {completeMediaCount > 0 ? <span>{completeMediaCount} complete</span> : null}
+                      {fileCounts ? (
+                        <>
+                          {fileCounts.downloaded > 0 ? <span>{fileCounts.downloaded} downloaded</span> : null}
+                          {fileCounts.skipped > 0 ? <span>{fileCounts.skipped} skipped</span> : null}
+                          {fileCounts.failed > 0 ? <span>{fileCounts.failed} failed</span> : null}
+                        </>
+                      ) : (
+                        <>
+                          {queuedMediaCount > 0 ? <span>{queuedMediaCount} queued</span> : null}
+                          {completeMediaCount > 0 ? <span>{completeMediaCount} complete</span> : null}
+                        </>
+                      )}
                     </div>
                   </header>
 
@@ -737,7 +766,7 @@ export function JobRunbookPipeline({
                       className="jdm-runbook-media-results"
                       aria-label={`Files produced by ${taskTitle(selectedTask)}`}
                     >
-                      {mediaEntries.slice(0, 6).map((entry) => {
+                      {mediaEntries.slice(0, shownMediaCount).map((entry) => {
                         const percent = mediaProgress(entry);
                         const state = normalizedMediaState(entry.status, entry.isLive);
                         const filename = fileName(entry.path || entry.url) || `Media ${entry.mediaId || 'file'}`;
@@ -769,9 +798,9 @@ export function JobRunbookPipeline({
                           </button>
                         );
                       })}
-                      {mediaEntries.length > 6 ? (
+                      {mediaEntries.length > shownMediaCount ? (
                         <small className="jdm-runbook-media-more">
-                          +{mediaEntries.length - 6} more media results retained on this task
+                          +{mediaEntries.length - shownMediaCount} more media results retained on this task
                         </small>
                       ) : null}
                     </div>

@@ -16,6 +16,13 @@ interface RunbookStage {
   label: string;
 }
 
+interface ActiveTransfer {
+  mediaId: string | null;
+  path: string | null;
+  processedBytes: number | null;
+  expectedBytes: number | null;
+}
+
 interface LiveTransfer {
   taskId: string;
   mediaId: string | null;
@@ -30,6 +37,8 @@ interface LiveTransfer {
   /** The file named by mediaId; null from workers that do not report it. */
   mediaProcessedBytes: number | null;
   mediaExpectedBytes: number | null;
+  /** Every file moving bytes; empty from workers that do not report them. */
+  activeTransfers: ActiveTransfer[];
   speedBps: number | null;
   completed: number | null;
   failed: number | null;
@@ -247,6 +256,18 @@ export function resultMetrics(task: TaskDetail | null): Record<string, unknown> 
   return asRecord(result?.metrics) ?? {};
 }
 
+/** The task's own file counts, which outlast the few results kept on it. */
+export function taskFileCounts(metrics: Record<string, unknown>) {
+  const total = asNumber(metrics.download_items_total ?? metrics.total_items ?? metrics.items_total);
+  if (!total) return null;
+  return {
+    total,
+    downloaded: asNumber(metrics.downloads_completed ?? metrics.items_downloaded ?? metrics.success_count) ?? 0,
+    skipped: asNumber(metrics.skipped ?? metrics.skip_count) ?? 0,
+    failed: asNumber(metrics.failed ?? metrics.fail_count) ?? 0,
+  };
+}
+
 export function downloadResults(task: TaskDetail | null): Array<Record<string, unknown>> {
   const result = asRecord(task?.result);
   const output = asRecord(result?.output);
@@ -391,6 +412,16 @@ export function parseLiveTransfer(event: WebSocketEvent | null | undefined, jobI
     expectedBytes: asNumber(event.expected_bytes),
     mediaProcessedBytes: asNumber(event.media_processed_bytes),
     mediaExpectedBytes: asNumber(event.media_expected_bytes),
+    activeTransfers: (Array.isArray(event.active_transfers) ? event.active_transfers : []).flatMap((value) => {
+      const transfer = asRecord(value);
+      if (!transfer) return [];
+      return [{
+        mediaId: transfer.media_id == null ? null : String(transfer.media_id),
+        path: asString(transfer.path),
+        processedBytes: asNumber(transfer.processed_bytes),
+        expectedBytes: asNumber(transfer.expected_bytes),
+      }];
+    }),
     speedBps: asNumber(event.speed_bps),
     completed: asNumber(event.completed),
     failed: asNumber(event.failed),

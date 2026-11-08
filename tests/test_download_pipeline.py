@@ -6,6 +6,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
+from typing import Any
 from unittest.mock import AsyncMock
 
 import pytest
@@ -2314,3 +2315,60 @@ async def test_head_request_gives_up_after_its_attempts(tmp_path, monkeypatch) -
 
     assert await manager.head_request(item) is None
     assert len(calls) == download_manager_module.HEAD_ATTEMPTS
+
+
+def _two_slot_manager() -> DownloadManager:
+    manager = DownloadManager(
+        config=_build_config(),
+        resource_manager=ResourceManager(
+            max_concurrency=2,
+            buffer_size=1024,
+            per_domain_concurrency=2,
+            head_concurrency=1,
+        ),
+    )
+    manager.progress_update_interval = 0.0
+    return manager
+
+
+@pytest.mark.asyncio
+async def test_progress_names_every_file_in_flight_with_its_destination(tmp_path: Path) -> None:
+    manager = _two_slot_manager()
+    events: list[dict[str, Any]] = []
+    manager.on_progress.append(events.append)
+    first = DownloadItem(url="https://cdn.test/a.mp4", filename="a.mp4", directory=tmp_path, media_id=1, size=100)
+    second = DownloadItem(url="https://cdn.test/b.mp4", filename="b.mp4", directory=tmp_path, media_id=2, size=200)
+    manager._begin_item_progress(first, expected_precounted=False)
+    manager._begin_item_progress(second, expected_precounted=False)
+
+    await manager._record_download_chunk(first, 10)
+    assert events[-1]["path"] == str(tmp_path / "a.mp4")
+    await manager._record_download_chunk(second, 20)
+
+    assert events[-1]["status"] == "progress"
+    assert events[-1]["active_transfers"] == [
+        {"media_id": 1, "path": str(tmp_path / "a.mp4"), "processed_bytes": 0, "expected_bytes": 100},
+        {"media_id": 2, "path": str(tmp_path / "b.mp4"), "processed_bytes": 0, "expected_bytes": 200},
+    ]
+
+    await manager._complete_download(first, 100)
+    # The file this report finishes is no longer in flight.
+    assert [row["media_id"] for row in events[-1]["active_transfers"]] == [2]
+
+    manager._finish_item_progress(first)
+    await manager._record_download_chunk(second, 20)
+    assert [row["media_id"] for row in events[-1]["active_transfers"]] == [2]
+
+
+@pytest.mark.asyncio
+async def test_a_file_without_a_destination_does_not_break_its_progress() -> None:
+    manager = _two_slot_manager()
+    events: list[dict[str, Any]] = []
+    manager.on_progress.append(events.append)
+    item = DownloadItem(url="https://cdn.test/a.mp4", media_id=1)
+
+    await manager._record_download_chunk(item, 10)
+
+    assert events[-1]["path"] is None
+    assert events[-1]["active_transfers"][0]["path"] is None
+

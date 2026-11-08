@@ -3,7 +3,7 @@
   "components": {
     "usr_backend": {
       "repository": "https://github.com/UltimaHoarder/UltimaScraperBackend.git",
-      "commit": "af02a7d158d3a28544b7c6f7e4191ed4915c2031"
+      "commit": "df85fc088e6d346e6c04ae67d5923416f209dd05"
     },
     "usdb": {
       "repository": "https://github.com/DATAHOARDERS/UltimaScraperDB.git",

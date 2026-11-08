@@ -106,3 +106,71 @@ async def test_spender_balance_comes_from_the_accounts_own_profile(
     assert balance == 52.14
     assert sync.await_args.args[1] is me
     get_user.assert_not_awaited()
+
+
+@pytest.mark.asyncio
+async def test_a_spenders_session_has_its_real_balance_before_an_order_buys(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user = SimpleNamespace(id=53348944, credit_balance=8.75)
+
+    async def get_me() -> Any:
+        # The site has the top-up that this API process's session missed.
+        user.credit_balance = 79.05
+        return user
+
+    authed = SimpleNamespace(get_me=AsyncMock(side_effect=get_me))
+    backend_manager = SimpleNamespace(get_authed_session=AsyncMock(return_value=authed))
+    monkeypatch.setattr(
+        orders_module,
+        "MultiSiteDatabaseManager",
+        lambda: SimpleNamespace(get_or_create_manager=lambda site: object()),
+    )
+    monkeypatch.setattr(orders_module, "sync_user_from_api", AsyncMock())
+    auth_cache: dict[int, Any] = {}
+
+    for _ in range(2):
+        session = await orders_module._get_cached_authed_session(
+            site="onlyfans",
+            auth_id=53348944,
+            backend_manager=backend_manager,
+            auth_cache=auth_cache,
+        )
+
+    assert session is authed
+    assert user.credit_balance == 79.05
+    # Once per order: each purchase refreshes it again afterwards.
+    authed.get_me.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_choosing_a_spender_for_one_item_sees_a_top_up(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    user = SimpleNamespace(id=53348944, credit_balance=8.75)
+
+    async def get_me() -> Any:
+        user.credit_balance = 79.05
+        return user
+
+    authed = SimpleNamespace(
+        get_me=AsyncMock(side_effect=get_me),
+        get_authed_user=AsyncMock(return_value=user),
+    )
+    monkeypatch.setattr(
+        orders_module,
+        "MultiSiteDatabaseManager",
+        lambda: SimpleNamespace(get_or_create_manager=lambda site: object()),
+    )
+    monkeypatch.setattr(orders_module, "sync_user_from_api", AsyncMock())
+    monkeypatch.setattr(
+        orders_module, "_get_candidate_auth_ids", lambda site, price: [(53348944, "paid")]
+    )
+
+    selection = await orders_module._select_spender(
+        "onlyfans",
+        19.99,
+        SimpleNamespace(get_authed_session=AsyncMock(return_value=authed)),
+    )
+
+    assert selection == (authed, 53348944, 79.05)

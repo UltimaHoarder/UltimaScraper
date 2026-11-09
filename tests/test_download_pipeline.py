@@ -6,7 +6,7 @@ import subprocess
 from datetime import datetime, timezone
 from pathlib import Path
 from types import SimpleNamespace
-from typing import Any
+from typing import Any, cast
 from unittest.mock import AsyncMock
 
 import pytest
@@ -32,6 +32,9 @@ from ultima_scraper_backend.job_system.handlers.download.handler import (
     _build_download_items,
     _process_download_result,
     _process_drm_items,
+)
+from ultima_scraper_backend.job_system.handlers.download.results import (
+    categorize_media_items,
 )
 from ultima_scraper_backend.job_system.metadata_models import (
     ContentMetadata,
@@ -327,6 +330,76 @@ def test_process_download_result_deletes_mismatched_file_written_this_run(
     assert result.status == "failed"
     assert result.has_error(download_handler_module.DownloadFailureReason.SIZE_MISMATCH)
     assert not target.exists()
+
+
+def _download_item(directory: Path, content: bytes, size: int | None) -> DownloadItem:
+    target = directory / "1080x2001.jpg"
+    target.write_bytes(content)
+    return DownloadItem(
+        url="https://cdn.onlyfans.test/1080x2001.jpg",
+        filename=target.name,
+        directory=directory,
+        media_id=2451109556,
+        content_id=11574192,
+        size=size,
+    )
+
+
+@pytest.mark.parametrize("size", [None, 0, 10])
+def test_an_empty_file_is_not_already_downloaded(tmp_path, size: int | None) -> None:
+    item = _download_item(tmp_path, b"", size)
+
+    valid, skipped = categorize_media_items([item])
+
+    assert not item.exists()
+    assert valid == [item]
+    assert skipped == []
+
+
+def test_a_file_with_content_and_no_known_size_is_already_downloaded(tmp_path) -> None:
+    item = _download_item(tmp_path, b"x" * 20, None)
+
+    valid, skipped = categorize_media_items([item])
+
+    assert item.exists()
+    assert valid == []
+    assert skipped[0].has_error(download_handler_module.DownloadFailureReason.ALREADY_EXISTS)
+
+
+@pytest.mark.parametrize("size", [None, 0])
+def test_download_replaces_an_empty_file_instead_of_completing_it(
+    tmp_path, monkeypatch: pytest.MonkeyPatch, size: int | None
+) -> None:
+    item = _download_item(tmp_path, b"", size)
+    manager = DownloadManager(config=_build_config())
+    manager.session = cast(Any, object())
+    regular = AsyncMock(return_value=True)
+    complete = AsyncMock(return_value=True)
+    monkeypatch.setattr(manager, "_download_regular", regular)
+    monkeypatch.setattr(manager, "_complete_download", complete)
+
+    assert asyncio.run(manager.download(item)) is True
+
+    regular.assert_awaited_once_with(item)
+    complete.assert_not_awaited()
+
+
+@pytest.mark.parametrize("size", [None, 0])
+def test_an_empty_file_is_never_reported_as_downloaded(
+    tmp_path, monkeypatch: pytest.MonkeyPatch, size: int | None
+) -> None:
+    item = _download_item(tmp_path, b"", size)
+
+    async def _inline_to_thread(func, /, *args, **kwargs):  # type: ignore[no-untyped-def]
+        return func(*args, **kwargs)
+
+    monkeypatch.setattr(download_handler_module.asyncio, "to_thread", _inline_to_thread)
+    written: list[dict[str, object]] = []
+
+    result = asyncio.run(_process_download_result(item, written))
+
+    assert result.status != "downloaded"
+    assert result.bytes_written == 0
 
 
 def test_media_metadata_render_target_filename_matches_download_item_format(

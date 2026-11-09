@@ -1,14 +1,6 @@
 import { useState } from 'react';
 
 import { getDirectoryConfig } from '../../../api/system';
-import {
-  STAGING_POLICIES,
-  STAGING_POLICY_LABELS,
-  STAGING_USAGES,
-  type StagingDirectory,
-  type StagingPolicy,
-  type StagingUsage,
-} from '../../../api/types/setup';
 import type {
   AddDirectoryResponse,
   DirectoryConfigResponse,
@@ -20,7 +12,7 @@ import type {
 } from '../../../api/types/system';
 import type { SettingsResponse } from '../../../api/types/settings';
 import { FormatTokenList } from '../../../components/shared/FormatTokens';
-import { createDriveSettingsDraft, formatBytes } from '../lib/systemUtils';
+import { createDriveSettingsDraft, formatBytes, requestErrorMessage } from '../lib/systemUtils';
 import './DriveConfigModal.css';
 
 type ModalView = 'list' | 'edit';
@@ -50,31 +42,6 @@ interface DriveConfigModalProps {
   ) => Promise<DirectoryConfigResponse>;
   onSaveSettings: (settings: Partial<SettingsResponse>) => Promise<SettingsResponse>;
   onRefreshDrive: () => void;
-}
-
-function requestErrorMessage(error: unknown, fallback: string): string {
-  if (typeof error === 'object' && error !== null) {
-    const response = (error as { response?: { data?: { detail?: unknown } } }).response;
-    const detail = response?.data?.detail;
-
-    if (typeof detail === 'string' && detail.trim()) {
-      return detail.trim();
-    }
-
-    if (typeof detail === 'object' && detail !== null) {
-      const detailRecord = detail as Record<string, unknown>;
-      const message =
-        typeof detailRecord.message === 'string' && detailRecord.message.trim()
-          ? detailRecord.message.trim()
-          : fallback;
-      const currentVersion = detailRecord.current_version;
-      return typeof currentVersion === 'number'
-        ? `${message} Current version: ${currentVersion}.`
-        : message;
-    }
-  }
-
-  return error instanceof Error && error.message.trim() ? error.message.trim() : fallback;
 }
 
 export function DriveConfigModal({
@@ -124,9 +91,6 @@ export function DriveConfigModal({
   );
   const [downloadOverwrite, setDownloadOverwrite] = useState(
     initialDriveSettings.downloadOverwrite
-  );
-  const [stagingDirectories, setStagingDirectories] = useState<StagingDirectory[]>(
-    initialDriveSettings.stagingDirectories
   );
   const [metadataDirFormat, setMetadataDirFormat] = useState(
     initialDriveSettings.metadataDirFormat
@@ -205,42 +169,6 @@ export function DriveConfigModal({
     }
     const text = `${savedMessage} on ${propagation.target_backend_id}; ${propagation.message}`;
     showMessage(propagation.status === 'acknowledged' ? 'success' : 'warning', text);
-  };
-
-  const updateStagingDirectory = <K extends keyof StagingDirectory>(
-    index: number,
-    field: K,
-    value: StagingDirectory[K]
-  ) =>
-    setStagingDirectories((previous) =>
-      previous.map((directory, currentIndex) =>
-        currentIndex === index ? { ...directory, [field]: value } : directory
-      )
-    );
-
-  const toggleStagingPolicy = (index: number, policy: StagingPolicy) =>
-    setStagingDirectories((previous) =>
-      previous.map((directory, currentIndex) => {
-        if (currentIndex !== index) return directory;
-        const nextPolicy = directory.policy.includes(policy)
-          ? directory.policy.filter((value) => value !== policy)
-          : [...directory.policy, policy];
-        return { ...directory, policy: nextPolicy };
-      })
-    );
-
-  const toggleStagingUsage = (index: number, usage: StagingUsage) => {
-    setStagingDirectories((previous) =>
-      previous.map((directory, currentIndex) => {
-        if (currentIndex !== index) return directory;
-        const hasUsage = directory.usage.includes(usage);
-        const nextUsage = hasUsage
-          ? directory.usage.filter((value) => value !== usage)
-          : [...directory.usage, usage];
-        if (nextUsage.length === 0) return directory;
-        return { ...directory, usage: nextUsage };
-      })
-    );
   };
 
   const updateAltDirectoryFormat = (index: number, value: string) =>
@@ -428,12 +356,7 @@ export function DriveConfigModal({
           alt_directory_formats: downloadAltDirectoryFormats
             .map((format) => format.trim())
             .filter(Boolean),
-          staging_directories: stagingDirectories
-            .filter((directory) => directory.path.trim())
-            .map((directory) => ({
-              ...directory,
-              path: directory.path.trim(),
-            })),
+          staging_directories: settings.download_setup.staging_directories,
           directory_format: downloadDirFormat,
           filename_format: downloadFilenameFormat,
           text_length: downloadTextLength,
@@ -1053,104 +976,6 @@ export function DriveConfigModal({
                     />
                     <span>Overwrite existing files</span>
                   </label>
-
-                  <div className="dc-dirs-header" style={{ marginTop: '1rem' }}>
-                    <h4>Staging Directories</h4>
-                    <button
-                      type="button"
-                      className="dc-btn dc-btn--secondary"
-                      onClick={() =>
-                        setStagingDirectories((previous) => [
-                          ...previous,
-                          {
-                            path: '',
-                            usage: ['downloads', 'merge', 'drm'],
-                            policy: [],
-                          },
-                        ])
-                      }
-                    >
-                      + Add Staging Directory
-                    </button>
-                  </div>
-
-                  {stagingDirectories.length === 0 ? (
-                    <p className="dc-text-muted">
-                      No staging directories configured. Downloads will use their final storage
-                      directories as the working path.
-                    </p>
-                  ) : (
-                    stagingDirectories.map((directory, index) => (
-                      <div key={index} className="dc-staging-card">
-                        <label className="dc-field">
-                          <span>Path</span>
-                          <input
-                            type="text"
-                            value={directory.path}
-                            onChange={(event) =>
-                              updateStagingDirectory(index, 'path', event.target.value)
-                            }
-                            placeholder="/path/to/staging"
-                            className="dc-input mono"
-                          />
-                        </label>
-                        <div className="dc-field">
-                          <span>Usage</span>
-                          <div className="dc-usage-tags">
-                            {STAGING_USAGES.map((usage) => (
-                              <label key={usage} style={{ display: 'inline-flex', alignItems: 'center', gap: '4px' }}>
-                                <input
-                                  type="checkbox"
-                                  checked={directory.usage.includes(usage)}
-                                  onChange={() => toggleStagingUsage(index, usage)}
-                                />
-                                <span>{usage}</span>
-                              </label>
-                            ))}
-                          </div>
-                        </div>
-                        {STAGING_POLICIES.map((policy) => (
-                          <label key={policy} style={{ display: 'flex', alignItems: 'center', gap: '8px', fontSize: '11px' }}>
-                            <input
-                              type="checkbox"
-                              checked={directory.policy.includes(policy)}
-                              onChange={() => toggleStagingPolicy(index, policy)}
-                            />
-                            <span>{STAGING_POLICY_LABELS[policy]}</span>
-                          </label>
-                        ))}
-                        <label className="dc-field">
-                          <span>Keep free (GB)</span>
-                          <input
-                            type="number"
-                            min={0}
-                            value={Math.floor((directory.min_free_bytes ?? 0) / (1024 * 1024 * 1024))}
-                            onChange={(event) =>
-                              updateStagingDirectory(
-                                index,
-                                'min_free_bytes',
-                                (parseInt(event.target.value, 10) || 0) * 1024 * 1024 * 1024
-                              )
-                            }
-                            className="dc-input"
-                          />
-                        </label>
-                        <div>
-                          <button
-                            type="button"
-                            className="dc-btn dc-btn--danger-ghost"
-                            onClick={() =>
-                              setStagingDirectories((previous) =>
-                                previous.filter((_, currentIndex) => currentIndex !== index)
-                              )
-                            }
-                          >
-                            Remove Staging Directory
-                          </button>
-                        </div>
-                      </div>
-                    ))
-                  )}
 
                   <div style={{ paddingTop: '10px' }}>
                     <button

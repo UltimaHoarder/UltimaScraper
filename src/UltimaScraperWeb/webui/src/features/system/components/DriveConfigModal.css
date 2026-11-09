@@ -818,24 +818,6 @@
   flex: 1;
 }
 
-.dc-staging-card {
-  padding: 12px;
-  background: var(--color-bg-primary, #1a1f20);
-  border: 1px solid var(--color-border-primary, #343a3b);
-  border-radius: var(--radius-sm, 2px);
-  margin-bottom: 8px;
-  display: flex;
-  flex-direction: column;
-  gap: 10px;
-}
-
-.dc-usage-tags {
-  display: flex;
-  flex-wrap: wrap;
-  gap: 10px;
-  font-size: 11px;
-}
-
 /* Footer */
 .dc-footer {
   display: flex;

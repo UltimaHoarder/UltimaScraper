@@ -336,6 +336,17 @@ describe('SystemFleetRegisterPage mounts grouping', () => {
     vi.mocked(revokeWebUIClient).mockResolvedValue(undefined);
   });
 
+  it('shows the global staging directories on the mounts tab only', async () => {
+    renderWithProviders(<SystemFleetRegisterPage />);
+
+    await screen.findByRole('button', { name: /mounts/i });
+    expect(screen.queryByRole('heading', { name: 'Staging directories' })).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /mounts/i }));
+
+    expect(await screen.findByRole('heading', { name: 'Staging directories' })).toBeInTheDocument();
+  });
+
   it('separates mounts with directories into Assigned and mounts without into Unassigned', async () => {
     renderWithProviders(<SystemFleetRegisterPage />);
 

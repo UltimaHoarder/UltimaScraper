@@ -319,6 +319,41 @@ describe('DriveConfigModal', () => {
     );
   });
 
+  it('leaves staging directories to the global section', async () => {
+    const stagingDirectories = [
+      { path: '/dev/shm/staging', usage: ['drm'], policy: ['prefer'], min_free_bytes: 1024 },
+    ] as SettingsResponse['download_setup']['staging_directories'];
+    const onSaveSettings = vi
+      .fn()
+      .mockResolvedValue(savedSettingsResponse(acknowledgedPropagation));
+
+    renderWithProviders(
+      <DriveConfigModal
+        drive={driveFixture}
+        backendId="backend-1"
+        settings={{
+          ...settingsFixture,
+          download_setup: { ...settingsFixture.download_setup, staging_directories: stagingDirectories },
+        }}
+        onClose={() => {}}
+        onAddDirectory={vi.fn()}
+        onRemoveDirectory={vi.fn()}
+        onUpdateDirectoryConfig={vi.fn()}
+        onSaveSettings={onSaveSettings}
+        onRefreshDrive={vi.fn()}
+      />,
+    );
+
+    fireEvent.click(screen.getByRole('button', { name: /download settings/i }));
+
+    expect(screen.queryByText(/staging director/i)).not.toBeInTheDocument();
+
+    fireEvent.click(screen.getByRole('button', { name: /save download settings/i }));
+
+    await waitFor(() => expect(onSaveSettings).toHaveBeenCalledTimes(1));
+    expect(onSaveSettings.mock.calls[0][0].download_setup.staging_directories).toEqual(stagingDirectories);
+  });
+
   it('reports a pending global metadata settings save as saved but not applied', async () => {
     const onSaveSettings = vi.fn().mockResolvedValue(
       savedSettingsResponse({

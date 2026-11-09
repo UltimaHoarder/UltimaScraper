@@ -189,6 +189,31 @@ export function mergeConfiguredDrivesWithInventory(
   return [...liveDriveEntries, ...Array.from(unavailableDriveMap.values()).sort((left, right) => left.path.localeCompare(right.path))];
 }
 
+export function requestErrorMessage(error: unknown, fallback: string): string {
+  if (typeof error === 'object' && error !== null) {
+    const response = (error as { response?: { data?: { detail?: unknown } } }).response;
+    const detail = response?.data?.detail;
+
+    if (typeof detail === 'string' && detail.trim()) {
+      return detail.trim();
+    }
+
+    if (typeof detail === 'object' && detail !== null) {
+      const detailRecord = detail as Record<string, unknown>;
+      const message =
+        typeof detailRecord.message === 'string' && detailRecord.message.trim()
+          ? detailRecord.message.trim()
+          : fallback;
+      const currentVersion = detailRecord.current_version;
+      return typeof currentVersion === 'number'
+        ? `${message} Current version: ${currentVersion}.`
+        : message;
+    }
+  }
+
+  return error instanceof Error && error.message.trim() ? error.message.trim() : fallback;
+}
+
 export function createDriveSettingsDraft(settings: SettingsResponse) {
   return {
     downloadDirFormat: settings.download_setup.directory_format,
@@ -197,11 +222,6 @@ export function createDriveSettingsDraft(settings: SettingsResponse) {
     downloadTextLength: settings.download_setup.text_length,
     downloadDateFormat: settings.download_setup.date_format,
     downloadOverwrite: settings.download_setup.overwrite_files,
-    stagingDirectories: settings.download_setup.staging_directories.map((directory) => ({
-      ...directory,
-      usage: [...directory.usage],
-      policy: [...directory.policy],
-    })),
     metadataDirFormat: settings.metadata_setup.directory_format,
   };
 }

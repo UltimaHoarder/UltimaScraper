@@ -81,6 +81,18 @@
 .fleet-register-panel-header { display: flex; align-items: center; justify-content: space-between; gap: 15px; padding: 14px 16px; border-bottom: 1px solid var(--color-border-primary); }
 .fleet-register-panel-header h2 { margin-top: 3px; font-size: 16px; }
 .fleet-register-panel-meta { color: var(--color-text-tertiary); font: 10px var(--font-mono); }
+.fleet-staging h3 { font-size: 16px; }
+.fleet-staging-body { padding: 14px 16px; }
+.fleet-register-panel-header p, .fleet-staging-empty { color: var(--color-text-tertiary); font-size: 12px; }
+.fleet-staging-list { display: grid; grid-template-columns: repeat(auto-fill, minmax(min(100%, 320px), 1fr)); gap: 10px; }
+.fleet-staging-card { display: flex; flex-direction: column; gap: 10px; padding: 12px; border: 1px solid var(--color-border-primary); background: var(--color-bg-primary); }
+.fleet-staging-field { display: flex; flex-direction: column; gap: 4px; color: var(--color-text-secondary); font-size: 11px; }
+.fleet-staging-field input:not([type='checkbox']) { width: 100%; }
+.fleet-staging-usage { display: flex; flex-wrap: wrap; gap: 10px; }
+.fleet-staging-usage label, .fleet-staging-policy { display: inline-flex; align-items: center; gap: 6px; color: var(--color-text-secondary); font-size: 11px; }
+.fleet-staging-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; }
+.fleet-staging-actions p { color: var(--color-text-secondary); font-size: 12px; }
+.fleet-staging-actions p[role='alert'] { color: var(--color-error); }
 .fleet-register-comparison-table { min-width: 620px; }
 .fleet-register-comparison-table th:first-child { width: 180px; }
 .fleet-register-comparison-table tbody th { color: var(--color-text-secondary); font: 11px var(--font-mono); }

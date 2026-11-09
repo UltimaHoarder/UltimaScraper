@@ -172,6 +172,7 @@ async def test_users_list_batches_related_page_lookups(monkeypatch) -> None:
         media_count=20,
         image_count=15,
         video_count=5,
+        downloaded_at=None,
     )
     fake_info_2 = SimpleNamespace(
         name="Beta",
@@ -183,6 +184,7 @@ async def test_users_list_batches_related_page_lookups(monkeypatch) -> None:
         media_count=25,
         image_count=18,
         video_count=7,
+        downloaded_at=datetime(2023, 12, 23, tzinfo=timezone.utc),
     )
     fake_media = SimpleNamespace(
         user_id=1,
@@ -244,6 +246,11 @@ async def test_users_list_batches_related_page_lookups(monkeypatch) -> None:
     )
 
     assert response.success is True
+    # Older downloads only recorded the date on user_infos.
+    assert [user.downloaded_at for user in response.users] == [
+        None,
+        "2023-12-23T00:00:00+00:00",
+    ]
     media_queries = [
         sql for sql in captured_sql if "FROM user_profile_media JOIN" in sql
     ]
@@ -276,6 +283,7 @@ async def test_users_list_applies_gender_filter_with_unset(monkeypatch) -> None:
         last_checked_at=None,
     )
     fake_info = SimpleNamespace(
+        downloaded_at=None,
         name="Alpha",
         description="first",
         sex=0,
@@ -994,6 +1002,7 @@ async def test_users_list_description_search_scoped_and_trigram_conditions(
         last_checked_at=None,
     )
     fake_info = SimpleNamespace(
+        downloaded_at=None,
         name="Alpha",
         description="size 13 shoe collector",
         sex=2,

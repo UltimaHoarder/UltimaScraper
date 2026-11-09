@@ -283,6 +283,13 @@
   border: 1px solid rgba(36, 170, 195, 0.35);
 }
 
+/* Downloaded badge */
+.user-card .badge.downloaded-badge {
+  background: rgba(16, 185, 129, 0.12);
+  color: var(--status-success, #10b981);
+  border: 1px solid rgba(16, 185, 129, 0.35);
+}
+
 /* Pending order badge */
 .user-card .badge.pending-badge {
   background: rgba(255, 211, 3, 0.12);

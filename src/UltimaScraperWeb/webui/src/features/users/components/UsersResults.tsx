@@ -6,6 +6,7 @@ import { PluginSlot } from '../../plugins/components/PluginSlot';
 import type { UserInfo } from '../lib/usersUtils';
 import { stripHtml } from '../../../utils/sanitize';
 import {
+  downloadedBadgeTitle,
   formatUserNumber,
   formatUserPrice,
   getUserDescription,
@@ -221,11 +222,18 @@ export function UsersResults({
                         </span>
                       </td>
                       <td className="col-status">
-                        <span
-                          className={`status-badge ${user.is_active ? 'active' : 'inactive'}`}
-                        >
-                          {user.is_active ? 'Active' : 'Inactive'}
-                        </span>
+                        <div className="status-badges">
+                          <span
+                            className={`status-badge ${user.is_active ? 'active' : 'inactive'}`}
+                          >
+                            {user.is_active ? 'Active' : 'Inactive'}
+                          </span>
+                          {user.downloaded_at && (
+                            <span className="status-badge downloaded" title={downloadedBadgeTitle(user.downloaded_at)}>
+                              Downloaded
+                            </span>
+                          )}
+                        </div>
                       </td>
                       <td className="col-actions">
                         <div className="action-buttons">

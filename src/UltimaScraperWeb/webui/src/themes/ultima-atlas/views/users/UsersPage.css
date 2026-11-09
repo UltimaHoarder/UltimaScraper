@@ -744,6 +744,17 @@
   color: #ef4444;
 }
 
+.status-badge.downloaded {
+  background: rgba(16, 185, 129, 0.15);
+  color: var(--status-success);
+}
+
+.status-badges {
+  display: flex;
+  flex-wrap: wrap;
+  gap: 0.25rem;
+}
+
 /* Action Buttons */
 .action-buttons {
   display: flex;

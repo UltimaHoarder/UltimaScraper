@@ -167,6 +167,11 @@ export function buildUsersStats(
   };
 }
 
+export function downloadedBadgeTitle(downloadedAt: string): string {
+  const date = new Date(downloadedAt);
+  return Number.isNaN(date.getTime()) ? 'Downloaded' : `Last downloaded ${date.toLocaleDateString()}`;
+}
+
 export function getUserDescription(user: UserInfo): string {
   if (!user.description) {
     return '';

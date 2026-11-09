@@ -4,7 +4,7 @@ import type { UserInfo } from '../../../api/types/users';
 import { formatUserNumber, formatUserPrice } from '../lib/usersUtils';
 
 type Props = Omit<ComponentProps<typeof UserCard<UserInfo>>,
-  'rootClassName' | 'inactiveLabel' | 'formatNumber' | 'formatPrice' | 'extraActions' | 'extraMenuActions' | 'showViewButton'> & {
+  'rootClassName' | 'inactiveLabel' | 'formatNumber' | 'formatPrice' | 'extraActions' | 'extraMenuActions' | 'showViewButton' | 'showDownloadedBadge'> & {
   isSubscribePending: boolean;
   isUpdatePending: boolean;
   onSubscribeUser: (user: UserInfo) => void;
@@ -14,7 +14,7 @@ type Props = Omit<ComponentProps<typeof UserCard<UserInfo>>,
 /** The same roster card, including its action row, on Users and Favourites. */
 export function UsersRosterCard({ isSubscribePending, isUpdatePending, onSubscribeUser, onEditUser, ...props }: Props) {
   return <UserCard {...props} rootClassName="user-card" inactiveLabel="Inactive"
-    formatNumber={formatUserNumber} formatPrice={formatUserPrice} showViewButton={false}
+    formatNumber={formatUserNumber} formatPrice={formatUserPrice} showViewButton={false} showDownloadedBadge
     extraActions={[{ key: 'subscribe', label: isSubscribePending ? 'Subscribing...' : 'Subscribe',
       title: 'Buy subscription using best spender', className: 'btn-subscribe',
       disabled: isSubscribePending, onClick: () => onSubscribeUser(props.item) }]}

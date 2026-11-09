@@ -1,7 +1,7 @@
 import { useEffect, useRef, useState } from 'react';
 
 import { PluginSlot } from '../../features/plugins/components/PluginSlot';
-import { userIdentityLabel } from '../../features/users/lib/usersUtils';
+import { downloadedBadgeTitle, userIdentityLabel } from '../../features/users/lib/usersUtils';
 import { ImageHoverPreview } from '../../shared/ui/ImageHoverPreview';
 import { useImageHoverPreview } from '../../shared/ui/useImageHoverPreview';
 import { stripHtml } from '../../utils/sanitize';
@@ -35,6 +35,7 @@ export interface UserCardItem {
   ai_assisted?: boolean | null;
   verified?: boolean | null;
   last_checked_at?: string | null;
+  downloaded_at?: string | null;
 }
 
 export interface UserCardExtraAction {
@@ -67,6 +68,7 @@ interface UserCardProps<T extends UserCardItem> {
   extraActions?: UserCardExtraAction[];
   extraMenuActions?: UserCardExtraAction[];
   showViewButton?: boolean;
+  showDownloadedBadge?: boolean;
   favouriteDetails?: string;
   onOpenLightbox?: (url: string | null, alt?: string) => void;
 }
@@ -95,6 +97,7 @@ export function UserCard<T extends UserCardItem>({
   extraActions = [],
   extraMenuActions = [],
   showViewButton = true,
+  showDownloadedBadge = false,
   favouriteDetails,
   onOpenLightbox,
 }: UserCardProps<T>) {
@@ -387,6 +390,9 @@ export function UserCard<T extends UserCardItem>({
           <span className={`badge status ${item.is_active ? 'active' : 'expired'}`}>
             {item.is_active ? 'Active' : inactiveLabel}
           </span>
+          {showDownloadedBadge && item.downloaded_at && (
+            <span className="badge downloaded-badge" title={downloadedBadgeTitle(item.downloaded_at)}>⬇ Downloaded</span>
+          )}
           {isWatched && <span className="badge watched-badge">👁 Watching</span>}
           {isIgnored && <span className="badge ignored-badge">🚫 Ignored</span>}
           {item.is_subscribed && <span className="badge subscribed-badge">✓ Subscribed</span>}

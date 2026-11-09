@@ -93,6 +93,11 @@
 .fleet-staging-actions { display: flex; flex-wrap: wrap; align-items: center; gap: 12px; margin-top: 12px; }
 .fleet-staging-actions p { color: var(--color-text-secondary); font-size: 12px; }
 .fleet-staging-actions p[role='alert'] { color: var(--color-error); }
+.fleet-find-only-site { display: flex; flex-direction: column; gap: 8px; }
+.fleet-find-only-site + .fleet-find-only-site { margin-top: 12px; }
+.fleet-find-only-site h4 { color: var(--color-text-secondary); font-size: 12px; text-transform: capitalize; }
+.fleet-find-only-list { display: flex; flex-direction: column; gap: 6px; }
+.fleet-find-only-list label { display: inline-flex; align-items: center; gap: 6px; color: var(--color-text-secondary); font: 12px var(--font-mono); overflow-wrap: anywhere; }
 .fleet-register-comparison-table { min-width: 620px; }
 .fleet-register-comparison-table th:first-child { width: 180px; }
 .fleet-register-comparison-table tbody th { color: var(--color-text-secondary); font: 11px var(--font-mono); }

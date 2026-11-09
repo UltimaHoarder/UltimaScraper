@@ -17,7 +17,9 @@ test('edits the global staging directories from the mounts tab', async ({ page }
   expect(overflow).toBeLessThanOrEqual(0);
 
   if (process.env.CAPTURE_THEME_SHOTS === '1') {
-    await page.locator('.fleet-staging').screenshot({ path: testInfo.outputPath('staging-directories.png') });
+    await page
+      .getByRole('region', { name: 'Staging directories' })
+      .screenshot({ path: testInfo.outputPath('staging-directories.png') });
   }
 
   const saved = page.waitForRequest(

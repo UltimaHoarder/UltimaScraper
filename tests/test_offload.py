@@ -519,3 +519,62 @@ async def test_profile_media_go_to_the_owner_from_a_backend_without_drives(monke
     [kept] = result.output["download_results"]
     assert kept["status"] == "downloaded" and kept["path"] == f"/mnt/media/{path}"
     assert result.output["files"][0]["path"] == f"/mnt/media/{path}"
+
+
+class _KeptClient:
+    def __init__(self, state) -> None:
+        self.state = state
+        self.asked = []
+        self.stored = []
+
+    async def file_state(self, *, root, path):
+        self.asked.append((root, path))
+        return self.state
+
+    async def store(self, local, *, root, path):
+        self.stored.append((root, path))
+        return {"path": f"{root}/{path}"}
+
+
+def _kept_store(tmp_path, client) -> tuple[RemoteStore, Path]:
+    local_root = tmp_path / "mirror"
+    local = local_root / "OnlyFans" / "T" / "tester" / "Posts" / "clip.mp4"
+    local.parent.mkdir(parents=True)
+    local.write_bytes(b"x" * 20)
+    selection = UserDirectorySelection(root=local_root, performer_relative_path=Path("OnlyFans/T/tester"))
+    return (
+        RemoteStore(
+            client=client,
+            owner_root="/mnt/new",
+            local_root=local_root,
+            selection=selection,
+            kept_root="/mnt/old",
+            kept_relative_path="OnlyFansImages/T/tester",
+        ),
+        local,
+    )
+
+
+@pytest.mark.asyncio
+async def test_a_file_the_owner_has_in_its_find_only_folder_is_not_stored_twice(tmp_path) -> None:
+    client = _KeptClient({"exists": True, "size": 20})
+    remote, local = _kept_store(tmp_path, client)
+
+    path = await remote.keep(local)
+
+    assert path == "/mnt/old/OnlyFansImages/T/tester/Posts/clip.mp4"
+    assert client.asked == [("/mnt/old", "OnlyFansImages/T/tester/Posts/clip.mp4")]
+    assert client.stored == []
+    assert not local.exists()
+
+
+@pytest.mark.asyncio
+@pytest.mark.parametrize("state", [{"exists": False, "size": None}, {"exists": True, "size": 19}])
+async def test_a_file_the_find_only_folder_lacks_goes_to_the_owners_new_folder(tmp_path, state) -> None:
+    client = _KeptClient(state)
+    remote, local = _kept_store(tmp_path, client)
+
+    path = await remote.keep(local)
+
+    assert path == "/mnt/new/OnlyFans/T/tester/Posts/clip.mp4"
+    assert client.stored == [("/mnt/new", "OnlyFans/T/tester/Posts/clip.mp4")]

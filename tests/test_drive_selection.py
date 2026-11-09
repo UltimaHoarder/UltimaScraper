@@ -19,8 +19,10 @@ from ultima_scraper_backend.config import (
 )
 from ultima_scraper_backend.job_system.drive_selection import (
     DriveSelectionError,
+    UserDirectorySelection,
     _minimum_space_bytes,
     select_download_destination,
+    select_user_destination,
     select_user_directory,
 )
 
@@ -1077,3 +1079,98 @@ async def test_add_directory_defaults_new_drive_scan_existing_to_false(
     assert persisted_setup.drives[0].scan_existing is False
     assert config.settings.download_setup.drives == []
     propagate.assert_awaited_once()
+
+
+def _find_only_setup(*roots: Path) -> DownloadPathSetup:
+    return DownloadPathSetup(
+        directory_format=Path(
+            "{site_name}/{first_username_letter}/{user_username}/{content_type}/{value}/{media_type}"
+        ),
+        site_directory_aliases={"onlyfans": ["OnlyFansImages", "OnlyFans (G)"]},
+        find_only_site_directories={"OnlyFans": ["onlyfansimages"]},
+        drives=[Drive(directories=list(roots))],
+    )
+
+
+def _select_tester(setup: DownloadPathSetup) -> UserDirectorySelection:
+    return select_user_destination(
+        user_id=7,
+        usernames=["tester"],
+        site_name="OnlyFans",
+        user_manager=None,
+        config=_config_for(setup),
+    )
+
+
+def _config_for(setup: DownloadPathSetup) -> UltimaScraperCollectionConfig:
+    config = UltimaScraperCollectionConfig()
+    config.settings.download_setup = setup
+    return config
+
+
+def test_a_find_only_alias_folder_is_found_but_not_downloaded_into(tmp_path: Path) -> None:
+    old = tmp_path / "drive" / "OnlyFansImages" / "T" / "tester"
+    old.mkdir(parents=True)
+
+    result = _select_tester(_find_only_setup(tmp_path / "drive"))
+
+    assert result.performer_relative_path == Path("OnlyFans/T/tester")
+    assert result.site_name == "OnlyFans"
+    assert result.kept_root == tmp_path / "drive"
+    assert result.kept_relative_path == Path("OnlyFansImages/T/tester")
+
+
+def test_the_find_only_folder_is_still_read_once_the_new_folder_exists(tmp_path: Path) -> None:
+    (tmp_path / "drive" / "OnlyFansImages" / "T" / "tester").mkdir(parents=True)
+    (tmp_path / "drive" / "OnlyFans" / "T" / "tester").mkdir(parents=True)
+
+    result = _select_tester(_find_only_setup(tmp_path / "drive"))
+
+    assert result.performer_relative_path == Path("OnlyFans/T/tester")
+    assert result.kept_relative_path == Path("OnlyFansImages/T/tester")
+
+
+def test_an_alias_that_is_not_find_only_is_still_downloaded_into(tmp_path: Path) -> None:
+    folder = tmp_path / "drive" / "OnlyFans (G)" / "T" / "tester"
+    folder.mkdir(parents=True)
+
+    result = _select_tester(_find_only_setup(tmp_path / "drive"))
+
+    assert result.performer_relative_path == Path("OnlyFans (G)/T/tester")
+    assert result.kept_root is None
+
+
+def test_a_find_only_folder_reached_through_an_alt_format_is_not_downloaded_into(tmp_path: Path) -> None:
+    (tmp_path / "drive" / "OnlyFans (G)" / "T" / "tester").mkdir(parents=True)
+    setup = _find_only_setup(tmp_path / "drive")
+    setup.alt_directory_formats = [
+        Path("{site_name} (G)/{first_username_letter}/{user_username}/{content_type}/{value}/{media_type}")
+    ]
+    setup.site_directory_aliases = {}
+    setup.find_only_site_directories = {"onlyfans": ["OnlyFans (G)"]}
+
+    result = _select_tester(setup)
+
+    assert result.performer_relative_path == Path("OnlyFans/T/tester")
+    assert result.kept_relative_path == Path("OnlyFans (G)/T/tester")
+
+
+def test_files_already_in_the_find_only_folder_do_not_count_against_free_space(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    (tmp_path / "drive" / "OnlyFansImages" / "T" / "tester").mkdir(parents=True)
+    monkeypatch.setattr(
+        "ultima_scraper_backend.job_system.drive_selection.shutil.disk_usage",
+        lambda path: SimpleNamespace(free=1024),
+    )
+
+    result = select_user_destination(
+        user_id=7,
+        usernames=["tester"],
+        site_name="OnlyFans",
+        user_manager=None,
+        config=_config_for(_find_only_setup(tmp_path / "drive")),
+        required_space=10**12,
+    )
+
+    assert result.performer_relative_path == Path("OnlyFans/T/tester")

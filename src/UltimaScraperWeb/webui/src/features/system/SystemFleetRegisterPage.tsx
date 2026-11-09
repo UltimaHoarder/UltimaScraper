@@ -62,6 +62,7 @@ import './SystemFleetRegisterPage.css';
 import { followInApp, sectionOnBackend } from '../connections/lib/navigation';
 import { formatRowCount, ROW_ESTIMATE_TITLE } from './lib/rowCounts';
 import { ClusterSection } from './components/ClusterSection';
+import { FindOnlyFoldersSection } from './components/FindOnlyFoldersSection';
 import { StagingDirectoriesSection } from './components/StagingDirectoriesSection';
 import '../connections/connections.css';
 import { OperationPanel } from '../connections/DeploymentsSection';
@@ -1806,6 +1807,7 @@ export function SystemFleetRegisterPage() {
         </>}
       </table>{!count && !registerLoading && <div className="fleet-register-empty">No matching {tab}. Try another search or state.</div>}</div>)}
       {tab === 'mounts' && settingsQuery.data && <StagingDirectoriesSection settings={settingsQuery.data} onSaveSettings={handleSaveSettings} />}
+      {tab === 'mounts' && settingsQuery.data && <FindOnlyFoldersSection settings={settingsQuery.data} onSaveSettings={handleSaveSettings} />}
       <footer className="fleet-register-footer"><span>Observed snapshot · {new Date(now).toLocaleTimeString([], { hour: '2-digit', minute: '2-digit', second: '2-digit' })}</span><span>Shared queue counted once · offline records retained for inspection</span></footer>
       <div className="fleet-register-notes"><div><strong>Observed vs configured</strong><p>Worker load and heartbeat are live observations. Configuration opens the backend-scoped settings workflow.</p></div><div><strong>One shared queue</strong><p>Pending jobs come from the local queue endpoint and are not added once per backend row.</p></div><div><strong>Offline is still useful</strong><p>Cached identity, version, assignments, and last heartbeat remain inspectable while capacity is marked unavailable.</p></div></div>
     </section>

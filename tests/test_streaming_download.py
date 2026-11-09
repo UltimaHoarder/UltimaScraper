@@ -253,6 +253,7 @@ async def test_real_batch_pipeline_finalizes_files_and_records_unusable_media(
     )
     task = SimpleNamespace(task_id="task", site_name="onlyfans")
     selection = SimpleNamespace(
+        kept_directory_for=lambda *_args: None,
         root=tmp_path,
         absolute_path=tmp_path,
         requires_full_directory_render=False,
@@ -333,6 +334,7 @@ async def test_progress_never_expects_fewer_bytes_than_the_task_has_written(monk
     )
     task = SimpleNamespace(task_id="task", site_name="onlyfans")
     selection = SimpleNamespace(
+        kept_directory_for=lambda *_args: None,
         root=tmp_path, absolute_path=tmp_path, requires_full_directory_render=False, directory_format=tmp_path
     )
 
@@ -461,6 +463,7 @@ async def test_download_progress_keeps_the_proxy_route(monkeypatch, tmp_path):
         storage=storage,
     )
     selection = SimpleNamespace(
+        kept_directory_for=lambda *_args: None,
         root=tmp_path, absolute_path=tmp_path, requires_full_directory_render=False, directory_format=tmp_path
     )
 

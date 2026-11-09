@@ -28,6 +28,7 @@ from ultima_scraper_backend.job_system.download_manager import (
     DRMMediaSettings,
     ResourceManager,
 )
+from ultima_scraper_backend.job_system.drive_selection import UserDirectorySelection
 from ultima_scraper_backend.job_system.handlers.download.handler import (
     _build_download_items,
     _process_download_result,
@@ -35,6 +36,7 @@ from ultima_scraper_backend.job_system.handlers.download.handler import (
 )
 from ultima_scraper_backend.job_system.handlers.download.results import (
     categorize_media_items,
+    use_kept_copies,
 )
 from ultima_scraper_backend.job_system.metadata_models import (
     ContentMetadata,
@@ -2445,3 +2447,59 @@ async def test_a_file_without_a_destination_does_not_break_its_progress() -> Non
     assert events[-1]["path"] is None
     assert events[-1]["active_transfers"][0]["path"] is None
 
+
+
+def _kept_copy_item(tmp_path, *, kept_bytes: bytes, size: int | None, new_bytes: bytes | None = None):
+    new = tmp_path / "OnlyFans" / "T" / "tester"
+    old = tmp_path / "OnlyFansImages" / "T" / "tester"
+    (new / "Posts").mkdir(parents=True)
+    (old / "Posts").mkdir(parents=True)
+    (old / "Posts" / "clip.mp4").write_bytes(kept_bytes)
+    if new_bytes is not None:
+        (new / "Posts" / "clip.mp4").write_bytes(new_bytes)
+    item = DownloadItem(url="https://cdn.example/clip.mp4", filename="clip.mp4", directory=new / "Posts", media_id=1, content_id=2, size=size)
+    selection = UserDirectorySelection(
+        root=tmp_path,
+        performer_relative_path=Path("OnlyFans/T/tester"),
+        kept_root=tmp_path,
+        kept_relative_path=Path("OnlyFansImages/T/tester"),
+    )
+    return item, selection, new, old
+
+
+@pytest.mark.parametrize("size", [None, 20])
+def test_a_finished_file_in_a_find_only_folder_is_not_downloaded_again(tmp_path, size: int | None) -> None:
+    item, selection, new, old = _kept_copy_item(tmp_path, kept_bytes=b"x" * 20, size=size)
+
+    use_kept_copies([item], selection, new)
+    valid, skipped = categorize_media_items([item])
+
+    assert valid == []
+    assert skipped[0].has_error(download_handler_module.DownloadFailureReason.ALREADY_EXISTS)
+    assert skipped[0].path == str(old / "Posts" / "clip.mp4")
+
+
+def test_a_wrong_sized_copy_downloads_to_the_new_folder_not_the_find_only_one(tmp_path) -> None:
+    item, selection, new, _old = _kept_copy_item(tmp_path, kept_bytes=b"x" * 20, size=99)
+
+    use_kept_copies([item], selection, new)
+    valid, _skipped = categorize_media_items([item])
+
+    assert valid == [item]
+    assert item.directory == new / "Posts"
+
+
+def test_an_empty_copy_in_a_find_only_folder_does_not_count(tmp_path) -> None:
+    item, selection, new, _old = _kept_copy_item(tmp_path, kept_bytes=b"", size=None)
+
+    use_kept_copies([item], selection, new)
+
+    assert item.directory == new / "Posts"
+
+
+def test_a_file_already_in_the_new_folder_stays_there(tmp_path) -> None:
+    item, selection, new, _old = _kept_copy_item(tmp_path, kept_bytes=b"x" * 20, size=20, new_bytes=b"y" * 20)
+
+    use_kept_copies([item], selection, new)
+
+    assert item.directory == new / "Posts"

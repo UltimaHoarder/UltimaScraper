@@ -517,6 +517,8 @@ export async function installApiMocks(page: Page, options: SmokeOptions = {}) {
       drives: [],
       alt_directory_formats: [],
       staging_directories: [],
+      site_directory_aliases: { onlyfans: ['OnlyFansImages', 'OnlyFans (G)'] },
+      find_only_site_directories: {},
       directory_format: '{site}/{username}',
       filename_format: '{id}_{filename}',
       text_length: 255,

@@ -87,6 +87,7 @@ export interface DownloadSetupSettings {
   drives: DriveSettings[];
   alt_directory_formats: string[];
   site_directory_aliases?: Record<string, string[]>;
+  find_only_site_directories?: Record<string, string[]>;
   staging_directories: StagingDirectory[];
   directory_format: string;
   filename_format: string;

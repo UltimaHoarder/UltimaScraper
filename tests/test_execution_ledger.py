@@ -36,6 +36,7 @@ from ultima_scraper_backend.job_system.ledger import (
     validate_write_attempt,
 )
 from ultima_scraper_backend.job_system.models import (
+    MAX_DATABASE_OUTAGE_RETRIES,
     Job,
     Task,
     TaskRegistry,
@@ -1276,6 +1277,80 @@ async def test_worker_retries_transient_renewal_without_reviving_expired_claim(l
 
 
 @pytest.mark.asyncio
+async def test_an_outage_on_the_last_try_saves_its_result_and_does_not_use_the_try(
+    ledger, monkeypatch
+):
+    import psycopg
+    from sqlalchemy.exc import OperationalError
+    from ultima_scraper_backend.job_system import ledger_runtime
+
+    def outage():
+        return OperationalError(
+            None, None, psycopg.errors.ProtocolViolation("server conn crashed? (server_login_retry)")
+        )
+
+    async def handler(item, context):
+        raise outage()
+
+    async def backoff(self, error):
+        return None
+
+    original_finish, finishes = ledger.finish_batch, 0
+
+    def finish_batch(requests):
+        nonlocal finishes
+        finishes += 1
+        if finishes == 1:
+            raise outage()
+        return original_finish(requests)
+
+    monkeypatch.setattr(ledger, "finish_batch", finish_batch)
+    monkeypatch.setattr(ledger_runtime._ServiceRetry, "failed", backoff)
+    monkeypatch.setitem(TaskRegistry._handlers, TaskType.API_COMMAND, handler)
+    item = task(kind=TaskType.API_COMMAND)
+    item.max_attempts = 1
+    submit(ledger, [item])
+    ledger.tick()
+
+    await ledger_runtime.execute(pool(), ledger, claim(ledger))
+
+    assert finishes == 2
+    stored = ledger.task("job-test", "task-a")
+    assert stored["state"] == "pending"
+    assert (stored["max_attempts"], stored["database_outage_retries"]) == (2, 1)
+    assert ledger.attempts("job-test")[0]["state"] == "failed"
+
+
+def test_a_lease_lost_to_an_outage_does_not_use_the_try(ledger):
+    def expire():
+        with ledger.session_factory() as session:
+            session.execute(
+                text("UPDATE management.execution_work SET lease_until=clock_timestamp()-interval '1 second'")
+            )
+            session.execute(
+                text("UPDATE management.execution_resources SET lease_until=clock_timestamp()-interval '1 second'")
+            )
+            session.commit()
+
+    item = task()
+    item.max_attempts = 1
+    submit(ledger, [item])
+    ledger.tick()
+    claim(ledger)
+    expire()
+
+    assert ledger.recover_expired(database_outage=True) == 1
+    stored = ledger.task("job-test", "task-a")
+    assert stored["state"] == "pending" and stored["max_attempts"] == 2
+
+    assert claim(ledger, "worker-b").number == 2
+    expire()
+    assert ledger.recover_expired() == 1
+    # Without an outage, an expired lease still uses the try.
+    assert ledger.task("job-test", "task-a")["state"] == "failed"
+
+
+@pytest.mark.asyncio
 async def test_worker_retries_transient_failures_with_recorded_attempt(
     ledger, monkeypatch
 ):
@@ -1393,16 +1468,18 @@ async def test_repeated_database_disconnect_stops_at_task_attempt_limit(ledger, 
     submit(ledger, [item])
     ledger.tick()
     worker = pool()
-    for number in range(1, 4):
+    # Outages do not use a try, but a task that keeps meeting one still stops.
+    limit = 3 + MAX_DATABASE_OUTAGE_RETRIES
+    for number in range(1, limit + 1):
         owned = claim(ledger)
         assert owned.number == number
         await execute(worker, ledger, owned)
-        assert ledger.task("job-test", "task-a")["state"] == ("pending" if number < 3 else "failed")
+        assert ledger.task("job-test", "task-a")["state"] == ("pending" if number < limit else "failed")
         with ledger.session_factory() as session:
             session.execute(text("UPDATE management.execution_work SET available_at=clock_timestamp() WHERE run_id='job-test'"))
             session.commit()
     assert claim(ledger) is None
-    assert [attempt["state"] for attempt in ledger.attempts("job-test")] == ["failed"] * 3
+    assert [attempt["state"] for attempt in ledger.attempts("job-test")] == ["failed"] * limit
 
 
 @pytest.mark.asyncio

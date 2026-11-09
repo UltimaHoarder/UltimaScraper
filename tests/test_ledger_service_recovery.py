@@ -9,6 +9,12 @@ import psycopg
 import pytest
 from sqlalchemy.exc import OperationalError, ProgrammingError
 from ultima_scraper_backend.job_system import ledger_runtime
+from ultima_scraper_backend.job_system.handlers.scrape.handler import scrape_task_handler
+from ultima_scraper_backend.job_system.models import (
+    MAX_DATABASE_OUTAGE_RETRIES,
+    Task,
+    TaskType,
+)
 
 
 def cached_recovery_error():
@@ -144,7 +150,7 @@ async def test_services_resume_fresh_passes_after_database_recovery(
     monkeypatch, caplog, operation
 ):
     ledger = SimpleNamespace(
-        limits=SimpleNamespace(batch=8),
+        limits=SimpleNamespace(batch=8, lease_seconds=120),
         recover_expired=Mock(),
         tick=Mock(),
         archive_tick=Mock(),
@@ -153,6 +159,7 @@ async def test_services_resume_fresh_passes_after_database_recovery(
         reindex_bloated_queue_indexes=Mock(return_value=[]),
     )
     calls = 0
+    last_kwargs = {}
     sleeps = []
     resumed = asyncio.Event()
     blocked = asyncio.Event()
@@ -174,6 +181,7 @@ async def test_services_resume_fresh_passes_after_database_recovery(
         nonlocal calls
         if function is getattr(ledger, operation):
             calls += 1
+            last_kwargs.update(kwargs)
             if calls <= 2:
                 raise cached_recovery_error()
             return 0
@@ -196,6 +204,8 @@ async def test_services_resume_fresh_passes_after_database_recovery(
         await asyncio.wait_for(resumed.wait(), timeout=2)
         assert calls == 3
         assert sleeps == [15, 30, 1 if operation == "recover_expired" else 0.25]
+        if operation == "recover_expired":
+            assert last_kwargs == {"database_outage": True}
         assert any(
             "database access restored" in record.message for record in caplog.records
         )
@@ -274,3 +284,59 @@ async def test_deletion_resumes_fresh_pass_after_pool_timeout(monkeypatch):
         await job_deletion.run_deletion_worker(None)
     assert delays == [15, 2]
     assert calls == [job_deletion._cleanup_pass, job_deletion._cleanup_pass]
+
+
+@pytest.mark.asyncio
+async def test_waits_out_an_outage_and_returns_the_result(monkeypatch):
+    backoff = AsyncMock()
+    monkeypatch.setattr(ledger_runtime._ServiceRetry, "failed", backoff)
+    call = AsyncMock(side_effect=[cached_recovery_error(), pool_wait_error(), "saved"])
+
+    assert await ledger_runtime._through_database_outage("completion", call) == "saved"
+    assert call.await_count == 3 and backoff.await_count == 2
+
+
+@pytest.mark.asyncio
+async def test_other_database_errors_are_not_waited_out():
+    error = OperationalError(None, None, psycopg.errors.DeadlockDetected("deadlock"))
+
+    with pytest.raises(OperationalError):
+        await ledger_runtime._through_database_outage("completion", AsyncMock(side_effect=error))
+
+
+def test_outage_retries_are_limited_and_survive_the_payload_round_trip():
+    task = Task(user_id=1, task_type=TaskType.API_COMMAND, site_name="onlyfans", max_attempts=3)
+
+    for _ in range(MAX_DATABASE_OUTAGE_RETRIES + 5):
+        task.forgive_database_outage()
+
+    assert task.max_attempts == 3 + MAX_DATABASE_OUTAGE_RETRIES
+    restored = Task.from_dict(task.to_dict())
+    assert restored.database_outage_retries == MAX_DATABASE_OUTAGE_RETRIES
+    assert restored.max_attempts == task.max_attempts
+
+
+class _OutageContext:
+    worker_id = "worker-a"
+
+    @property
+    def database_writes(self):
+        raise cached_recovery_error()
+
+
+@pytest.mark.asyncio
+async def test_a_scrape_hit_by_an_outage_stays_retryable():
+    task = Task(user_id=1, task_type=TaskType.SCRAPE, site_name="onlyfans")
+
+    with pytest.raises(OperationalError):
+        await scrape_task_handler(task, _OutageContext())
+
+
+@pytest.mark.asyncio
+async def test_a_scrape_that_fails_for_another_reason_still_returns_its_failure():
+    task = Task(user_id=1, task_type=TaskType.SCRAPE, site_name="onlyfans")
+
+    result = await scrape_task_handler(task, SimpleNamespace(database_writes=None, worker_id="worker-a"))
+
+    assert result.success is False
+    assert "Database writer is unavailable" in result.message

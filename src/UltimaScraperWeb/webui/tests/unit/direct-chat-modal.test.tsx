@@ -40,6 +40,8 @@ function eligible(...auths: Array<[number, string, boolean]>) {
 describe('DirectChatModal accounts', () => {
   beforeEach(() => {
     vi.clearAllMocks();
+    // jsdom has no scrollIntoView; the message list scrolls to the newest message.
+    Element.prototype.scrollIntoView = vi.fn();
     mockGetAuthBalance.mockResolvedValue({ success: true, balance: 12.5 } as Awaited<ReturnType<typeof getAuthBalance>>);
     mockGetChatMessages.mockResolvedValue({ success: true, messages: [], has_more: false } as unknown as Awaited<ReturnType<typeof getChatMessages>>);
   });

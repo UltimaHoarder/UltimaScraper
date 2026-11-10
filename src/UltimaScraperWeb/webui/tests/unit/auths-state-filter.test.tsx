@@ -25,7 +25,7 @@ function wrapper({ children }: { children: ReactNode }) {
 describe('auths page Active filter', () => {
   beforeEach(() => {
     mockGetAuthList.mockReset();
-    mockGetAuthList.mockResolvedValue({ success: true, total: 0, auths: [], error: null } as Awaited<
+    mockGetAuthList.mockResolvedValue({ success: true, total: 0, auths: [] } as unknown as Awaited<
       ReturnType<typeof getAuthList>
     >);
   });

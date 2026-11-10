@@ -63,15 +63,11 @@ export function useAuthsPageController() {
     queryKey: ['auths', siteFilter, stateFilter, usernameSearch, validUserId],
     initialPageParam: 0,
     queryFn: ({ pageParam }) => {
-      let activeFlag: boolean | undefined;
-      if (stateFilter === 'enabled') {
-        activeFlag = true;
-      } else if (stateFilter === 'disabled') {
-        activeFlag = false;
-      }
+      // The API lists only active auths unless told otherwise, so "All Auths"
+      // and "Disabled" ask for every auth; "Disabled" is narrowed below.
       return getAuthList(
         siteFilter || undefined,
-        activeFlag,
+        stateFilter === 'enabled',
         usernameSearch || undefined,
         validUserId,
         pageSize,

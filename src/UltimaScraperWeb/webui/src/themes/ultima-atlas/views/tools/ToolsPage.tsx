@@ -2,16 +2,18 @@ import { useEffect, useRef, useState } from 'react';
 
 import { APIRequestsTool } from '../../../../features/tools/components/APIRequestsTool';
 import { MPSTool } from '../../../../features/tools/components/MPSTool';
+import { SplitPerformersTool } from '../../../../features/tools/components/SplitPerformersTool';
 import './ToolsPage.css';
 
 export function ToolsPage() {
-  const [activeTab, setActiveTab] = useState<'mps' | 'api'>('mps');
+  const [activeTab, setActiveTab] = useState<'mps' | 'api' | 'split'>('mps');
   const [toolSearch, setToolSearch] = useState('');
   const toolsNavRef = useRef<HTMLElement>(null);
   const activeToolRef = useRef<HTMLButtonElement>(null);
   const tools = [
     { id: 'mps', label: 'Mass Profile Scraper', icon: '◎' },
     { id: 'api', label: 'API Requests', icon: '{ }' },
+    { id: 'split', label: 'Split Performers', icon: '⇄' },
   ] as const;
   const visibleTools = tools.filter((tool) =>
     `${tool.label} ${tool.id}`.toLowerCase().includes(toolSearch.trim().toLowerCase())
@@ -105,6 +107,7 @@ export function ToolsPage() {
       <main className="tools-content" id="tools-content" tabIndex={-1}>
         {activeTab === 'mps' && <MPSTool />}
         {activeTab === 'api' && <APIRequestsTool />}
+        {activeTab === 'split' && <SplitPerformersTool />}
       </main>
     </div>
   );

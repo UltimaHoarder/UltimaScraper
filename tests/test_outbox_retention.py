@@ -81,3 +81,66 @@ async def test_pause_keeps_cursor_and_reports_status(monkeypatch):
     assert (
         client.hset.await_args.kwargs["mapping"]["paused_reason"] == "operator_paused"
     )
+
+
+@pytest.mark.parametrize("sqlstate", ["55P03", "57014"])
+def test_partitioned_purge_yields_on_lock_or_statement_timeout(monkeypatch, sqlstate):
+    # History retirement's DROP of a leaf holds ACCESS EXCLUSIVE on the parent;
+    # the scan's lock timeout must keep the cursor, not escape as an error.
+    from sqlalchemy.exc import OperationalError
+    from ultima_scraper_backend.database import outbox_retention
+
+    class FakeSession:
+        rolled_back = False
+
+        def __enter__(self):
+            return self
+
+        def __exit__(self, *exc):
+            return False
+
+        def scalar(self, *_args, **_kwargs):
+            return True
+
+        def execute(self, *_args, **_kwargs):
+            return None
+
+        def rollback(self):
+            self.rolled_back = True
+
+    session = FakeSession()
+
+    def blocked(*_args, **_kwargs):
+        raise OperationalError("SELECT", {}, SimpleNamespace(sqlstate=sqlstate))
+
+    monkeypatch.setattr(outbox_retention, "_retention_hours", lambda _s: 168)
+    monkeypatch.setattr(outbox_retention, "_plugin_event_floor", lambda _s: None)
+    monkeypatch.setattr(outbox_retention, "_purge_partitioned_outbox", blocked)
+    result = purge_outbox(cursor="event:42", mode="always", session_factory=lambda: session)
+    assert result.busy and result.deleted == 0 and session.rolled_back
+
+
+def test_partitioned_purge_raises_other_operational_errors(monkeypatch):
+    from sqlalchemy.exc import OperationalError
+    from ultima_scraper_backend.database import outbox_retention
+
+    session = SimpleNamespace(
+        scalar=lambda *_a, **_k: True,
+        execute=lambda *_a, **_k: None,
+    )
+
+    class Ctx:
+        def __enter__(self):
+            return session
+
+        def __exit__(self, *exc):
+            return False
+
+    def broken(*_args, **_kwargs):
+        raise OperationalError("SELECT", {}, SimpleNamespace(sqlstate="08006"))
+
+    monkeypatch.setattr(outbox_retention, "_retention_hours", lambda _s: 168)
+    monkeypatch.setattr(outbox_retention, "_plugin_event_floor", lambda _s: None)
+    monkeypatch.setattr(outbox_retention, "_purge_partitioned_outbox", broken)
+    with pytest.raises(OperationalError):
+        purge_outbox(cursor="event:42", mode="always", session_factory=Ctx)

@@ -48,7 +48,8 @@ jobs:
 
   webui:
     name: WebUI
-    runs-on: ubuntu-latest
+    # Playwright does not install Chromium on Ubuntu 26.04, which ubuntu-latest now is.
+    runs-on: ubuntu-24.04
     timeout-minutes: 30
     defaults:
       run:

@@ -24,6 +24,7 @@ def test_config_load_preserves_unavailable_drive_paths_without_probing(
             "store": False,
             "scan_existing": True,
             "overflow": False,
+            "priority": 2,
             "directories": [
                 "/usr-test-offline-drive/media",
                 "/usr-test-other-offline-drive/archive",
@@ -34,6 +35,7 @@ def test_config_load_preserves_unavailable_drive_paths_without_probing(
             "store": True,
             "scan_existing": False,
             "overflow": True,
+            "priority": 0,
             "directories": ["/usr-test-offline-drive/downloads"],
         },
     ]

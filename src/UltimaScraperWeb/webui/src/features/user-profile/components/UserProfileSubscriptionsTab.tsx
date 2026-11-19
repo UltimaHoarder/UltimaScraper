@@ -10,6 +10,7 @@ import { SUBSCRIPTION_SORT_OPTIONS } from '../../subscriptions/lib/subscriptions
 import { OperationsState } from '../../../shared/ui/operations/OperationsChrome';
 import { formatNumber, formatPrice } from '../lib/userProfileUtils';
 import { stripHtml } from '../../../utils/sanitize';
+import { siteLabel } from '../../../shared/lib/sites';
 
 interface UserProfileSubscriptionsTabProps {
   authLookupLoading: boolean;
@@ -277,7 +278,7 @@ export function UserProfileSubscriptionsTab({
                           @{subscription.username || subscription.user_id}
                         </p>
                         <p className="profile-subscription-card__meta">
-                          {subscription.site === 'onlyfans' ? 'OnlyFans' : 'Fansly'} · Expires{' '}
+                          {siteLabel(subscription.site)} · Expires{' '}
                           {formatExpiry(subscription.expires_at)}
                         </p>
                       </div>

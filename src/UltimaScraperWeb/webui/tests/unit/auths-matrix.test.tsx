@@ -40,14 +40,15 @@ const AUTHS = [
   }),
 ];
 
-function renderMatrix(auths = AUTHS) {
+function renderMatrix(auths = AUTHS, extra: { refreshingAuthKey?: string | null } = {}) {
   const props = {
+    ...extra,
     auths,
     togglePending: false,
     deletePending: false,
     batchPending: false,
     onManage: vi.fn(),
-    onTest: vi.fn(),
+    onRefresh: vi.fn(),
     onToggle: vi.fn(),
     onDelete: vi.fn(),
     onBatchTest: vi.fn(),
@@ -62,6 +63,43 @@ function renderMatrix(auths = AUTHS) {
 }
 
 describe("AuthsMatrix", () => {
+  it("refreshes one account from its row", () => {
+    const { props, view } = renderMatrix();
+
+    const alice = screen.getByRole("row", { name: /@alice/ });
+    expect(within(alice).queryByRole("button", { name: "Test" })).not.toBeInTheDocument();
+    fireEvent.click(within(alice).getByRole("button", { name: "Refresh" }));
+    expect(props.onRefresh).toHaveBeenCalledWith(AUTHS[0]);
+
+    view.rerender(
+      <MemoryRouter>
+        <AuthsMatrix {...props} refreshingAuthKey="onlyfans-1" />
+      </MemoryRouter>,
+    );
+    const busy = within(screen.getByRole("row", { name: /@alice/ })).getByRole("button", {
+      name: "Refreshing…",
+    });
+    expect(busy).toBeDisabled();
+    expect(
+      within(screen.getByRole("row", { name: /@bob/ })).getByRole("button", { name: "Refresh" }),
+    ).toBeEnabled();
+  });
+
+  it("marks only the refreshed site's account busy when ids repeat across sites", () => {
+    // Each site numbers its auths from 1.
+    renderMatrix(
+      [auth({}), auth({ site: "fansly", username: "carol", user_id: 33 })],
+      { refreshingAuthKey: "fansly-1" },
+    );
+
+    expect(
+      within(screen.getByRole("row", { name: /@carol/ })).getByRole("button", { name: "Refreshing…" }),
+    ).toBeDisabled();
+    expect(
+      within(screen.getByRole("row", { name: /@alice/ })).getByRole("button", { name: "Refresh" }),
+    ).toBeEnabled();
+  });
+
   it("shows each account with its routing, worker and spending", () => {
     renderMatrix();
 

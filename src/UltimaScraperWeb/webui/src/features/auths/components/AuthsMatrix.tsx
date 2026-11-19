@@ -3,12 +3,10 @@ import { Link } from 'react-router-dom';
 
 import type { AuthCredential } from '../../../api/types/auths';
 import { formatRelativeTime } from '../../user-profile/lib/userProfileUtils';
-import { formatAuthDate, getSiteIcon, spenderTypeLabel } from '../lib/authsUtils';
+import { authKey, formatAuthDate, getSiteIcon, spenderTypeLabel } from '../lib/authsUtils';
+import { siteLabel } from '../../../shared/lib/sites';
 
-const SITE_NAMES: Record<string, string> = { onlyfans: 'OnlyFans', fansly: 'Fansly' };
-
-const authKey = (auth: AuthCredential) => `${auth.site}-${auth.id}`;
-const siteName = (site: string) => SITE_NAMES[site.toLowerCase()] ?? site;
+const siteName = (site: string) => siteLabel(site);
 const profilePath = (auth: AuthCredential) => `/users/${auth.user_id}?site=${encodeURIComponent(auth.site)}`;
 const displayName = (auth: AuthCredential) => auth.username || `u${auth.user_id}`;
 
@@ -141,7 +139,10 @@ interface AuthsMatrixProps {
   deletePending: boolean;
   batchPending: boolean;
   onManage: (auth: AuthCredential) => void;
-  onTest: (auth: AuthCredential) => void;
+  /** Sign the account in again and update what is stored about it. */
+  onRefresh: (auth: AuthCredential) => void;
+  /** The auth a Refresh is running for, as its `authKey`. */
+  refreshingAuthKey?: string | null;
   onToggle: (auth: AuthCredential) => void;
   onDelete: (auth: AuthCredential) => void;
   onBatchTest: (auths: AuthCredential[]) => void;
@@ -161,7 +162,8 @@ export function AuthsMatrix({
   deletePending,
   batchPending,
   onManage,
-  onTest,
+  onRefresh,
+  refreshingAuthKey = null,
   onToggle,
   onDelete,
   onBatchTest,
@@ -255,8 +257,13 @@ export function AuthsMatrix({
           <RelativeTime value={auth.last_tested_at} />
         </td>
         <td data-label="Actions" className="auths-matrix-actions">
-          <button type="button" className="auths-matrix-link" onClick={() => onTest(auth)}>
-            Test
+          <button
+            type="button"
+            className="auths-matrix-link"
+            disabled={refreshingAuthKey === authKey(auth)}
+            onClick={() => onRefresh(auth)}
+          >
+            {refreshingAuthKey === authKey(auth) ? 'Refreshing…' : 'Refresh'}
           </button>
           <button type="button" className="auths-matrix-link" onClick={() => onManage(auth)}>
             Manage

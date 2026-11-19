@@ -174,3 +174,45 @@ async def test_add_auth_from_curl_syncs_imported_user(
         proxy_url=None,
     )
     publish_mock.assert_awaited_once()
+
+
+@pytest.mark.asyncio
+async def test_add_auth_from_curl_marks_a_spender(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    import ultima_scraper_backend.database.factory as db_factory
+
+    parsed = curl_parser_module.ParsedCurlData(
+        success=True, site="fansly", authorization="Bearer t", user_agent="ua", user_id=55
+    )
+    session = _FakeImportSession([None, None])
+    monkeypatch.setattr(curl_parser_module, "parse_curl", AsyncMock(return_value=parsed))
+    monkeypatch.setattr(
+        curl_parser_module, "_test_parsed_auth", AsyncMock(return_value=(True, "ok"))
+    )
+    monkeypatch.setattr(curl_parser_module, "_sync_imported_auth_user", AsyncMock(return_value=True))
+    monkeypatch.setattr(curl_parser_module, "publish_auth_added", AsyncMock(return_value=None))
+    monkeypatch.setattr(
+        db_factory,
+        "MultiSiteDatabaseManager",
+        lambda: SimpleNamespace(get_or_create_manager=lambda _site: _FakeSiteDB(session)),
+    )
+
+    response = await curl_parser_module.add_auth_from_curl(
+        curl_parser_module.AddAuthFromCurlRequest(
+            curl_command="curl https://example.test", site="fansly", spend=True, spender_type="free"
+        ),
+        backend_manager=SimpleNamespace(redis=None),
+    )
+
+    assert response.success is True
+    user = next(obj for obj in session.added if type(obj).__name__ == "UserModel")
+    assert (user.spend, user.spender_type) == (True, "free")
+
+    refused = await curl_parser_module.add_auth_from_curl(
+        curl_parser_module.AddAuthFromCurlRequest(
+            curl_command="curl https://example.test", site="fansly", spend=True, spender_type="cheap"
+        ),
+        backend_manager=SimpleNamespace(redis=None),
+    )
+    assert refused.success is False and "cheap" in (refused.error or "")

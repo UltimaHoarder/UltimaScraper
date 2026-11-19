@@ -18,6 +18,7 @@ import '../../../../features/users/components/UsersToolbar.css';
 import '../../../../features/favourites/favourites.css';
 import '../users/UsersPage.css';
 import '../content/ContentLibraryBase.css';
+import { SITES } from '../../../../shared/lib/sites';
 
 const tabs: { type?: FavouriteType; label: string }[] = [
   { type: 'user', label: 'Users' }, { type: 'post', label: 'Posts' },
@@ -193,8 +194,11 @@ export function FavouritesPage() {
             onChange={event => setFilter('site', event.target.value)}
           >
             <option value="">All sites</option>
-            <option value="onlyfans">OnlyFans</option>
-            <option value="fansly">Fansly</option>
+            {SITES.map((entry) => (
+              <option key={entry.key} value={entry.key}>
+                {entry.label}
+              </option>
+            ))}
             <option value="loyalfans">LoyalFans</option>
           </select>
           <select

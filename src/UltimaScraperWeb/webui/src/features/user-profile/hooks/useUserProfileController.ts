@@ -70,6 +70,7 @@ import {
   type UserOverviewVersion,
 } from '../lib/userProfileUtils';
 import { copyText } from '../../../utils/clipboard';
+import { siteLabel, siteProfileUrl } from '../../../shared/lib/sites';
 
 const IDENTIFIER_CHOOSER_PAGE_SIZE = 100;
 
@@ -1186,7 +1187,7 @@ export function useUserProfileController() {
 
   const buildDelegatedWorkflowPayload = (authId: number): Record<string, unknown> | null => {
     if (!user) return null;
-    const siteName = user.site === 'onlyfans' ? 'OnlyFans' : user.site === 'fansly' ? 'Fansly' : user.site;
+    const siteName = siteLabel(user.site);
     const contentTypes = ['Posts', 'ArchivedPosts', 'Messages', 'Stories', 'Highlights', 'Profile'];
     const tasks = contentTypes.flatMap((contentType) => {
       const aliasSuffix = contentType.toLowerCase().replace(/[^a-z0-9]+/g, '_');
@@ -1575,9 +1576,7 @@ export function useUserProfileController() {
 
   const getProfileUrl = (): string => {
     if (!user) return '#';
-    if (user.site === 'onlyfans') return `https://onlyfans.com/${user.username}`;
-    if (user.site === 'fansly') return `https://fansly.com/${user.username}`;
-    return '#';
+    return siteProfileUrl(user.site, user.username) ?? '#';
   };
 
   const profileDescription = user?.description ? stripHtml(user.description) : '';

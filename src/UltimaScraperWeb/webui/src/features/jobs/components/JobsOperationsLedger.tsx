@@ -157,9 +157,11 @@ function jobTarget(job: Job): { label: string; detail: string; compactDetail: st
   }
   const siteKey = job.site?.trim().toLowerCase().replace(/[-_\s]/g, '');
   const knownSites: Record<string, string> = {
+    darkfans: 'DarkFans',
     fansly: 'Fansly',
     loyalfans: 'LoyalFans',
     onlyfans: 'OnlyFans',
+    privacy: 'Privacy',
   };
   return {
     label: siteKey

@@ -10,11 +10,9 @@ import {
 } from '../../../api/types/setup';
 import { FormatTokenList } from '../../../components/shared/FormatTokens';
 import './DirectoriesSettingsSection.css';
+import { SITES } from '../../../shared/lib/sites';
 
-const KNOWN_SITE_DIRECTORY_KEYS = [
-  { key: 'onlyfans', label: 'OnlyFans' },
-  { key: 'fansly', label: 'Fansly' },
-] as const;
+const KNOWN_SITE_DIRECTORY_KEYS = SITES;
 
 interface DirectoriesSettingsSectionProps {
   settings: SettingsResponse;

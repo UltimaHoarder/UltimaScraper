@@ -1,5 +1,6 @@
 import type { SetupAuthRequest } from '../../../api/types/setup';
 import { SetupHint } from './SetupHint';
+import { SITES } from '../../../shared/lib/sites';
 
 interface SetupAuthsStepProps {
   auths: SetupAuthRequest[];
@@ -58,8 +59,11 @@ export function SetupAuthsStep({
                       onChange={(event) => updateAuth(index, 'site', event.target.value)}
                       style={{ flex: 1 }}
                     >
-                      <option value="onlyfans">OnlyFans</option>
-                      <option value="fansly">Fansly</option>
+                      {SITES.map((entry) => (
+                        <option key={entry.key} value={entry.key}>
+                          {entry.label}
+                        </option>
+                      ))}
                     </select>
                     <select
                       className="setup-form-input"

@@ -1,5 +1,35 @@
 import type { AuthCredential } from '../../../api/types/auths';
 
+/** Auth ids are per site, so an auth is named by its site and id together. */
+export const authKey = (auth: Pick<AuthCredential, 'site' | 'id'>) => `${auth.site}-${auth.id}`;
+
+type CredentialField = 'app_token' | 'cookie' | 'x_bc' | 'authorization' | 'user_agent';
+
+const CREDENTIAL_LABELS: Record<CredentialField, string> = {
+  app_token: 'App Token',
+  cookie: 'Cookie',
+  x_bc: 'X-BC',
+  authorization: 'Authorization',
+  user_agent: 'User Agent',
+};
+
+/** The parts of a captured request each site signs in with. */
+const SITE_CREDENTIALS: Record<string, CredentialField[]> = {
+  onlyfans: ['app_token', 'cookie', 'x_bc', 'user_agent'],
+  fansly: ['authorization', 'user_agent'],
+  privacy: ['authorization', 'user_agent'],
+  darkfans: ['cookie', 'user_agent'],
+};
+
+/** The credentials worth showing for a site, as field and label; every
+ * field for a site this list doesn't know. */
+export function siteCredentialFields(site: string): { field: CredentialField; label: string }[] {
+  const fields =
+    SITE_CREDENTIALS[site.trim().toLowerCase()] ??
+    (Object.keys(CREDENTIAL_LABELS) as CredentialField[]);
+  return fields.map((field) => ({ field, label: CREDENTIAL_LABELS[field] }));
+}
+
 export const AUTH_SORT_OPTIONS = [
   { value: 'created_at', label: 'Created' },
   { value: 'last_tested_at', label: 'Last Tested' },
@@ -510,6 +540,10 @@ export function getSiteIcon(site: string) {
       return '🔵';
     case 'fansly':
       return '💙';
+    case 'privacy':
+      return '🟠';
+    case 'darkfans':
+      return '🖤';
     default:
       return '🌐';
   }

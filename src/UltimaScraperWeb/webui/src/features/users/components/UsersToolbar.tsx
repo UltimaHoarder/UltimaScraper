@@ -1,5 +1,6 @@
 import type { ReactNode } from 'react';
 import './UsersToolbar.css';
+import { SITES } from '../../../shared/lib/sites';
 
 export interface UsersToolbarProps {
   // Identifier search
@@ -129,8 +130,11 @@ export function UsersToolbar({
         ) : (
           <>
             <option value="">All Sites</option>
-            <option value="onlyfans">OnlyFans</option>
-            <option value="fansly">Fansly</option>
+            {SITES.map((entry) => (
+              <option key={entry.key} value={entry.key}>
+                {entry.label}
+              </option>
+            ))}
           </>
         )}
       </select>

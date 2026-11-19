@@ -3,7 +3,7 @@ import { useQuery } from '@tanstack/react-query';
 
 import { addAuthFromCurl, parseAuthJson, parseCurl } from '../../../api/auths';
 import { listProxies } from '../../../api/network';
-import type { ParsedCurlData } from '../../../api/types/auths';
+import type { ParsedCurlData, SpenderType } from '../../../api/types/auths';
 import type { NetworkProxy } from '../../../api/types/network';
 import {
   canNormalizeToAuthJson,
@@ -11,9 +11,11 @@ import {
   isSupportedAuthImportInput,
   normalizeToAuthJson,
   parseEmailNotificationPreference,
+  siteCredentialFields,
   type AuthImportTab,
   type EmailNotificationPreference,
 } from '../lib/authsUtils';
+import { SITES } from '../../../shared/lib/sites';
 
 interface AddCurlModalProps {
   onClose: () => void;
@@ -27,6 +29,8 @@ export function AddCurlModal({ onClose, onSuccess }: AddCurlModalProps) {
   const [proxyId, setProxyId] = useState('');
   const [emailNotificationPreference, setEmailNotificationPreference] =
     useState<EmailNotificationPreference>('');
+  const [spend, setSpend] = useState(false);
+  const [spenderType, setSpenderType] = useState<SpenderType>('all');
   const [parsedData, setParsedData] = useState<ParsedCurlData | null>(null);
   const [error, setError] = useState<string | null>(null);
   const [successMessage, setSuccessMessage] = useState<string | null>(null);
@@ -185,6 +189,7 @@ export function AddCurlModal({ onClose, onSuccess }: AddCurlModalProps) {
         activeTab,
         proxyId || null,
         parseEmailNotificationPreference(emailNotificationPreference),
+        spend ? { spenderType } : null,
       );
       if (result.success) {
         onSuccess();
@@ -224,8 +229,11 @@ export function AddCurlModal({ onClose, onSuccess }: AddCurlModalProps) {
               value={site}
               onChange={(e) => setSite(e.target.value)}
             >
-              <option value="onlyfans">OnlyFans</option>
-              <option value="fansly">Fansly</option>
+              {SITES.map((entry) => (
+                <option key={entry.key} value={entry.key}>
+                  {entry.label}
+                </option>
+              ))}
             </select>
           </div>
 
@@ -261,6 +269,32 @@ export function AddCurlModal({ onClose, onSuccess }: AddCurlModalProps) {
                 <option value="">No change</option>
                 <option value="enabled">Enabled</option>
                 <option value="disabled">Disabled</option>
+              </select>
+            </div>
+          )}
+
+          <div className="form-group checkbox-group">
+            <label>
+              <input
+                type="checkbox"
+                checked={spend}
+                onChange={(e) => setSpend(e.target.checked)}
+              />
+              Spender (can purchase subscriptions)
+            </label>
+          </div>
+
+          {spend && (
+            <div className="form-group">
+              <label htmlFor="add-spender-type">Spender Type</label>
+              <select
+                id="add-spender-type"
+                value={spenderType}
+                onChange={(e) => setSpenderType(e.target.value as SpenderType)}
+              >
+                <option value="all">All (any subscription price)</option>
+                <option value="free">Free only ($0.00)</option>
+                <option value="paid">Paid only (&gt; $0.00)</option>
               </select>
             </div>
           )}
@@ -332,36 +366,14 @@ export function AddCurlModal({ onClose, onSuccess }: AddCurlModalProps) {
                   <span className="parsed-value">{parsedData.user_id}</span>
                 </div>
               )}
-              <div className="parsed-item">
-                <span className="parsed-label">App Token:</span>
-                <span className="parsed-value mono">
-                  {parsedData.app_token ? '✅ Found' : '❌ Not found'}
-                </span>
-              </div>
-              <div className="parsed-item">
-                <span className="parsed-label">Cookie:</span>
-                <span className="parsed-value mono">
-                  {parsedData.cookie ? '✅ Found' : '❌ Not found'}
-                </span>
-              </div>
-              <div className="parsed-item">
-                <span className="parsed-label">X-BC:</span>
-                <span className="parsed-value mono">
-                  {parsedData.x_bc ? '✅ Found' : '❌ Not found'}
-                </span>
-              </div>
-              <div className="parsed-item">
-                <span className="parsed-label">Authorization:</span>
-                <span className="parsed-value mono">
-                  {parsedData.authorization ? '✅ Found' : '❌ Not found'}
-                </span>
-              </div>
-              <div className="parsed-item">
-                <span className="parsed-label">User Agent:</span>
-                <span className="parsed-value mono">
-                  {parsedData.user_agent ? '✅ Found' : '❌ Not found'}
-                </span>
-              </div>
+              {siteCredentialFields(parsedData.site).map(({ field, label }) => (
+                <div className="parsed-item" key={field}>
+                  <span className="parsed-label">{label}:</span>
+                  <span className="parsed-value mono">
+                    {parsedData[field] ? '✅ Found' : '❌ Not found'}
+                  </span>
+                </div>
+              ))}
             </div>
           )}
         </div>

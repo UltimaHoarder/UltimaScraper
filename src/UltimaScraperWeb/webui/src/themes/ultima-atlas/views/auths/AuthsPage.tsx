@@ -16,7 +16,7 @@ import {
 } from '../../../../features/auths/components/AuthVerificationModal';
 import { ManageAuthModal } from '../../../../features/auths/components/ManageAuthModal';
 import { useAuthsPageController } from '../../../../features/auths/hooks/useAuthsPageController';
-import { AUTH_SORT_OPTIONS, type AuthStateFilter } from '../../../../features/auths/lib/authsUtils';
+import { AUTH_SORT_OPTIONS, authKey, type AuthStateFilter } from '../../../../features/auths/lib/authsUtils';
 import { ConfirmDialog } from '../../../../shared/ui/ConfirmDialog';
 import { WorkspacePageHeader } from '../../../../shared/ui/WorkspacePageHeader';
 import {
@@ -24,6 +24,7 @@ import {
   OperationsState,
 } from '../../patterns/OperationsChrome';
 import './AuthsPage.css';
+import { SITES } from '../../../../shared/lib/sites';
 
 const accountKey = (auth: AuthCredential) => `${auth.site}-${auth.user_id}`;
 
@@ -33,6 +34,7 @@ export function AuthsPage() {
     apiError,
     batchActiveMutation,
     batchTestMutation,
+    handleRefreshAccount,
     deleteMutation,
     editingAuth,
     error,
@@ -58,7 +60,8 @@ export function AuthsPage() {
     openIdentityVerification,
     refreshMessage,
     refreshSubscriptionsMutation,
-    refreshingAuthRecordId,
+    refreshingAuthRecordKey,
+    refreshingAccountKey,
     scrapingPaidContentAuthId,
     refetch,
     setEditingAuth,
@@ -168,8 +171,11 @@ export function AuthsPage() {
           <>
             <FilterSelect label="Site" value={siteFilter} onChange={setSiteFilter}>
               <option value="">All Sites</option>
-              <option value="onlyfans">OnlyFans</option>
-              <option value="fansly">Fansly</option>
+              {SITES.map((entry) => (
+                <option key={entry.key} value={entry.key}>
+                  {entry.label}
+                </option>
+              ))}
             </FilterSelect>
             <FilterSelect
               label="Active"
@@ -233,7 +239,8 @@ export function AuthsPage() {
             deletePending={deleteMutation.isPending}
             batchPending={batchActiveMutation.isPending || batchTestMutation.isPending}
             onManage={setEditingAuth}
-            onTest={setTestingAuth}
+            onRefresh={handleRefreshAccount}
+            refreshingAuthKey={refreshingAccountKey}
             onToggle={handleToggle}
             onDelete={(auth) => setDeleteTarget(auth)}
             onBatchTest={handleBatchTest}
@@ -292,7 +299,7 @@ export function AuthsPage() {
           onVerifyIdentity={() => openIdentityVerification(editingAuth)}
           isUpdatingSubscriptions={
             refreshSubscriptionsMutation.isPending &&
-            refreshingAuthRecordId === editingAuth.id
+            refreshingAuthRecordKey === authKey(editingAuth)
           }
           isScrapingPaidContent={scrapingPaidContentAuthId === editingAuth.user_id}
         />

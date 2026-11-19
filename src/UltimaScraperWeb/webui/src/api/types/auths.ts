@@ -31,7 +31,13 @@ export interface AuthTestResult {
   success: boolean;
   status: string;
   message: string;
+  /** Set by a refresh whose sign-in worked. */
+  username?: string | null;
+  profile_updated?: boolean | null;
 }
+
+/** What a spender may buy: any subscription, free ones only, or paid ones only. */
+export type SpenderType = 'all' | 'free' | 'paid';
 
 export interface AuthProxyTestResult {
   success: boolean;

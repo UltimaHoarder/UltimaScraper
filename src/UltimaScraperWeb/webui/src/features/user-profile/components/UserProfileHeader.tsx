@@ -12,6 +12,7 @@ import {
   getSocialUrl,
   type SubscriptionCountdown,
 } from '../lib/userProfileUtils';
+import { siteLabel } from '../../../shared/lib/sites';
 
 interface ToastState {
   message: string;
@@ -134,7 +135,7 @@ export function UserProfileHeader({
           ← Back
         </button>
         <a className="external-link" href={profileUrl} target="_blank" rel="noopener noreferrer">
-          View on {user.site === 'onlyfans' ? 'OnlyFans' : 'Fansly'} ↗
+          View on {siteLabel(user.site)} ↗
         </a>
       </div>
 
@@ -253,7 +254,7 @@ export function UserProfileHeader({
                 {user.is_active ? '● Active' : '● Inactive'}
               </span>
               <span className={`badge-site ${user.site}`}>
-                {user.site === 'onlyfans' ? 'OnlyFans' : 'Fansly'}
+                {siteLabel(user.site)}
               </span>
               {user.performer && <span className="badge-performer">Performer</span>}
               {user.favorite && (

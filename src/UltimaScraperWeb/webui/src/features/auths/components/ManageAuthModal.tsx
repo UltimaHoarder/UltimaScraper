@@ -6,7 +6,6 @@ import { listProxies } from '../../../api/network';
 import type {
   AuthCredential,
   AuthEditRequest,
-  ParsedCurlData,
 } from '../../../api/types/auths';
 import type { NetworkProxy } from '../../../api/types/network';
 import {
@@ -66,7 +65,7 @@ export function ManageAuthModal({
   const [emailNotificationPreference, setEmailNotificationPreference] =
     useState<EmailNotificationPreference>('');
   const [curlCommand, setCurlCommand] = useState('');
-  const [parsedData, setParsedData] = useState<ParsedCurlData | null>(null);
+  const [isParsing, setIsParsing] = useState(false);
   const [curlError, setCurlError] = useState<string | null>(null);
   const [curlAppliedMessage, setCurlAppliedMessage] = useState<string | null>(null);
   const lastParsedKeyRef = useRef('');
@@ -102,8 +101,9 @@ export function ManageAuthModal({
 
       const requestId = ++parseRequestIdRef.current;
       inFlightParseKeyRef.current = parseKey;
+      setIsParsing(true);
       setCurlError(null);
-      setParsedData(null);
+      setCurlAppliedMessage(null);
 
       try {
         const payloadToParse =
@@ -115,9 +115,30 @@ export function ManageAuthModal({
         if (requestId !== parseRequestIdRef.current) {
           return;
         }
-        setParsedData(result);
         lastParsedKeyRef.current = parseKey;
-        if (!result.success) {
+        if (result.success) {
+          setFormData((prev) => ({
+            ...prev,
+            ...(result.cookie ? { cookie: result.cookie } : {}),
+            ...(result.x_bc ? { x_bc: result.x_bc } : {}),
+            ...(result.authorization
+              ? { authorization: result.authorization }
+              : {}),
+            ...(result.user_agent ? { user_agent: result.user_agent } : {}),
+          }));
+          const extractedFields = [
+            result.cookie ? 'cookie' : null,
+            result.x_bc ? 'x-bc' : null,
+            result.authorization ? 'authorization' : null,
+            result.user_agent ? 'user agent' : null,
+          ].filter(Boolean);
+          setCurlAppliedMessage(
+            extractedFields.length > 0
+              ? `Parsed ${extractedFields.join(', ')}. Click Save Changes to update this account.`
+              : 'Parsed values ready. Click Save Changes to update this account.',
+          );
+          setCurlError(null);
+        } else {
           setCurlError(result.error || 'Failed to parse auth import');
         }
       } catch (err) {
@@ -128,6 +149,9 @@ export function ManageAuthModal({
       } finally {
         if (inFlightParseKeyRef.current === parseKey) {
           inFlightParseKeyRef.current = null;
+        }
+        if (requestId === parseRequestIdRef.current) {
+          setIsParsing(false);
         }
       }
     },
@@ -146,9 +170,12 @@ export function ManageAuthModal({
       setCurlCommand(normalized);
       void parseCurlCommand(normalized, 'json', { force: true });
     } else if (trimmed.toLowerCase().startsWith('curl')) {
+      e.preventDefault();
       if (refreshImportTab !== 'curl') {
         setRefreshImportTab('curl');
       }
+      setCurlCommand(pastedText);
+      void parseCurlCommand(pastedText, 'curl', { force: true });
     }
   };
 
@@ -185,7 +212,7 @@ export function ManageAuthModal({
     if (!isSupportedAuthImportInput(trimmedCommand, refreshImportTab)) {
       parseRequestIdRef.current += 1;
       inFlightParseKeyRef.current = null;
-      setParsedData(null);
+      setIsParsing(false);
       setCurlError(null);
       setCurlAppliedMessage(null);
       lastParsedKeyRef.current = '';
@@ -208,23 +235,6 @@ export function ManageAuthModal({
       window.clearTimeout(timeout);
     };
   }, [auth.site, curlCommand, parseCurlCommand, refreshImportTab]);
-
-  const handleApplyParsedCurl = () => {
-    if (!parsedData?.success) {
-      return;
-    }
-    setFormData((prev) => ({
-      ...prev,
-      ...(parsedData.cookie ? { cookie: parsedData.cookie } : {}),
-      ...(parsedData.x_bc ? { x_bc: parsedData.x_bc } : {}),
-      ...(parsedData.authorization
-        ? { authorization: parsedData.authorization }
-        : {}),
-      ...(parsedData.user_agent ? { user_agent: parsedData.user_agent } : {}),
-    }));
-    setCurlAppliedMessage('Parsed values applied. Review and click Save Changes.');
-    setCurlError(null);
-  };
 
   const handleSubmit = (e: React.FormEvent) => {
     e.preventDefault();
@@ -409,18 +419,12 @@ export function ManageAuthModal({
                     rows={5}
                     className="curl-textarea"
                   />
+                  {isParsing && (
+                    <div className="curl-instructions">Testing pasted credentials...</div>
+                  )}
                   {curlError && <div className="curl-error">{curlError}</div>}
                   {curlAppliedMessage && (
                     <div className="curl-success">{curlAppliedMessage}</div>
-                  )}
-                  {parsedData?.success && (
-                    <button
-                      type="button"
-                      className="btn-parse"
-                      onClick={handleApplyParsedCurl}
-                    >
-                      Apply Parsed Values
-                    </button>
                   )}
                 </div>
               </div>
@@ -598,7 +602,7 @@ export function ManageAuthModal({
             <button type="button" className="btn-cancel" onClick={onClose}>
               Cancel
             </button>
-            <button type="submit" className="btn-save" disabled={isSaving}>
+            <button type="submit" className="btn-save" disabled={isSaving || isParsing}>
               {isSaving ? 'Saving...' : 'Save Changes'}
             </button>
           </div>

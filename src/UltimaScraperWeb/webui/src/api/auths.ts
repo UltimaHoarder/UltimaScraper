@@ -12,6 +12,7 @@ import type {
   AuthTestResult,
   AuthUpdateResponse,
   ParsedCurlData,
+  SpenderType,
 } from './types/auths';
 import { normalizeToAuthJson } from '../features/auths/lib/authsUtils';
 
@@ -69,11 +70,19 @@ export async function updateAuth(
   return response.data;
 }
 
-export async function testAuth(id: number, site: string): Promise<AuthTestResult> {
+/**
+ * Sign in with a stored account. With `refresh`, a working sign-in also
+ * updates the stored profile, username and (DarkFans) renewed session.
+ */
+export async function testAuth(
+  id: number,
+  site: string,
+  options: { refresh?: boolean } = {},
+): Promise<AuthTestResult> {
   const response = await http.post<AuthTestResult>(
     `/api/v1/auths/${id}/test`,
     {},
-    { params: { site } },
+    { params: options.refresh ? { site, refresh: true } : { site } },
   );
   return response.data;
 }
@@ -163,6 +172,8 @@ export async function addAuthFromCurl(
   inputType: 'curl' | 'json' = 'curl',
   proxyId?: string | null,
   emailNotificationsEnabled?: boolean | null,
+  /** Mark the account a spender; leave out to keep an existing account's setting. */
+  spender?: { spenderType: SpenderType } | null,
 ): Promise<AddAuthFromCurlResponse> {
   const normalizedCommand =
     inputType === 'json' ? normalizeToAuthJson(curlCommand) : curlCommand;
@@ -172,6 +183,7 @@ export async function addAuthFromCurl(
     input_type: inputType,
     proxy_id: proxyId ?? null,
     email_notifications_enabled: emailNotificationsEnabled ?? null,
+    ...(spender ? { spend: true, spender_type: spender.spenderType } : {}),
   });
   return response.data;
 }

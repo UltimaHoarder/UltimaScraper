@@ -23,6 +23,7 @@ import { useImageHoverPreview } from '../../../../shared/ui/useImageHoverPreview
 import { ToastPortal } from '../../../../shared/ui/ToastPortal';
 import { OperationsState } from '../../patterns/OperationsChrome';
 import './UserProfilePage.css';
+import { siteLabel } from '../../../../shared/lib/sites';
 
 function profileMetricLabel(value: string, label: string, meta?: string) {
   return (
@@ -269,7 +270,7 @@ export function UserProfilePage() {
                       target="_blank"
                       rel="noopener noreferrer"
                     >
-                      View on {user.site === 'onlyfans' ? 'OnlyFans' : 'Fansly'} ↗
+                      View on {siteLabel(user.site)} ↗
                     </a>
                   </span>
                 </div>
@@ -285,7 +286,7 @@ export function UserProfilePage() {
                     {user.is_active ? 'Watch Stable' : 'Watch Idle'}
                   </span>
                   <span className={`badge-site ${user.site}`}>
-                    {user.site === 'onlyfans' ? 'OnlyFans' : 'Fansly'}
+                    {siteLabel(user.site)}
                   </span>
                   {user.performer ? <span className="badge-performer">Performer</span> : null}
                   {user.favorite ? <span className="badge-favorite">Priority</span> : null}

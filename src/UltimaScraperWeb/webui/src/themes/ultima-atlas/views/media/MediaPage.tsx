@@ -15,6 +15,7 @@ import {
   OperationsState,
 } from '../../patterns/OperationsChrome';
 import './MediaPage.css';
+import { SITES, type SiteKey } from '../../../../shared/lib/sites';
 
 interface MediaItem {
   id: string;
@@ -28,7 +29,7 @@ interface MediaItem {
 }
 
 export function MediaPage() {
-  const [site, setSite] = useState<'all' | 'onlyfans' | 'fansly'>('all');
+  const [site, setSite] = useState<'all' | SiteKey>('all');
   const [typeFilter, setTypeFilter] = useState<'all' | 'image' | 'video'>('all');
   const [selectedItem, setSelectedItem] = useState<MediaItem | null>(null);
   const scrollRef = useRef<HTMLDivElement>(null);
@@ -161,8 +162,11 @@ export function MediaPage() {
         <div className="gallery-filters">
           <select value={site} onChange={(e) => setSite(e.target.value as typeof site)}>
             <option value="all">All Sites</option>
-            <option value="onlyfans">OnlyFans</option>
-            <option value="fansly">Fansly</option>
+            {SITES.map((entry) => (
+              <option key={entry.key} value={entry.key}>
+                {entry.label}
+              </option>
+            ))}
           </select>
           <select value={typeFilter} onChange={(e) => setTypeFilter(e.target.value as typeof typeFilter)}>
             <option value="all">All</option>

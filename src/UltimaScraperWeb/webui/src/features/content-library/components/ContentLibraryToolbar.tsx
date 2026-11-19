@@ -1,4 +1,5 @@
 import { CONTENT_TYPES, SORT_OPTIONS } from '../lib/contentLibraryUtils';
+import { SITES } from '../../../shared/lib/sites';
 
 interface ContentLibraryToolbarProps {
   activeAdvancedFilterCount: number;
@@ -60,8 +61,11 @@ export function ContentLibraryToolbar({
           onChange={(event) => onSiteChange(event.target.value)}
         >
           <option value="">All Sites</option>
-          <option value="onlyfans">OnlyFans</option>
-          <option value="fansly">Fansly</option>
+          {SITES.map((entry) => (
+            <option key={entry.key} value={entry.key}>
+              {entry.label}
+            </option>
+          ))}
         </select>
       </div>
 

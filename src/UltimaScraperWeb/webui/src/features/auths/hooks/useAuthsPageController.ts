@@ -16,12 +16,14 @@ import type {
   AuthEditRequest,
 } from '../../../api/types/auths';
 import {
+  authKey,
   createVerificationRequestKey,
   matchesStateFilter,
   type AuthStateFilter,
   type RefreshSubscriptionTarget,
   type VerificationSession,
 } from '../lib/authsUtils';
+import { SITES, siteLabel } from '../../../shared/lib/sites';
 
 export function useAuthsPageController() {
   const pageSize = 100;
@@ -37,7 +39,10 @@ export function useAuthsPageController() {
     useState<VerificationSession | null>(null);
   const [showAddCurlModal, setShowAddCurlModal] = useState(false);
   const [refreshMessage, setRefreshMessage] = useState<string | null>(null);
-  const [refreshingAuthRecordId, setRefreshingAuthRecordId] = useState<number | null>(null);
+  // Auths being worked on, by `authKey`: ids repeat across sites.
+  const [refreshingAuthRecordKey, setRefreshingAuthRecordKey] = useState<string | null>(null);
+  // The account a table-row Refresh is signing in again.
+  const [refreshingAccountKey, setRefreshingAccountKey] = useState<string | null>(null);
   const [scrapingPaidContentAuthId, setScrapingPaidContentAuthId] =
     useState<number | null>(null);
   const loadMoreSentinelRef = useRef<HTMLDivElement>(null);
@@ -181,7 +186,7 @@ export function useAuthsPageController() {
           const task: TaskPayload = {
             task_type: 'refresh_subscriptions',
             params: {
-              site: site === 'fansly' ? 'Fansly' : 'OnlyFans',
+              site: siteLabel(site),
               ...(authRecordId !== undefined ? { auth_id: authRecordId } : {}),
             },
           };
@@ -284,6 +289,26 @@ export function useAuthsPageController() {
     },
   });
 
+  const refreshAccountMutation = useMutation({
+    mutationFn: (auth: AuthCredential) => testAuth(auth.id, auth.site, { refresh: true }),
+    onSuccess: (result, auth) => {
+      const name = result.username || auth.username || `#${auth.user_id}`;
+      setRefreshMessage(
+        result.success
+          ? `${siteLabel(auth.site)} ${name} refreshed.`
+          : `${siteLabel(auth.site)} ${name} could not sign in: ${result.message}`,
+      );
+      invalidateAuths();
+    },
+    onError: (err, auth) => {
+      setRefreshMessage(
+        `Refreshing ${siteLabel(auth.site)} ${auth.username || `#${auth.user_id}`} failed: ${
+          err instanceof Error ? err.message : 'unknown error'
+        }`,
+      );
+    },
+  });
+
   const deleteMutation = useMutation({
     mutationFn: ({ id, site }: { id: number; site: string }) => deleteAuth(id, site),
     onSuccess: () => {
@@ -296,7 +321,7 @@ export function useAuthsPageController() {
       const task: TaskPayload = {
         task_type: 'scrape_paid_content',
         params: {
-          site: site === 'fansly' ? 'Fansly' : 'OnlyFans',
+          site: siteLabel(site),
           auth_id: authId,
         },
       };
@@ -348,9 +373,19 @@ export function useAuthsPageController() {
     batchTestMutation.mutate(targets);
   };
 
+  const handleRefreshAccount = (auth: AuthCredential) => {
+    setRefreshMessage(null);
+    setRefreshingAccountKey(authKey(auth));
+    refreshAccountMutation.mutate(auth, {
+      onSettled: () => {
+        setRefreshingAccountKey(null);
+      },
+    });
+  };
+
   const handleUpdateSubscriptionsForAuth = (auth: AuthCredential) => {
     setRefreshMessage(null);
-    setRefreshingAuthRecordId(auth.id);
+    setRefreshingAuthRecordKey(authKey(auth));
     refreshSubscriptionsMutation.mutate(
       [
         {
@@ -361,14 +396,14 @@ export function useAuthsPageController() {
       ],
       {
         onSettled: () => {
-          setRefreshingAuthRecordId(null);
+          setRefreshingAuthRecordKey(null);
         },
       },
     );
   };
 
   const handleUpdateSubscriptions = () => {
-    const targets = (siteFilter ? [siteFilter] : ['onlyfans', 'fansly']).map((site) => ({
+    const targets = (siteFilter ? [siteFilter] : SITES.map((entry) => entry.key)).map((site) => ({
       site,
     }));
     setRefreshMessage(null);
@@ -424,7 +459,8 @@ export function useAuthsPageController() {
     showAddCurlModal,
     setShowAddCurlModal,
     refreshMessage,
-    refreshingAuthRecordId,
+    refreshingAuthRecordKey,
+    refreshingAccountKey,
     scrapingPaidContentAuthId,
     loadMoreSentinelRef,
     invalidateAuths,
@@ -449,6 +485,7 @@ export function useAuthsPageController() {
     handleToggle,
     handleBatchSetActive,
     handleBatchTest,
+    handleRefreshAccount,
     handleSaveEdit,
     handleDelete,
     handleUpdateSubscriptionsForAuth,

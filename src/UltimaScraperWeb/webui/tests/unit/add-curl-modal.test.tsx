@@ -118,6 +118,80 @@ describe('AddCurlModal', () => {
     const addedPayload = JSON.parse(addedArg);
     expect(addedPayload.auth_id).toBe('11111111');
     expect(addedPayload.sess).toBe('fakesessiontoken0000000000');
+    // Spender left unticked: an existing account keeps its setting.
+    expect(addAuthMock.mock.calls[0][5]).toBeNull();
     expect(onSuccess).toHaveBeenCalled();
+  });
+
+  it('marks the new account a spender of the chosen type', async () => {
+    vi.spyOn(authsApi, 'parseCurl').mockResolvedValue({
+      error: null,
+      x_bc: null,
+      authorization: 'Bearer fake',
+      user_agent: 'Mozilla/5.0',
+      app_token: null,
+      success: true,
+      site: 'fansly',
+      auth_id: null,
+      user_id: null,
+      sess: null,
+      cookie: null,
+      raw_headers: {},
+    });
+    const addAuthMock = vi.spyOn(authsApi, 'addAuthFromCurl').mockResolvedValue({
+      error: null,
+      success: true,
+      auth_id: 1,
+      user_id: 22,
+      username: 'spender',
+    });
+
+    renderWithProviders(<AddCurlModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Site:'), { target: { value: 'fansly' } });
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: "curl 'https://apiv3.fansly.com/api/v1/account/me' -H 'authorization: fake'" },
+    });
+
+    expect(screen.queryByLabelText('Spender Type')).not.toBeInTheDocument();
+    fireEvent.click(screen.getByLabelText('Spender (can purchase subscriptions)'));
+    fireEvent.change(screen.getByLabelText('Spender Type'), { target: { value: 'free' } });
+
+    const addButton = screen.getByRole('button', { name: /Add Account/i });
+    await waitFor(() => expect(addButton).not.toBeDisabled());
+    fireEvent.click(addButton);
+
+    await waitFor(() => expect(addAuthMock).toHaveBeenCalled());
+    expect(addAuthMock.mock.calls[0][1]).toBe('fansly');
+    expect(addAuthMock.mock.calls[0][5]).toEqual({ spenderType: 'free' });
+  });
+
+  it("lists only the credentials the parsed site signs in with", async () => {
+    vi.spyOn(authsApi, 'parseCurl').mockResolvedValue({
+      error: null,
+      x_bc: null,
+      authorization: 'Bearer fake',
+      user_agent: 'Mozilla/5.0',
+      app_token: null,
+      success: true,
+      site: 'privacy',
+      auth_id: null,
+      user_id: null,
+      sess: null,
+      cookie: null,
+      raw_headers: {},
+    });
+
+    renderWithProviders(<AddCurlModal onClose={vi.fn()} onSuccess={vi.fn()} />);
+    fireEvent.change(screen.getByLabelText('Site:'), { target: { value: 'privacy' } });
+    fireEvent.change(screen.getByRole('textbox'), {
+      target: { value: "curl 'https://service.privacy.com.br/profile/me' -H 'authorization: fake'" },
+    });
+
+    expect(await screen.findByText('Authorization:')).toBeInTheDocument();
+    expect(screen.getByText('User Agent:')).toBeInTheDocument();
+    for (const unused of ['App Token:', 'Cookie:', 'X-BC:']) {
+      expect(screen.queryByText(unused)).not.toBeInTheDocument();
+    }
+    expect(screen.queryByText('❌ Not found')).not.toBeInTheDocument();
   });
 });

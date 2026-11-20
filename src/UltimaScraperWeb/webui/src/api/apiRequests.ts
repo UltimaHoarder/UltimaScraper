@@ -14,10 +14,19 @@ export interface ApiMethodSpec {
   method: string;
   description: string;
   args: Record<string, ApiMethodArg>;
+  /** Sites the method runs on; absent when every site can. */
+  sites?: string[];
+}
+
+export interface ApiSite {
+  key: string;
+  label: string;
 }
 
 export interface ApiMethodsResponse {
   methods: Record<string, ApiMethodSpec>;
+  /** Enabled sites; older backends leave it out. */
+  sites?: ApiSite[];
 }
 
 export interface ApiRequestExecutePayload {

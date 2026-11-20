@@ -5,13 +5,19 @@ import {
   getApiMethods,
   type ApiMethodSpec,
   type ApiRequestResponse,
+  type ApiSite,
 } from '../../../api/apiRequests';
 import { getAuthList } from '../../../api/auths';
 import type { AuthCredential } from '../../../api/types/auths';
+import { methodsForSite } from '../lib/apiRequestSites';
 import JsonView from '@uiw/react-json-view';
 import { githubDarkTheme } from '@uiw/react-json-view/githubDark';
 
-const SITES = ['onlyfans', 'fansly'] as const;
+// Backends that predate the site list in the method catalogue.
+const FALLBACK_SITES: ApiSite[] = [
+  { key: 'onlyfans', label: 'OnlyFans' },
+  { key: 'fansly', label: 'Fansly' },
+];
 
 function isJsonTreeValue(value: unknown): value is Record<string, unknown> | unknown[] {
   return Array.isArray(value) || (typeof value === 'object' && value !== null);
@@ -38,10 +44,11 @@ function formatResultValue(value: unknown): string {
 export function APIRequestsTool() {
   // --- catalogues ---
   const [methods, setMethods] = useState<Record<string, ApiMethodSpec>>({});
+  const [sites, setSites] = useState<ApiSite[]>(FALLBACK_SITES);
   const [auths, setAuths] = useState<AuthCredential[]>([]);
 
   // --- selections ---
-  const [site, setSite] = useState<string>(SITES[0]);
+  const [site, setSite] = useState<string>(FALLBACK_SITES[0].key);
   const [authId, setAuthId] = useState<number | null>(null);
   const [methodKey, setMethodKey] = useState<string>('');
   const [argValues, setArgValues] = useState<Record<string, string>>({});
@@ -55,8 +62,7 @@ export function APIRequestsTool() {
     getApiMethods()
       .then((res) => {
         setMethods(res.methods);
-        const first = Object.keys(res.methods)[0];
-        if (first) setMethodKey(first);
+        if (res.sites?.length) setSites(res.sites);
       })
       .catch(console.error);
   }, []);
@@ -78,8 +84,16 @@ export function APIRequestsTool() {
     }
   }, [auths, authId]);
 
+  const siteMethods = useMemo(() => methodsForSite(methods, site), [methods, site]);
+
+  // Keep the chosen method when the new site has it, else take its first.
+  useEffect(() => {
+    if (methodKey in siteMethods) return;
+    setMethodKey(Object.keys(siteMethods)[0] ?? '');
+  }, [siteMethods, methodKey]);
+
   // Reset arg values when method changes
-  const selectedMethod = methods[methodKey] ?? null;
+  const selectedMethod = siteMethods[methodKey] ?? null;
   useEffect(() => {
     if (!selectedMethod) return;
     const defaults: Record<string, string> = {};
@@ -98,7 +112,7 @@ export function APIRequestsTool() {
     setArgValues((prev) => ({ ...prev, [key]: value }));
   }, []);
 
-  const canExecute = site && authId !== null && methodKey;
+  const canExecute = site && authId !== null && selectedMethod !== null;
   const resultCanUseJsonTree = isJsonTreeValue(result?.data);
   const resultTextValue = formatResultValue(result?.data);
 
@@ -159,9 +173,9 @@ export function APIRequestsTool() {
         <div className="tools-field">
           <span>Site</span>
           <select value={site} onChange={(e) => setSite(e.target.value)}>
-            {SITES.map((s) => (
-              <option key={s} value={s}>
-                {s}
+            {sites.map((s) => (
+              <option key={s.key} value={s.key}>
+                {s.label}
               </option>
             ))}
           </select>
@@ -187,7 +201,10 @@ export function APIRequestsTool() {
         <div className="tools-field tools-field-full">
           <span>Method</span>
           <select value={methodKey} onChange={(e) => setMethodKey(e.target.value)}>
-            {Object.entries(methods).map(([key, spec]) => (
+            {Object.keys(siteMethods).length === 0 && (
+              <option value="">No methods available for this site</option>
+            )}
+            {Object.entries(siteMethods).map(([key, spec]) => (
               <option key={key} value={key}>
                 {key} — {spec.description}
               </option>

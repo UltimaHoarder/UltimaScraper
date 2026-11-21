@@ -198,7 +198,13 @@ def test_paid_download_totals_count_each_selected_owner_and_type(store):
         "count": 2,
         "bytes": 64,
         "drm": 1,
+        "missing_bytes": 64,
     }
+    # Space is only needed for what isn't downloaded yet.
+    with store.session_factory() as session:
+        session.execute(text("UPDATE media SET downloaded=true WHERE id=94001"))
+        session.commit()
+    assert store.feed_download_totals(plan["selection_id"])["missing_bytes"] == 41
     assert store.download_target_page(plan["selection_id"], limit=7) == [
         (7, "posts"),
         (8, "messages"),
@@ -295,7 +301,7 @@ def test_archive_staging_pages_dedup_and_metadata_use_selected_signatures(store)
         session.commit()
     assert store.download_totals(
         plan["selection_id"], user_id=7, content_type="posts", auth_id=99
-    ) == {"count": 2, "bytes": 768, "drm": 0}
+    ) == {"count": 2, "bytes": 768, "drm": 0, "missing_bytes": 768}
     items = store.download_page(
         plan["selection_id"],
         user_id=7,

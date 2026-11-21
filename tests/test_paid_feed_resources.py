@@ -348,7 +348,13 @@ async def test_paid_downloader_pages_authors_reuses_pool_and_persists_complete_e
             return page
 
         def download_totals(self, selection_id, **kwargs):
-            return {"count": files_each, "bytes": files_each * 10, "drm": 0}
+            # Most of each author's media is already on disk.
+            return {
+                "count": files_each,
+                "bytes": files_each * 10,
+                "drm": 0,
+                "missing_bytes": files_each * 4,
+            }
 
         def download_page(
             self, selection_id, *, user_id, content_type, after, limit, **kwargs
@@ -418,7 +424,8 @@ async def test_paid_downloader_pages_authors_reuses_pool_and_persists_complete_e
         assert len(output.get("download_results", [])) <= 2
 
     def destination(**kwargs):
-        assert kwargs["required_space"] == files_each * 10
+        # Room for what isn't downloaded yet, not for every selected file.
+        assert kwargs["required_space"] == files_each * 4
         selected_aliases.append(kwargs["usernames"])
         return SimpleNamespace(root=tmp_path, directory_format=tmp_path)
 

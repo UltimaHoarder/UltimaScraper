@@ -106,9 +106,9 @@ async def test_stream_delivers_before_input_is_exhausted(monkeypatch):
 
 def test_onlyfans_page_urls_are_lazy_at_large_archive_sizes():
     import tracemalloc
-    from ultima_scraper_api.apis.onlyfans.classes.extras import endpoint_links
+    from ultima_scraper_api.apis.onlyfans.urls import APIRoutes
 
-    endpoints = endpoint_links()
+    endpoints = APIRoutes()
     url = "https://onlyfans.com/api2/v2/users/7/posts?limit=50&offset=0&order=publish_date_desc"
     tracemalloc.start()
     try:

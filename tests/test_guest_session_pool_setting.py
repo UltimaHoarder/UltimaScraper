@@ -43,3 +43,76 @@ def test_a_proxy_with_fewer_connections_than_workers_keeps_the_pool(monkeypatch,
         active, pool = configure(monkeypatch, True, (26, 4))
     assert active and pool is not None
     assert "Guest session pool disabled" not in caplog.text
+
+
+def _saved_network(monkeypatch, network):
+    from ultima_scraper_backend import config as config_module
+
+    saved = SimpleNamespace(settings=SimpleNamespace(network=network))
+    monkeypatch.setattr(
+        config_module.UltimaScraperCollectionConfig,
+        "load_or_create_default_config",
+        classmethod(lambda cls: saved),
+    )
+
+
+def test_a_proxy_edited_after_startup_rebuilds_the_pool(monkeypatch):
+    active, pool = configure(monkeypatch, True, (8,))
+    site_api = SimpleNamespace(_guest_session_pool=pool)
+    pool.built_at -= guest_sessions.GUEST_POOL_REBUILD_INTERVAL_SECONDS
+    edited = "http://192.0.2.7:8000"
+    _saved_network(monkeypatch, SimpleNamespace(
+        proxies=[SimpleNamespace(url=edited, enabled=True, max_connections=8)],
+        guest_session_pool=True,
+    ))
+
+    rebuilt = guest_sessions._guest_session_pool_for(site_api, edited)
+
+    assert rebuilt is site_api._guest_session_pool is not pool
+    assert list(rebuilt.slots) == [edited]
+    assert (rebuilt.worker_index, rebuilt.worker_count) == (1, 8)
+    assert rebuilt.select(site_api, edited)
+
+
+def test_a_new_pool_is_not_rebuilt_for_every_unknown_route(monkeypatch):
+    active, pool = configure(monkeypatch, True, (8,))
+    site_api = SimpleNamespace(_guest_session_pool=pool)
+
+    def load():
+        raise AssertionError("settings were read again")
+
+    from ultima_scraper_backend import config as config_module
+
+    monkeypatch.setattr(
+        config_module.UltimaScraperCollectionConfig,
+        "load_or_create_default_config",
+        classmethod(lambda cls: load()),
+    )
+
+    assert guest_sessions._guest_session_pool_for(site_api, "http://192.0.2.8:8000") is pool
+
+
+def test_a_worker_settings_reload_rebuilds_guest_routes(monkeypatch):
+    from ultima_scraper_backend.job_system import guest_route_permits
+    from ultima_scraper_backend.workers.worker_pool import Worker
+
+    monkeypatch.setattr("ultima_scraper_backend.usapi_initializer.resolve_proxy_url", lambda url: url)
+    permits = []
+    monkeypatch.setattr(
+        guest_route_permits, "configure_route_permits",
+        lambda client, proxies, **_: permits.append([p.url for p in proxies]),
+    )
+    site_api = SimpleNamespace(_guest_session_pool=None)
+    worker = Worker.__new__(Worker)
+    worker.apis = {"OnlyFans": site_api}
+    worker.worker_index, worker.worker_count, worker.redis = 0, 2, None
+    edited = "http://192.0.2.9:8000"
+    config = SimpleNamespace(settings=SimpleNamespace(network=SimpleNamespace(
+        proxies=[SimpleNamespace(url=edited, enabled=True, max_connections=4)],
+        guest_session_pool=True,
+    )))
+
+    worker._refresh_guest_routes(config)
+
+    assert list(site_api._guest_session_pool.slots) == [edited]
+    assert permits == [[edited]]

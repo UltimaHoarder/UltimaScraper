@@ -1,5 +1,6 @@
 from __future__ import annotations
 
+import threading
 from pathlib import Path
 from unittest.mock import AsyncMock
 
@@ -8,9 +9,11 @@ import pytest
 import ultima_scraper_backend.api.routes.files as files_module
 from ultima_scraper_backend.api.routes.files import (
     UsernameDirectoryResult,
+    UsernameDirectoryScan,
     _build_directory_candidates,
     _build_user_directory_relpaths,
     _resolve_media_path,
+    _scan_username_directories,
     _search_username_directories,
 )
 from ultima_scraper_backend.config import (
@@ -115,10 +118,13 @@ async def test_search_username_directories_offloads_scan_to_thread(
 ) -> None:
     config = _build_config(tmp_path / "downloads")
     to_thread_mock = AsyncMock(
-        return_value=(
-            [UsernameDirectoryResult(root="/root", path="/root/OnlyFans/T/tester")],
-            ["/root/OnlyFans/T/tester"],
-            "OnlyFans/T/tester",
+        return_value=UsernameDirectoryScan(
+            matches=[
+                UsernameDirectoryResult(root="/root", path="/root/OnlyFans/T/tester")
+            ],
+            checked_patterns=["/root/OnlyFans/T/tester"],
+            rel_pattern="OnlyFans/T/tester",
+            unavailable_roots=["/slow"],
         )
     )
 
@@ -138,9 +144,10 @@ async def test_search_username_directories_offloads_scan_to_thread(
 
     assert response.success is True
     assert [match.path for match in response.matches] == ["/root/OnlyFans/T/tester"]
+    assert response.unavailable_roots == ["/slow"]
     to_thread_mock.assert_awaited_once()
     assert (
-        to_thread_mock.await_args.args[0] is files_module._search_username_directories
+        to_thread_mock.await_args.args[0] is files_module._scan_username_directories
     )
     assert to_thread_mock.await_args.args[1:] == (config, ["tester"], "onlyfans")
 
@@ -280,3 +287,106 @@ def test_search_username_directories_finds_site_directory_alias_matches(
     assert [match.path for match in matches] == [str(alias_directory)]
     assert str(root / "OnlyFansImages" / "T" / "tester") in checked_patterns
     assert rel_pattern == "OnlyFansImages/T/tester"
+
+
+def _block_root(
+    monkeypatch: pytest.MonkeyPatch, slow_root: Path
+) -> tuple[threading.Event, threading.Event]:
+    """Make every scan of slow_root hang until released, like a stalled mount."""
+    entered = threading.Event()
+    release = threading.Event()
+    real_scan = files_module._scan_root_for_patterns
+
+    def scan(root: Path, rel_patterns: list[str]):
+        if root == slow_root:
+            entered.set()
+            release.wait(10)
+        return real_scan(root, rel_patterns)
+
+    monkeypatch.setattr(files_module, "_scan_root_for_patterns", scan)
+    return entered, release
+
+
+def test_scan_username_directories_skips_a_root_that_misses_the_deadline(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    fast_root = tmp_path / "fast"
+    slow_root = tmp_path / "slow"
+    found = fast_root / "OnlyFans" / "T" / "tester"
+    found.mkdir(parents=True)
+    (slow_root / "OnlyFans" / "T" / "tester").mkdir(parents=True)
+    config = _build_config(fast_root)
+    config.settings.download_setup.drives = [
+        Drive(directories=[slow_root]),
+        Drive(directories=[fast_root]),
+    ]
+    entered, release = _block_root(monkeypatch, slow_root)
+    try:
+        scan = _scan_username_directories(
+            config, ["tester"], "onlyfans", timeout_seconds=0.5
+        )
+    finally:
+        release.set()
+
+    assert entered.is_set()
+    assert [match.path for match in scan.matches] == [str(found)]
+    assert scan.unavailable_roots == [str(slow_root)]
+    assert scan.rel_pattern == "OnlyFans/T/tester"
+    assert str(slow_root / "OnlyFans" / "T" / "tester") in scan.checked_patterns
+
+
+def test_scan_username_directories_does_not_rescan_a_root_still_stuck(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    slow_root = tmp_path / "slow"
+    slow_root.mkdir()
+    config = _build_config(slow_root)
+    entered, release = _block_root(monkeypatch, slow_root)
+    calls: list[Path] = []
+    blocking_scan = files_module._scan_root_for_patterns
+
+    def counting_scan(root: Path, rel_patterns: list[str]):
+        calls.append(root)
+        return blocking_scan(root, rel_patterns)
+
+    monkeypatch.setattr(files_module, "_scan_root_for_patterns", counting_scan)
+    try:
+        first = _scan_username_directories(
+            config, ["tester"], "onlyfans", timeout_seconds=0.2
+        )
+        second = _scan_username_directories(
+            config, ["tester"], "onlyfans", timeout_seconds=0.2
+        )
+    finally:
+        release.set()
+
+    assert first.unavailable_roots == [str(slow_root)]
+    assert second.unavailable_roots == [str(slow_root)]
+    assert calls == [slow_root]
+
+
+def test_scan_username_directories_rescans_a_root_once_it_recovers(
+    monkeypatch: pytest.MonkeyPatch, tmp_path: Path
+) -> None:
+    root = tmp_path / "downloads"
+    found = root / "OnlyFans" / "T" / "tester"
+    found.mkdir(parents=True)
+    config = _build_config(root)
+    entered, release = _block_root(monkeypatch, root)
+    first = _scan_username_directories(
+        config, ["tester"], "onlyfans", timeout_seconds=0.2
+    )
+    release.set()
+    for _ in range(100):
+        with files_module._roots_in_flight_lock:
+            if str(root) not in files_module._roots_in_flight:
+                break
+        threading.Event().wait(0.05)
+
+    second = _scan_username_directories(
+        config, ["tester"], "onlyfans", timeout_seconds=2
+    )
+
+    assert first.unavailable_roots == [str(root)]
+    assert second.unavailable_roots == []
+    assert [match.path for match in second.matches] == [str(found)]

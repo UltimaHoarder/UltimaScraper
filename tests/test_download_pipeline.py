@@ -1166,14 +1166,14 @@ async def test_download_manager_uses_drm_stream_download_flow(
     assert success is True
     assert item.media_metadata is not None
     assert item.media_metadata.drm_key == "secret-key"
-    assert item.drm_media_settings.drm_temp_directory == tmp_path / "__drm__"
+    assert item.drm_media_settings.drm_temp_directory.parent == tmp_path / "__drm__"
     assert (
         item.drm_media_settings.drm_video_path
-        == tmp_path / "__drm__" / "example_video.enc.mp4"
+        == item.drm_media_settings.drm_temp_directory / "example_video.enc.mp4"
     )
     assert (
         item.drm_media_settings.drm_audio_path
-        == tmp_path / "__drm__" / "example_audio.enc.mp4"
+        == item.drm_media_settings.drm_temp_directory / "example_audio.enc.mp4"
     )
     assert item.drm_media_settings.drm_video_path.exists()
     assert item.drm_media_settings.drm_audio_path.exists()
@@ -1298,12 +1298,14 @@ async def test_download_manager_updates_drm_filename_from_resolved_stream(
     assert success is True
     assert item.filename == "clip_source.mp4"
     assert (
-        item.drm_media_settings.drm_video_path
-        == tmp_path / "__drm__" / "clip_source_video.enc.mp4"
+        item.drm_media_settings.drm_video_path.parent.parent == tmp_path / "__drm__"
+    )
+    assert (
+        item.drm_media_settings.drm_video_path.name == "clip_source_video.enc.mp4"
     )
     assert (
         item.drm_media_settings.drm_audio_path
-        == tmp_path / "__drm__" / "clip_source_audio.enc.mp4"
+        == item.drm_media_settings.drm_temp_directory / "clip_source_audio.enc.mp4"
     )
 
 
@@ -1443,11 +1445,11 @@ async def test_download_manager_supports_audio_only_drm(tmp_path, monkeypatch) -
     assert success is True
     assert item.media_metadata is not None
     assert item.media_metadata.drm_key == "secret-key"
-    assert item.drm_media_settings.drm_temp_directory == tmp_path / "__drm__"
+    assert item.drm_media_settings.drm_temp_directory.parent == tmp_path / "__drm__"
     assert item.drm_media_settings.drm_video_path is None
     assert (
         item.drm_media_settings.drm_audio_path
-        == tmp_path / "__drm__" / "audio-only_audio.enc.m4a"
+        == item.drm_media_settings.drm_temp_directory / "audio-only_audio.enc.m4a"
     )
     assert item.drm_media_settings.drm_audio_path.exists()
     database_writes.submit.assert_awaited_once()
@@ -1759,12 +1761,12 @@ def test_preferred_staging_tier_overflows_by_reservation_and_refills_on_release(
     first, second, third = item("a"), item("b"), item("c")
     operations = [StagingUsage.DOWNLOADS]
 
-    assert manager._prepare_item_workspace(first, operations, 600) == ram_path
+    assert manager._prepare_item_workspace(first, operations, 600).parent == ram_path
     # 1000 free - 100 headroom - 600 promised leaves too little for another.
-    assert manager._prepare_item_workspace(second, operations, 600) == nvme_path
+    assert manager._prepare_item_workspace(second, operations, 600).parent == nvme_path
     manager.release_workspace(first)
     manager.release_workspace(first)
-    assert manager._prepare_item_workspace(third, operations, 600) == ram_path
+    assert manager._prepare_item_workspace(third, operations, 600).parent == ram_path
     assert manager._staging_reserved == {ram_path: 600, nvme_path: 600}
 
 
@@ -2503,3 +2505,74 @@ def test_a_file_already_in_the_new_folder_stays_there(tmp_path) -> None:
     use_kept_copies([item], selection, new)
 
     assert item.directory == new / "Posts"
+
+
+def _shared_staging_manager(tmp_path: Path) -> tuple[DownloadManager, Path]:
+    staging = tmp_path / "shm"
+    config = _build_config()
+    config.settings.download_setup.staging_directories = [
+        _build_staging_directory(staging, usage=[StagingUsage.DOWNLOADS])
+    ]
+    return DownloadManager(config=config), staging
+
+
+def test_same_file_name_for_two_destinations_stages_in_separate_folders(
+    tmp_path: Path,
+) -> None:
+    """A post that is also a highlight is downloaded by two tasks at once."""
+    manager, staging = _shared_staging_manager(tmp_path)
+    operations = [StagingUsage.DOWNLOADS]
+    posts = DownloadItem(
+        url="https://cdn.test/v", filename="clip.mp4", directory=tmp_path / "Posts"
+    )
+    stories = DownloadItem(
+        url="https://cdn.test/v", filename="clip.mp4", directory=tmp_path / "Stories"
+    )
+
+    posts_dir = manager._prepare_item_workspace(posts, operations)
+    stories_dir = manager._prepare_item_workspace(stories, operations)
+
+    assert posts_dir.parent == stories_dir.parent == staging
+    assert posts_dir != stories_dir
+    assert posts_dir.is_dir() and stories_dir.is_dir()
+    assert posts.get_workspace_filepath() != stories.get_workspace_filepath()
+    assert posts.drm_media_settings.selected_staging_directory == staging
+
+
+def test_staging_folder_is_stable_for_a_destination_so_downloads_resume(
+    tmp_path: Path,
+) -> None:
+    first_manager, _ = _shared_staging_manager(tmp_path)
+    second_manager, _ = _shared_staging_manager(tmp_path)
+    operations = [StagingUsage.DOWNLOADS]
+
+    def item() -> DownloadItem:
+        return DownloadItem(
+            url="https://cdn.test/v", filename="clip.mp4", directory=tmp_path / "Posts"
+        )
+
+    assert first_manager._prepare_item_workspace(
+        item(), operations
+    ) == second_manager._prepare_item_workspace(item(), operations)
+
+
+def test_release_removes_the_item_folder_only_once_it_is_empty(
+    tmp_path: Path,
+) -> None:
+    manager, _ = _shared_staging_manager(tmp_path)
+    operations = [StagingUsage.DOWNLOADS]
+    finished = DownloadItem(
+        url="https://cdn.test/a", filename="a.mp4", directory=tmp_path / "Posts"
+    )
+    interrupted = DownloadItem(
+        url="https://cdn.test/b", filename="b.mp4", directory=tmp_path / "Posts"
+    )
+    finished_dir = manager._prepare_item_workspace(finished, operations)
+    interrupted_dir = manager._prepare_item_workspace(interrupted, operations)
+    (interrupted_dir / "b.mp4.download").write_bytes(b"partial")
+
+    manager.release_workspace(finished)
+    manager.release_workspace(interrupted)
+
+    assert not finished_dir.exists()
+    assert (interrupted_dir / "b.mp4.download").read_bytes() == b"partial"

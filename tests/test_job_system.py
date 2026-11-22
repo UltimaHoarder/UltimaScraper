@@ -132,7 +132,6 @@ class TestGlobalSession:
             "_global_pool_int",
             lambda key, default: {
                 "ULTIMA_PGBOUNCER_GLOBAL_POOL_SIZE": 2,
-                "ULTIMA_PGBOUNCER_GLOBAL_MAX_OVERFLOW": 0,
             }.get(key, default),
         )
 
@@ -3664,7 +3663,11 @@ class TestRedisMemoryOptimisations:
         """cleanup_completed_jobs should delete jobs in terminal states."""
         import time
 
-        monkeypatch.setenv("ULTIMA_JOB_TASK_ARCHIVE_BATCH_SIZE", "500")
+        from ultima_scraper_backend.job_system import resources
+
+        monkeypatch.setattr(
+            resources, "_persisted_job_execution_setting", lambda name, **kwargs: None
+        )
 
         # Seed a completed job whose index score is old enough
         job_id = "job-cleanup-1"

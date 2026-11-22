@@ -476,8 +476,16 @@ def test_persisted_windows_apply_live_with_one_planner_connection(
     from ultima_scraper_db_archive.global_db import BackendInventoryModel, SettingsModel
 
     from ultima_scraper_backend import config_settings_sync
+    from ultima_scraper_backend.job_system import resources
 
-    monkeypatch.setenv("ULTIMA_LEDGER_PLANNER_BATCH", "128")
+    persisted = resources._persisted_job_execution_setting
+    monkeypatch.setattr(
+        resources,
+        "_persisted_job_execution_setting",
+        lambda name, **kwargs: (
+            128 if name == "ledger_planner_batch" else persisted(name, **kwargs)
+        ),
+    )
 
     for name in (
         "ULTIMA_LEDGER_TASKS",

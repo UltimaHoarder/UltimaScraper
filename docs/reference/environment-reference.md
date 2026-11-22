@@ -69,11 +69,11 @@ These variables control the throughput and concurrency of the globally leased da
 
 ---
 
-## 5. Deprecated & Relocated Settings
+## 5. Retired Variables
 
-The following policy controls have moved from environment variables to database-backed application settings (`management.settings`):
+These policy controls moved to database-backed application settings (`management.settings`). The variables are no longer read; set the setting instead:
 
-| Deprecated Environment Variable | Replaced by Setting Key |
+| Retired Environment Variable | Setting Key |
 |---|---|
 | `ULTIMA_WORKER_CONCURRENCY` | `worker_pool.task_concurrency` |
 | `ULTIMA_CLAIM_BATCH_SIZE` | `worker_pool.claim_batch_size` |

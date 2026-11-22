@@ -173,7 +173,6 @@ async def test_archive_bounds_redis_and_sql_batches_and_preserves_all_results(
     monkeypatch,
     count_budget,
 ):
-    monkeypatch.setenv("ULTIMA_JOB_TASK_ARCHIVE_BATCH_SIZE", str(count_budget))
     monkeypatch.setenv("ULTIMA_JOB_TASK_ARCHIVE_MAX_BYTES", "25000")
     storage = JobStorage(window_runtime.redis)
     job = await saved_job(storage, count=21, size=10000)
@@ -203,7 +202,10 @@ async def test_archive_bounds_redis_and_sql_batches_and_preserves_all_results(
 
     monkeypatch.setattr(client, "eval", inspect_read)
     monkeypatch.setattr(storage, "_insert_central_tasks_sync", inspect_insert)
-    assert await storage._archive_job_tasks_to_db(job.job_id) == 21
+    assert (
+        await storage._archive_job_tasks_to_db(job.job_id, batch_size=count_budget)
+        == 21
+    )
     assert reads and writes
     assert all(
         count <= count_budget and size <= 25000 for count, size in reads + writes
@@ -252,7 +254,6 @@ async def test_omitted_byte_budget_derives_from_writer_and_explicit_values_overr
     with pytest.raises(storage_module.TaskPayloadBudgetExceeded):
         await storage._archive_job_tasks_to_db(job.job_id)
     monkeypatch.setenv("ULTIMA_JOB_TASK_ARCHIVE_MAX_BYTES", "1000")
-    monkeypatch.setenv("ULTIMA_JOB_TASK_ARCHIVE_BATCH_SIZE", "1000")
     assert (
         await storage._archive_job_tasks_to_db(
             job.job_id, batch_size=1, max_bytes=30000
@@ -337,9 +338,7 @@ async def test_larger_configured_budget_does_not_replay_the_previous_rejection(
         )
 
 
-@pytest.mark.parametrize(
-    "name", ["ULTIMA_JOB_TASK_ARCHIVE_BATCH_SIZE", "ULTIMA_JOB_TASK_ARCHIVE_MAX_BYTES"]
-)
+@pytest.mark.parametrize("name", ["ULTIMA_JOB_TASK_ARCHIVE_MAX_BYTES"])
 @pytest.mark.parametrize("value", ["0", "-1", "bad"])
 async def test_invalid_archive_settings_fail_before_sql_mutation(
     redis_manager, monkeypatch, name, value

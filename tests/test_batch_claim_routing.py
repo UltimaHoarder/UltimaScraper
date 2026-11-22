@@ -9,7 +9,6 @@ import pytest
 from ultima_scraper_backend.job_system.routing import BackendRouter
 from ultima_scraper_backend.job_system.storage import JobStorage
 from ultima_scraper_backend.workers.worker_pool import (
-    CLAIM_BATCH_SIZE_ENV,
     DEFAULT_CLAIM_BATCH_SIZE,
     Worker,
 )
@@ -221,7 +220,6 @@ async def test_mps_routed_claim_dequeues_with_guarded_state_transition() -> None
 
 
 def test_worker_compute_claim_batch_size_default(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("ULTIMA_CLAIM_BATCH_SIZE", raising=False)
     config = SimpleNamespace(
         settings=SimpleNamespace(network=SimpleNamespace(proxies=[]))
     )
@@ -239,7 +237,6 @@ def test_worker_compute_claim_batch_size_default(monkeypatch: pytest.MonkeyPatch
 
 
 def test_worker_compute_claim_batch_size_clamping(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("ULTIMA_CLAIM_BATCH_SIZE", raising=False)
     config = SimpleNamespace(
         settings=SimpleNamespace(network=SimpleNamespace(proxies=[]))
     )
@@ -256,28 +253,9 @@ def test_worker_compute_claim_batch_size_clamping(monkeypatch: pytest.MonkeyPatc
     assert worker.compute_claim_batch_size(available_slots=0) == 1
 
 
-def test_worker_compute_claim_batch_size_env_override(
-    monkeypatch: pytest.MonkeyPatch,
-) -> None:
-    monkeypatch.setenv(CLAIM_BATCH_SIZE_ENV, "12")
-    config = SimpleNamespace(
-        settings=SimpleNamespace(network=SimpleNamespace(proxies=[]))
-    )
-    worker = Worker(
-        worker_id="test-w-env",
-        redis_url="redis://localhost",
-        supported_sites=["onlyfans"],
-        config=config,
-    )
-
-    assert worker.compute_claim_batch_size(available_slots=50) == 12
-    assert worker.compute_claim_batch_size(available_slots=6) == 6
-
-
 @pytest.mark.skip(reason="Worker.run now uses the SQL execution ledger; this legacy router test would claim real work from the configured database and never finish")
 @pytest.mark.asyncio
 async def test_worker_run_dispatches_claimed_batch(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("ULTIMA_CLAIM_BATCH_SIZE", raising=False)
     config = SimpleNamespace(
         settings=SimpleNamespace(network=SimpleNamespace(proxies=[]))
     )

@@ -3,7 +3,6 @@
 import time
 from dataclasses import replace
 
-import pytest
 from sqlalchemy import func, select
 from test_execution_ledger import (
     finish,
@@ -22,17 +21,13 @@ __all__ = ["ledger", "ledger_engine", "postgres_engine"]
 
 def test_runtime_planner_batch_keeps_explicit_claim_controls(monkeypatch):
     monkeypatch.setenv("ULTIMA_LEDGER_BATCH", "")
-    monkeypatch.setenv("ULTIMA_LEDGER_PLANNER_BATCH", "")
     assert Limits.load().batch == 128
     assert Limits.load().planner_batch == 512
     monkeypatch.setenv("ULTIMA_LEDGER_BATCH", "32")
     assert Limits.load().batch == Limits.load().planner_batch == 32
+    # The retired variable no longer sets the planner batch.
     monkeypatch.setenv("ULTIMA_LEDGER_PLANNER_BATCH", "256")
-    assert Limits.load().batch == 32
-    assert Limits.load().planner_batch == 256
-    monkeypatch.setenv("ULTIMA_LEDGER_PLANNER_BATCH", "0")
-    with pytest.raises(ValueError, match="must be positive"):
-        Limits.load()
+    assert Limits.load().planner_batch == 32
     assert Limits(batch=4).planner_batch is None
 
 

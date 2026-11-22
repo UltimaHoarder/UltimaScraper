@@ -307,17 +307,6 @@ def run(args):
                 map(str, [redis_port, control_port, rules.server_port])
             ),
         )
-        for field, variable in (
-            ("retention_seconds", "USR_COMPLETED_JOB_RETENTION_SECONDS"),
-            ("retention_batch_size", "USR_COMPLETED_JOB_RETENTION_BATCH_SIZE"),
-            (
-                "reconcile_interval_seconds",
-                "USR_TERMINAL_JOB_RECONCILE_INTERVAL_SECONDS",
-            ),
-        ):
-            value = getattr(args, field)
-            if value is not None:
-                env[variable] = str(value)
         os.environ.clear()
         os.environ.update(env)
         os.chdir(root)
@@ -387,6 +376,14 @@ def run(args):
             config.settings.network.downloads.per_domain_concurrency,
             args.file_concurrency,
         )
+        for field, setting in (
+            ("retention_seconds", "completed_job_retention_seconds"),
+            ("retention_batch_size", "completed_job_retention_batch_size"),
+            ("reconcile_interval_seconds", "terminal_reconcile_interval_seconds"),
+        ):
+            value = getattr(args, field)
+            if value is not None:
+                setattr(config.settings.job_execution, setting, value)
         if not live:
             config.site_apis.onlyfans.dynamic_rules_url = (
                 f"http://127.0.0.1:{rules.server_port}/rules"

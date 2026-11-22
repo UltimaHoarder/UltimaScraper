@@ -48,13 +48,9 @@ def test_terminal_defaults_follow_effective_global_overrides(monkeypatch):
 def test_ledger_claim_pages_use_ledger_cap_instead_of_legacy_default(monkeypatch):
     from ultima_scraper_backend.job_system.ledger_runtime import ledger_claim_page_size
 
-    # Explicitly blank bypasses the workspace's dotenv override in this test.
-    monkeypatch.setenv("ULTIMA_CLAIM_BATCH_SIZE", "")
     assert ledger_claim_page_size(128) == 128
-    monkeypatch.setenv("ULTIMA_CLAIM_BATCH_SIZE", "16")
-    assert ledger_claim_page_size(128) == 16
-    monkeypatch.setenv("ULTIMA_CLAIM_BATCH_SIZE", "256")
-    assert ledger_claim_page_size(128) == 128
+    assert ledger_claim_page_size(128, 16) == 16
+    assert ledger_claim_page_size(128, 256) == 128
 
 
 def inputs(ledger, count=4):

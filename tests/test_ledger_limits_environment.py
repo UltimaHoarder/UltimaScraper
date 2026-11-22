@@ -15,7 +15,7 @@ SETTING_NAMES = (
     "ULTIMA_JOB_GLOBAL_WINDOW_MAX_BYTES", "ULTIMA_LEDGER_TASKS", "ULTIMA_LEDGER_BYTES",
     "ULTIMA_LEDGER_GLOBAL_TASKS", "ULTIMA_LEDGER_GLOBAL_BYTES", "ULTIMA_LEDGER_BATCH",
     "ULTIMA_LEDGER_LEASE_SECONDS", "ULTIMA_LEDGER_RESULT_BYTES",
-    "ULTIMA_LEDGER_PLANNER_BATCH", "ULTIMA_LEDGER_ARCHIVE_BATCH",
+    "ULTIMA_LEDGER_ARCHIVE_BATCH",
     "ULTIMA_LEDGER_TERMINAL_TASKS", "ULTIMA_LEDGER_TERMINAL_BYTES",
 )
 
@@ -63,11 +63,10 @@ def test_limits_parse_one_fresh_file_per_load(monkeypatch, env_file: Path):
 def test_process_blanks_and_overrides_shadow_file(env_file: Path, monkeypatch):
     env_file.write_text(
         "ULTIMA_LEDGER_TASKS=12\nULTIMA_LEDGER_BATCH=9\n"
-        "ULTIMA_LEDGER_PLANNER_BATCH=33\nULTIMA_LEDGER_TERMINAL_BYTES=600\n"
+        "ULTIMA_LEDGER_TERMINAL_BYTES=600\n"
     )
     monkeypatch.setenv("ULTIMA_LEDGER_TASKS", "16")
     monkeypatch.setenv("ULTIMA_LEDGER_BATCH", "  ")
-    monkeypatch.setenv("ULTIMA_LEDGER_PLANNER_BATCH", "")
     first = ledger.Limits.load()
     assert first.tasks == 16
     assert first.batch == 128 and first.planner_batch == 512

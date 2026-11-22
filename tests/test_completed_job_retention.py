@@ -99,17 +99,3 @@ async def test_retirement_age_and_page_budget_are_independent_of_task_cleanup(
 def test_invalid_explicit_retention_settings_fail_before_initialization(arguments):
     with pytest.raises(ValueError, match="must be an integer"):
         TerminalJobReconciler(None, **arguments)
-
-
-@pytest.mark.parametrize("value", ["0", "86401", "invalid", "1.5"])
-def test_explicit_retention_environment_is_preserved_or_rejected(monkeypatch, value):
-    from importlib import import_module
-
-    api_app = import_module("ultima_scraper_backend.api.app")
-    name = "USR_COMPLETED_JOB_RETENTION_SECONDS"
-    monkeypatch.setattr(api_app, "runtime_env_value", lambda key: value)
-    if value.isdecimal():
-        assert api_app._env_int(name, 86400, strict=True) == int(value)
-    else:
-        with pytest.raises(ValueError, match=name):
-            api_app._env_int(name, 86400, strict=True)

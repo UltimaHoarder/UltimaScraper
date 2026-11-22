@@ -28,7 +28,6 @@ def test_guest_lookup_timeout_model_defaults_and_validation():
 
 
 def test_resolve_mps_guest_lookup_timeout_from_global_setting(monkeypatch):
-    monkeypatch.delenv("ULTIMA_MPS_GUEST_LOOKUP_TIMEOUT", raising=False)
 
     config = SimpleNamespace(
         settings=SimpleNamespace(
@@ -43,7 +42,6 @@ def test_resolve_mps_guest_lookup_timeout_from_global_setting(monkeypatch):
 
 
 def test_resolve_mps_guest_lookup_timeout_from_proxy_override(monkeypatch):
-    monkeypatch.delenv("ULTIMA_MPS_GUEST_LOOKUP_TIMEOUT", raising=False)
 
     proxy1 = SimpleNamespace(url="http://proxy1:8080", guest_lookup_timeout=9.0)
     proxy2 = SimpleNamespace(url="http://proxy2:8080", guest_lookup_timeout=None)
@@ -66,13 +64,8 @@ def test_resolve_mps_guest_lookup_timeout_from_proxy_override(monkeypatch):
     assert _resolve_mps_guest_lookup_timeout(context, "http://user:pass@proxy2:8080") == 4.0
 
 
-def test_resolve_mps_guest_lookup_timeout_fallback_to_env_and_default(monkeypatch):
-    # Without context, falls back to env var if set
+def test_resolve_mps_guest_lookup_timeout_ignores_retired_env(monkeypatch):
     monkeypatch.setenv("ULTIMA_MPS_GUEST_LOOKUP_TIMEOUT", "7.2")
-    assert _resolve_mps_guest_lookup_timeout(None) == 7.2
-
-    # Without env var and without context, falls back to default 3.5s
-    monkeypatch.delenv("ULTIMA_MPS_GUEST_LOOKUP_TIMEOUT", raising=False)
     assert _resolve_mps_guest_lookup_timeout(None) == DEFAULT_MPS_GUEST_LOOKUP_TIMEOUT_SECONDS
 
 
@@ -150,7 +143,6 @@ async def test_proxy_edit_route_guest_lookup_timeout():
 
 
 def test_group_timeout_applies_between_proxy_and_network(monkeypatch):
-    monkeypatch.delenv("ULTIMA_MPS_GUEST_LOOKUP_TIMEOUT", raising=False)
     own = Proxy(url="http://proxy1:8080", group="Proton", guest_lookup_timeout=9.0)
     grouped = Proxy(url="http://proxy2:8080", group="Proton")
     other = Proxy(url="http://proxy3:8080", group="Webshare")

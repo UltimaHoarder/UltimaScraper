@@ -99,7 +99,6 @@ def test_resolve_proxy_pool_capacity_sums_declared_limits() -> None:
 
 
 def test_worker_dynamic_concurrency_calculation(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("ULTIMA_WORKER_CONCURRENCY", raising=False)
     # 100 proxies with 16 slots each = 1600 slots
     # 128 workers -> ceil(1600 / 128) = 13
     proxies = [
@@ -120,23 +119,7 @@ def test_worker_dynamic_concurrency_calculation(monkeypatch: pytest.MonkeyPatch)
     assert concurrency == 13
 
 
-def test_worker_dynamic_concurrency_env_override(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setenv("ULTIMA_WORKER_CONCURRENCY", "7")
-    config = SimpleNamespace(
-        settings=SimpleNamespace(network=SimpleNamespace(proxies=[]))
-    )
-    worker = worker_pool.Worker(
-        worker_id="test-w1",
-        redis_url="redis://localhost",
-        supported_sites=["onlyfans"],
-        config=config,
-        worker_count=128,
-    )
-    assert worker.compute_dynamic_concurrency() == 7
-
-
 def test_worker_dynamic_concurrency_variable_workers_and_ceiling(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.delenv("ULTIMA_WORKER_CONCURRENCY", raising=False)
     monkeypatch.delenv("ULTIMA_WORKER_CONCURRENCY_CEILING", raising=False)
     monkeypatch.delenv("ULTIMA_WORKER_MAX_CONCURRENCY", raising=False)
 

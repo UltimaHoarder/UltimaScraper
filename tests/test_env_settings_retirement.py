@@ -3,7 +3,6 @@
 from __future__ import annotations
 
 import asyncio
-import logging
 from pathlib import Path
 from types import SimpleNamespace
 
@@ -11,7 +10,7 @@ import pytest
 from fastapi import HTTPException
 from sqlalchemy import create_engine, text
 from sqlalchemy.pool import StaticPool
-from ultima_scraper_backend import bootstrap, deprecated_env
+from ultima_scraper_backend import bootstrap
 from ultima_scraper_backend.api.routes import favourites as favourites_route
 from ultima_scraper_backend.api.routes import setup as setup_route
 from ultima_scraper_backend.config import JobExecutionSettings, WorkerPool
@@ -23,14 +22,6 @@ from ultima_scraper_backend.services.terminal_job_reconciler import (
 from ultima_scraper_backend.workers import worker_pool
 from ultima_scraper_core import read_env
 from ultima_scraper_db_archive import global_db
-
-
-@pytest.fixture(autouse=True)
-def _fresh_deprecation_reports(monkeypatch: pytest.MonkeyPatch) -> None:
-    monkeypatch.setattr(deprecated_env, "_reported", set())
-    for name in deprecated_env.DEPRECATED_SETTINGS_ENV:
-        # Blank values bypass the workspace dotenv, like unset ones.
-        monkeypatch.setenv(name, "")
 
 
 def _settings_engine(rows: list[tuple[str, str]], backends: list[tuple[str, int]] = ()):
@@ -120,28 +111,13 @@ def test_reset_refuses_over_stored_configuration(monkeypatch) -> None:
     assert asyncio.run(setup_route.reset_setup()).is_configured is False
 
 
-def test_deprecated_env_override_warns_once(monkeypatch, caplog) -> None:
-    monkeypatch.setenv("ULTIMA_CLAIM_BATCH_SIZE", "16")
-    with caplog.at_level(logging.WARNING, logger=deprecated_env.__name__):
-        assert deprecated_env.deprecated_env_int("ULTIMA_CLAIM_BATCH_SIZE") == 16
-        assert deprecated_env.deprecated_env_int("ULTIMA_CLAIM_BATCH_SIZE") == 16
-    messages = [record.getMessage() for record in caplog.records]
-    assert len(messages) == 1
-    assert "worker_pool.claim_batch_size" in messages[0]
-
-
-@pytest.mark.parametrize("raw", ["", "  ", "abc", "0", "-3"])
-def test_deprecated_env_ignores_blank_and_invalid(monkeypatch, raw: str) -> None:
-    monkeypatch.setenv("ULTIMA_WORKER_CONCURRENCY", raw)
-    assert deprecated_env.deprecated_env_int("ULTIMA_WORKER_CONCURRENCY") is None
-
-
 def test_claim_page_uses_setting_capped_by_ledger_batch(monkeypatch) -> None:
     assert ledger_claim_page_size(128) == 128
     assert ledger_claim_page_size(128, 16) == 16
     assert ledger_claim_page_size(128, 512) == 128
+    # The retired variable no longer overrides the setting.
     monkeypatch.setenv("ULTIMA_CLAIM_BATCH_SIZE", "8")
-    assert ledger_claim_page_size(128, 16) == 8
+    assert ledger_claim_page_size(128, 16) == 16
 
 
 def _worker(pool: WorkerPool) -> worker_pool.Worker:
@@ -162,7 +138,7 @@ def test_worker_concurrency_comes_from_settings(monkeypatch) -> None:
     # No proxies and no setting keeps the existing fallback.
     assert _worker(WorkerPool()).compute_dynamic_concurrency() == 4
     monkeypatch.setenv("ULTIMA_WORKER_CONCURRENCY", "7")
-    assert _worker(WorkerPool(task_concurrency=11)).compute_dynamic_concurrency() == 7
+    assert _worker(WorkerPool(task_concurrency=11)).compute_dynamic_concurrency() == 11
 
 
 def test_worker_pool_settings_reject_non_positive_values() -> None:
@@ -172,7 +148,7 @@ def test_worker_pool_settings_reject_non_positive_values() -> None:
         WorkerPool(claim_batch_size=0)
 
 
-def test_reconciler_applies_settings_except_env_overrides() -> None:
+def test_reconciler_applies_settings() -> None:
     settings = JobExecutionSettings(
         terminal_reconcile_interval_seconds=60,
         terminal_reconcile_min_age_seconds=10,
@@ -187,14 +163,13 @@ def test_reconciler_applies_settings_except_env_overrides() -> None:
     reconciler = TerminalJobReconciler(
         SimpleNamespace(),
         settings_loader=loader,
-        overrides={"max_jobs_per_cycle"},
         max_jobs_per_cycle=9,
     )
     asyncio.run(reconciler.refresh_settings())
 
     assert reconciler.interval_seconds == 60
     assert reconciler.min_age_seconds == 10
-    assert reconciler.max_jobs_per_cycle == 9
+    assert reconciler.max_jobs_per_cycle == 5
     assert reconciler.retention_age_seconds == 0
     assert reconciler.retention_batch_size == 50
 

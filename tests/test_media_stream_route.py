@@ -203,6 +203,20 @@ async def test_stream_local_media_local_only_never_fetches_from_the_site(
 
 
 @pytest.mark.asyncio
+async def test_resolve_local_media_file_is_none_for_unknown_media(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    def unknown(_site: str, _media_id: int) -> object:
+        raise HTTPException(status_code=404, detail="Media not found")
+
+    monkeypatch.setattr(media_module, "_get_site_media_resolution_context", unknown)
+    assert (
+        await media_module.resolve_local_media_file("OnlyFans", 1, SimpleNamespace())
+        is None
+    )
+
+
+@pytest.mark.asyncio
 async def test_stream_local_media_prefers_existing_disk_file_over_proxy(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

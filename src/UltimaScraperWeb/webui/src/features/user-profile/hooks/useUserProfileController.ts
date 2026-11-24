@@ -1610,7 +1610,11 @@ export function useUserProfileController() {
       conflictResolution?.status === 'ambiguous' && conflictResolution.total > 1
         ? {
             identifier: conflictIdentifier,
-            candidates: conflictResolution.candidates,
+            // By stable ID: the server ranks by current name and activity, which
+            // a claimant's refresh changes while the user is stepping through.
+            candidates: [...conflictResolution.candidates].sort(
+              (left, right) => left.user_id - right.user_id,
+            ),
             total: conflictResolution.total,
             currentUserId: Number.isFinite(resolvedNumericUserId) ? resolvedNumericUserId : null,
             refreshing: conflictFetching,

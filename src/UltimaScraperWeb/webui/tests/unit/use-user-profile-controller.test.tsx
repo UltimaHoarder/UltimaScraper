@@ -206,6 +206,50 @@ describe('useUserProfileController', () => {
     });
   });
 
+  it('orders the shared identifier bar by stable ID, not the server ranking', async () => {
+    mockResolveUserIdentifier.mockImplementation(async (identifier: string) =>
+      identifier === 'alice'
+        ? {
+            success: true,
+            status: 'ambiguous',
+            user_id: null,
+            username: null,
+            candidates: [
+              { user_id: 900, username: 'alice', active: true, last_checked_at: null, matched_by: ['username'] },
+              { user_id: 123, username: 'u123', active: false, last_checked_at: null, matched_by: ['alias'] },
+            ],
+            total: 2,
+            page: 1,
+            page_size: 100,
+          }
+        : {
+            success: true,
+            status: 'resolved',
+            user_id: 123,
+            username: 'alice',
+            candidates: [],
+            total: 1,
+            page: 1,
+            page_size: 20,
+          },
+    );
+    const queryClient = createTestQueryClient();
+    const wrapper = ({ children }: { children: ReactNode }) => (
+      <QueryClientProvider client={queryClient}>
+        <ThemeProvider>{children}</ThemeProvider>
+      </QueryClientProvider>
+    );
+
+    const { result } = renderHook(() => useUserProfileController(), { wrapper });
+
+    await waitFor(() => {
+      expect(result.current.conflictNavigation?.candidates.map((c) => c.user_id)).toEqual([
+        123, 900,
+      ]);
+    });
+    expect(result.current.conflictNavigation?.currentUserId).toBe(123);
+  });
+
   it('reloads aliases when a background profile refresh finishes', async () => {
     const queryClient = createTestQueryClient();
     const wrapper = ({ children }: { children: ReactNode }) => (

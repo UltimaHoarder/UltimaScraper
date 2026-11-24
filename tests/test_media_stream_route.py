@@ -169,6 +169,40 @@ async def test_stream_local_media_prefers_remote_proxy(
 
 
 @pytest.mark.asyncio
+async def test_stream_local_media_local_only_never_fetches_from_the_site(
+    monkeypatch: pytest.MonkeyPatch,
+) -> None:
+    proxy_mock = AsyncMock()
+    fake_media = SimpleNamespace(
+        id=123,
+        user_id=456,
+        url="https://cdn.example.test/media.jpg",
+        filepaths=[],
+    )
+    monkeypatch.setattr(
+        media_module, "MultiSiteDatabaseManager", lambda: _FakeDBManager(fake_media)
+    )
+    monkeypatch.setattr(
+        media_module,
+        "_resolve_configured_media_file",
+        AsyncMock(return_value=None),
+    )
+    monkeypatch.setattr(media_module, "proxy_stream_url", proxy_mock)
+
+    with pytest.raises(HTTPException) as raised:
+        await media_module.stream_local_media(
+            "OnlyFans",
+            123,
+            config=SimpleNamespace(),
+            backend_manager=SimpleNamespace(),
+            local_only=True,
+        )
+
+    assert raised.value.status_code == 404
+    proxy_mock.assert_not_awaited()
+
+
+@pytest.mark.asyncio
 async def test_stream_local_media_prefers_existing_disk_file_over_proxy(
     monkeypatch: pytest.MonkeyPatch,
     tmp_path: Path,

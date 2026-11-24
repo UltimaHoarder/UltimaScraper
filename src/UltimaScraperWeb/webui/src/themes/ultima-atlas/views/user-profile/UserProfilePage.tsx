@@ -80,9 +80,15 @@ export function UserProfilePage() {
     closeImmediate,
   } = useImageHoverPreview(1000);
 
+  // Kept on screen while the next claimant loads, so switching does not jump.
+  const conflictNavigator = controller.conflictNavigation ? (
+    <UserConflictNavigator {...controller.conflictNavigation} />
+  ) : null;
+
   if (controller.resolvingUserId || controller.profileLoading) {
     return (
       <div className="user-profile-page ultimur-user-profile-page">
+        {conflictNavigator}
         <OperationsState
           variant="loading"
           title="Loading user profile"
@@ -175,15 +181,7 @@ export function UserProfilePage() {
         </div>
       )}
 
-      {controller.conflictNavigation ? (
-        <UserConflictNavigator
-          identifier={controller.conflictNavigation.identifier}
-          page={controller.conflictNavigation.page}
-          total={controller.conflictNavigation.total}
-          loading={controller.conflictNavigation.loading}
-          onPageChange={controller.navigateConflictPage}
-        />
-      ) : null}
+      {conflictNavigator}
 
       <section className="ultimur-profile-dossier">
         <div className="profile-card ultimur-profile-card">

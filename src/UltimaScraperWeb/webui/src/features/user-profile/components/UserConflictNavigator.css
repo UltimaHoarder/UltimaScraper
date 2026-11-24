@@ -1,12 +1,20 @@
 .user-conflict-navigator {
-  align-items: center;
   background: linear-gradient(90deg, rgba(88, 166, 255, 0.09), rgba(88, 166, 255, 0.025));
   border: 1px solid rgba(88, 166, 255, 0.22);
   border-radius: 10px;
   display: flex;
+  flex-direction: column;
+  gap: 10px;
+  padding: 11px 13px;
+}
+
+.user-conflict-navigator[aria-busy='true'] .user-conflict-navigator__list { opacity: 0.7; }
+
+.user-conflict-navigator__head {
+  align-items: center;
+  display: flex;
   gap: 18px;
   justify-content: space-between;
-  padding: 11px 13px;
 }
 
 .user-conflict-navigator__copy {
@@ -38,39 +46,98 @@
   gap: 7px;
 }
 
-.user-conflict-navigator button {
+.user-conflict-navigator__controls > a,
+.user-conflict-navigator__controls > .is-disabled {
   align-items: center;
   background: rgba(255, 255, 255, 0.035);
   border: 1px solid rgba(255, 255, 255, 0.13);
   border-radius: 7px;
   color: var(--color-text-primary, #e6edf3);
-  cursor: pointer;
   display: inline-flex;
-  font: inherit;
   font-size: 0.68rem;
   gap: 5px;
-  min-height: 34px;
-  padding: 7px 10px;
+  min-height: 30px;
+  padding: 5px 10px;
+  text-decoration: none;
 }
 
-.user-conflict-navigator button:hover:not(:disabled) {
+.user-conflict-navigator__controls > a:hover {
   background: rgba(88, 166, 255, 0.12);
   border-color: rgba(88, 166, 255, 0.42);
 }
 
-.user-conflict-navigator button:disabled { cursor: not-allowed; opacity: 0.42; }
+.user-conflict-navigator__controls > .is-disabled { cursor: not-allowed; opacity: 0.42; }
 
 .user-conflict-navigator__position {
-  border-left: 1px solid rgba(255, 255, 255, 0.1);
-  border-right: 1px solid rgba(255, 255, 255, 0.1);
   color: var(--color-text-tertiary, #8b949e);
   font-size: 0.68rem;
-  min-width: 92px;
-  padding: 0 10px;
+  min-width: 44px;
   text-align: center;
 }
 
 .user-conflict-navigator__position strong { color: var(--color-text-primary, #e6edf3); }
+
+.user-conflict-navigator__list {
+  display: flex;
+  gap: 8px;
+  list-style: none;
+  margin: 0;
+  overflow-x: auto;
+  padding: 0 0 2px;
+}
+
+.user-conflict-navigator__list li { flex: 0 0 auto; }
+
+.user-conflict-navigator__claimant {
+  background: rgba(255, 255, 255, 0.025);
+  border: 1px solid rgba(255, 255, 255, 0.1);
+  border-radius: 7px;
+  color: var(--color-text-primary, #e6edf3);
+  display: flex;
+  flex-direction: column;
+  gap: 3px;
+  max-width: 260px;
+  padding: 7px 11px;
+  text-decoration: none;
+}
+
+.user-conflict-navigator__claimant:hover { border-color: rgba(88, 166, 255, 0.42); }
+
+.user-conflict-navigator__claimant.is-current {
+  background: rgba(88, 166, 255, 0.14);
+  border-color: rgba(88, 166, 255, 0.6);
+  cursor: default;
+}
+
+.user-conflict-navigator__claimant.is-inactive .user-conflict-navigator__claimant-name {
+  color: var(--color-text-tertiary, #8b949e);
+}
+
+.user-conflict-navigator__claimant-name {
+  font-size: 0.78rem;
+  font-weight: 600;
+  overflow: hidden;
+  text-overflow: ellipsis;
+  white-space: nowrap;
+}
+
+.user-conflict-navigator__claimant-meta {
+  color: var(--color-text-tertiary, #8b949e);
+  display: flex;
+  font-size: 0.64rem;
+  gap: 8px;
+  white-space: nowrap;
+}
+
+.user-conflict-navigator__claimant-meta code { color: var(--color-text-secondary, #9da7b3); }
+
+.user-conflict-navigator__more {
+  color: var(--color-text-tertiary, #8b949e);
+  font-size: 0.68rem;
+  margin: 0;
+}
+
+.user-conflict-navigator__more a { color: var(--color-accent-primary, #58a6ff); }
 
 :root[data-theme='ultima-atlas'] .user-conflict-navigator {
   background:
@@ -85,32 +152,50 @@
 :root[data-theme='ultima-atlas'] .user-conflict-navigator__kicker { color: #d9aa52; letter-spacing: 0.18em; }
 :root[data-theme='ultima-atlas'] .user-conflict-navigator__summary strong { color: #bde7d2; }
 
-:root[data-theme='ultima-atlas'] .user-conflict-navigator button {
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__controls > a,
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__controls > .is-disabled,
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__claimant {
   background: rgba(130, 214, 178, 0.04);
   border-color: rgba(130, 214, 178, 0.2);
   border-radius: 0;
   color: #bde7d2;
   font-family: var(--font-mono);
+}
+
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__controls > a,
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__controls > .is-disabled {
   letter-spacing: 0.06em;
   text-transform: uppercase;
 }
 
-:root[data-theme='ultima-atlas'] .user-conflict-navigator button:hover:not(:disabled) {
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__controls > a:hover,
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__claimant:hover {
   background: rgba(130, 214, 178, 0.1);
   border-color: rgba(130, 214, 178, 0.4);
 }
 
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__claimant.is-current {
+  background: rgba(217, 170, 82, 0.1);
+  border-color: rgba(217, 170, 82, 0.55);
+  box-shadow: inset 0 -2px 0 #d9aa52;
+}
+
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__claimant.is-inactive .user-conflict-navigator__claimant-name {
+  color: #8b968f;
+}
+
+:root[data-theme='ultima-atlas'] .user-conflict-navigator__claimant-meta code { color: #d9aa52; }
+
 :root[data-theme='ultima-atlas'] .user-conflict-navigator__position {
-  border-color: rgba(217, 170, 82, 0.2);
   color: #8b968f;
   letter-spacing: 0.06em;
-  text-transform: uppercase;
 }
 
 :root[data-theme='ultima-atlas'] .user-conflict-navigator__position strong { color: #d9aa52; }
 
 @media (max-width: 700px) {
-  .user-conflict-navigator { align-items: stretch; flex-direction: column; gap: 10px; }
+  .user-conflict-navigator__head { align-items: stretch; flex-direction: column; gap: 10px; }
   .user-conflict-navigator__controls { justify-content: space-between; }
-  .user-conflict-navigator button { flex: 1; justify-content: center; }
+  .user-conflict-navigator__controls > a,
+  .user-conflict-navigator__controls > .is-disabled { flex: 1; justify-content: center; }
 }

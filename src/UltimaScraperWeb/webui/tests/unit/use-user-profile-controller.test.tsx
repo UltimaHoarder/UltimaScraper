@@ -253,7 +253,10 @@ describe('useUserProfileController', () => {
 
     await waitFor(() => {
       expect(mockGetUserAliases).toHaveBeenCalledTimes(2);
-      expect(mockResolveUserIdentifier).toHaveBeenCalledTimes(2);
+      // The route's own lookup; the shared-identifier bar resolves the username too.
+      expect(
+        mockResolveUserIdentifier.mock.calls.filter(([identifier]) => identifier === '123'),
+      ).toHaveLength(2);
       expect(result.current.userAliases.map((alias) => alias.username)).toEqual(['alice-old']);
     });
   });

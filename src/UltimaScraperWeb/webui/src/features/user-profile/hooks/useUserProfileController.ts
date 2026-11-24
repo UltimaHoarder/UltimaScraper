@@ -1,5 +1,11 @@
 import { useCallback, useEffect, useMemo, useRef, useState } from 'react';
-import { useInfiniteQuery, useMutation, useQuery, useQueryClient } from '@tanstack/react-query';
+import {
+  keepPreviousData,
+  useInfiniteQuery,
+  useMutation,
+  useQuery,
+  useQueryClient,
+} from '@tanstack/react-query';
 import { useNavigate, useParams, useSearchParams } from 'react-router-dom';
 
 import { getAuthList } from '../../../api/auths';
@@ -73,6 +79,7 @@ import { copyText } from '../../../utils/clipboard';
 import { siteLabel, siteProfileUrl } from '../../../shared/lib/sites';
 
 const IDENTIFIER_CHOOSER_PAGE_SIZE = 100;
+const CONFLICT_NAVIGATOR_PAGE_SIZE = 100;
 
 function filtersFromSearchParams(searchParams: URLSearchParams): AdvancedFilterMap {
   const filters = { ...DEFAULT_ADVANCED_FILTERS };
@@ -113,11 +120,7 @@ export function useUserProfileController() {
               : 'overview';
   const userIdentifier = (userId || '').trim();
   const normalizedIdentifier = userIdentifier.replace(/^@/, '').toLowerCase();
-  const conflictIdentifier = (searchParams.get('conflict') || '').replace(/^@/, '').trim().toLowerCase();
-  const parsedConflictPage = Number.parseInt(searchParams.get('conflict_page') || '1', 10);
-  const conflictPage = Number.isFinite(parsedConflictPage) && parsedConflictPage > 0
-    ? parsedConflictPage
-    : 1;
+  const conflictParam = (searchParams.get('conflict') || '').replace(/^@/, '').trim().toLowerCase();
 
   const {
     data: identifierResolution,
@@ -141,15 +144,6 @@ export function useUserProfileController() {
       ),
   });
 
-  const {
-    data: conflictNavigationResolution,
-    isLoading: conflictNavigationLoading,
-  } = useQuery<UserIdentifierResolutionResponse>({
-    queryKey: ['user-profile-conflict-navigation', conflictIdentifier, site, conflictPage],
-    enabled: Boolean(conflictIdentifier && /^\d+$/.test(normalizedIdentifier)),
-    queryFn: () => resolveUserIdentifier(conflictIdentifier, site, conflictPage, 1),
-  });
-
   const resolveUserError =
     identifierResolutionRequestError ||
     (!identifierResolution?.success
@@ -165,7 +159,6 @@ export function useUserProfileController() {
   const [overviewVersionIndex, setOverviewVersionIndex] = useState(0);
   const [toast, setToast] = useState<{ message: string; type: 'success' | 'error' } | null>(null);
   const [lightboxUrl, setLightboxUrl] = useState<string | null>(null);
-  const [conflictNavigationPending, setConflictNavigationPending] = useState(false);
   const toastTimeout = useRef<number | null>(null);
 
   const [contentItems, setContentItems] = useState<ContentLibraryItem[]>([]);
@@ -307,47 +300,12 @@ export function useUserProfileController() {
   const selectIdentifierCandidate = useCallback(
     (candidateUserId: number) => {
       const next = new URLSearchParams(searchParams);
-      const candidateIndex = identifierResolution?.candidates.findIndex(
-        (candidate) => candidate.user_id === candidateUserId,
-      ) ?? -1;
-      const absolutePosition = candidateIndex >= 0
-        ? ((identifierResolution?.page ?? 1) - 1) * (identifierResolution?.page_size ?? IDENTIFIER_CHOOSER_PAGE_SIZE) + candidateIndex + 1
-        : 1;
       next.set('conflict', normalizedIdentifier);
-      next.set('conflict_page', String(absolutePosition));
+      next.delete('conflict_page');
       const query = next.toString();
       navigate(`/users/${candidateUserId}${query ? `?${query}` : ''}`);
     },
-    [identifierResolution, navigate, normalizedIdentifier, searchParams]
-  );
-
-  const navigateConflictPage = useCallback(
-    async (targetPage: number) => {
-      if (!conflictIdentifier || targetPage < 1) return;
-      setConflictNavigationPending(true);
-      try {
-        const resolution = await queryClient.fetchQuery({
-          queryKey: ['user-profile-conflict-navigation', conflictIdentifier, site, targetPage],
-          queryFn: () => resolveUserIdentifier(conflictIdentifier, site, targetPage, 1),
-        });
-        const candidate = resolution.candidates[0];
-        if (resolution.status !== 'ambiguous' || !candidate) {
-          throw new Error('The requested conflicting profile is no longer available');
-        }
-        const next = new URLSearchParams(searchParams);
-        next.set('conflict', conflictIdentifier);
-        next.set('conflict_page', String(targetPage));
-        navigate(`/users/${candidate.user_id}?${next.toString()}`);
-      } catch (error) {
-        showToast(
-          error instanceof Error ? error.message : 'Unable to open the conflicting profile',
-          'error',
-        );
-      } finally {
-        setConflictNavigationPending(false);
-      }
-    },
-    [conflictIdentifier, navigate, queryClient, searchParams, site],
+    [navigate, normalizedIdentifier, searchParams]
   );
 
   const contentIncludeFlags = useMemo(
@@ -393,6 +351,40 @@ export function useUserProfileController() {
     });
 
   const user = profileData?.user ?? null;
+
+  // A handle several saved accounts claim: from the chooser's link, or the
+  // open profile's own username when it was opened directly by ID.
+  const conflictIdentifier =
+    conflictParam || (user?.username ?? '').replace(/^@/, '').trim().toLowerCase();
+  const { data: conflictResolution, isFetching: conflictFetching } =
+    useQuery<UserIdentifierResolutionResponse>({
+      queryKey: ['user-profile-conflict-navigation', conflictIdentifier, site],
+      enabled: Boolean(conflictIdentifier),
+      queryFn: () =>
+        resolveUserIdentifier(conflictIdentifier, site, 1, CONFLICT_NAVIGATOR_PAGE_SIZE),
+      // Opening a claimant refreshes it, which can rename or retire it.
+      placeholderData: keepPreviousData,
+      staleTime: 0,
+    });
+  const conflictRefreshKey = user
+    ? `${user.id}:${user.username}:${user.is_active}:${profileData?.is_refreshing ? 1 : 0}`
+    : null;
+  useEffect(() => {
+    if (!conflictIdentifier || !conflictRefreshKey) return;
+    queryClient.invalidateQueries({
+      queryKey: ['user-profile-conflict-navigation', conflictIdentifier, site],
+    });
+  }, [conflictIdentifier, conflictRefreshKey, queryClient, site]);
+
+  const conflictProfileHref = useCallback(
+    (candidateUserId: number) => {
+      const next = new URLSearchParams(searchParams);
+      next.set('conflict', conflictIdentifier);
+      next.delete('conflict_page');
+      return `/users/${candidateUserId}?${next.toString()}`;
+    },
+    [conflictIdentifier, searchParams],
+  );
 
   const refreshProfileMutation = useMutation({
     mutationFn: () => refreshUserProfile(resolvedNumericUserId, site),
@@ -1615,15 +1607,17 @@ export function useUserProfileController() {
     identifierResolution,
     selectIdentifierCandidate,
     conflictNavigation:
-      conflictNavigationResolution?.status === 'ambiguous' && conflictNavigationResolution.total > 1
+      conflictResolution?.status === 'ambiguous' && conflictResolution.total > 1
         ? {
             identifier: conflictIdentifier,
-            page: conflictPage,
-            total: conflictNavigationResolution.total,
-            loading: conflictNavigationLoading || conflictNavigationPending,
+            candidates: conflictResolution.candidates,
+            total: conflictResolution.total,
+            currentUserId: Number.isFinite(resolvedNumericUserId) ? resolvedNumericUserId : null,
+            refreshing: conflictFetching,
+            hrefFor: conflictProfileHref,
+            chooserHref: `/users/${encodeURIComponent(conflictIdentifier)}`,
           }
         : null,
-    navigateConflictPage,
     profileLoading,
     profileError,
     profileData,

@@ -11,7 +11,7 @@
     },
     "usdb_archive": {
       "repository": "https://github.com/UltimaHoarder/UltimaScraperDBArchive.git",
-      "commit": "d94adbe411ac9951ee3091f9ca69eda4750ab994"
+      "commit": "efd0dce62640da12673619fa3258dc36710b9978"
     },
     "usr_api": {
       "repository": "https://github.com/UltimaHoarder/UltimaScraperAPI.git",
